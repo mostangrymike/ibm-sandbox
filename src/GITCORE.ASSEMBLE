@@ -12,16 +12,19 @@ GITCORE  CSECT
          BE    SHA1ABC
          CLC   0(7,2),=C'SHA1EMP'
          BE    SHA1EMP
+         CLC   0(7,2),=C'SHA1TWO'
+         BE    SHA1TWO
          CLC   0(7,2),=C'VERSION'
          BNE   BADARG
          LINEWRT DATA=(VERSION,VERLEN)
          SR    15,15
          BR    14
 *
-* M1B: run SHA-1 engine against two independent standard test vectors.
-* SHA1BLK leaves computed state in HASH0-HASH4 for caller verification.
+* M1B: SHA1BLK consumes one block using HASH0-HASH4 as chaining state.
+* Tests cover empty input, abc, and a standard two-block SHA-1 vector.
 *
 SHA1ABC  ST    14,CALLRET
+         MVC   HASH0(20),H0INIT
          LA    2,ABCBLOCK
          BAL   14,SHA1BLK
          C     4,ABCEXP0
@@ -37,6 +40,7 @@ SHA1ABC  ST    14,CALLRET
          LINEWRT DATA=(ABCDIG,ABCDLEN)
          B     SHA1OK
 SHA1EMP  ST    14,CALLRET
+         MVC   HASH0(20),H0INIT
          LA    2,EMPBLOCK
          BAL   14,SHA1BLK
          C     4,EMPEXP0
@@ -50,6 +54,24 @@ SHA1EMP  ST    14,CALLRET
          C     8,EMPEXP4
          BNE   SHA1BAD
          LINEWRT DATA=(EMPDIG,EMPDLEN)
+         B     SHA1OK
+SHA1TWO  ST    14,CALLRET
+         MVC   HASH0(20),H0INIT
+         LA    2,TWOBLK1
+         BAL   14,SHA1BLK
+         LA    2,TWOBLK2
+         BAL   14,SHA1BLK
+         C     4,TWOEXP0
+         BNE   SHA1BAD
+         C     5,TWOEXP1
+         BNE   SHA1BAD
+         C     6,TWOEXP2
+         BNE   SHA1BAD
+         C     7,TWOEXP3
+         BNE   SHA1BAD
+         C     8,TWOEXP4
+         BNE   SHA1BAD
+         LINEWRT DATA=(TWODIG,TWODLEN)
 SHA1OK   SR    15,15
          L     14,CALLRET
          BR    14
@@ -61,8 +83,9 @@ BADARG   LINEWRT DATA=(USAGE,USAGELEN)
          LA    15,4
          BR    14
 *
-* SHA1BLK - SHA-1 compression of one already-padded 64-byte block.
-* R2 -> block.  Returns final state in R4-R8 and HASH0-HASH4.
+* SHA1BLK - SHA-1 compression of one 64-byte block.
+* R2 -> block. HASH0-HASH4 hold input and output chaining state.
+* Returns the new state in R4-R8 and HASH0-HASH4.
 *
 SHA1BLK  STM   3,14,SAVEREGS
          LA    3,WARRAY
@@ -95,11 +118,11 @@ EXPAND   LR    5,3
          LA    3,4(3)
          BCT   4,EXPAND
 *
-         L     4,H0INIT
-         L     5,H1INIT
-         L     6,H2INIT
-         L     7,H3INIT
-         L     8,H4INIT
+         L     4,HASH0
+         L     5,HASH1
+         L     6,HASH2
+         L     7,HASH3
+         L     8,HASH4
          LA    9,WARRAY
          SR    10,10
 ROUND    LR    3,5
@@ -153,11 +176,11 @@ FCALC    LR    14,4
          LA    10,1(10)
          C     10,=F'80'
          BL    ROUND
-         A     4,H0INIT
-         A     5,H1INIT
-         A     6,H2INIT
-         A     7,H3INIT
-         A     8,H4INIT
+         A     4,HASH0
+         A     5,HASH1
+         A     6,HASH2
+         A     7,HASH3
+         A     8,HASH4
          ST    4,HASH0
          ST    5,HASH1
          ST    6,HASH2
@@ -168,14 +191,16 @@ FCALC    LR    14,4
          SR    15,15
          BR    14
 *
-VERSION  DC    C'GITCORE 0.3 CMS/ZVM'
+VERSION  DC    C'GITCORE 0.4 CMS/ZVM'
 VERLEN   EQU   *-VERSION
-USAGE    DC    C'Usage: GITCORE VERSION, SHA1ABC, or SHA1EMP'
+USAGE    DC    C'Usage: VERSION SHA1ABC SHA1EMP SHA1TWO'
 USAGELEN EQU   *-USAGE
 ABCDIG   DC    C'A9993E364706816ABA3E25717850C26C9CD0D89D'
 ABCDLEN  EQU   *-ABCDIG
 EMPDIG   DC    C'DA39A3EE5E6B4B0D3255BFEF95601890AFD80709'
 EMPDLEN  EQU   *-EMPDIG
+TWODIG   DC    C'84983E441C3BD26EBAAE4AA1F95129E5E54670F1'
+TWODLEN  EQU   *-TWODIG
 FAILMSG  DC    C'SHA1 SELF-TEST FAILED'
 FAILLEN  EQU   *-FAILMSG
          DS    0F
@@ -198,6 +223,11 @@ EMPEXP1  DC    X'5E6B4B0D'
 EMPEXP2  DC    X'3255BFEF'
 EMPEXP3  DC    X'95601890'
 EMPEXP4  DC    X'AFD80709'
+TWOEXP0  DC    X'84983E44'
+TWOEXP1  DC    X'1C3BD26E'
+TWOEXP2  DC    X'BAAE4AA1'
+TWOEXP3  DC    X'F95129E5'
+TWOEXP4  DC    X'E54670F1'
          DS    0F
 ABCBLOCK DC    X'61626380000000000000000000000000'
          DC    X'00000000000000000000000000000000'
@@ -207,6 +237,14 @@ EMPBLOCK DC    X'80000000000000000000000000000000'
          DC    X'00000000000000000000000000000000'
          DC    X'00000000000000000000000000000000'
          DC    X'00000000000000000000000000000000'
+TWOBLK1  DC    X'61626364626364656364656664656667'
+         DC    X'65666768666768696768696A68696A6B'
+         DC    X'696A6B6C6A6B6C6D6B6C6D6E6C6D6E6F'
+         DC    X'6D6E6F706E6F70718000000000000000'
+TWOBLK2  DC    X'00000000000000000000000000000000'
+         DC    X'00000000000000000000000000000000'
+         DC    X'00000000000000000000000000000000'
+         DC    X'000000000000000000000000000001C0'
 CALLRET  DS    F
 HASH0    DS    F
 HASH1    DS    F
