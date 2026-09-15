@@ -22,8 +22,8 @@ GITCORE  CSECT
          SR    15,15
          BR    14
 *
-* M1C: SHA1GEN accepts binary bytes plus a byte count and pads internally.
-* Tests cover empty, abc, a 56-byte two-block case, and 80 input bytes.
+* M1C: SHA1GEN accepts binary bytes and a byte count.
+* It pads internally. Tests include empty, abc, 56, and 80 bytes.
 *
 SHA1ABC  ST    14,CALLRET
          LA    2,ABCDATA
