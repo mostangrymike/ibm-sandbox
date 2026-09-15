@@ -14,19 +14,21 @@ GITCORE  CSECT
          BE    SHA1EMP
          CLC   0(7,2),=C'SHA1TWO'
          BE    SHA1TWO
+         CLC   0(7,2),=C'SHA1MUL'
+         BE    SHA1MUL
          CLC   0(7,2),=C'VERSION'
          BNE   BADARG
          LINEWRT DATA=(VERSION,VERLEN)
          SR    15,15
          BR    14
 *
-* M1B: SHA1BLK consumes one block using HASH0-HASH4 as chaining state.
-* Tests cover empty input, abc, and a standard two-block SHA-1 vector.
+* M1C: SHA1GEN accepts binary bytes plus a byte count and pads internally.
+* Tests cover empty, abc, a 56-byte two-block case, and 80 input bytes.
 *
 SHA1ABC  ST    14,CALLRET
-         MVC   HASH0(20),H0INIT
-         LA    2,ABCBLOCK
-         BAL   14,SHA1BLK
+         LA    2,ABCDATA
+         LA    3,3
+         BAL   14,SHA1GEN
          C     4,ABCEXP0
          BNE   SHA1BAD
          C     5,ABCEXP1
@@ -40,9 +42,9 @@ SHA1ABC  ST    14,CALLRET
          LINEWRT DATA=(ABCDIG,ABCDLEN)
          B     SHA1OK
 SHA1EMP  ST    14,CALLRET
-         MVC   HASH0(20),H0INIT
-         LA    2,EMPBLOCK
-         BAL   14,SHA1BLK
+         LA    2,ABCDATA
+         SR    3,3
+         BAL   14,SHA1GEN
          C     4,EMPEXP0
          BNE   SHA1BAD
          C     5,EMPEXP1
@@ -56,11 +58,9 @@ SHA1EMP  ST    14,CALLRET
          LINEWRT DATA=(EMPDIG,EMPDLEN)
          B     SHA1OK
 SHA1TWO  ST    14,CALLRET
-         MVC   HASH0(20),H0INIT
-         LA    2,TWOBLK1
-         BAL   14,SHA1BLK
-         LA    2,TWOBLK2
-         BAL   14,SHA1BLK
+         LA    2,TWODATA
+         LA    3,56
+         BAL   14,SHA1GEN
          C     4,TWOEXP0
          BNE   SHA1BAD
          C     5,TWOEXP1
@@ -72,6 +72,22 @@ SHA1TWO  ST    14,CALLRET
          C     8,TWOEXP4
          BNE   SHA1BAD
          LINEWRT DATA=(TWODIG,TWODLEN)
+         B     SHA1OK
+SHA1MUL  ST    14,CALLRET
+         LA    2,MULDATA
+         LA    3,80
+         BAL   14,SHA1GEN
+         C     4,MULEXP0
+         BNE   SHA1BAD
+         C     5,MULEXP1
+         BNE   SHA1BAD
+         C     6,MULEXP2
+         BNE   SHA1BAD
+         C     7,MULEXP3
+         BNE   SHA1BAD
+         C     8,MULEXP4
+         BNE   SHA1BAD
+         LINEWRT DATA=(MULDIG,MULDLEN)
 SHA1OK   SR    15,15
          L     14,CALLRET
          BR    14
@@ -81,6 +97,62 @@ SHA1BAD  LINEWRT DATA=(FAILMSG,FAILLEN)
          BR    14
 BADARG   LINEWRT DATA=(USAGE,USAGELEN)
          LA    15,4
+         BR    14
+*
+* SHA1GEN - binary-safe SHA-1 driver.
+* R2 -> input bytes, R3 = unsigned byte length (up to 2^32-1).
+* Initializes state, consumes full blocks, and creates SHA-1 padding.
+* Returns digest state in R4-R8 and HASH0-HASH4.
+*
+SHA1GEN  ST    14,GENRET
+         ST    2,GENPTR
+         ST    3,GENLEN
+         LR    4,3
+         SRL   4,29
+         ST    4,GENHI
+         LR    4,3
+         SLL   4,3
+         ST    4,GENLO
+         MVC   HASH0(20),H0INIT
+GENFULL  L     3,GENLEN
+         C     3,=F'64'
+         BL    GENTAIL
+         L     2,GENPTR
+         BAL   14,SHA1BLK
+         L     2,GENPTR
+         LA    2,64(2)
+         ST    2,GENPTR
+         L     3,GENLEN
+         S     3,=F'64'
+         ST    3,GENLEN
+         B     GENFULL
+GENTAIL  XC    PADBLOCK(64),PADBLOCK
+         LA    4,PADBLOCK
+         L     2,GENPTR
+         L     3,GENLEN
+         ST    3,GENREM
+         LTR   3,3
+         BZ    GENMARK
+GENCOPY  IC    5,0(2)
+         STC   5,0(4)
+         LA    2,1(2)
+         LA    4,1(4)
+         BCT   3,GENCOPY
+GENMARK  MVI   0(4),X'80'
+         L     3,GENREM
+         C     3,=F'56'
+         BL    GENLAST
+         LA    2,PADBLOCK
+         BAL   14,SHA1BLK
+         XC    PADBLOCK(64),PADBLOCK
+GENLAST  L     4,GENHI
+         ST    4,PADBLOCK+56
+         L     4,GENLO
+         ST    4,PADBLOCK+60
+         LA    2,PADBLOCK
+         BAL   14,SHA1BLK
+         L     14,GENRET
+         SR    15,15
          BR    14
 *
 * SHA1BLK - SHA-1 compression of one 64-byte block.
@@ -191,9 +263,9 @@ FCALC    LR    14,4
          SR    15,15
          BR    14
 *
-VERSION  DC    C'GITCORE 0.4 CMS/ZVM'
+VERSION  DC    C'GITCORE 0.5 CMS/ZVM'
 VERLEN   EQU   *-VERSION
-USAGE    DC    C'Usage: VERSION SHA1ABC SHA1EMP SHA1TWO'
+USAGE    DC    C'Usage: VERSION SHA1ABC SHA1EMP SHA1TWO SHA1MUL'
 USAGELEN EQU   *-USAGE
 ABCDIG   DC    C'A9993E364706816ABA3E25717850C26C9CD0D89D'
 ABCDLEN  EQU   *-ABCDIG
@@ -201,6 +273,8 @@ EMPDIG   DC    C'DA39A3EE5E6B4B0D3255BFEF95601890AFD80709'
 EMPDLEN  EQU   *-EMPDIG
 TWODIG   DC    C'84983E441C3BD26EBAAE4AA1F95129E5E54670F1'
 TWODLEN  EQU   *-TWODIG
+MULDIG   DC    C'86F33652FCFFD7FA1443E246DD34FE5D00E25FFD'
+MULDLEN  EQU   *-MULDIG
 FAILMSG  DC    C'SHA1 SELF-TEST FAILED'
 FAILLEN  EQU   *-FAILMSG
          DS    0F
@@ -228,29 +302,31 @@ TWOEXP1  DC    X'1C3BD26E'
 TWOEXP2  DC    X'BAAE4AA1'
 TWOEXP3  DC    X'F95129E5'
 TWOEXP4  DC    X'E54670F1'
+MULEXP0  DC    X'86F33652'
+MULEXP1  DC    X'FCFFD7FA'
+MULEXP2  DC    X'1443E246'
+MULEXP3  DC    X'DD34FE5D'
+MULEXP4  DC    X'00E25FFD'
          DS    0F
-ABCBLOCK DC    X'61626380000000000000000000000000'
-         DC    X'00000000000000000000000000000000'
-         DC    X'00000000000000000000000000000000'
-         DC    X'00000000000000000000000000000018'
-EMPBLOCK DC    X'80000000000000000000000000000000'
-         DC    X'00000000000000000000000000000000'
-         DC    X'00000000000000000000000000000000'
-         DC    X'00000000000000000000000000000000'
-TWOBLK1  DC    X'61626364626364656364656664656667'
+ABCDATA  DC    X'616263'
+TWODATA  DC    X'61626364626364656364656664656667'
          DC    X'65666768666768696768696A68696A6B'
          DC    X'696A6B6C6A6B6C6D6B6C6D6E6C6D6E6F'
-         DC    X'6D6E6F706E6F70718000000000000000'
-TWOBLK2  DC    X'00000000000000000000000000000000'
-         DC    X'00000000000000000000000000000000'
-         DC    X'00000000000000000000000000000000'
-         DC    X'000000000000000000000000000001C0'
+         DC    X'6D6E6F706E6F7071'
+MULDATA  DC    80C'a'
 CALLRET  DS    F
+GENRET   DS    F
+GENPTR   DS    F
+GENLEN   DS    F
+GENREM   DS    F
+GENHI    DS    F
+GENLO    DS    F
 HASH0    DS    F
 HASH1    DS    F
 HASH2    DS    F
 HASH3    DS    F
 HASH4    DS    F
+PADBLOCK DS    64C
 SAVEREGS DS    12F
 WARRAY   DS    80F
          EPLIST
