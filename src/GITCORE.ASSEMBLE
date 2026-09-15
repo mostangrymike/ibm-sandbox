@@ -15,10 +15,18 @@ GITCORE  CSECT
          LINEWRT DATA=(VERSION,VERLEN)
          SR    15,15
          BR    14
-SHA1TEST LA    2,ABCBLOCK
+SHA1TEST ST    14,CALLRET
+         LA    2,ABCBLOCK
          BAL   14,SHA1BLK
+         LTR   15,15
+         BNZ   SHA1BAD
          LINEWRT DATA=(DIGEST,DIGLEN)
          SR    15,15
+         L     14,CALLRET
+         BR    14
+SHA1BAD  LINEWRT DATA=(FAILMSG,FAILLEN)
+         LA    15,4
+         L     14,CALLRET
          BR    14
 BADARG   LINEWRT DATA=(USAGE,USAGELEN)
          LA    15,4
@@ -26,7 +34,7 @@ BADARG   LINEWRT DATA=(USAGE,USAGELEN)
 *
 * SHA1BLK - SHA-1 compression for the fixed, pre-padded abc test block.
 * R2 -> fixed pre-padded 64-byte abc block.
-* Computed state is compared with the published SHA-1 digest.
+* Returns R15=0 if computed state matches expected digest, else R15=4.
 *
 SHA1BLK  STM   3,14,SAVEREGS
          LA    3,WARRAY
@@ -133,9 +141,10 @@ FCALC    LR    14,4
          C     8,EXPECT4
          BNE   SHAFAIL
          LM    3,14,SAVEREGS
+         SR    15,15
          BR    14
-SHAFAIL  LINEWRT DATA=(FAILMSG,FAILLEN)
-         LM    3,14,SAVEREGS
+SHAFAIL  LM    3,14,SAVEREGS
+         LA    15,4
          BR    14
 *
 VERSION  DC    C'GITCORE 0.2 CMS/ZVM'
@@ -166,6 +175,7 @@ ABCBLOCK DC    X'61626380000000000000000000000000'
          DC    X'00000000000000000000000000000000'
          DC    X'00000000000000000000000000000000'
          DC    X'00000000000000000000000000000018'
+CALLRET  DS    F
 SAVEREGS DS    12F
 WARRAY   DS    80F
          EPLIST
