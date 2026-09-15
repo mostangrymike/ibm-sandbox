@@ -18,9 +18,8 @@ GITCORE  CSECT
          SR    15,15
          BR    14
 *
-* M1B first step: run the same SHA-1 engine against two independent
-* standard test vectors.  SHA1BLK now leaves the computed five-word
-* state in HASH0-HASH4 so callers, rather than the compressor, verify it.
+* M1B: run SHA-1 engine against two independent standard test vectors.
+* SHA1BLK leaves computed state in HASH0-HASH4 for caller verification.
 *
 SHA1ABC  ST    14,CALLRET
          LA    2,ABCBLOCK
@@ -164,7 +163,7 @@ FCALC    LR    14,4
          ST    6,HASH2
          ST    7,HASH3
          ST    8,HASH4
-*        Restore only R9-R14; R4-R8 deliberately return the state.
+* Restore R9-R14; R4-R8 deliberately return the state.
          LM    9,14,SAVEREGS+24
          SR    15,15
          BR    14
