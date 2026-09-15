@@ -7,6 +7,10 @@ GITCORE  CSECT
          L     3,EPLARGND
          SR    3,2
          C     3,=F'7'
+         BL    BADARG
+         CLC   0(7,2),=C'SHA1HEX'
+         BE    SHA1HEX
+         C     3,=F'7'
          BNE   BADARG
          CLC   0(7,2),=C'SHA1ABC'
          BE    SHA1ABC
@@ -20,6 +24,94 @@ GITCORE  CSECT
          BNE   BADARG
          LINEWRT DATA=(VERSION,VERLEN)
          SR    15,15
+         BR    14
+*
+* M1D: SHA1HEX accepts externally supplied hexadecimal bytes.
+* Hex is decoded to binary before calling the binary-safe SHA1GEN.
+*
+SHA1HEX  ST    14,CALLRET
+         L     2,EPLARGBG
+         L     3,EPLARGND
+         SR    3,2
+         C     3,=F'9'
+         BL    HEXBAD
+         C     3,=F'520'
+         BH    HEXBAD
+         CLI   7(2),C' '
+         BNE   HEXBAD
+         LA    2,8(2)
+         S     3,=F'8'
+         LR    4,3
+         N     4,=F'1'
+         LTR   4,4
+         BNZ   HEXBAD
+         SRL   3,1
+         ST    3,HEXLEN
+         LA    4,HEXBUF
+         LTR   3,3
+         BZ    HEXHASH
+HEXPAIR  BAL   14,HEXNIB
+         LTR   15,15
+         BNZ   HEXBAD
+         SLL   5,4
+         LR    6,5
+         LA    2,1(2)
+         BAL   14,HEXNIB
+         LTR   15,15
+         BNZ   HEXBAD
+         OR    6,5
+         STC   6,0(4)
+         LA    2,1(2)
+         LA    4,1(4)
+         BCT   3,HEXPAIR
+HEXHASH  LA    2,HEXBUF
+         L     3,HEXLEN
+         BAL   14,SHA1GEN
+         LA    2,HASH0
+         LA    3,HEXDIG
+         LA    4,20
+HEXOUT   XR    5,5
+         IC    5,0(2)
+         LR    6,5
+         SRL   6,4
+         N     5,=F'15'
+         IC    7,HEXTAB(6)
+         STC   7,0(3)
+         IC    7,HEXTAB(5)
+         STC   7,1(3)
+         LA    2,1(2)
+         LA    3,2(3)
+         BCT   4,HEXOUT
+         LINEWRT DATA=(HEXDIG,40)
+         B     SHA1OK
+HEXNIB   XR    5,5
+         IC    5,0(2)
+         C     5,=F'240'
+         BL    HEXALPH
+         C     5,=F'249'
+         BH    HEXBADN
+         S     5,=F'240'
+         SR    15,15
+         BR    14
+HEXALPH  C     5,=F'193'
+         BL    HEXLOW
+         C     5,=F'198'
+         BH    HEXBADN
+         S     5,=F'183'
+         SR    15,15
+         BR    14
+HEXLOW   C     5,=F'129'
+         BL    HEXBADN
+         C     5,=F'134'
+         BH    HEXBADN
+         S     5,=F'119'
+         SR    15,15
+         BR    14
+HEXBADN  LA    15,4
+         BR    14
+HEXBAD   LINEWRT DATA=(HEXUSE,HEXULEN)
+         LA    15,4
+         L     14,CALLRET
          BR    14
 *
 * M1C: SHA1GEN accepts binary bytes and a byte count.
@@ -263,10 +355,13 @@ FCALC    LR    14,4
          SR    15,15
          BR    14
 *
-VERSION  DC    C'GITCORE 0.5 CMS/ZVM'
+VERSION  DC    C'GITCORE 0.6 CMS/ZVM'
 VERLEN   EQU   *-VERSION
-USAGE    DC    C'Usage: VERSION SHA1ABC SHA1EMP SHA1TWO SHA1MUL'
+USAGE    DC    C'Usage: VERSION SHA1ABC SHA1EMP SHA1TWO SHA1MUL SHA1HEX'
 USAGELEN EQU   *-USAGE
+HEXUSE   DC    C'Usage: GITCORE SHA1HEX even-numbered-hex-bytes'
+HEXULEN  EQU   *-HEXUSE
+HEXTAB   DC    C'0123456789ABCDEF'
 ABCDIG   DC    C'A9993E364706816ABA3E25717850C26C9CD0D89D'
 ABCDLEN  EQU   *-ABCDIG
 EMPDIG   DC    C'DA39A3EE5E6B4B0D3255BFEF95601890AFD80709'
@@ -321,11 +416,14 @@ GENLEN   DS    F
 GENREM   DS    F
 GENHI    DS    F
 GENLO    DS    F
+HEXLEN   DS    F
 HASH0    DS    F
 HASH1    DS    F
 HASH2    DS    F
 HASH3    DS    F
 HASH4    DS    F
+HEXDIG   DS    40C
+HEXBUF   DS    256C
 PADBLOCK DS    64C
 SAVEREGS DS    12F
 WARRAY   DS    80F
