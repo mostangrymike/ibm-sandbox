@@ -27,6 +27,7 @@ GITCORE  CSECT
          LINEWRT DATA=(VERSION,VERLEN)
          SR    15,15
          BR    14
+         LTORG
 *
 * M2A: construct the exact Git byte stream for blob content "abc".
 * The bytes are: 62 6C 6F 62 20 33 00 61 62 63.
