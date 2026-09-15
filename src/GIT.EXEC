@@ -1,0 +1,16 @@
+/* Native Git for CMS/z/VM */
+
+parse upper arg command rest
+
+if command = '' then do
+   say 'Usage: GIT command [arguments]'
+   exit 4
+end
+
+if command = 'VERSION' then do
+   'GITCORE VERSION'
+   exit rc
+end
+
+say 'GIT: unknown command' command
+exit 4
