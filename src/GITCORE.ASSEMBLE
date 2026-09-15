@@ -1,0 +1,25 @@
+GITCORE  CSECT
+         USING GITCORE,12
+         LR    12,15
+         LR    11,0
+         USING EPLIST,11
+         L     2,EPLARGBG
+         L     3,EPLARGND
+         SR    3,2
+         C     3,=F'7'
+         BNE   BADARG
+         CLC   0(7,2),=C'VERSION'
+         BNE   BADARG
+         LINEWRT DATA=(VERSION,VERLEN)
+         SR    15,15
+         BR    14
+BADARG   LINEWRT DATA=(USAGE,USAGELEN)
+         LA    15,4
+         BR    14
+VERSION  DC    C'GITCORE 0.1 CMS/ZVM'
+VERLEN   EQU   *-VERSION
+USAGE    DC    C'Usage: GITCORE VERSION'
+USAGELEN EQU   *-USAGE
+TESTBYTE DC    X'00616263FF'
+         EPLIST
+         END   GITCORE
