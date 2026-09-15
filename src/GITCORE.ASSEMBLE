@@ -9,19 +9,49 @@ GITCORE  CSECT
          C     3,=F'7'
          BNE   BADARG
          CLC   0(7,2),=C'SHA1ABC'
-         BE    SHA1TEST
+         BE    SHA1ABC
+         CLC   0(7,2),=C'SHA1EMP'
+         BE    SHA1EMP
          CLC   0(7,2),=C'VERSION'
          BNE   BADARG
          LINEWRT DATA=(VERSION,VERLEN)
          SR    15,15
          BR    14
-SHA1TEST ST    14,CALLRET
+*
+* M1B first step: run the same SHA-1 engine against two independent
+* standard test vectors.  SHA1BLK now leaves the computed five-word
+* state in HASH0-HASH4 so callers, rather than the compressor, verify it.
+*
+SHA1ABC  ST    14,CALLRET
          LA    2,ABCBLOCK
          BAL   14,SHA1BLK
-         LTR   15,15
-         BNZ   SHA1BAD
-         LINEWRT DATA=(DIGEST,DIGLEN)
-         SR    15,15
+         C     4,ABCEXP0
+         BNE   SHA1BAD
+         C     5,ABCEXP1
+         BNE   SHA1BAD
+         C     6,ABCEXP2
+         BNE   SHA1BAD
+         C     7,ABCEXP3
+         BNE   SHA1BAD
+         C     8,ABCEXP4
+         BNE   SHA1BAD
+         LINEWRT DATA=(ABCDIG,ABCDLEN)
+         B     SHA1OK
+SHA1EMP  ST    14,CALLRET
+         LA    2,EMPBLOCK
+         BAL   14,SHA1BLK
+         C     4,EMPEXP0
+         BNE   SHA1BAD
+         C     5,EMPEXP1
+         BNE   SHA1BAD
+         C     6,EMPEXP2
+         BNE   SHA1BAD
+         C     7,EMPEXP3
+         BNE   SHA1BAD
+         C     8,EMPEXP4
+         BNE   SHA1BAD
+         LINEWRT DATA=(EMPDIG,EMPDLEN)
+SHA1OK   SR    15,15
          L     14,CALLRET
          BR    14
 SHA1BAD  LINEWRT DATA=(FAILMSG,FAILLEN)
@@ -32,9 +62,8 @@ BADARG   LINEWRT DATA=(USAGE,USAGELEN)
          LA    15,4
          BR    14
 *
-* SHA1BLK - SHA-1 compression for the fixed, pre-padded abc test block.
-* R2 -> fixed pre-padded 64-byte abc block.
-* Returns R15=0 if computed state matches expected digest, else R15=4.
+* SHA1BLK - SHA-1 compression of one already-padded 64-byte block.
+* R2 -> block.  Returns final state in R4-R8 and HASH0-HASH4.
 *
 SHA1BLK  STM   3,14,SAVEREGS
          LA    3,WARRAY
@@ -130,29 +159,24 @@ FCALC    LR    14,4
          A     6,H2INIT
          A     7,H3INIT
          A     8,H4INIT
-         C     4,EXPECT0
-         BNE   SHAFAIL
-         C     5,EXPECT1
-         BNE   SHAFAIL
-         C     6,EXPECT2
-         BNE   SHAFAIL
-         C     7,EXPECT3
-         BNE   SHAFAIL
-         C     8,EXPECT4
-         BNE   SHAFAIL
-         LM    3,14,SAVEREGS
+         ST    4,HASH0
+         ST    5,HASH1
+         ST    6,HASH2
+         ST    7,HASH3
+         ST    8,HASH4
+*        Restore only R9-R14; R4-R8 deliberately return the state.
+         LM    9,14,SAVEREGS+24
          SR    15,15
          BR    14
-SHAFAIL  LM    3,14,SAVEREGS
-         LA    15,4
-         BR    14
 *
-VERSION  DC    C'GITCORE 0.2 CMS/ZVM'
+VERSION  DC    C'GITCORE 0.3 CMS/ZVM'
 VERLEN   EQU   *-VERSION
-USAGE    DC    C'Usage: GITCORE VERSION or SHA1ABC'
+USAGE    DC    C'Usage: GITCORE VERSION, SHA1ABC, or SHA1EMP'
 USAGELEN EQU   *-USAGE
-DIGEST   DC    C'A9993E364706816ABA3E25717850C26C9CD0D89D'
-DIGLEN   EQU   *-DIGEST
+ABCDIG   DC    C'A9993E364706816ABA3E25717850C26C9CD0D89D'
+ABCDLEN  EQU   *-ABCDIG
+EMPDIG   DC    C'DA39A3EE5E6B4B0D3255BFEF95601890AFD80709'
+EMPDLEN  EQU   *-EMPDIG
 FAILMSG  DC    C'SHA1 SELF-TEST FAILED'
 FAILLEN  EQU   *-FAILMSG
          DS    0F
@@ -165,17 +189,31 @@ K0       DC    X'5A827999'
 K1       DC    X'6ED9EBA1'
 K2       DC    X'8F1BBCDC'
 K3       DC    X'CA62C1D6'
-EXPECT0  DC    X'A9993E36'
-EXPECT1  DC    X'4706816A'
-EXPECT2  DC    X'BA3E2571'
-EXPECT3  DC    X'7850C26C'
-EXPECT4  DC    X'9CD0D89D'
+ABCEXP0  DC    X'A9993E36'
+ABCEXP1  DC    X'4706816A'
+ABCEXP2  DC    X'BA3E2571'
+ABCEXP3  DC    X'7850C26C'
+ABCEXP4  DC    X'9CD0D89D'
+EMPEXP0  DC    X'DA39A3EE'
+EMPEXP1  DC    X'5E6B4B0D'
+EMPEXP2  DC    X'3255BFEF'
+EMPEXP3  DC    X'95601890'
+EMPEXP4  DC    X'AFD80709'
          DS    0F
 ABCBLOCK DC    X'61626380000000000000000000000000'
          DC    X'00000000000000000000000000000000'
          DC    X'00000000000000000000000000000000'
          DC    X'00000000000000000000000000000018'
+EMPBLOCK DC    X'80000000000000000000000000000000'
+         DC    X'00000000000000000000000000000000'
+         DC    X'00000000000000000000000000000000'
+         DC    X'00000000000000000000000000000000'
 CALLRET  DS    F
+HASH0    DS    F
+HASH1    DS    F
+HASH2    DS    F
+HASH3    DS    F
+HASH4    DS    F
 SAVEREGS DS    12F
 WARRAY   DS    80F
          EPLIST
