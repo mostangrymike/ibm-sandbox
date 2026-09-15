@@ -8,18 +8,157 @@ GITCORE  CSECT
          SR    3,2
          C     3,=F'7'
          BNE   BADARG
+         CLC   0(7,2),=C'SHA1ABC'
+         BE    SHA1TEST
          CLC   0(7,2),=C'VERSION'
          BNE   BADARG
          LINEWRT DATA=(VERSION,VERLEN)
          SR    15,15
          BR    14
+SHA1TEST LA    2,ABCBLOCK
+         BAL   14,SHA1BLK
+         LINEWRT DATA=(DIGEST,DIGLEN)
+         SR    15,15
+         BR    14
 BADARG   LINEWRT DATA=(USAGE,USAGELEN)
          LA    15,4
          BR    14
-VERSION  DC    C'GITCORE 0.1 CMS/ZVM'
+*
+* SHA1BLK - SHA-1 compression for the fixed, pre-padded abc test block.
+* R2 -> fixed pre-padded 64-byte abc block.
+* Computed state is compared with the published SHA-1 digest.
+*
+SHA1BLK  STM   3,14,SAVEREGS
+         LA    3,WARRAY
+         LA    4,16
+         LR    5,2
+LOADW    L     6,0(5)
+         ST    6,0(3)
+         LA    5,4(5)
+         LA    3,4(3)
+         BCT   4,LOADW
+         LA    4,64
+         LA    3,WARRAY+64
+EXPAND   L     6,-12(3)
+         X     6,-32(3)
+         X     6,-56(3)
+         X     6,-64(3)
+         LR    7,6
+         SLL   6,1
+         SRL   7,31
+         OR    6,7
+         ST    6,0(3)
+         LA    3,4(3)
+         BCT   4,EXPAND
+*
+         L     4,H0INIT
+         L     5,H1INIT
+         L     6,H2INIT
+         L     7,H3INIT
+         L     8,H4INIT
+         LA    9,WARRAY
+         SR    10,10
+ROUND    LR    3,5
+         C     10,=F'20'
+         BL    R0
+         C     10,=F'40'
+         BL    R20
+         C     10,=F'60'
+         BL    R40
+R60      XR    3,6
+         XR    3,7
+         L     11,K3
+         B     FCALC
+R40      NR    3,6
+         LR    11,5
+         OR    11,6
+         NR    11,7
+         OR    3,11
+         L     11,K2
+         B     FCALC
+R20      XR    3,6
+         XR    3,7
+         L     11,K1
+         B     FCALC
+R0       NR    3,6
+         LR    11,5
+         X     11,=X'FFFFFFFF'
+         NR    11,7
+         OR    3,11
+         L     11,K0
+FCALC    LR    14,4
+         SLL   14,5
+         LR    2,4
+         SRL   2,27
+         OR    14,2
+         AR    14,3
+         AR    14,8
+         AR    14,11
+         A     14,0(9)
+         LR    8,7
+         LR    7,6
+         LR    3,5
+         SRL   3,2
+         LR    2,5
+         SLL   2,30
+         OR    3,2
+         LR    6,3
+         LR    5,4
+         LR    4,14
+         LA    9,4(9)
+         LA    10,1(10)
+         C     10,=F'80'
+         BL    ROUND
+         A     4,H0INIT
+         A     5,H1INIT
+         A     6,H2INIT
+         A     7,H3INIT
+         A     8,H4INIT
+         C     4,EXPECT0
+         BNE   SHAFAIL
+         C     5,EXPECT1
+         BNE   SHAFAIL
+         C     6,EXPECT2
+         BNE   SHAFAIL
+         C     7,EXPECT3
+         BNE   SHAFAIL
+         C     8,EXPECT4
+         BNE   SHAFAIL
+         LM    3,14,SAVEREGS
+         BR    14
+SHAFAIL  LINEWRT DATA=(FAILMSG,FAILLEN)
+         LM    3,14,SAVEREGS
+         BR    14
+*
+VERSION  DC    C'GITCORE 0.2 CMS/ZVM'
 VERLEN   EQU   *-VERSION
-USAGE    DC    C'Usage: GITCORE VERSION'
+USAGE    DC    C'Usage: GITCORE VERSION or SHA1ABC'
 USAGELEN EQU   *-USAGE
-TESTBYTE DC    X'00616263FF'
+DIGEST   DC    C'A9993E364706816ABA3E25717850C26C9CD0D89D'
+DIGLEN   EQU   *-DIGEST
+FAILMSG  DC    C'SHA1 SELF-TEST FAILED'
+FAILLEN  EQU   *-FAILMSG
+         DS    0F
+H0INIT   DC    X'67452301'
+H1INIT   DC    X'EFCDAB89'
+H2INIT   DC    X'98BADCFE'
+H3INIT   DC    X'10325476'
+H4INIT   DC    X'C3D2E1F0'
+K0       DC    X'5A827999'
+K1       DC    X'6ED9EBA1'
+K2       DC    X'8F1BBCDC'
+K3       DC    X'CA62C1D6'
+EXPECT0  DC    X'A9993E36'
+EXPECT1  DC    X'4706816A'
+EXPECT2  DC    X'BA3E2571'
+EXPECT3  DC    X'7850C26C'
+EXPECT4  DC    X'9CD0D89D'
+         DS    0F
+ABCBLOCK DC    X'61626380000000000000000000000000'
+         DC    X'00000000000000000000000000000000'
+         DC    X'00000000000000000000000000000000'
+         DC    X'00000000000000000000000000000018'
+SAVEREGS DS    12F
+WARRAY   DS    80F
          EPLIST
          END   GITCORE
