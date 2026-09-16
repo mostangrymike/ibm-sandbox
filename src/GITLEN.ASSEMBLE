@@ -1,0 +1,117 @@
+GITLEN   CSECT
+         USING GITLEN,12
+         LR    12,15
+         ST    14,RETADDR
+*
+* Diagnose GITSTRM length handling for the 42-byte M4 tree stream.
+*
+         LINERD DATA=(INBUF,128),TYPE=STACK,CASE=MIXED,TRANS=NO,       X
+               PAD=BLANK,ERROR=BADREAD
+         C     0,=F'8'
+         BNE   BADHLEN
+         LA    2,INBUF
+         LA    3,8
+         BAL   14,HEXWORD
+         LTR   15,15
+         BNZ   BADHEX
+         ST    5,REMAIN
+         C     5,=F'42'
+         BNE   BADHVAL
+*
+         LINERD DATA=(INBUF,128),TYPE=STACK,CASE=MIXED,TRANS=NO,       X
+               PAD=BLANK,ERROR=BADREAD
+         LR    3,0
+         C     3,=F'84'
+         BNE   BADDLEN
+         SRL   3,1
+         C     3,=F'42'
+         BNE   BADBYTES
+         C     3,REMAIN
+         BNE   BADCMP
+         LINEWRT DATA=(OKMSG,OKLEN)
+         SR    15,15
+         L     14,RETADDR
+         BR    14
+*
+BADREAD  LINEWRT DATA=(MRD,LRD)
+         B     BADRET
+BADHLEN  LINEWRT DATA=(MHLEN,LHLEN)
+         B     BADRET
+BADHEX   LINEWRT DATA=(MHEX,LHEX)
+         B     BADRET
+BADHVAL  LINEWRT DATA=(MHVAL,LHVAL)
+         B     BADRET
+BADDLEN  LINEWRT DATA=(MDLEN,LDLEN)
+         B     BADRET
+BADBYTES LINEWRT DATA=(MBYTES,LBYTES)
+         B     BADRET
+BADCMP   LINEWRT DATA=(MCMP,LCMP)
+BADRET   LA    15,4
+         L     14,RETADDR
+         BR    14
+*
+HEXWORD  ST    14,HEXRET
+         SR    6,6
+HWLP     BAL   14,HEXNIB
+         LTR   15,15
+         BNZ   HWBAD
+         SLL   6,4
+         OR    6,5
+         LA    2,1(2)
+         BCT   3,HWLP
+         LR    5,6
+         SR    15,15
+         L     14,HEXRET
+         BR    14
+HWBAD    LA    15,4
+         L     14,HEXRET
+         BR    14
+*
+HEXNIB   XR    5,5
+         IC    5,0(2)
+         C     5,=F'240'
+         BL    HXALPHA
+         C     5,=F'249'
+         BH    HXBADD
+         S     5,=F'240'
+         SR    15,15
+         BR    14
+HXALPHA  C     5,=F'193'
+         BL    HXLOW
+         C     5,=F'198'
+         BH    HXBADD
+         S     5,=F'183'
+         SR    15,15
+         BR    14
+HXLOW    C     5,=F'129'
+         BL    HXBADD
+         C     5,=F'134'
+         BH    HXBADD
+         S     5,=F'119'
+         SR    15,15
+         BR    14
+HXBADD   LA    15,4
+         BR    14
+         LTORG
+*
+OKMSG    DC    C'GITLEN: HEADER 42 DATA 42 COMPARE OK'
+OKLEN    EQU   *-OKMSG
+MRD      DC    C'GITLEN: LINERD ERROR'
+LRD      EQU   *-MRD
+MHLEN    DC    C'GITLEN: HEADER LENGTH WRONG'
+LHLEN    EQU   *-MHLEN
+MHEX     DC    C'GITLEN: HEADER HEX REJECTED'
+LHEX     EQU   *-MHEX
+MHVAL    DC    C'GITLEN: HEADER VALUE NOT 42'
+LHVAL    EQU   *-MHVAL
+MDLEN    DC    C'GITLEN: DATA CHAR LENGTH NOT 84'
+LDLEN    EQU   *-MDLEN
+MBYTES   DC    C'GITLEN: DATA BYTE LENGTH NOT 42'
+LBYTES   EQU   *-MBYTES
+MCMP     DC    C'GITLEN: REGISTER/STORAGE COMPARE FAILED'
+LCMP     EQU   *-MCMP
+RETADDR  DS    F
+HEXRET   DS    F
+REMAIN   DS    F
+INBUF    DS    128C
+         END   GITLEN
