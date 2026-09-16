@@ -124,12 +124,19 @@ if command = 'WRITE-TREE' then do
    exit 0
 end
 
+/*
+ * COMMIT-TREE keeps the original one-argument deterministic form and adds
+ * explicit proof-level options.  Values containing blanks use underscore as
+ * the CMS command-line separator escape; underscores are converted to blanks.
+ *
+ * GIT COMMIT-TREE tree [-P parent ...] [-A identity] [-C identity]
+ *      [-T seconds] [-Z timezone] [-M message]
+ */
 if command = 'COMMIT-TREE' then do
-   parse var rest treeoid extra
-   treeoid = translate(treeoid)
-   if treeoid = '' | extra \= '' | length(treeoid) \= 40 |,
+   treeoid = translate(word(rest,1))
+   if treeoid = '' | length(treeoid) \= 40 |,
       verify(treeoid,'0123456789ABCDEF') \= 0 then do
-      say 'Usage: GIT COMMIT-TREE tree-object-id'
+      say 'Usage: GIT COMMIT-TREE tree [-P parent] [-A identity] ...'
       exit 4
    end
    call readobject treeoid
@@ -138,14 +145,83 @@ if command = 'COMMIT-TREE' then do
       say 'GIT: object is not requested tree' treeoid
       exit 8
    end
+
+   author = 'CMS Git <cms@example.invalid>'
+   committer = author
+   stamp = '0'
+   zone = '+0000'
+   message = 'Initial commit'
+   parent.0 = 0
+
+   i = 2
+   do while i <= words(rest)
+      opt = translate(word(rest,i))
+      if i = words(rest) then do
+         say 'GIT: missing value for COMMIT-TREE option' word(rest,i)
+         exit 4
+      end
+      val = word(rest,i+1)
+      if opt = '-P' then do
+         poid = translate(val)
+         if length(poid) \= 40 | verify(poid,'0123456789ABCDEF') \= 0 then do
+            say 'GIT: invalid parent object-id' val
+            exit 4
+         end
+         call readobject poid
+         if result \= 'OK' then exit 8
+         if objtype \= 'COMMIT' then do
+            say 'GIT: parent is not a COMMIT object' poid
+            exit 8
+         end
+         parent.0 = parent.0 + 1
+         parent.parent.0 = poid
+      end
+      else if opt = '-A' then author = translate(val,' ','_')
+      else if opt = '-C' then committer = translate(val,' ','_')
+      else if opt = '-T' then stamp = val
+      else if opt = '-Z' then zone = val
+      else if opt = '-M' then message = translate(val,' ','_')
+      else do
+         say 'GIT: unknown COMMIT-TREE option' word(rest,i)
+         exit 4
+      end
+      i = i + 2
+   end
+
+   if verify(stamp,'0123456789') \= 0 | stamp = '' then do
+      say 'GIT: invalid commit timestamp' stamp
+      exit 4
+   end
+   if length(zone) \= 5 |,
+      (substr(zone,1,1) \= '+' & substr(zone,1,1) \= '-') |,
+      verify(substr(zone,2),'0123456789') \= 0 then do
+      say 'GIT: invalid commit timezone' zone
+      exit 4
+   end
+   zhour = substr(zone,2,2) + 0
+   zmin = substr(zone,4,2) + 0
+   if zhour > 23 | zmin > 59 then do
+      say 'GIT: invalid commit timezone' zone
+      exit 4
+   end
+   if author = '' | committer = '' then do
+      say 'GIT: author and committer identities must not be empty'
+      exit 4
+   end
+
    lower = translate(treeoid,'abcdef','ABCDEF')
    call toasciihex 'tree ' || lower
    datahex = result || '0A'
-   call toasciihex 'author CMS Git <cms@example.invalid> 0 +0000'
+   do i = 1 to parent.0
+      lowerp = translate(parent.i,'abcdef','ABCDEF')
+      call toasciihex 'parent ' || lowerp
+      datahex = datahex || result || '0A'
+   end
+   call toasciihex 'author ' || author || ' ' || stamp || ' ' || zone
    datahex = datahex || result || '0A'
-   call toasciihex 'committer CMS Git <cms@example.invalid> 0 +0000'
+   call toasciihex 'committer ' || committer || ' ' || stamp || ' ' || zone
    datahex = datahex || result || '0A0A'
-   call toasciihex 'Initial commit'
+   call toasciihex message
    datahex = datahex || result || '0A'
    call hashstored 'COMMIT', datahex
    commitoid = result
@@ -359,11 +435,11 @@ hashstored: procedure
       pos = pos + take
    end
    'GITSTRM'
-   src = rc
-   if src \= 0 then do
+   hrc = rc
+   if hrc \= 0 then do
       'DROPBUF'
       return 'HASHERROR'
    end
    pull oid
    'DROPBUF'
-   return strip(oid)
+   return oid
