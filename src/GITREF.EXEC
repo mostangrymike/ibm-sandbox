@@ -21,10 +21,10 @@ if command = 'BRANCH' then do
       if result \= 'OK' then exit 8
       call readrefs
       if result \= 'OK' then exit 8
-      do i = 1 to ref.0
+      do i = 1 to refcount
          mark = ' '
-         if headref = 'refs/heads/' || ref.name.i then mark = '*'
-         say mark ref.name.i ref.oid.i
+         if headref = 'refs/heads/' || refname.i then mark = '*'
+         say mark refname.i refoid.i
       end
       exit 0
    end
@@ -44,16 +44,16 @@ if command = 'BRANCH' then do
    if result \= 'OK' then exit 8
    call readrefs
    if result \= 'OK' then exit 8
-   do i = 1 to ref.0
-      if ref.name.i = name then do
+   do i = 1 to refcount
+      if refname.i = name then do
          say 'GITREF: branch already exists' name
          exit 8
       end
    end
-   ref.0 = ref.0 + 1
-   n = ref.0
-   ref.name.n = name
-   ref.oid.n = oid
+   refcount = refcount + 1
+   n = refcount
+   refname.n = name
+   refoid.n = oid
    call writerefs
    if result \= 'OK' then exit 8
    say 'refs/heads/' || name oid
@@ -83,8 +83,8 @@ if command = 'SYMBOLIC-REF' then do
    call readrefs
    if result \= 'OK' then exit 8
    found = 0
-   do i = 1 to ref.0
-      if ref.name.i = name then found = 1
+   do i = 1 to refcount
+      if refname.i = name then found = 1
    end
    if \found then do
       say 'GITREF: branch not found' name
@@ -108,9 +108,9 @@ if command = 'REV-PARSE' then do
    end
    if left(spec,11) = 'refs/heads/' then name = substr(spec,12)
    else name = spec
-   do i = 1 to ref.0
-      if ref.name.i = name then do
-         say ref.oid.i
+   do i = 1 to refcount
+      if refname.i = name then do
+         say refoid.i
          exit 0
       end
    end
@@ -122,8 +122,8 @@ if command = 'SHOW-REF' then do
    if words(rest) \= 0 then exit 4
    call readrefs
    if result \= 'OK' then exit 8
-   do i = 1 to ref.0
-      say ref.oid.i 'refs/heads/' || ref.name.i
+   do i = 1 to refcount
+      say refoid.i 'refs/heads/' || refname.i
    end
    exit 0
 end
@@ -162,9 +162,9 @@ requirecommit: procedure
    end
    return 'OK'
 
-readrefs: procedure expose ref.
-   drop ref.
-   ref.0 = 0
+readrefs: procedure expose refcount refname. refoid.
+   drop refname. refoid.
+   refcount = 0
    'STATE GITREFS REPO A'
    if rc \= 0 then return 'OK'
    drop rr.
@@ -183,22 +183,18 @@ readrefs: procedure expose ref.
          say 'GITREF: corrupt refs record' i
          return 'ERROR'
       end
-      ref.0 = ref.0 + 1
-      n = ref.0
-      ref.name.n = name
-      ref.oid.n = oid
+      refcount = refcount + 1
+      n = refcount
+      refname.n = name
+      refoid.n = oid
    end
    return 'OK'
 
-writerefs: procedure expose ref.
+writerefs: procedure expose refcount refname. refoid.
    drop wr.
-   wr.0 = ref.0
-   do i = 1 to ref.0
-      /* In classic REXX, REF.NAME.I means the compound tail NAME.I;
-       * use VALUE() to resolve the numeric stem index held in I. */
-      rname = value('REF.NAME.' || i)
-      roid = value('REF.OID.' || i)
-      wr.i = 'BRANCH' rname roid
+   wr.0 = refcount
+   do i = 1 to refcount
+      wr.i = 'BRANCH' refname.i refoid.i
    end
    'EXECIO' wr.0 'DISKW GITREFS REPO A 1 (STEM WR. FINIS'
    if rc \= 0 then return 'ERROR'
