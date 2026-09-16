@@ -171,8 +171,16 @@ readrefs: procedure expose ref.
    'EXECIO * DISKR GITREFS REPO A 1 (STEM RR. FINIS'
    if rc \= 0 then return 'ERROR'
    do i = 1 to rr.0
-      parse var rr.i tag name oid extra
-      if tag \= 'BRANCH' | name = '' | extra \= '' |,
+      /* CMS fixed records may contain trailing blanks. WORDS validates the
+       * logical fields without treating record padding as a fourth field. */
+      if words(rr.i) \= 3 then do
+         say 'GITREF: corrupt refs record' i
+         return 'ERROR'
+      end
+      tag = word(rr.i,1)
+      name = word(rr.i,2)
+      oid = word(rr.i,3)
+      if tag \= 'BRANCH' | name = '' |,
          length(oid) \= 40 | verify(oid,'0123456789ABCDEF') \= 0 then do
          say 'GITREF: corrupt refs record' i
          return 'ERROR'
