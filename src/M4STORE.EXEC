@@ -1,0 +1,119 @@
+/* M4 repository-object storage regression for native CMS Git */
+
+address command
+
+say 'M4 STORE TEST 1: write exact tree object to CMS object database'
+treebody = '31303036343420524541444D4500' ||,
+           'F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
+treeoid = '2030C0B68CCC4116B0CB9990EF04B53EA30140C8'
+call hashobject 'tree', treebody
+if result \= treeoid then do
+   say 'M4STORE: tree hash mismatch'
+   say 'EXPECTED=' treeoid
+   say 'ACTUAL  =' result
+   exit 8
+end
+call storeobject treeoid, 'TREE', treebody
+if result \= 0 then exit result
+call checkobject treeoid, 'TREE', treebody
+if result \= 0 then exit result
+say 'TREE OID=' treeoid
+
+say 'M4 STORE TEST 2: write exact commit object to CMS object database'
+commitbody = '747265652032303330633062363863636334313136623063623939393065663034' ||,
+             '6235336561333031343063380A' ||,
+             '617574686F7220434D5320476974203C636D73406578616D706C652E696E7661' ||,
+             '6C69643E2030202B303030300A' ||,
+             '636F6D6D697474657220434D5320476974203C636D73406578616D706C652E69' ||,
+             '6E76616C69643E2030202B303030300A0A' ||,
+             '496E697469616C20636F6D6D69740A'
+commitoid = '54BACE2202BB0C96980CDD0AAE9A752E6188D666'
+call hashobject 'commit', commitbody
+if result \= commitoid then do
+   say 'M4STORE: commit hash mismatch'
+   say 'EXPECTED=' commitoid
+   say 'ACTUAL  =' result
+   exit 8
+end
+call storeobject commitoid, 'COMMIT', commitbody
+if result \= 0 then exit result
+call checkobject commitoid, 'COMMIT', commitbody
+if result \= 0 then exit result
+say 'COMMIT OID=' commitoid
+
+say 'M4 CMS-NATIVE TREE/COMMIT STORAGE TESTS PASSED'
+exit 0
+
+/* Hash an exact Git object body with GITSTRM. */
+hashobject: procedure
+   parse arg type, bodyhex
+   bodylen = length(bodyhex) % 2
+   prefix = type || ' ' || bodylen
+   /* Git object headers are ASCII type, space, decimal size, NUL. */
+   if type = 'tree' then prefixhex = '7472656520' || c2x(bodylen) /* replaced below */
+   if type = 'commit' then prefixhex = '636F6D6D697420' || c2x(bodylen)
+   /* c2x(bodylen) above would encode EBCDIC digits; construct ASCII digits. */
+   dec = bodylen
+   dechex = ''
+   do i = 1 to length(dec)
+      dechex = dechex || d2x(c2d(substr(dec,i,1))-240+48,2)
+   end
+   if type = 'tree' then prefixhex = '7472656520' || dechex || '00'
+   else if type = 'commit' then prefixhex = '636F6D6D697420' || dechex || '00'
+   else return 'BADTYPE'
+   streamhex = prefixhex || bodyhex
+   total = length(streamhex) % 2
+   header = right(d2x(total),8,'0')
+   'MAKEBUF'
+   if rc < 0 then return 'MAKEBUF'
+   queue header
+   pos = 1
+   do while pos <= length(streamhex)
+      remain = length(streamhex) - pos + 1
+      take = min(128,remain)
+      queue substr(streamhex,pos,take)
+      pos = pos + take
+   end
+   'GITSTRM'
+   src = rc
+   if src \= 0 then do
+      'DROPBUF'
+      return 'GITSTRM'
+   end
+   if queued() \= 1 then do
+      'DROPBUF'
+      return 'STACK'
+   end
+   pull oid
+   'DROPBUF'
+   return oid
+
+storeobject: procedure
+   parse arg oid, type, datahex
+   objfn = substr(oid,1,8)
+   obj.0 = 3
+   obj.1 = 'OID' oid
+   obj.2 = 'TYPE' type
+   obj.3 = 'DATA' datahex
+   'EXECIO' obj.0 'DISKW' objfn 'GITOBJ A 1 (STEM OBJ. FINIS'
+   if rc \= 0 then do
+      say 'M4STORE: cannot store' type 'object' oid
+      return rc
+   end
+   return 0
+
+checkobject: procedure
+   parse arg oid, type, datahex
+   objfn = substr(oid,1,8)
+   drop chk.
+   'EXECIO * DISKR' objfn 'GITOBJ A 1 (STEM CHK. FINIS'
+   if rc \= 0 then do
+      say 'M4STORE: cannot reread object' oid
+      return rc
+   end
+   if chk.0 \= 3 | chk.1 \= 'OID' oid | chk.2 \= 'TYPE' type |,
+      chk.3 \= 'DATA' datahex then do
+      say 'M4STORE: stored object verification failed' oid
+      return 8
+   end
+   return 0
