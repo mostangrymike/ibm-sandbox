@@ -49,12 +49,12 @@ READLP   L     8,REMAIN
          SRL   3,1
          ST    3,CHUNKLN
          C     3,REMAIN
-         BH    BADDEXTRA
+         BH    BADXTRA
          L     8,REMAIN
          C     8,=F'64'
          BH    NEED64
          C     3,8
-         BNE   BADDFINAL
+         BNE   BADFINAL
          B     DECODE
 NEED64   C     3,=F'64'
          BNE   BADD64
@@ -317,10 +317,10 @@ BADDODD  LA    2,MDODD
 BADDLONG LA    2,MDLONG
          LA    3,LDLONG
          B     BADMSG
-BADDEXTRA LA   2,MDEXTRA
+BADXTRA  LA    2,MDEXTRA
          LA    3,LDEXTRA
          B     BADMSG
-BADDFINAL LA   2,MDFINAL
+BADFINAL LA    2,MDFINAL
          LA    3,LDFINAL
          B     BADMSG
 BADD64   LA    2,MD64
@@ -362,6 +362,7 @@ H0INIT   DC    X'67452301'
          DC    X'98BADCFE'
          DC    X'10325476'
          DC    X'C3D2E1F0'
+         DS    0F
 K0       DC    X'5A827999'
 K1       DC    X'6ED9EBA1'
 K2       DC    X'8F1BBCDC'
