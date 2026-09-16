@@ -1,0 +1,231 @@
+/* M5 CMS-native ref prototype; isolated from target-proven GIT EXEC core. */
+parse arg command rest
+command = translate(command)
+
+if command = 'INIT' then do
+   parse var rest extra
+   if extra \= '' then exit 4
+   drop meta.
+   'EXECIO * DISKR GITMETA REPO A 1 (STEM META. FINIS'
+   if rc \= 0 then do
+      say 'GITREF: repository metadata not found'
+      exit 8
+   end
+   exit 0
+end
+
+if command = 'BRANCH' then do
+   wc = words(rest)
+   if wc = 0 then do
+      call readhead
+      if result \= 'OK' then exit 8
+      call readrefs
+      if result \= 'OK' then exit 8
+      do i = 1 to ref.0
+         mark = ' '
+         if headref = 'refs/heads/' || ref.name.i then mark = '*'
+         say mark ref.name.i ref.oid.i
+      end
+      exit 0
+   end
+   if wc \= 2 then do
+      say 'Usage: GITREF BRANCH [name commit-object-id]'
+      exit 4
+   end
+   name = word(rest,1)
+   oid = translate(word(rest,2))
+   call validbranch name
+   if result \= 'OK' then exit 4
+   if length(oid) \= 40 | verify(oid,'0123456789ABCDEF') \= 0 then do
+      say 'GITREF: invalid branch object-id' word(rest,2)
+      exit 4
+   end
+   call requirecommit oid
+   if result \= 'OK' then exit 8
+   call readrefs
+   if result \= 'OK' then exit 8
+   do i = 1 to ref.0
+      if ref.name.i = name then do
+         say 'GITREF: branch already exists' name
+         exit 8
+      end
+   end
+   ref.0 = ref.0 + 1
+   n = ref.0
+   ref.name.n = name
+   ref.oid.n = oid
+   call writerefs
+   if result \= 'OK' then exit 8
+   say 'refs/heads/' || name oid
+   exit 0
+end
+
+if command = 'SYMBOLIC-REF' then do
+   wc = words(rest)
+   if wc = 0 then do
+      call readhead
+      if result \= 'OK' then exit 8
+      say headref
+      exit 0
+   end
+   if wc \= 1 then do
+      say 'Usage: GITREF SYMBOLIC-REF [refs/heads/name]'
+      exit 4
+   end
+   newref = word(rest,1)
+   if left(newref,11) \= 'refs/heads/' then do
+      say 'GITREF: HEAD must name refs/heads/<branch>'
+      exit 4
+   end
+   name = substr(newref,12)
+   call validbranch name
+   if result \= 'OK' then exit 4
+   call readrefs
+   if result \= 'OK' then exit 8
+   found = 0
+   do i = 1 to ref.0
+      if ref.name.i = name then found = 1
+   end
+   if \found then do
+      say 'GITREF: branch not found' name
+      exit 8
+   end
+   call writehead newref
+   if result \= 'OK' then exit 8
+   say newref
+   exit 0
+end
+
+if command = 'REV-PARSE' then do
+   parse var rest spec extra
+   if spec = '' | extra \= '' then exit 4
+   call readrefs
+   if result \= 'OK' then exit 8
+   if translate(spec) = 'HEAD' then do
+      call readhead
+      if result \= 'OK' then exit 8
+      spec = headref
+   end
+   if left(spec,11) = 'refs/heads/' then name = substr(spec,12)
+   else name = spec
+   do i = 1 to ref.0
+      if ref.name.i = name then do
+         say ref.oid.i
+         exit 0
+      end
+   end
+   say 'GITREF: ref not found' spec
+   exit 8
+end
+
+if command = 'SHOW-REF' then do
+   if words(rest) \= 0 then exit 4
+   call readrefs
+   if result \= 'OK' then exit 8
+   do i = 1 to ref.0
+      say ref.oid.i 'refs/heads/' || ref.name.i
+   end
+   exit 0
+end
+
+say 'GITREF: unknown command' command
+exit 4
+
+validbranch: procedure
+   parse arg name
+   if name = '' | name = '.' | name = '..' | pos('/',name) > 0 |,
+      pos(' ',name) > 0 | pos('..',name) > 0 | pos('~',name) > 0 |,
+      pos('^',name) > 0 | pos(':',name) > 0 | pos('?',name) > 0 |,
+      pos('*',name) > 0 | pos('[',name) > 0 | right(name,1) = '.' then do
+      say 'GITREF: invalid branch name' name
+      return 'ERROR'
+   end
+   return 'OK'
+
+requirecommit: procedure
+   parse upper arg oid
+   fn = substr(oid,1,8)
+   drop obj.
+   'EXECIO * DISKR' fn 'GITOBJ A 1 (STEM OBJ. FINIS'
+   if rc \= 0 then do
+      say 'GITREF: object not found' oid
+      return 'ERROR'
+   end
+   if obj.0 < 2 | word(obj.1,1) \= 'OID' | word(obj.1,2) \= oid |,
+      word(obj.2,1) \= 'TYPE' then do
+      say 'GITREF: invalid object record' oid
+      return 'ERROR'
+   end
+   if word(obj.2,2) \= 'COMMIT' then do
+      say 'GITREF: branch target is not a COMMIT object' oid
+      return 'ERROR'
+   end
+   return 'OK'
+
+readrefs: procedure expose ref.
+   drop ref.
+   ref.0 = 0
+   'STATE GITREFS REPO A'
+   if rc \= 0 then return 'OK'
+   drop rr.
+   'EXECIO * DISKR GITREFS REPO A 1 (STEM RR. FINIS'
+   if rc \= 0 then return 'ERROR'
+   do i = 1 to rr.0
+      parse var rr.i tag name oid extra
+      if tag \= 'BRANCH' | name = '' | extra \= '' |,
+         length(oid) \= 40 | verify(oid,'0123456789ABCDEF') \= 0 then do
+         say 'GITREF: corrupt refs record' i
+         return 'ERROR'
+      end
+      ref.0 = ref.0 + 1
+      n = ref.0
+      ref.name.n = name
+      ref.oid.n = oid
+   end
+   return 'OK'
+
+writerefs: procedure expose ref.
+   drop wr.
+   wr.0 = ref.0
+   do i = 1 to ref.0
+      wr.i = 'BRANCH' ref.name.i ref.oid.i
+   end
+   'EXECIO' wr.0 'DISKW GITREFS REPO A 1 (STEM WR. FINIS'
+   if rc \= 0 then return 'ERROR'
+   return 'OK'
+
+readhead: procedure expose headref
+   drop hm.
+   'EXECIO * DISKR GITMETA REPO A 1 (STEM HM. FINIS'
+   if rc \= 0 then return 'ERROR'
+   headref = ''
+   do i = 1 to hm.0
+      if word(hm.i,1) = 'HEAD' then headref = word(hm.i,2)
+   end
+   if left(headref,11) \= 'refs/heads/' then do
+      say 'GITREF: invalid symbolic HEAD'
+      return 'ERROR'
+   end
+   return 'OK'
+
+writehead: procedure expose headref
+   parse arg newref
+   drop hm.
+   'EXECIO * DISKR GITMETA REPO A 1 (STEM HM. FINIS'
+   if rc \= 0 then return 'ERROR'
+   found = 0
+   do i = 1 to hm.0
+      if word(hm.i,1) = 'HEAD' then do
+         hm.i = 'HEAD' newref
+         found = 1
+      end
+   end
+   if \found then do
+      hm.0 = hm.0 + 1
+      n = hm.0
+      hm.n = 'HEAD' newref
+   end
+   'EXECIO' hm.0 'DISKW GITMETA REPO A 1 (STEM HM. FINIS'
+   if rc \= 0 then return 'ERROR'
+   headref = newref
+   return 'OK'
