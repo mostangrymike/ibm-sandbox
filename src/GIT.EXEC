@@ -96,6 +96,47 @@ if command = 'VERIFY-OBJECT' | command = 'CAT-OBJECT' then do
    exit 0
 end
 
+/* M4 first public tree writer: one exact Git tree entry. */
+if command = 'WRITE-TREE' then do
+   parse upper var rest mode name oid extra
+   if mode = '' | name = '' | oid = '' | extra \= '' then do
+      say 'Usage: GIT WRITE-TREE mode name object-id'
+      exit 4
+   end
+   if mode \= '100644' & mode \= '100755' &,
+      mode \= '120000' & mode \= '40000' then do
+      say 'GIT: unsupported tree mode' mode
+      exit 4
+   end
+   if length(oid) \= 40 |,
+      verify(oid,'0123456789ABCDEF') \= 0 then do
+      say 'GIT: invalid tree entry object-id' oid
+      exit 4
+   end
+
+   call toasciihex mode || ' ' || name
+   entryhex = result
+   if entryhex = 'XLATEERROR' then exit 8
+   datahex = entryhex || '00' || oid
+
+   call hashstored 'TREE', datahex
+   treeoid = result
+   if treeoid = 'HASHERROR' then exit 8
+
+   objfn = substr(treeoid,1,8)
+   obj.0 = 3
+   obj.1 = 'OID' treeoid
+   obj.2 = 'TYPE TREE'
+   obj.3 = 'DATA' datahex
+   'EXECIO' obj.0 'DISKW' objfn 'GITOBJ A 1 (STEM OBJ. FINIS'
+   if rc \= 0 then do
+      say 'GIT: cannot store tree' treeoid
+      exit rc
+   end
+   say treeoid
+   exit 0
+end
+
 if command = 'HASH-OBJECT' | command = 'WRITE-OBJECT' then do
    parse upper var rest fn ft fm extra
    if fn = '' | ft = '' | extra \= '' then do
@@ -185,6 +226,44 @@ end
 say 'GIT: unknown command' command
 exit 4
 
+/* Convert CMS EBCDIC text to ASCII hexadecimal with TCPXLBIN. */
+toasciihex: procedure
+   parse arg text
+   e2ahex = '000102031A091A7F1A1A1A0B0C0D0E0F' ||,
+            '101112131A1A081A18191A1A1C1D1E1F' ||,
+            '1A1A1C1A1A0A171B1A1A1A1A1A050607' ||,
+            '1A1A161A1A1E1A041A1A1A1A14151A1A' ||,
+            '20A6E180EB909FE2AB8B9B2E3C282B7C' ||,
+            '26A9AA9CDBA599E3A89E21242A293B5E' ||,
+            '2D2FDFDC9ADDDE989DACBA2C255F3E3F' ||,
+            'D78894B0B1B2FCD6FB603A2340273D22' ||,
+            'F861626364656667686996A4F3AFAEC5' ||,
+            '8C6A6B6C6D6E6F7071729787CE93F1FE' ||,
+            'C87E737475767778797AEFC0DA5BF2F9' ||,
+            'B5B6FDB7B8B9E6BBBCBD8DD9BF5DD8C4' ||,
+            '7B414243444546474849CBCABEE8ECED' ||,
+            '7D4A4B4C4D4E4F505152A1ADF5F4A38F' ||,
+            '5CE7535455565758595AA0858EE9E4D1' ||,
+            '30313233343536373839B3F7F0FAA7FF'
+   e2a = x2c(e2ahex)
+   bytes = x2c('000102030405060708090A0B0C0D0E0F' ||,
+               '101112131415161718191A1B1C1D1E1F' ||,
+               '202122232425262728292A2B2C2D2E2F' ||,
+               '303132333435363738393A3B3C3D3E3F' ||,
+               '404142434445464748494A4B4C4D4E4F' ||,
+               '505152535455565758595A5B5C5D5E5F' ||,
+               '606162636465666768696A6B6C6D6E6F' ||,
+               '707172737475767778797A7B7C7D7E7F' ||,
+               '808182838485868788898A8B8C8D8E8F' ||,
+               '909192939495969798999A9B9C9D9E9F' ||,
+               'A0A1A2A3A4A5A6A7A8A9AAABACADAEAF' ||,
+               'B0B1B2B3B4B5B6B7B8B9BABBBCBDBEBF' ||,
+               'C0C1C2C3C4C5C6C7C8C9CACBCCCDCECF' ||,
+               'D0D1D2D3D4D5D6D7D8D9DADBDCDDDEDF' ||,
+               'E0E1E2E3E4E5E6E7E8E9EAEBECEDEEEF' ||,
+               'F0F1F2F3F4F5F6F7F8F9FAFBFCFDFEFF')
+   return c2x(translate(text,e2a,bytes))
+
 /* Hash exact stored object bytes through the streaming SHA-1 module. */
 hashstored: procedure
    parse upper arg type, datahex
@@ -192,7 +271,7 @@ hashstored: procedure
    dec = bodylen
    dechex = ''
    do i = 1 to length(dec)
-      digit = c2d(substr(dec,i,1)) - 240
+      digit = substr(dec,i,1)
       dechex = dechex || d2x(digit+48,2)
    end
    if type = 'BLOB' then prefix = '626C6F6220'
