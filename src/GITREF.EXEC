@@ -171,8 +171,6 @@ readrefs: procedure expose ref.
    'EXECIO * DISKR GITREFS REPO A 1 (STEM RR. FINIS'
    if rc \= 0 then return 'ERROR'
    do i = 1 to rr.0
-      /* CMS fixed records may contain trailing blanks. WORDS validates the
-       * logical fields without treating record padding as a fourth field. */
       if words(rr.i) \= 3 then do
          say 'GITREF: corrupt refs record' i
          return 'ERROR'
@@ -196,7 +194,11 @@ writerefs: procedure expose ref.
    drop wr.
    wr.0 = ref.0
    do i = 1 to ref.0
-      wr.i = 'BRANCH' ref.name.i ref.oid.i
+      /* In classic REXX, REF.NAME.I means the compound tail NAME.I;
+       * use VALUE() to resolve the numeric stem index held in I. */
+      rname = value('REF.NAME.' || i)
+      roid = value('REF.OID.' || i)
+      wr.i = 'BRANCH' rname roid
    end
    'EXECIO' wr.0 'DISKW GITREFS REPO A 1 (STEM WR. FINIS'
    if rc \= 0 then return 'ERROR'
