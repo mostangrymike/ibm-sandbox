@@ -1,1 +1,137 @@
-placeholder
+/* Native Git for CMS/z/VM */
+
+parse upper arg command rest
+
+if command = '' then do
+   say 'Usage: GIT command [arguments]'
+   exit 4
+end
+
+if command = 'VERSION' then do
+   'GITCORE VERSION'
+   exit rc
+end
+
+if command = 'INIT' then do
+   parse upper var rest extra
+   if extra \= '' then do
+      say 'Usage: GIT INIT'
+      exit 4
+   end
+   meta.0 = 4
+   meta.1 = 'CMS-GIT-REPOSITORY 1'
+   meta.2 = 'OBJECT-FORMAT SHA1'
+   meta.3 = 'TEXT-RECORD-SEPARATOR LF'
+   meta.4 = 'HEAD refs/heads/main'
+   'EXECIO' meta.0 'DISKW GITMETA REPO A 1 (STEM META. FINIS'
+   if rc \= 0 then do
+      say 'GIT: cannot create repository metadata on filemode A'
+      exit rc
+   end
+   say 'Initialized native CMS Git repository on filemode A'
+   exit 0
+end
+
+if command = 'HASH-OBJECT' | command = 'WRITE-OBJECT' then do
+   parse upper var rest fn ft fm extra
+   if fn = '' | ft = '' | extra \= '' then do
+      if command = 'HASH-OBJECT' then
+         say 'Usage: GIT HASH-OBJECT filename filetype [filemode]'
+      else
+         say 'Usage: GIT WRITE-OBJECT filename filetype [filemode]'
+      exit 4
+   end
+   if fm = '' then fm = '*'
+
+   drop line.
+   'EXECIO * DISKR' fn ft fm '1 (STEM LINE. FINIS STRIP'
+   if rc \= 0 then do
+      say 'GIT: cannot read' fn ft fm
+      exit rc
+   end
+
+   /* IBM STANDARD TCPXLBIN EBCDIC-to-ASCII translation table. */
+   e2ahex = '000102031A091A7F1A1A1A0B0C0D0E0F' ||,
+            '101112131A1A081A18191A1A1C1D1E1F' ||,
+            '1A1A1C1A1A0A171B1A1A1A1A1A050607' ||,
+            '1A1A161A1A1E1A041A1A1A1A14151A1A' ||,
+            '20A6E180EB909FE2AB8B9B2E3C282B7C' ||,
+            '26A9AA9CDBA599E3A89E21242A293B5E' ||,
+            '2D2FDFDC9ADDDE989DACBA2C255F3E3F' ||,
+            'D78894B0B1B2FCD6FB603A2340273D22' ||,
+            'F861626364656667686996A4F3AFAEC5' ||,
+            '8C6A6B6C6D6E6F7071729787CE93F1FE' ||,
+            'C87E737475767778797AEFC0DA5BF2F9' ||,
+            'B5B6FDB7B8B9E6BBBCBD8DD9BF5DD8C4' ||,
+            '7B414243444546474849CBCABEE8ECED' ||,
+            '7D4A4B4C4D4E4F505152A1ADF5F4A38F' ||,
+            '5CE7535455565758595AA0858EE9E4D1' ||,
+            '30313233343536373839B3F7F0FAA7FF'
+   e2a = x2c(e2ahex)
+   bytes = x2c('000102030405060708090A0B0C0D0E0F' ||,
+               '101112131415161718191A1B1C1D1E1F' ||,
+               '202122232425262728292A2B2C2D2E2F' ||,
+               '303132333435363738393A3B3C3D3E3F' ||,
+               '404142434445464748494A4B4C4D4E4F' ||,
+               '505152535455565758595A5B5C5D5E5F' ||,
+               '606162636465666768696A6B6C6D6E6F' ||,
+               '707172737475767778797A7B7C7D7E7F' ||,
+               '808182838485868788898A8B8C8D8E8F' ||,
+               '909192939495969798999A9B9C9D9E9F' ||,
+               'A0A1A2A3A4A5A6A7A8A9AAABACADAEAF' ||,
+               'B0B1B2B3B4B5B6B7B8B9BABBBCBDBEBF' ||,
+               'C0C1C2C3C4C5C6C7C8C9CACBCCCDCECF' ||,
+               'D0D1D2D3D4D5D6D7D8D9DADBDCDDDEDF' ||,
+               'E0E1E2E3E4E5E6E7E8E9EAEBECEDEEEF' ||,
+               'F0F1F2F3F4F5F6F7F8F9FAFBFCFDFEFF')
+
+   hex = ''
+   do i = 1 to line.0
+      ascii = translate(line.i,e2a,bytes)
+      if i > 1 then hex = hex || '0A'
+      hex = hex || c2x(ascii)
+      if length(hex) > 512 then do
+         say 'GIT: text payload exceeds current limit of 256 bytes'
+         exit 4
+      end
+   end
+
+   if command = 'HASH-OBJECT' then do
+      if hex = '' then 'GITCORE BLOBHEX'
+      else 'GITCORE BLOBHEX' hex
+      exit rc
+   end
+
+   /* CMS/VM REXX has no TSO OUTTRAP routine.  CMS Pipelines */
+   /* COMMAND is the documented CMS-command response interface. */
+   drop hash.
+   if hex = '' then
+      'PIPE COMMAND GITCORE BLOBHEX | STEM HASH.'
+   else
+      'PIPE COMMAND GITCORE BLOBHEX' hex '| STEM HASH.'
+   corerc = rc
+   if corerc \= 0 then exit corerc
+   if hash.0 \= 1 | length(hash.1) \= 40 then do
+      say 'GIT: unable to capture object ID from GITCORE'
+      exit 4
+   end
+   oid = hash.1
+
+   /* CMS-native object name: first 8 SHA-1 hex digits as filename. */
+   /* Full SHA-1 remains authoritative in the object metadata. */
+   objfn = substr(oid,1,8)
+   obj.0 = 3
+   obj.1 = 'OID' oid
+   obj.2 = 'TYPE BLOB'
+   obj.3 = 'DATA' hex
+   'EXECIO' obj.0 'DISKW' objfn 'GITOBJ A 1 (STEM OBJ. FINIS'
+   if rc \= 0 then do
+      say 'GIT: cannot store object' oid
+      exit rc
+   end
+   say oid
+   exit 0
+end
+
+say 'GIT: unknown command' command
+exit 4

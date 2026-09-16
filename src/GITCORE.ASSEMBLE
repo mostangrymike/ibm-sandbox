@@ -15,8 +15,6 @@ GITCORE  CSECT
          BE    SHA1HEX
          CLC   0(7,2),=C'BLOBHEX'
          BE    BLOBHEX
-         CLC   0(7,2),=C'BLOBSTK'
-         BE    BLOBSTK
          CLC   0(7,2),=C'BLOBABC'
          BE    BLOBABC
          C     3,=F'7'
@@ -36,16 +34,14 @@ GITCORE  CSECT
          BR    14
          LTORG
 *
+* Keep the M2 object buffer near the M2 routines.
+*
 OBJBUF   DS    512C
 *
-* BLOBSTK is the programmatic form used by REXX.  It shares the
-* BLOBHEX parser/hash path but returns the 40-byte OID on the CMS
-* program stack instead of writing it to the terminal.
+* M2B: decode external hex bytes and build a Git blob dynamically.
+* The hashed bytes are ASCII "blob ", decimal length, NUL, payload.
 *
-BLOBSTK  LA    10,1
-         B     BHENTRY
-BLOBHEX  SR    10,10
-BHENTRY  ST    14,CALLRET
+BLOBHEX  ST    14,CALLRET
          L     2,EPLARGBG
          L     3,EPLARGND
          SR    3,2
@@ -150,17 +146,16 @@ BHOUT    XR    5,5
          LA    2,1(2)
          LA    3,2(3)
          BCT   4,BHOUT
-         LTR   10,10
-         BZ    BHPRINT
-         CMSSTACK TEXT=(HEXDIG,40)
-         B     SHA1OK
-BHPRINT  LINEWRT DATA=(HEXDIG,40)
+         LINEWRT DATA=(HEXDIG,40)
          B     SHA1OK
 BHBAD    LINEWRT DATA=(BHEXUSE,BHEXULEN)
          LA    15,4
          L     14,CALLRET
          BR    14
          LTORG
+*
+* M2A: construct the exact Git byte stream for blob content "abc".
+* The bytes are: 62 6C 6F 62 20 33 00 61 62 63.
 *
 BLOBABC  ST    14,CALLRET
          MVC   OBJBUF(7),BLOBHDR3
@@ -184,6 +179,9 @@ BLOBBAD  LINEWRT DATA=(BLOBFAIL,BLOBFLEN)
          LA    15,4
          L     14,CALLRET
          BR    14
+*
+* M1D: SHA1HEX accepts externally supplied hexadecimal bytes.
+* Hex is decoded to binary before calling the binary-safe SHA1GEN.
 *
 SHA1HEX  ST    14,CALLRET
          L     2,EPLARGBG
@@ -271,6 +269,9 @@ HEXBAD   LINEWRT DATA=(HEXUSE,HEXULEN)
          BR    14
          LTORG
 *
+* M1C: SHA1GEN accepts binary bytes and a byte count.
+* It pads internally. Tests include empty, abc, 56, and 80 bytes.
+*
 SHA1ABC  ST    14,CALLRET
          LA    2,ABCDATA
          LA    3,3
@@ -345,10 +346,17 @@ BADARG   LINEWRT DATA=(USAGE,USAGELEN)
          LA    15,4
          BR    14
 *
+* Keep SHA work areas near the SHA routines for R12 addressability.
+*
          DS    0F
 PADBLOCK DS    64C
 SAVEREGS DS    12F
 WARRAY   DS    80F
+*
+* SHA1GEN - binary-safe SHA-1 driver.
+* R2 -> input bytes, R3 = unsigned byte length (up to 2^32-1).
+* Initializes state, consumes full blocks, and creates SHA-1 padding.
+* Returns digest state in R4-R8 and HASH0-HASH4.
 *
 SHA1GEN  ST    14,GENRET
          ST    2,GENPTR
@@ -402,6 +410,10 @@ GENLAST  L     4,GENHI
          BR    14
          LTORG
 *
+* SHA1BLK - SHA-1 compression of one 64-byte block.
+* R2 -> block. HASH0-HASH4 hold input and output chaining state.
+* Returns the new state in R4-R8 and HASH0-HASH4.
+*
 SHA1BLK  STM   3,14,SAVEREGS
          LA    3,WARRAY
          LA    4,16
@@ -432,6 +444,7 @@ EXPAND   LR    5,3
          ST    6,0(3)
          LA    3,4(3)
          BCT   4,EXPAND
+*
          L     4,HASH0
          L     5,HASH1
          L     6,HASH2
@@ -500,15 +513,16 @@ FCALC    LR    14,4
          ST    6,HASH2
          ST    7,HASH3
          ST    8,HASH4
+* Restore R9-R14; R4-R8 deliberately return the state.
          LM    9,14,SAVEREGS+24
          SR    15,15
          BR    14
          LTORG
 *
-VERSION  DC    C'GITCORE 0.9 CMS/ZVM'
+VERSION  DC    C'GITCORE 0.8 CMS/ZVM'
 VERLEN   EQU   *-VERSION
-USAGE    DC    C'Usage: VERSION BLOBABC BLOBHEX BLOBSTK'
-         DC    C' SHA1ABC SHA1EMP SHA1TWO SHA1MUL SHA1HEX'
+USAGE    DC    C'Usage: VERSION BLOBABC BLOBHEX SHA1ABC'
+         DC    C' SHA1EMP SHA1TWO SHA1MUL SHA1HEX'
 USAGELEN EQU   *-USAGE
 HEXUSE   DC    C'Usage: GITCORE SHA1HEX even-numbered-'
          DC    C'hex-bytes'
@@ -571,7 +585,7 @@ ABCDATA  DC    X'616263'
 BLOBPFX  DC    X'626C6F6220'
 BLOBHDR3 DC    X'626C6F62203300'
 TWODATA  DC    X'61626364626364656364656664656667'
-         DC    X'65666768666768696768696A4F3AFAAE'
+         DC    X'65666768666768696768696A68696A6B'
          DC    X'696A6B6C6A6B6C6D6B6C6D6E6C6D6E6F'
          DC    X'6D6E6F706E6F7071'
 MULDATA  DC    80X'61'
