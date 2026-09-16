@@ -1,0 +1,33 @@
+name: M3B source repair
+on:
+  push:
+    branches: [m3b-stack-return]
+permissions:
+  contents: write
+jobs:
+  repair:
+    if: "!contains(github.event.head_commit.message, '[m3b-repair]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: m3b-stack-return
+      - name: Restore SHA-1 regression vector
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/GITCORE.ASSEMBLE')
+          s = p.read_text()
+          bad = "         DC    X'65666768666768696768696A4F3AFAAE'"
+          good = "         DC    X'65666768666768696768696A68696A6B'"
+          if s.count(bad) != 1:
+              raise SystemExit(f'expected exactly one damaged vector, found {s.count(bad)}')
+          p.write_text(s.replace(bad, good))
+      - name: Commit repair
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/GITCORE.ASSEMBLE
+          git diff --cached --check
+          git commit -m "Fix M3B SHA-1 regression vector [m3b-repair]"
+          git push origin HEAD:m3b-stack-return
