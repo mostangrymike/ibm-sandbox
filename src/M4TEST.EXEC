@@ -1,0 +1,64 @@
+/* M4 exact Git tree/commit object regression driver */
+
+address command
+
+say 'M4 TEST 1: one-entry Git tree object'
+/* tree content: 100644 README NUL + binary abc-blob object ID */
+hex = '747265652033340031303036343420524541444D4500' ||,
+      'F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
+expected = '2030C0B68CCC4116B0CB9990EF04B53EA30140C8'
+call streamtest hex, expected
+if result \= 0 then exit result
+
+say 'M4 TEST 2: deterministic Git commit object'
+/* commit points at TEST 1 tree; fixed identity/time makes vector stable. */
+hex = '636F6D6D69742031353500' ||,
+      '747265652032303330633062363863636334313136623063623939393065663034' ||,
+      '6235336561333031343063380A' ||,
+      '617574686F7220434D5320476974203C636D73406578616D706C652E696E7661' ||,
+      '6C69643E2030202B303030300A' ||,
+      '636F6D6D697474657220434D5320476974203C636D73406578616D706C652E69' ||,
+      '6E76616C69643E2030202B303030300A0A' ||,
+      '496E697469616C20636F6D6D69740A'
+expected = '54BACE2202BB0C96980CDD0AAE9A752E6188D666'
+call streamtest hex, expected
+if result \= 0 then exit result
+
+say 'M4 EXACT TREE/COMMIT OBJECT TESTS PASSED'
+exit 0
+
+streamtest: procedure
+   parse arg hex, expected
+   total = length(hex) % 2
+   header = d2x(total,8)
+   'MAKEBUF'
+   if rc < 0 then do
+      say 'M4: cannot create program-stack buffer'
+      return 4
+   end
+   queue header
+   pos = 1
+   do while pos <= length(hex)
+      queue substr(hex,pos,128)
+      pos = pos + 128
+   end
+   'GITSTRM'
+   strmrc = rc
+   if strmrc \= 0 then do
+      'DROPBUF'
+      say 'M4: GITSTRM RC=' strmrc
+      return strmrc
+   end
+   if queued() \= 1 then do
+      'DROPBUF'
+      say 'M4: expected exactly one returned object ID'
+      return 8
+   end
+   pull oid
+   'DROPBUF'
+   say 'OID=' oid
+   if oid \= expected then do
+      say 'M4: expected' expected
+      return 8
+   end
+   return 0
