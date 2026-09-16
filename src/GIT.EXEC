@@ -174,7 +174,8 @@ if command = 'COMMIT-TREE' then do
             exit 8
          end
          parent.0 = parent.0 + 1
-         parent.parent.0 = poid
+         n = parent.0
+         parent.n = poid
       end
       else if opt = '-A' then author = translate(val,' ','_')
       else if opt = '-C' then committer = translate(val,' ','_')
@@ -435,8 +436,8 @@ hashstored: procedure
       pos = pos + take
    end
    'GITSTRM'
-   hrc = rc
-   if hrc \= 0 then do
+   src = rc
+   if src \= 0 then do
       'DROPBUF'
       return 'HASHERROR'
    end
