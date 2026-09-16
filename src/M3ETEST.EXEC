@@ -20,6 +20,15 @@ say 'GITRD RC=' rdrc
 'DROPBUF'
 if rdrc \= 0 then exit rdrc
 
+say 'M3E HEADER PARSER DIAGNOSTIC'
+'MAKEBUF'
+queue '0000000A'
+'GITHDR'
+hdrc = rc
+say 'GITHDR RC=' hdrc
+'DROPBUF'
+if hdrc \= 0 then exit hdrc
+
 say 'M3E TEST 1: Git blob abc'
 'MAKEBUF'
 queue '0000000A'
