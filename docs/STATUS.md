@@ -16,23 +16,25 @@ Build a native Git client for CMS/z/VM 6.3 Evaluation Edition without purchasing
 - Exact deterministic Git commit bytes are target-proven. The regression commit pointing at that tree produces `54BACE2202BB0C96980CDD0AAE9A752E6188D666`.
 - CMS-native TREE and COMMIT storage round-trips preserve their Git object IDs.
 - Public `GIT VERIFY-OBJECT` and `GIT CAT-OBJECT` are target-proven for BLOB, TREE, and COMMIT.
-- Public `GIT WRITE-TREE 100644 README <blob>` independently reproduces tree `2030C0B68CCC4116B0CB9990EF04B53EA30140C8`, stores it, and passes public verification/retrieval.
-- Public `GIT COMMIT-TREE <tree>` independently reproduces deterministic commit `54BACE2202BB0C96980CDD0AAE9A752E6188D666`, stores it, and passes public verification/retrieval.
-- The CMS object database now writes `OID`, `TYPE`, `SIZE`, then bounded DATA records of at most 128 hex characters while retaining reads of the original three-record layout.
+- Public `GIT WRITE-TREE` supports multiple entries and exact Git ordering. Reverse input `README`, `BIGFILE` produces independently known tree `E11636C5C257E21ADBBE98AE3EBB677E81AF94EB`.
+- Argument parsing preserves case-sensitive Git data while normalizing only command verbs, CMS file identifiers, modes, and OIDs where appropriate. Mixed-case tree entry `ReadMe` produces independently known tree `B9E7816426B28421D7050FF4F501E7E796BC244A`.
+- Git's directory comparison rule is target-proven. Subtree `A/x` produces `C2421DE5E21D352FCC0CA2F81FD2D06D7B68FD72`; reverse input file `A` and directory `A` sorts correctly and produces `16202BB74533B0AA9E941E3C1D22ACCA53A2B72B`.
+- `GIT COMMIT-TREE` retains the deterministic one-argument interoperability form and supports proof-level explicit parent(s), author, committer, timestamp, timezone, and message options.
+- A one-parent mixed-case metadata commit is target-proven at `1E99ED02563737B793C60359F94BA587F6C1B8BD`.
+- Multiple-parent commit serialization and parent order are target-proven. The two-parent merge regression produces independently known commit `C72FFDE0A46ED667E494842150FA4011C99BC9A0`.
+- The CMS object database writes `OID`, `TYPE`, `SIZE`, then bounded DATA records of at most 128 hex characters while retaining reads of the original three-record layout.
 - A 303-byte canonical CMS text blob is target-proven through public WRITE/VERIFY. It produces `F96567C0F557CCE820219AE6483F2171A106810B` and is physically stored in five DATA records.
 - Object writes inspect an existing first-eight-character CMS filename and reject a different stored full OID instead of silently overwriting it.
-- Multiple-entry tree construction and Git ordering are target-proven. Reverse input `README`, `BIGFILE` is serialized in Git order `BIGFILE`, `README` and produces independently known tree `E11636C5C257E21ADBBE98AE3EBB677E81AF94EB`.
-- Temporary GITSTRM diagnostics have been removed and the clean rebuilt MODULE passes the public TREE/COMMIT regression.
 
 ## Current baseline
 
 M3E streaming/multi-block SHA-1 is complete and hardened.
 
-M4's essential logical-object path is proven end-to-end through the public CMS command interface: blob -> ordered tree -> commit, with exact Git-compatible object bytes and independently known SHA-1 object IDs.
+M4 trees and commits is complete. Blob -> ordered/nested tree -> initial, parented, and merge commit construction is proven end-to-end through the public CMS command interface with exact Git-compatible object bytes and independently known SHA-1 object IDs.
 
-The physical object layout now supports bounded DATA records with explicit byte size and backward-compatible reads. It still uses the first eight OID hex digits as the CMS filename; collisions are detected rather than overwritten, but a scalable collision-resolution/catalog scheme remains future work.
+The physical object layout supports bounded DATA records with explicit byte size and backward-compatible reads. It still uses the first eight OID hex digits as the CMS filename; collisions are detected rather than overwritten, but a scalable collision-resolution/catalog scheme remains future work.
 
-`WRITE-TREE` now accepts multiple mode/name/OID triples and orders them according to Git tree ordering. `COMMIT-TREE` remains intentionally deterministic for the initial interoperability vector: fixed identity, timestamp/timezone, message, and no parent.
+`COMMIT-TREE`'s underscore-for-space option encoding is a proof-level interface, not final porcelain syntax. A later command-input layer should provide natural quoted and multiline commit messages without changing the proven object serializer.
 
 ## Milestone status
 
@@ -46,18 +48,16 @@ The physical object layout now supports bounded DATA records with explicit byte 
 - M3C Object retrieval / verification: DONE
 - M3D CMS text canonicalization policy: DONE
 - M3E Streaming / multi-block CMS blobs: DONE + HARDENED
-- M4 Trees and commits: IN PROGRESS — chunked storage and ordered multi-entry trees target-proven
-- M5 Refs and branches: NOT STARTED
+- M4 Trees and commits: DONE
+- M5 Refs and branches: IN PROGRESS
 - M6 Packfiles: NOT STARTED
 - M7 TCP/IP: NOT STARTED
 - M8 TLS: NOT STARTED
 - M9 Smart HTTP / GitHub: NOT STARTED
 
-## Next M4 work
+## Next M5 work
 
-Preserve argument case before expanding user-facing tree and commit semantics; the current top-level `parse upper arg` is unsuitable for case-sensitive Git names, messages, and later URLs.
-
-Then generalize `COMMIT-TREE` to optional parent(s), configurable author/committer identity, timestamp/timezone, and arbitrary commit messages. Add nested TREE ordering coverage, including Git's directory-name comparison rule. Keep exact logical Git bytes independent of CMS physical storage.
+Implement CMS-native refs without changing Git logical ref semantics. Start with symbolic `HEAD`, `refs/heads/<name>`, exact 40-hex commit targets, branch creation/listing, and ref resolution. Validate that branch refs can point only at existing COMMIT objects. Then add safe ref updates and checkout/HEAD switching semantics before using refs as the parent source for higher-level commits.
 
 The expected-missing-file probe currently emits a CMS `DMSSTT002E` diagnostic even though the write succeeds. This is cosmetic but should be replaced with a quiet existence mechanism once the appropriate documented CMS interface is selected; do not weaken collision detection merely to suppress the message.
 
