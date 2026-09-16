@@ -31,6 +31,10 @@ GITCORE  CSECT
          BR    14
          LTORG
 *
+* Keep the M2 object buffer near the M2 routines for R12 addressability.
+*
+OBJBUF   DS    512C
+*
 * M2B: decode external hex bytes and build a Git blob dynamically.
 * The hashed bytes are ASCII "blob ", decimal length, NUL, payload.
 *
@@ -341,6 +345,7 @@ BADARG   LINEWRT DATA=(USAGE,USAGELEN)
 *
 * Keep SHA work areas near the SHA routines for R12 addressability.
 *
+         DS    0F
 PADBLOCK DS    64C
 SAVEREGS DS    12F
 WARRAY   DS    80F
@@ -596,6 +601,5 @@ HASH3    DS    F
 HASH4    DS    F
 HEXDIG   DS    40C
 HEXBUF   DS    256C
-OBJBUF   DS    512C
          EPLIST
          END   GITCORE
