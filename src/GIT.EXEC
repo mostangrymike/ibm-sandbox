@@ -304,7 +304,7 @@ toasciihex: procedure
             '20A6E180EB909FE2AB8B9B2E3C282B7C' ||,
             '26A9AA9CDBA599E3A89E21242A293B5E' ||,
             '2D2FDFDC9ADDDE989DACBA2C255F3E3F' ||,
-            'D78894B0B1B2B3FCD6FB603A2340273D22' ||,
+            'D78894B0B1B2FCD6FB603A2340273D22' ||,
             'F861626364656667686996A4F3AFAEC5' ||,
             '8C6A6B6C6D6E6F7071729787CE93F1FE' ||,
             'C87E737475767778797AEFC0DA5BF2F9' ||,
@@ -359,16 +359,11 @@ hashstored: procedure
       pos = pos + take
    end
    'GITSTRM'
-   grc = rc
-   if grc \= 0 then do
-      'DROPBUF'
-      return 'HASHERROR'
-   end
-   if queued() \= 1 then do
+   src = rc
+   if src \= 0 then do
       'DROPBUF'
       return 'HASHERROR'
    end
    pull oid
    'DROPBUF'
-   if length(oid) \= 40 then return 'HASHERROR'
-   return oid
+   return strip(oid)
