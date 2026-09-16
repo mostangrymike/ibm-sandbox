@@ -15,6 +15,8 @@ GITCORE  CSECT
          BE    SHA1HEX
          CLC   0(7,2),=C'BLOBHEX'
          BE    BLOBHEX
+         CLC   0(7,2),=C'BLOBSTK'
+         BE    BLOBSTK
          CLC   0(7,2),=C'BLOBABC'
          BE    BLOBABC
          C     3,=F'7'
@@ -41,7 +43,10 @@ OBJBUF   DS    512C
 * M2B: decode external hex bytes and build a Git blob dynamically.
 * The hashed bytes are ASCII "blob ", decimal length, NUL, payload.
 *
-BLOBHEX  ST    14,CALLRET
+BLOBSTK  LA    10,1
+         B     BHENTRY
+BLOBHEX  SR    10,10
+BHENTRY  ST    14,CALLRET
          L     2,EPLARGBG
          L     3,EPLARGND
          SR    3,2
@@ -146,7 +151,11 @@ BHOUT    XR    5,5
          LA    2,1(2)
          LA    3,2(3)
          BCT   4,BHOUT
-         LINEWRT DATA=(HEXDIG,40)
+         LTR   10,10
+         BZ    BHPRINT
+         CMSSTACK TEXT=(HEXDIG,40)
+         B     SHA1OK
+BHPRINT  LINEWRT DATA=(HEXDIG,40)
          B     SHA1OK
 BHBAD    LINEWRT DATA=(BHEXUSE,BHEXULEN)
          LA    15,4
@@ -519,10 +528,10 @@ FCALC    LR    14,4
          BR    14
          LTORG
 *
-VERSION  DC    C'GITCORE 0.8 CMS/ZVM'
+VERSION  DC    C'GITCORE 0.9 CMS/ZVM'
 VERLEN   EQU   *-VERSION
-USAGE    DC    C'Usage: VERSION BLOBABC BLOBHEX SHA1ABC'
-         DC    C' SHA1EMP SHA1TWO SHA1MUL SHA1HEX'
+USAGE    DC    C'Usage: VERSION BLOBABC BLOBHEX BLOBSTK'
+         DC    C' SHA1ABC SHA1EMP SHA1TWO SHA1MUL SHA1HEX'
 USAGELEN EQU   *-USAGE
 HEXUSE   DC    C'Usage: GITCORE SHA1HEX even-numbered-'
          DC    C'hex-bytes'
