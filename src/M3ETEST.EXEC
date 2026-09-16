@@ -1,5 +1,7 @@
 /* M3E streaming SHA-1 regression driver */
 
+address command
+
 say 'M3E STACK DIAGNOSTIC'
 'MAKEBUF'
 queue '0000000A'
