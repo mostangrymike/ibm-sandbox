@@ -12,6 +12,30 @@ if command = 'VERSION' then do
    exit rc
 end
 
+if command = 'INIT' then do
+   parse upper var rest extra
+   if extra \= '' then do
+      say 'Usage: GIT INIT'
+      exit 4
+   end
+
+   /* A CMS minidisk/filemode is the repository namespace. */
+   /* GITMETA REPO A is deliberately nonempty: CMS has no useful */
+   /* zero-record file representation for our repository marker. */
+   meta.0 = 4
+   meta.1 = 'CMS-GIT-REPOSITORY 1'
+   meta.2 = 'OBJECT-FORMAT SHA1'
+   meta.3 = 'TEXT-RECORD-SEPARATOR LF'
+   meta.4 = 'HEAD refs/heads/main'
+   'EXECIO' meta.0 'DISKW GITMETA REPO A 1 (STEM META. FINIS'
+   if rc \= 0 then do
+      say 'GIT: cannot create repository metadata on filemode A'
+      exit rc
+   end
+   say 'Initialized native CMS Git repository on filemode A'
+   exit 0
+end
+
 if command = 'HASH-OBJECT' then do
    parse upper var rest fn ft fm extra
    if fn = '' | ft = '' | extra \= '' then do
