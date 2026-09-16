@@ -120,9 +120,10 @@ if command = 'HASH-OBJECT' | command = 'WRITE-OBJECT' then do
    if fm = '' then fm = '*'
 
    drop line.
-   /* Do not use EXECIO STRIP here.  IBM documents STRIP as removing */
-   /* trailing blanks; those bytes are significant to a Git blob.   */
-   'EXECIO * DISKR' fn ft fm '1 (STEM LINE. FINIS'
+   /* CMS text policy: trailing EBCDIC blanks are record padding and */
+   /* are removed; leading blanks remain significant. IBM EXECIO     */
+   /* STRIP removes trailing blanks only, which implements this rule. */
+   'EXECIO * DISKR' fn ft fm '1 (STEM LINE. FINIS STRIP'
    if rc \= 0 then do
       say 'GIT: cannot read' fn ft fm
       exit rc
