@@ -30,7 +30,9 @@ exit 0
 streamtest: procedure
    parse arg hex, expected
    total = length(hex) % 2
-   header = d2x(total,8)
+   /* GITSTRM protocol requires exactly eight EBCDIC hex digits. */
+   header = right(d2x(total),8,'0')
+   say 'M4: STREAM BYTES=' total 'HEADER=' header
    'MAKEBUF'
    if rc < 0 then do
       say 'M4: cannot create program-stack buffer'
