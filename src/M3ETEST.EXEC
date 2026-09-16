@@ -2,7 +2,7 @@
 
 address command
 
-say 'M3E STACK DIAGNOSTIC'
+say 'M3E STACK/LINERD DIAGNOSTIC'
 'MAKEBUF'
 queue '0000000A'
 queue '626C6F62203300616263'
@@ -14,6 +14,16 @@ say 'SECOND=' b 'LEN=' length(b)
 queue a
 queue b
 say 'REQUEUED=' queued()
+'GITRD'
+rdrc = rc
+say 'GITRD RC=' rdrc
+'DROPBUF'
+if rdrc \= 0 then exit rdrc
+
+say 'M3E TEST 1: Git blob abc'
+'MAKEBUF'
+queue '0000000A'
+queue '626C6F62203300616263'
 'GITSTRM'
 strmrc = rc
 say 'GITSTRM RC=' strmrc
