@@ -36,10 +36,13 @@ if command = 'INIT' then do
    exit 0
 end
 
-if command = 'HASH-OBJECT' then do
+if command = 'HASH-OBJECT' | command = 'WRITE-OBJECT' then do
    parse upper var rest fn ft fm extra
    if fn = '' | ft = '' | extra \= '' then do
-      say 'Usage: GIT HASH-OBJECT filename filetype [filemode]'
+      if command = 'HASH-OBJECT' then
+         say 'Usage: GIT HASH-OBJECT filename filetype [filemode]'
+      else
+         say 'Usage: GIT WRITE-OBJECT filename filetype [filemode]'
       exit 4
    end
    if fm = '' then fm = '*'
@@ -92,16 +95,35 @@ if command = 'HASH-OBJECT' then do
       if i > 1 then hex = hex || '0A'
       hex = hex || c2x(ascii)
       if length(hex) > 512 then do
-         say 'GIT: text payload exceeds M2C limit of 256 bytes'
+         say 'GIT: text payload exceeds current limit of 256 bytes'
          exit 4
       end
    end
 
+   /* Ask GITCORE for the canonical Git blob object ID. */
+   drop hash.
    if hex = '' then
-      'GITCORE BLOBHEX'
+      'EXECIO 1 CP (STRING GITCORE BLOBHEX'
    else
-      'GITCORE BLOBHEX' hex
-   exit rc
+      'EXECIO 1 CP (STRING GITCORE BLOBHEX' hex
+   if rc \= 0 then exit rc
+   'EXECIO 1 DISKR * * * 1 (STEM HASH. FINIS'
+
+   /* CP capture is not portable enough for this prototype path. */
+   /* HASH-OBJECT keeps the proven direct module invocation. */
+   if command = 'HASH-OBJECT' then do
+      if hex = '' then 'GITCORE BLOBHEX'
+      else 'GITCORE BLOBHEX' hex
+      exit rc
+   end
+
+   /* M3B stores canonical payload bytes plus type/length metadata. */
+   /* The full 40-hex SHA-1 is split across CMS filename/filetype. */
+   /* First obtain the ID through a temporary stack invocation. */
+   if hex = '' then call value 'GITCORE BLOBHEX'
+   else call value 'GITCORE BLOBHEX' hex
+   say 'GIT: WRITE-OBJECT capture path not yet available'
+   exit 4
 end
 
 say 'GIT: unknown command' command
