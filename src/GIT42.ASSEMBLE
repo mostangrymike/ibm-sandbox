@@ -1,0 +1,95 @@
+GIT42    CSECT
+         USING GIT42,12
+         LR    12,15
+         ST    14,RETADDR
+*
+* M4 diagnostic: prove GITSTRM HEXWORD parses 0000002A as 42.
+*
+         LINERD DATA=(INBUF,128),TYPE=STACK,CASE=MIXED,TRANS=NO,       X
+               PAD=BLANK,ERROR=RDERR
+         C     0,=F'8'
+         BNE   RDLEN
+         CLC   INBUF(8),=C'0000002A'
+         BNE   RDDATA
+         LA    2,INBUF
+         LA    3,8
+         BAL   14,HEXWORD
+         LTR   15,15
+         BNZ   HEXERR
+         C     5,=F'42'
+         BNE   HEXVAL
+         LINEWRT DATA=(OKMSG,OKLEN)
+         SR    15,15
+         L     14,RETADDR
+         BR    14
+RDERR    LINEWRT DATA=(REMSG,RELEN)
+         B     BADRET
+RDLEN    LINEWRT DATA=(RLMSG,RLLEN)
+         B     BADRET
+RDDATA   LINEWRT DATA=(RDMSG,RDLEN2)
+         B     BADRET
+HEXERR   LINEWRT DATA=(HEMSG,HELEN)
+         B     BADRET
+HEXVAL   LINEWRT DATA=(HVMSG,HVLEN)
+BADRET   LA    15,4
+         L     14,RETADDR
+         BR    14
+*
+HEXWORD  ST    14,HEXRET
+         SR    6,6
+HWLP     BAL   14,HEXNIB
+         LTR   15,15
+         BNZ   HWBAD
+         SLL   6,4
+         OR    6,5
+         LA    2,1(2)
+         BCT   3,HWLP
+         LR    5,6
+         SR    15,15
+         L     14,HEXRET
+         BR    14
+HWBAD    LA    15,4
+         L     14,HEXRET
+         BR    14
+HEXNIB   XR    5,5
+         IC    5,0(2)
+         C     5,=F'240'
+         BL    HXALPHA
+         C     5,=F'249'
+         BH    HXBADD
+         S     5,=F'240'
+         SR    15,15
+         BR    14
+HXALPHA  C     5,=F'193'
+         BL    HXLOW
+         C     5,=F'198'
+         BH    HXBADD
+         S     5,=F'183'
+         SR    15,15
+         BR    14
+HXLOW    C     5,=F'129'
+         BL    HXBADD
+         C     5,=F'134'
+         BH    HXBADD
+         S     5,=F'119'
+         SR    15,15
+         BR    14
+HXBADD   LA    15,4
+         BR    14
+         LTORG
+OKMSG    DC    C'GIT42: HEADER PARSE OK VALUE 42'
+OKLEN    EQU   *-OKMSG
+REMSG    DC    C'GIT42: LINERD ERROR'
+RELEN    EQU   *-REMSG
+RLMSG    DC    C'GIT42: HEADER LENGTH WRONG'
+RLLEN    EQU   *-RLMSG
+RDMSG    DC    C'GIT42: HEADER DATA WRONG'
+RDLEN2   EQU   *-RDMSG
+HEMSG    DC    C'GIT42: HEXWORD REJECTED HEADER'
+HELEN    EQU   *-HEMSG
+HVMSG    DC    C'GIT42: HEXWORD VALUE WRONG'
+HVLEN    EQU   *-HVMSG
+RETADDR  DS    F
+HEXRET   DS    F
+INBUF    DS    128C
+         END   GIT42
