@@ -1,0 +1,46 @@
+/* M4 case-preserving Git tree regression */
+address command
+
+blob = 'F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
+want = 'B9E7816426B28421D7050FF4F501E7E796BC244A'
+wantdata = '31303036343420526561644D6500' || blob
+
+say 'M4 CASE TEST 1: prerequisite blob remains valid'
+'EXEC GIT VERIFY-OBJECT' blob
+if rc \= 0 then do
+   say 'M4CASE: prerequisite blob missing RC=' rc
+   exit rc
+end
+
+say 'M4 CASE TEST 2: lowercase command preserves mixed-case tree name'
+'EXEC GIT write-tree 100644 ReadMe' blob
+if rc \= 0 then do
+   say 'M4CASE: WRITE-TREE failed RC=' rc
+   exit rc
+end
+
+say 'M4 CASE TEST 3: verify independently known mixed-case tree OID'
+'EXEC GIT verify-object' want
+if rc \= 0 then do
+   say 'M4CASE: tree verification failed RC=' rc
+   exit rc
+end
+
+say 'M4 CASE TEST 4: inspect exact mixed-case tree bytes'
+fn = substr(want,1,8)
+drop obj.
+'EXECIO * DISKR' fn 'GITOBJ A 1 (STEM OBJ. FINIS'
+if rc \= 0 then exit rc
+data = ''
+do i = 4 to obj.0
+   if word(obj.i,1) = 'DATA' then data = data || word(obj.i,2)
+end
+if data \= wantdata then do
+   say 'M4CASE: exact tree DATA mismatch'
+   say 'WANT=' wantdata
+   say 'GOT =' data
+   exit 8
+end
+
+say 'M4 CASE-PRESERVING ARGUMENT TESTS PASSED'
+exit 0
