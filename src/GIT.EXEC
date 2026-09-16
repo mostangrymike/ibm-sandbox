@@ -52,24 +52,67 @@ if command = 'VERIFY-OBJECT' | command = 'CAT-OBJECT' then do
    exit 0
 end
 
+/* M4 tree writer: one or more mode/name/OID triples. */
 if command = 'WRITE-TREE' then do
-   parse upper var rest mode name oid extra
-   if mode = '' | name = '' | oid = '' | extra \= '' then do
-      say 'Usage: GIT WRITE-TREE mode name object-id'
+   wc = words(rest)
+   if wc < 3 | wc // 3 \= 0 then do
+      say 'Usage: GIT WRITE-TREE mode name oid [mode name oid ...]'
       exit 4
    end
-   if mode \= '100644' & mode \= '100755' &,
-      mode \= '120000' & mode \= '40000' then do
-      say 'GIT: unsupported tree mode' mode
-      exit 4
+   count = wc % 3
+   do i = 1 to count
+      p = (i-1)*3
+      mode.i = word(rest,p+1)
+      name.i = word(rest,p+2)
+      oid.i = word(rest,p+3)
+      if mode.i \= '100644' & mode.i \= '100755' &,
+         mode.i \= '120000' & mode.i \= '40000' then do
+         say 'GIT: unsupported tree mode' mode.i
+         exit 4
+      end
+      if name.i = '' | pos('/',name.i) > 0 |,
+         name.i = '.' | name.i = '..' then do
+         say 'GIT: invalid tree entry name' name.i
+         exit 4
+      end
+      if length(oid.i) \= 40 |,
+         verify(oid.i,'0123456789ABCDEF') \= 0 then do
+         say 'GIT: invalid tree entry object-id' oid.i
+         exit 4
+      end
+      call readobject oid.i
+      if result \= 'OK' then exit 8
+      if mode.i = '40000' & objtype \= 'TREE' then do
+         say 'GIT: tree mode requires TREE object' oid.i
+         exit 8
+      end
+      if mode.i \= '40000' & objtype \= 'BLOB' then do
+         say 'GIT: file mode requires BLOB object' oid.i
+         exit 8
+      end
+      call toasciihex name.i
+      namehex.i = result
+      sortkey.i = x2c(namehex.i)
+      if mode.i = '40000' then sortkey.i = sortkey.i || x2c('2F')
    end
-   if length(oid) \= 40 |,
-      verify(oid,'0123456789ABCDEF') \= 0 then do
-      say 'GIT: invalid tree entry object-id' oid
-      exit 4
+   /* Git tree order is unsigned byte order; tree names compare with '/'. */
+   do pass = 1 to count-1
+      do i = 1 to count-pass
+         j = i + 1
+         if sortkey.i >> sortkey.j then do
+            t=mode.i; mode.i=mode.j; mode.j=t
+            t=name.i; name.i=name.j; name.j=t
+            t=oid.i; oid.i=oid.j; oid.j=t
+            t=namehex.i; namehex.i=namehex.j; namehex.j=t
+            t=sortkey.i; sortkey.i=sortkey.j; sortkey.j=t
+         end
+      end
    end
-   call toasciihex mode || ' ' || name
-   datahex = result || '00' || oid
+   datahex = ''
+   do i = 1 to count
+      call toasciihex mode.i || ' '
+      datahex = datahex || result || namehex.i || '00' || oid.i
+   end
    call hashstored 'TREE', datahex
    treeoid = result
    if treeoid = 'HASHERROR' then exit 8
@@ -86,15 +129,9 @@ if command = 'COMMIT-TREE' then do
       say 'Usage: GIT COMMIT-TREE tree-object-id'
       exit 4
    end
-   treefn = substr(treeoid,1,8)
-   drop tree.
-   'EXECIO * DISKR' treefn 'GITOBJ A 1 (STEM TREE. FINIS'
-   if rc \= 0 | tree.0 < 2 then do
-      say 'GIT: tree object not found' treeoid
-      exit 8
-   end
-   if word(tree.1,1) \= 'OID' | word(tree.1,2) \= treeoid |,
-      word(tree.2,1) \= 'TYPE' | word(tree.2,2) \= 'TREE' then do
+   call readobject treeoid
+   if result \= 'OK' then exit 8
+   if objtype \= 'TREE' then do
       say 'GIT: object is not requested tree' treeoid
       exit 8
    end
@@ -156,11 +193,17 @@ exit 4
 storeobject: procedure
    parse upper arg oid, type, datahex
    objfn = substr(oid,1,8)
-   drop old.
-   'EXECIO * DISKR' objfn 'GITOBJ A 1 (STEM OLD. FINIS'
-   oldrc = rc
-   if oldrc = 0 & old.0 > 0 then do
-      if word(old.1,1) \= 'OID' | word(old.1,2) \= oid then do
+   /* STATE quietly determines whether collision inspection is needed. */
+   'STATE' objfn 'GITOBJ A'
+   if rc = 0 then do
+      drop old.
+      'EXECIO * DISKR' objfn 'GITOBJ A 1 (STEM OLD. FINIS'
+      if rc \= 0 then do
+         say 'GIT: cannot inspect existing object' objfn
+         return 'ERROR'
+      end
+      if old.0 < 1 | word(old.1,1) \= 'OID' |,
+         word(old.1,2) \= oid then do
          say 'GIT: object filename collision' objfn
          return 'ERROR'
       end
@@ -257,7 +300,7 @@ toasciihex: procedure
             '20A6E180EB909FE2AB8B9B2E3C282B7C' ||,
             '26A9AA9CDBA599E3A89E21242A293B5E' ||,
             '2D2FDFDC9ADDDE989DACBA2C255F3E3F' ||,
-            'D78894B0B1B2FCD6FB603A2340273D22' ||,
+            'D78894B0B1B2B3FCD6FB603A2340273D22',
             'F861626364656667686996A4F3AFAEC5' ||,
             '8C6A6B6C6D6E6F7071729787CE93F1FE' ||,
             'C87E737475767778797AEFC0DA5BF2F9' ||,
