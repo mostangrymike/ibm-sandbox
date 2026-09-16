@@ -7,6 +7,17 @@ say 'M4 TEST 1: one-entry Git tree object'
 hex = '747265652033340031303036343420524541444D4500' ||,
       'F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
 expected = '2030C0B68CCC4116B0CB9990EF04B53EA30140C8'
+
+/* Focused gate: prove the exact 42-byte header/data length path. */
+'MAKEBUF'
+queue '0000002A'
+queue hex
+'GITLEN'
+lenrc = rc
+say 'GITLEN RC=' lenrc
+'DROPBUF'
+if lenrc \= 0 then exit lenrc
+
 call streamtest hex, expected
 if result \= 0 then exit result
 
