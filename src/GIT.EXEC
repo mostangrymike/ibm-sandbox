@@ -102,23 +102,31 @@ if command = 'HASH-OBJECT' | command = 'WRITE-OBJECT' then do
       exit rc
    end
 
-   /* CMS/VM REXX has no TSO OUTTRAP routine.  CMS Pipelines */
-   /* COMMAND is the documented CMS-command response interface. */
-   drop hash.
-   if hex = '' then
-      'PIPE COMMAND GITCORE BLOBHEX | STEM HASH.'
-   else
-      'PIPE COMMAND GITCORE BLOBHEX' hex '| STEM HASH.'
-   corerc = rc
-   if corerc \= 0 then exit corerc
-   if hash.0 \= 1 | length(hash.1) \= 40 then do
-      say 'GIT: unable to capture object ID from GITCORE'
+   /* BLOBSTK returns the OID on a private CMS program-stack buffer. */
+   'MAKEBUF'
+   if rc < 0 then do
+      say 'GIT: cannot create program-stack buffer'
       exit 4
    end
-   oid = hash.1
+   if hex = '' then 'GITCORE BLOBSTK'
+   else 'GITCORE BLOBSTK' hex
+   corerc = rc
+   if corerc \= 0 then do
+      'DROPBUF'
+      exit corerc
+   end
+   if queued() \= 1 then do
+      'DROPBUF'
+      say 'GIT: GITCORE did not return exactly one object ID'
+      exit 4
+   end
+   pull oid
+   'DROPBUF'
+   if length(oid) \= 40 then do
+      say 'GIT: invalid object ID returned by GITCORE'
+      exit 4
+   end
 
-   /* CMS-native object name: first 8 SHA-1 hex digits as filename. */
-   /* Full SHA-1 remains authoritative in the object metadata. */
    objfn = substr(oid,1,8)
    obj.0 = 3
    obj.1 = 'OID' oid
