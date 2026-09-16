@@ -1,0 +1,37 @@
+/* M4 public GIT interface regression for TREE and COMMIT objects */
+
+address command
+
+tree = '2030C0B68CCC4116B0CB9990EF04B53EA30140C8'
+commit = '54BACE2202BB0C96980CDD0AAE9A752E6188D666'
+
+say 'M4 PUBLIC TEST 1: verify stored tree through GIT command'
+'GIT VERIFY-OBJECT' tree
+if rc \= 0 then do
+   say 'M4PUB: tree verification failed RC=' rc
+   exit rc
+end
+
+say 'M4 PUBLIC TEST 2: cat stored tree through GIT command'
+'GIT CAT-OBJECT' tree
+if rc \= 0 then do
+   say 'M4PUB: tree cat failed RC=' rc
+   exit rc
+end
+
+say 'M4 PUBLIC TEST 3: verify stored commit through GIT command'
+'GIT VERIFY-OBJECT' commit
+if rc \= 0 then do
+   say 'M4PUB: commit verification failed RC=' rc
+   exit rc
+end
+
+say 'M4 PUBLIC TEST 4: cat stored commit through GIT command'
+'GIT CAT-OBJECT' commit
+if rc \= 0 then do
+   say 'M4PUB: commit cat failed RC=' rc
+   exit rc
+end
+
+say 'M4 PUBLIC TREE/COMMIT INTERFACE TESTS PASSED'
+exit 0
