@@ -30,14 +30,19 @@ Build a native Git client for CMS/z/VM 6.3 Evaluation Edition without purchasing
 - Exact one-entry Git tree stream is target-proven. The 42-byte stream for mode `100644`, name `README`, and blob `F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F` hashes to `2030C0B68CCC4116B0CB9990EF04B53EA30140C8`.
 - Exact deterministic Git commit stream is target-proven. The 166-byte regression stream pointing at that tree hashes to `54BACE2202BB0C96980CDD0AAE9A752E6188D666`.
 - The M4 regression driver avoids REXX `SUBSTR` right-padding on the final stack chunk by requesting only the actual remaining character count.
+- M4 CMS-native storage round-trip is target-proven for TREE and COMMIT. The exact tree and commit bodies were written as CMS `GITOBJ` objects and reread without changing their Git object IDs.
+- Public `GIT VERIFY-OBJECT` and `GIT CAT-OBJECT` are target-proven for BLOB, TREE, and COMMIT. Verification reconstructs the exact Git object stream for the stored type and hashes it through `GITSTRM`.
+- The production `GIT HASH-OBJECT` and `GIT WRITE-OBJECT` hashing path now uses `GITSTRM`; the earlier 256-byte BLOBSTK hashing limit is no longer used by the public command path.
 
 ## Current baseline
 
-M3E streaming/multi-block SHA-1 is target-proven and hardened. The 256-byte hashing limit of the earlier `BLOBHEX` prototype is no longer an architectural limit for hashing: bounded chunks can be streamed through a single native MODULE invocation.
+M3E streaming/multi-block SHA-1 is target-proven and hardened. Bounded chunks can be streamed through a single native MODULE invocation.
 
-M4 exact tree and commit object byte streams are now target-proven against independently computed object IDs. The next M4 work is to turn those exact regression constructions into repository operations: construct tree entries from CMS-side object metadata, construct commit bodies from tree/parent/identity/message data, write the resulting objects into the CMS-native object database, and then hand their IDs to M5 refs.
+M4 exact tree and commit encoding, CMS-native storage round-trip, and public retrieval/integrity verification are target-proven. The known tree OID is `2030C0B68CCC4116B0CB9990EF04B53EA30140C8`; the known deterministic commit OID is `54BACE2202BB0C96980CDD0AAE9A752E6188D666`.
 
-The current streaming protocol is a bring-up interface between REXX and assembler, not the final public Git command syntax. Temporary diagnostic modules remain regression aids but are not part of the intended public interface.
+The next M4 work is creation through the public repository interface: construct tree entries from CMS-side object metadata, construct commit bodies from tree/parent/identity/message data, write the resulting objects into the CMS-native object database, and then hand their IDs to M5 refs.
+
+The current physical object layout is still a prototype: the filename uses the first eight OID hex digits and the body is stored as hexadecimal DATA. Prefix collisions and large-object DATA record chunking remain to be addressed before this is a general object database.
 
 ## Milestone status
 
@@ -51,7 +56,7 @@ The current streaming protocol is a bring-up interface between REXX and assemble
 - M3C Object retrieval / verification: DONE
 - M3D CMS text canonicalization policy: DONE
 - M3E Streaming / multi-block CMS blobs: DONE + HARDENED
-- M4 Trees and commits: IN PROGRESS — exact tree/commit encoding and hashing proven
+- M4 Trees and commits: IN PROGRESS — exact encoding, storage, and public verification proven
 - M5 Refs and branches: NOT STARTED
 - M6 Packfiles: NOT STARTED
 - M7 TCP/IP: NOT STARTED
@@ -60,7 +65,9 @@ The current streaming protocol is a bring-up interface between REXX and assemble
 
 ## Next M4 step
 
-Promote the exact tree and commit regression construction into real repository operations. Preserve Git's exact logical bytes, including binary 20-byte object IDs in trees and LF-delimited commit headers/messages. Reuse the bounded `GITSTRM` path rather than reintroducing fixed object-size limits. Keep physical CMS storage independent from Git's logical object representation.
+Promote exact tree and commit construction into real public repository operations. Preserve Git's exact logical bytes, including binary 20-byte object IDs in trees and LF-delimited commit headers/messages. Reuse the bounded `GITSTRM` path rather than reintroducing fixed object-size limits. Keep physical CMS storage independent from Git's logical object representation.
+
+Before claiming general large-object storage, replace the single DATA record with bounded DATA chunks and retain the full OID in the object metadata so first-eight filename collisions are detected rather than silently accepted.
 
 ## Planned architecture
 
