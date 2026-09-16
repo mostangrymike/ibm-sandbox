@@ -29,134 +29,6 @@ if command = 'INIT' then do
    exit 0
 end
 
-/* M5 CMS-native refs. GITMETA REPO carries symbolic HEAD; GITREFS REPO
- * carries one branch record per line: BRANCH <name> <40-hex commit OID>.
- */
-if command = 'SHOW-REF' then do
-   parse var rest extra
-   if extra \= '' then do
-      say 'Usage: GIT SHOW-REF'
-      exit 4
-   end
-   call readrefs
-   if result \= 'OK' then exit 8
-   do i = 1 to ref.0
-      say ref.oid.i 'refs/heads/' || ref.name.i
-   end
-   exit 0
-end
-
-if command = 'BRANCH' then do
-   wc = words(rest)
-   if wc = 0 then do
-      call readhead
-      if result \= 'OK' then exit 8
-      call readrefs
-      if result \= 'OK' then exit 8
-      do i = 1 to ref.0
-         mark = ' '
-         if headref = 'refs/heads/' || ref.name.i then mark = '*'
-         say mark ref.name.i ref.oid.i
-      end
-      exit 0
-   end
-   if wc \= 2 then do
-      say 'Usage: GIT BRANCH [name commit-object-id]'
-      exit 4
-   end
-   name = word(rest,1)
-   oid = translate(word(rest,2))
-   call validbranch name
-   if result \= 'OK' then exit 4
-   if length(oid) \= 40 | verify(oid,'0123456789ABCDEF') \= 0 then do
-      say 'GIT: invalid branch object-id' word(rest,2)
-      exit 4
-   end
-   call readobject oid
-   if result \= 'OK' then exit 8
-   if objtype \= 'COMMIT' then do
-      say 'GIT: branch target is not a COMMIT object' oid
-      exit 8
-   end
-   call readrefs
-   if result \= 'OK' then exit 8
-   do i = 1 to ref.0
-      if ref.name.i = name then do
-         say 'GIT: branch already exists' name
-         exit 8
-      end
-   end
-   ref.0 = ref.0 + 1
-   n = ref.0
-   ref.name.n = name
-   ref.oid.n = oid
-   call writerefs
-   if result \= 'OK' then exit 8
-   say 'refs/heads/' || name oid
-   exit 0
-end
-
-if command = 'SYMBOLIC-REF' then do
-   wc = words(rest)
-   if wc = 0 then do
-      call readhead
-      if result \= 'OK' then exit 8
-      say headref
-      exit 0
-   end
-   if wc \= 1 then do
-      say 'Usage: GIT SYMBOLIC-REF [refs/heads/name]'
-      exit 4
-   end
-   newref = word(rest,1)
-   if left(newref,11) \= 'refs/heads/' then do
-      say 'GIT: HEAD must name refs/heads/<branch>'
-      exit 4
-   end
-   name = substr(newref,12)
-   call validbranch name
-   if result \= 'OK' then exit 4
-   call readrefs
-   if result \= 'OK' then exit 8
-   found = 0
-   do i = 1 to ref.0
-      if ref.name.i = name then found = 1
-   end
-   if \found then do
-      say 'GIT: branch not found' name
-      exit 8
-   end
-   call writehead newref
-   if result \= 'OK' then exit 8
-   say newref
-   exit 0
-end
-
-if command = 'REV-PARSE' then do
-   parse var rest spec extra
-   if spec = '' | extra \= '' then do
-      say 'Usage: GIT REV-PARSE HEAD|refs/heads/name|name'
-      exit 4
-   end
-   call readrefs
-   if result \= 'OK' then exit 8
-   if translate(spec) = 'HEAD' then do
-      call readhead
-      if result \= 'OK' then exit 8
-      spec = headref
-   end
-   if left(spec,11) = 'refs/heads/' then name = substr(spec,12)
-   else name = spec
-   do i = 1 to ref.0
-      if ref.name.i = name then do
-         say ref.oid.i
-         exit 0
-      end
-   end
-   say 'GIT: ref not found' spec
-   exit 8
-end
-
 if command = 'VERIFY-OBJECT' | command = 'CAT-OBJECT' then do
    parse var rest oid extra
    oid = translate(oid)
@@ -254,8 +126,11 @@ end
 
 /*
  * COMMIT-TREE keeps the original one-argument deterministic form and adds
- * explicit proof-level options. Values containing blanks use underscore as
+ * explicit proof-level options.  Values containing blanks use underscore as
  * the CMS command-line separator escape; underscores are converted to blanks.
+ *
+ * GIT COMMIT-TREE tree [-P parent ...] [-A identity] [-C identity]
+ *      [-T seconds] [-Z timezone] [-M message]
  */
 if command = 'COMMIT-TREE' then do
    treeoid = translate(word(rest,1))
@@ -270,12 +145,14 @@ if command = 'COMMIT-TREE' then do
       say 'GIT: object is not requested tree' treeoid
       exit 8
    end
+
    author = 'CMS Git <cms@example.invalid>'
    committer = author
    stamp = '0'
    zone = '+0000'
    message = 'Initial commit'
    parent.0 = 0
+
    i = 2
    do while i <= words(rest)
       opt = translate(word(rest,i))
@@ -311,6 +188,7 @@ if command = 'COMMIT-TREE' then do
       end
       i = i + 2
    end
+
    if verify(stamp,'0123456789') \= 0 | stamp = '' then do
       say 'GIT: invalid commit timestamp' stamp
       exit 4
@@ -331,6 +209,7 @@ if command = 'COMMIT-TREE' then do
       say 'GIT: author and committer identities must not be empty'
       exit 4
    end
+
    lower = translate(treeoid,'abcdef','ABCDEF')
    call toasciihex 'tree ' || lower
    datahex = result || '0A'
@@ -360,6 +239,7 @@ if command = 'HASH-OBJECT' | command = 'WRITE-OBJECT' then do
       say 'Usage: GIT' command 'filename filetype [filemode]'
       exit 4
    end
+   /* CMS file identifiers are case-insensitive; normalize them only here. */
    fn = translate(fn)
    ft = translate(ft)
    fm = translate(fm)
@@ -391,108 +271,6 @@ end
 
 say 'GIT: unknown command' command
 exit 4
-
-/* M5 ref helpers. */
-validbranch: procedure
-   parse arg name
-   if name = '' | name = '.' | name = '..' | pos('/',name) > 0 |,
-      pos(' ',name) > 0 then do
-      say 'GIT: invalid branch name' name
-      return 'ERROR'
-   end
-   if pos('..',name) > 0 | pos('~',name) > 0 | pos('^',name) > 0 |,
-      pos(':',name) > 0 | pos('?',name) > 0 | pos('*',name) > 0 |,
-      pos('[',name) > 0 | right(name,1) = '.' then do
-      say 'GIT: invalid branch name' name
-      return 'ERROR'
-   end
-   return 'OK'
-
-readrefs: procedure expose ref.
-   drop ref.
-   ref.0 = 0
-   'STATE GITREFS REPO A'
-   if rc \= 0 then return 'OK'
-   drop rr.
-   'EXECIO * DISKR GITREFS REPO A 1 (STEM RR. FINIS'
-   if rc \= 0 then do
-      say 'GIT: cannot read refs'
-      return 'ERROR'
-   end
-   do i = 1 to rr.0
-      parse var rr.i tag name oid extra
-      if tag \= 'BRANCH' | name = '' | extra \= '' |,
-         length(oid) \= 40 | verify(oid,'0123456789ABCDEF') \= 0 then do
-         say 'GIT: corrupt refs record' i
-         return 'ERROR'
-      end
-      ref.0 = ref.0 + 1
-      n = ref.0
-      ref.name.n = name
-      ref.oid.n = oid
-   end
-   return 'OK'
-
-writerefs: procedure expose ref.
-   drop wr.
-   wr.0 = ref.0
-   do i = 1 to ref.0
-      wr.i = 'BRANCH' ref.name.i ref.oid.i
-   end
-   if wr.0 = 0 then do
-      'ERASE GITREFS REPO A'
-      return 'OK'
-   end
-   'EXECIO' wr.0 'DISKW GITREFS REPO A 1 (STEM WR. FINIS'
-   if rc \= 0 then do
-      say 'GIT: cannot write refs'
-      return 'ERROR'
-   end
-   return 'OK'
-
-readhead: procedure expose headref
-   drop hm.
-   'EXECIO * DISKR GITMETA REPO A 1 (STEM HM. FINIS'
-   if rc \= 0 then do
-      say 'GIT: repository metadata not found'
-      return 'ERROR'
-   end
-   headref = ''
-   do i = 1 to hm.0
-      if word(hm.i,1) = 'HEAD' then headref = word(hm.i,2)
-   end
-   if left(headref,11) \= 'refs/heads/' then do
-      say 'GIT: invalid symbolic HEAD'
-      return 'ERROR'
-   end
-   return 'OK'
-
-writehead: procedure expose headref
-   parse arg newref
-   drop hm.
-   'EXECIO * DISKR GITMETA REPO A 1 (STEM HM. FINIS'
-   if rc \= 0 then do
-      say 'GIT: repository metadata not found'
-      return 'ERROR'
-   end
-   found = 0
-   do i = 1 to hm.0
-      if word(hm.i,1) = 'HEAD' then do
-         hm.i = 'HEAD' newref
-         found = 1
-      end
-   end
-   if \found then do
-      hm.0 = hm.0 + 1
-      hm.hm.0 = 'HEAD' newref
-   end
-   'EXECIO' hm.0 'DISKW GITMETA REPO A 1 (STEM HM. FINIS'
-   if rc \= 0 then do
-      say 'GIT: cannot update HEAD'
-      return 'ERROR'
-   end
-   headref = newref
-   return 'OK'
 
 storeobject: procedure
    parse upper arg oid, type, datahex
@@ -608,25 +386,48 @@ toasciihex: procedure
             '8C6A6B6C6D6E6F7071729787CE93F1FE' ||,
             'C87E737475767778797AEFC0DA5BF2F9' ||,
             'B5B6FDB7B8B9E6BBBCBD8DD9BF5DD8C4' ||,
-            '7B414243444546474849ADF4F6F2F3F5' ||,
-            '7D4A4B4C4D4E4F505152B9FBFCF9FAFF' ||,
-            '5C1A535455565758595AB2D4D6D2D3D5' ||,
-            '30313233343536373839B3DBDCD9DA1A'
-   table = x2c(e2ahex)
-   out = ''
-   do i = 1 to length(text)
-      n = c2d(substr(text,i,1))
-      out = out || c2x(substr(table,n+1,1))
-   end
-   return out
+            '7B414243444546474849CBCABEE8ECED' ||,
+            '7D4A4B4C4D4E4F505152A1ADF5F4A38F' ||,
+            '5CE7535455565758595AA0858EE9E4D1' ||,
+            '30313233343536373839B3F7F0FAA7FF'
+   e2a = x2c(e2ahex)
+   bytes = x2c('000102030405060708090A0B0C0D0E0F' ||,
+               '101112131415161718191A1B1C1D1E1F' ||,
+               '202122232425262728292A2B2C2D2E2F' ||,
+               '303132333435363738393A3B3C3D3E3F' ||,
+               '404142434445464748494A4B4C4D4E4F' ||,
+               '505152535455565758595A5B5C5D5E5F' ||,
+               '606162636465666768696A6B6C6D6E6F' ||,
+               '707172737475767778797A7B7C7D7E7F' ||,
+               '808182838485868788898A8B8C8D8E8F' ||,
+               '909192939495969798999A9B9C9D9E9F' ||,
+               'A0A1A2A3A4A5A6A7A8A9AAABACADAEAF' ||,
+               'B0B1B2B3B4B5B6B7B8B9BABBBCBDBEBF' ||,
+               'C0C1C2C3C4C5C6C7C8C9CACBCCCDCECF' ||,
+               'D0D1D2D3D4D5D6D7D8D9DADBDCDDDEDF' ||,
+               'E0E1E2E3E4E5E6E7E8E9EAEBECEDEEEF' ||,
+               'F0F1F2F3F4F5F6F7F8F9FAFBFCFDFEFF')
+   return c2x(translate(text,e2a,bytes))
 
 hashstored: procedure
    parse upper arg type, datahex
-   call buildheader type, length(datahex) % 2
-   streamhex = result || datahex
+   bodylen = length(datahex) % 2
+   dec = bodylen
+   dechex = ''
+   do i = 1 to length(dec)
+      digit = substr(dec,i,1)
+      dechex = dechex || d2x(digit+48,2)
+   end
+   if type = 'BLOB' then prefix = '626C6F6220'
+   else if type = 'TREE' then prefix = '7472656520'
+   else if type = 'COMMIT' then prefix = '636F6D6D697420'
+   else return 'HASHERROR'
+   streamhex = prefix || dechex || '00' || datahex
    total = length(streamhex) % 2
-   call makebuf
-   queue right(d2x(total),8,'0')
+   header = right(d2x(total),8,'0')
+   'MAKEBUF'
+   if rc < 0 then return 'HASHERROR'
+   queue header
    pos = 1
    do while pos <= length(streamhex)
       remain = length(streamhex) - pos + 1
@@ -635,39 +436,11 @@ hashstored: procedure
       pos = pos + take
    end
    'GITSTRM'
-   grc = rc
-   if grc \= 0 then do
-      call dropbuf
-      say 'GIT: streaming hash failed RC=' grc
+   src = rc
+   if src \= 0 then do
+      'DROPBUF'
       return 'HASHERROR'
    end
-   parse pull oid
-   call dropbuf
+   pull oid
+   'DROPBUF'
    return oid
-
-buildheader: procedure
-   parse upper arg type, size
-   call decasciihex size
-   dec = result
-   select
-      when type = 'BLOB' then prefix = '626C6F6220'
-      when type = 'TREE' then prefix = '7472656520'
-      when type = 'COMMIT' then prefix = '636F6D6D697420'
-      otherwise return ''
-   end
-   return prefix || dec || '00'
-
-decasciihex: procedure
-   parse arg n
-   if n = 0 then return '30'
-   digits = ''
-   do while n > 0
-      d = n // 10
-      digits = d || digits
-      n = n % 10
-   end
-   out = ''
-   do i = 1 to length(digits)
-      out = out || d2x(c2d(substr(digits,i,1))-240+48,2)
-   end
-   return out
