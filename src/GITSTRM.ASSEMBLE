@@ -2,6 +2,7 @@ GITSTRM  CSECT
          USING GITSTRM,12
          LR    12,15
          ST    14,RETADDR
+         XC    TAILLEN,TAILLEN
 *
 * M3E streaming SHA-1 prototype.
 * Input is supplied on the CMS program stack:
@@ -12,15 +13,15 @@ GITSTRM  CSECT
 * the declared byte count and stacks the 40-digit SHA-1.
 *
          LINERD DATA=(INBUF,128),TYPE=STACK,CASE=MIXED,TRANS=NO,       X
-               PAD=BLANK,ERROR=BADIN
+               PAD=BLANK,ERROR=BADHREAD
          LR    3,0
          C     3,=F'8'
-         BNE   BADIN
+         BNE   BADHLEN
          LA    2,INBUF
          LA    3,8
          BAL   14,HEXWORD
          LTR   15,15
-         BNZ   BADIN
+         BNZ   BADHHEX
          ST    5,TOTLEN
          ST    5,REMAIN
          LR    4,5
@@ -35,40 +36,40 @@ READLP   L     8,REMAIN
          LTR   8,8
          BZ    FINAL
          LINERD DATA=(INBUF,128),TYPE=STACK,CASE=MIXED,TRANS=NO,       X
-               PAD=BLANK,ERROR=BADIN
+               PAD=BLANK,ERROR=BADDREAD
          LR    3,0
          LTR   3,3
-         BZ    BADIN
+         BZ    BADDZERO
          LR    4,3
          N     4,=F'1'
          LTR   4,4
-         BNZ   BADIN
+         BNZ   BADDODD
          C     3,=F'128'
-         BH    BADIN
+         BH    BADDLONG
          SRL   3,1
          ST    3,CHUNKLN
          C     3,REMAIN
-         BH    BADIN
+         BH    BADDEXTRA
          L     8,REMAIN
          C     8,=F'64'
          BH    NEED64
          C     3,8
-         BNE   BADIN
+         BNE   BADDFINAL
          B     DECODE
 NEED64   C     3,=F'64'
-         BNE   BADIN
+         BNE   BADD64
 DECODE   LA    2,INBUF
          LA    4,BINBUF
          L     3,CHUNKLN
 DECLP    BAL   14,HEXNIB
          LTR   15,15
-         BNZ   BADIN
+         BNZ   BADDHEX
          SLL   5,4
          LR    6,5
          LA    2,1(2)
          BAL   14,HEXNIB
          LTR   15,15
-         BNZ   BADIN
+         BNZ   BADDHEX
          OR    6,5
          STC   6,0(4)
          LA    2,1(2)
@@ -293,14 +294,68 @@ FCALC    LR    14,4
          SR    15,15
          BR    14
 *
-BADIN    LINEWRT DATA=(BADMSG,BADLEN)
+* Distinct input diagnostics.  These are temporary M3E bring-up aids.
+*
+BADHREAD LA    2,MHREAD
+         LA    3,LHREAD
+         B     BADMSG
+BADHLEN  LA    2,MHLEN
+         LA    3,LHLEN
+         B     BADMSG
+BADHHEX  LA    2,MHHEX
+         LA    3,LHHEX
+         B     BADMSG
+BADDREAD LA    2,MDREAD
+         LA    3,LDREAD
+         B     BADMSG
+BADDZERO LA    2,MDZERO
+         LA    3,LDZERO
+         B     BADMSG
+BADDODD  LA    2,MDODD
+         LA    3,LDODD
+         B     BADMSG
+BADDLONG LA    2,MDLONG
+         LA    3,LDLONG
+         B     BADMSG
+BADDEXTRA LA   2,MDEXTRA
+         LA    3,LDEXTRA
+         B     BADMSG
+BADDFINAL LA   2,MDFINAL
+         LA    3,LDFINAL
+         B     BADMSG
+BADD64   LA    2,MD64
+         LA    3,LD64
+         B     BADMSG
+BADDHEX  LA    2,MDHEX
+         LA    3,LDHEX
+BADMSG   LINEWRT DATA=((2),(3))
          LA    15,4
          L     14,RETADDR
          BR    14
          LTORG
 *
-BADMSG   DC    C'GITSTRM: INVALID STACK INPUT'
-BADLEN   EQU   *-BADMSG
+MHREAD   DC    C'GITSTRM: HEADER LINERD ERROR'
+LHREAD   EQU   *-MHREAD
+MHLEN    DC    C'GITSTRM: HEADER LENGTH WRONG'
+LHLEN    EQU   *-MHLEN
+MHHEX    DC    C'GITSTRM: HEADER HEX REJECTED'
+LHHEX    EQU   *-MHHEX
+MDREAD   DC    C'GITSTRM: DATA LINERD ERROR'
+LDREAD   EQU   *-MDREAD
+MDZERO   DC    C'GITSTRM: ZERO-LENGTH DATA RECORD'
+LDZERO   EQU   *-MDZERO
+MDODD    DC    C'GITSTRM: ODD HEX DATA LENGTH'
+LDODD    EQU   *-MDODD
+MDLONG   DC    C'GITSTRM: HEX DATA RECORD TOO LONG'
+LDLONG   EQU   *-MDLONG
+MDEXTRA  DC    C'GITSTRM: DATA EXCEEDS DECLARED LENGTH'
+LDEXTRA  EQU   *-MDEXTRA
+MDFINAL  DC    C'GITSTRM: FINAL DATA LENGTH MISMATCH'
+LDFINAL  EQU   *-MDFINAL
+MD64     DC    C'GITSTRM: NONFINAL CHUNK NOT 64 BYTES'
+LD64     EQU   *-MD64
+MDHEX    DC    C'GITSTRM: DATA HEX REJECTED'
+LDHEX    EQU   *-MDHEX
 HEXTAB   DC    C'0123456789ABCDEF'
 H0INIT   DC    X'67452301'
          DC    X'EFCDAB89'
@@ -316,7 +371,7 @@ HEXRET   DS    F
 TOTLEN   DS    F
 REMAIN   DS    F
 CHUNKLN  DS    F
-TAILLEN  DC    F'0'
+TAILLEN  DS    F
 BITHI    DS    F
 BITLO    DS    F
 HASH0    DS    F
