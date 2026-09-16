@@ -48,11 +48,7 @@ exit 0
 hashobject: procedure
    parse arg type, bodyhex
    bodylen = length(bodyhex) % 2
-   prefix = type || ' ' || bodylen
-   /* Git object headers are ASCII type, space, decimal size, NUL. */
-   if type = 'tree' then prefixhex = '7472656520' || c2x(bodylen) /* replaced below */
-   if type = 'commit' then prefixhex = '636F6D6D697420' || c2x(bodylen)
-   /* c2x(bodylen) above would encode EBCDIC digits; construct ASCII digits. */
+   /* REXX decimal digits are EBCDIC; Git header digits must be ASCII. */
    dec = bodylen
    dechex = ''
    do i = 1 to length(dec)
