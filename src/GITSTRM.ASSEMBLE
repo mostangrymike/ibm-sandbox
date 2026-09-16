@@ -48,9 +48,13 @@ READLP   L     8,REMAIN
          BH    BADDLONG
          SRL   3,1
          ST    3,CHUNKLN
+*
+* The two protocol checks below completely bound each data record:
+* when more than 64 bytes remain, the record must be exactly 64 bytes;
+* otherwise the final record must equal REMAIN exactly.  A separate
+* chunk-greater-than-REMAIN precheck is therefore redundant.
+*
          L     8,REMAIN
-         CR    3,8
-         BH    BADXTRA
          C     8,=F'64'
          BH    NEED64
          CR    3,8
@@ -317,9 +321,6 @@ BADDODD  LA    2,MDODD
 BADDLONG LA    2,MDLONG
          LA    3,LDLONG
          B     BADMSG
-BADXTRA  LA    2,MDEXTRA
-         LA    3,LDEXTRA
-         B     BADMSG
 BADFINAL LA    2,MDFINAL
          LA    3,LDFINAL
          B     BADMSG
@@ -348,8 +349,6 @@ MDODD    DC    C'GITSTRM: ODD HEX DATA LENGTH'
 LDODD    EQU   *-MDODD
 MDLONG   DC    C'GITSTRM: HEX DATA RECORD TOO LONG'
 LDLONG   EQU   *-MDLONG
-MDEXTRA  DC    C'GITSTRM: DATA EXCEEDS DECLARED LENGTH'
-LDEXTRA  EQU   *-MDEXTRA
 MDFINAL  DC    C'GITSTRM: FINAL DATA LENGTH MISMATCH'
 LDFINAL  EQU   *-MDFINAL
 MD64     DC    C'GITSTRM: NONFINAL CHUNK NOT 64 BYTES'
