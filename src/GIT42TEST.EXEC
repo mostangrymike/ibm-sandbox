@@ -1,0 +1,21 @@
+/* Valid REXX program-stack driver for GIT42 */
+
+address command
+
+say 'GIT42 REXX STACK TEST'
+'MAKEBUF'
+if rc < 0 then do
+   say 'GIT42TEST: MAKEBUF failed RC=' rc
+   exit 4
+end
+
+queue '0000002A'
+say 'QUEUED=' queued()
+'GIT42'
+grc = rc
+say 'GIT42 RC=' grc
+'DROPBUF'
+
+if grc \= 0 then exit grc
+say 'GIT42 REXX STACK TEST PASSED'
+exit 0
