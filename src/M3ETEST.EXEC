@@ -4,24 +4,24 @@ say 'M3E STACK DIAGNOSTIC'
 'MAKEBUF'
 queue '0000000A'
 queue '626C6F62203300616263'
-say 'QUEUED='queued()
+say 'QUEUED=' queued()
 pull a
 pull b
-say 'FIRST='a 'LEN='length(a)
-say 'SECOND='b 'LEN='length(b)
+say 'FIRST=' a 'LEN=' length(a)
+say 'SECOND=' b 'LEN=' length(b)
 queue a
 queue b
-say 'REQUEUED='queued()
+say 'REQUEUED=' queued()
 'GITSTRM'
 strmrc = rc
-say 'GITSTRM RC='strmrc
+say 'GITSTRM RC=' strmrc
 if strmrc \= 0 then do
    'DROPBUF'
    exit strmrc
 end
 pull oid
 'DROPBUF'
-say 'OID='oid
+say 'OID=' oid
 if oid \= 'F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F' then exit 8
 
 say 'M3E TEST 2: Git blob of 300 ASCII a bytes'
