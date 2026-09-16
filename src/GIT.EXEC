@@ -102,13 +102,14 @@ if command = 'HASH-OBJECT' | command = 'WRITE-OBJECT' then do
       exit rc
    end
 
-   /* Capture GITCORE's one-line object ID using CMS OUTTRAP. */
+   /* CMS/VM REXX has no TSO OUTTRAP routine.  CMS Pipelines */
+   /* COMMAND is the documented CMS-command response interface. */
    drop hash.
-   call outtrap 'HASH.'
-   if hex = '' then 'GITCORE BLOBHEX'
-   else 'GITCORE BLOBHEX' hex
+   if hex = '' then
+      'PIPE COMMAND GITCORE BLOBHEX | STEM HASH.'
+   else
+      'PIPE COMMAND GITCORE BLOBHEX' hex '| STEM HASH.'
    corerc = rc
-   call outtrap 'OFF'
    if corerc \= 0 then exit corerc
    if hash.0 \= 1 | length(hash.1) \= 40 then do
       say 'GIT: unable to capture object ID from GITCORE'
@@ -117,7 +118,7 @@ if command = 'HASH-OBJECT' | command = 'WRITE-OBJECT' then do
    oid = hash.1
 
    /* CMS-native object name: first 8 SHA-1 hex digits as filename. */
-   /* Remaining 32 digits are retained in the object metadata record. */
+   /* Full SHA-1 remains authoritative in the object metadata. */
    objfn = substr(oid,1,8)
    obj.0 = 3
    obj.1 = 'OID' oid
