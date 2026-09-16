@@ -1,6 +1,8 @@
 /* Native Git for CMS/z/VM */
 
-parse upper arg command rest
+/* Preserve arguments exactly; normalize only the command verb. */
+parse arg command rest
+command = translate(command)
 
 if command = '' then do
    say 'Usage: GIT command [arguments]'
@@ -11,7 +13,7 @@ if command = 'VERSION' then do
    exit rc
 end
 if command = 'INIT' then do
-   parse upper var rest extra
+   parse var rest extra
    if extra \= '' then do
       say 'Usage: GIT INIT'
       exit 4
@@ -28,7 +30,8 @@ if command = 'INIT' then do
 end
 
 if command = 'VERIFY-OBJECT' | command = 'CAT-OBJECT' then do
-   parse upper var rest oid extra
+   parse var rest oid extra
+   oid = translate(oid)
    if oid = '' | extra \= '' | length(oid) \= 40 then do
       say 'Usage: GIT' command 'object-id'
       exit 4
@@ -64,7 +67,7 @@ if command = 'WRITE-TREE' then do
       p = (i-1)*3
       mode.i = word(rest,p+1)
       name.i = word(rest,p+2)
-      oid.i = word(rest,p+3)
+      oid.i = translate(word(rest,p+3))
       if mode.i \= '100644' & mode.i \= '100755' &,
          mode.i \= '120000' & mode.i \= '40000' then do
          say 'GIT: unsupported tree mode' mode.i
@@ -122,7 +125,8 @@ if command = 'WRITE-TREE' then do
 end
 
 if command = 'COMMIT-TREE' then do
-   parse upper var rest treeoid extra
+   parse var rest treeoid extra
+   treeoid = translate(treeoid)
    if treeoid = '' | extra \= '' | length(treeoid) \= 40 |,
       verify(treeoid,'0123456789ABCDEF') \= 0 then do
       say 'Usage: GIT COMMIT-TREE tree-object-id'
@@ -153,11 +157,15 @@ if command = 'COMMIT-TREE' then do
 end
 
 if command = 'HASH-OBJECT' | command = 'WRITE-OBJECT' then do
-   parse upper var rest fn ft fm extra
+   parse var rest fn ft fm extra
    if fn = '' | ft = '' | extra \= '' then do
       say 'Usage: GIT' command 'filename filetype [filemode]'
       exit 4
    end
+   /* CMS file identifiers are case-insensitive; normalize them only here. */
+   fn = translate(fn)
+   ft = translate(ft)
+   fm = translate(fm)
    if fm = '' then fm = '*'
    drop line.
    'EXECIO * DISKR' fn ft fm '1 (STEM LINE. FINIS STRIP'
@@ -296,7 +304,7 @@ toasciihex: procedure
             '20A6E180EB909FE2AB8B9B2E3C282B7C' ||,
             '26A9AA9CDBA599E3A89E21242A293B5E' ||,
             '2D2FDFDC9ADDDE989DACBA2C255F3E3F' ||,
-            'D78894B0B1B2FCD6FB603A2340273D22' ||,
+            'D78894B0B1B2B3FCD6FB603A2340273D22' ||,
             'F861626364656667686996A4F3AFAEC5' ||,
             '8C6A6B6C6D6E6F7071729787CE93F1FE' ||,
             'C87E737475767778797AEFC0DA5BF2F9' ||,
