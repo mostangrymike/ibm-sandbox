@@ -18,10 +18,6 @@ if command = 'INIT' then do
       say 'Usage: GIT INIT'
       exit 4
    end
-
-   /* A CMS minidisk/filemode is the repository namespace. */
-   /* GITMETA REPO A is deliberately nonempty: CMS has no useful */
-   /* zero-record file representation for our repository marker. */
    meta.0 = 4
    meta.1 = 'CMS-GIT-REPOSITORY 1'
    meta.2 = 'OBJECT-FORMAT SHA1'
@@ -100,30 +96,40 @@ if command = 'HASH-OBJECT' | command = 'WRITE-OBJECT' then do
       end
    end
 
-   /* Ask GITCORE for the canonical Git blob object ID. */
-   drop hash.
-   if hex = '' then
-      'EXECIO 1 CP (STRING GITCORE BLOBHEX'
-   else
-      'EXECIO 1 CP (STRING GITCORE BLOBHEX' hex
-   if rc \= 0 then exit rc
-   'EXECIO 1 DISKR * * * 1 (STEM HASH. FINIS'
-
-   /* CP capture is not portable enough for this prototype path. */
-   /* HASH-OBJECT keeps the proven direct module invocation. */
    if command = 'HASH-OBJECT' then do
       if hex = '' then 'GITCORE BLOBHEX'
       else 'GITCORE BLOBHEX' hex
       exit rc
    end
 
-   /* M3B stores canonical payload bytes plus type/length metadata. */
-   /* The full 40-hex SHA-1 is split across CMS filename/filetype. */
-   /* First obtain the ID through a temporary stack invocation. */
-   if hex = '' then call value 'GITCORE BLOBHEX'
-   else call value 'GITCORE BLOBHEX' hex
-   say 'GIT: WRITE-OBJECT capture path not yet available'
-   exit 4
+   /* Capture GITCORE's one-line object ID using CMS OUTTRAP. */
+   drop hash.
+   call outtrap 'HASH.'
+   if hex = '' then 'GITCORE BLOBHEX'
+   else 'GITCORE BLOBHEX' hex
+   corerc = rc
+   call outtrap 'OFF'
+   if corerc \= 0 then exit corerc
+   if hash.0 \= 1 | length(hash.1) \= 40 then do
+      say 'GIT: unable to capture object ID from GITCORE'
+      exit 4
+   end
+   oid = hash.1
+
+   /* CMS-native object name: first 8 SHA-1 hex digits as filename. */
+   /* Remaining 32 digits are retained in the object metadata record. */
+   objfn = substr(oid,1,8)
+   obj.0 = 3
+   obj.1 = 'OID' oid
+   obj.2 = 'TYPE BLOB'
+   obj.3 = 'DATA' hex
+   'EXECIO' obj.0 'DISKW' objfn 'GITOBJ A 1 (STEM OBJ. FINIS'
+   if rc \= 0 then do
+      say 'GIT: cannot store object' oid
+      exit rc
+   end
+   say oid
+   exit 0
 end
 
 say 'GIT: unknown command' command
