@@ -48,9 +48,9 @@ READLP   L     8,REMAIN
          BH    BADDLONG
          SRL   3,1
          ST    3,CHUNKLN
-         C     3,REMAIN
-         BH    BADXTRA
          L     8,REMAIN
+         CR    3,8
+         BH    BADXTRA
          C     8,=F'64'
          BH    NEED64
          CR    3,8
