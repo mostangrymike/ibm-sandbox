@@ -52,8 +52,13 @@ streamtest: procedure
    queue header
    pos = 1
    do while pos <= length(hex)
-      queue substr(hex,pos,128)
-      pos = pos + 128
+      /* REXX SUBSTR pads to an explicitly requested length.  Never ask */
+      /* for 128 characters on the final short chunk: those blanks are */
+      /* data to LINERD and would make a 42-byte stream look 64 bytes. */
+      remain = length(hex) - pos + 1
+      take = min(128,remain)
+      queue substr(hex,pos,take)
+      pos = pos + take
    end
    'GITSTRM'
    strmrc = rc
