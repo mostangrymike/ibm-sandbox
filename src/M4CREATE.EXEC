@@ -1,0 +1,30 @@
+/* M4 public tree creation regression */
+
+address command
+
+blob = 'F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
+tree = '2030C0B68CCC4116B0CB9990EF04B53EA30140C8'
+
+say 'M4 CREATE TEST 1: create one-entry tree through GIT command'
+'EXEC GIT WRITE-TREE 100644 README' blob
+if rc \= 0 then do
+   say 'M4CREATE: WRITE-TREE failed RC=' rc
+   exit rc
+end
+
+say 'M4 CREATE TEST 2: verify independently known tree OID'
+'EXEC GIT VERIFY-OBJECT' tree
+if rc \= 0 then do
+   say 'M4CREATE: tree verification failed RC=' rc
+   exit rc
+end
+
+say 'M4 CREATE TEST 3: cat newly written tree'
+'EXEC GIT CAT-OBJECT' tree
+if rc \= 0 then do
+   say 'M4CREATE: tree cat failed RC=' rc
+   exit rc
+end
+
+say 'M4 PUBLIC TREE CREATION TESTS PASSED'
+exit 0
