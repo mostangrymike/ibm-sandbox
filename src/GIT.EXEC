@@ -62,13 +62,13 @@ if command = 'VERIFY-OBJECT' | command = 'CAT-OBJECT' then do
    storedoid = word(obj.1,2)
    objtype = word(obj.2,2)
    datahex = word(obj.3,2)
-   if datahex = '' then datahex = ''
 
    if length(storedoid) \= 40 | storedoid \= oid then do
       say 'GIT: corrupt object' oid '- stored OID mismatch'
       exit 8
    end
-   if objtype \= 'BLOB' then do
+   if objtype \= 'BLOB' & objtype \= 'TREE' &,
+      objtype \= 'COMMIT' then do
       say 'GIT: unsupported object type' objtype
       exit 8
    end
@@ -78,21 +78,9 @@ if command = 'VERIFY-OBJECT' | command = 'CAT-OBJECT' then do
       exit 8
    end
 
-   'MAKEBUF'
-   if datahex = '' then 'GITCORE BLOBSTK'
-   else 'GITCORE BLOBSTK' datahex
-   corerc = rc
-   if corerc \= 0 then do
-      'DROPBUF'
-      exit corerc
-   end
-   if queued() \= 1 then do
-      'DROPBUF'
-      say 'GIT: GITCORE did not return exactly one object ID'
-      exit 8
-   end
-   pull actualoid
-   'DROPBUF'
+   call hashstored objtype, datahex
+   actualoid = result
+   if actualoid = 'HASHERROR' then exit 8
    if actualoid \= storedoid then do
       say 'GIT: corrupt object' oid '- content hash mismatch'
       exit 8
@@ -121,8 +109,8 @@ if command = 'HASH-OBJECT' | command = 'WRITE-OBJECT' then do
 
    drop line.
    /* CMS text policy: trailing EBCDIC blanks are record padding and */
-   /* are removed; leading blanks remain significant. IBM EXECIO     */
-   /* STRIP removes trailing blanks only, which implements this rule. */
+   /* are removed; leading blanks remain significant. IBM EXECIO */
+   /* STRIP removes trailing blanks only, implementing this rule. */
    'EXECIO * DISKR' fn ft fm '1 (STEM LINE. FINIS STRIP'
    if rc \= 0 then do
       say 'GIT: cannot read' fn ft fm
@@ -169,41 +157,15 @@ if command = 'HASH-OBJECT' | command = 'WRITE-OBJECT' then do
       ascii = translate(line.i,e2a,bytes)
       if i > 1 then hex = hex || '0A'
       hex = hex || c2x(ascii)
-      if length(hex) > 512 then do
-         say 'GIT: text payload exceeds current limit of 256 bytes'
-         exit 4
-      end
    end
+
+   call hashstored 'BLOB', hex
+   oid = result
+   if oid = 'HASHERROR' then exit 8
 
    if command = 'HASH-OBJECT' then do
-      if hex = '' then 'GITCORE BLOBHEX'
-      else 'GITCORE BLOBHEX' hex
-      exit rc
-   end
-
-   /* BLOBSTK returns the OID on a private CMS program-stack buffer. */
-   'MAKEBUF'
-   if rc < 0 then do
-      say 'GIT: cannot create program-stack buffer'
-      exit 4
-   end
-   if hex = '' then 'GITCORE BLOBSTK'
-   else 'GITCORE BLOBSTK' hex
-   corerc = rc
-   if corerc \= 0 then do
-      'DROPBUF'
-      exit corerc
-   end
-   if queued() \= 1 then do
-      'DROPBUF'
-      say 'GIT: GITCORE did not return exactly one object ID'
-      exit 4
-   end
-   pull oid
-   'DROPBUF'
-   if length(oid) \= 40 then do
-      say 'GIT: invalid object ID returned by GITCORE'
-      exit 4
+      say oid
+      exit 0
    end
 
    objfn = substr(oid,1,8)
@@ -222,3 +184,46 @@ end
 
 say 'GIT: unknown command' command
 exit 4
+
+/* Hash exact stored object bytes through the streaming SHA-1 module. */
+hashstored: procedure
+   parse upper arg type, datahex
+   bodylen = length(datahex) % 2
+   dec = bodylen
+   dechex = ''
+   do i = 1 to length(dec)
+      digit = c2d(substr(dec,i,1)) - 240
+      dechex = dechex || d2x(digit+48,2)
+   end
+   if type = 'BLOB' then prefix = '626C6F6220'
+   else if type = 'TREE' then prefix = '7472656520'
+   else if type = 'COMMIT' then prefix = '636F6D6D697420'
+   else return 'HASHERROR'
+   streamhex = prefix || dechex || '00' || datahex
+   total = length(streamhex) % 2
+   header = right(d2x(total),8,'0')
+
+   'MAKEBUF'
+   if rc < 0 then return 'HASHERROR'
+   queue header
+   pos = 1
+   do while pos <= length(streamhex)
+      remain = length(streamhex) - pos + 1
+      take = min(128,remain)
+      queue substr(streamhex,pos,take)
+      pos = pos + take
+   end
+   'GITSTRM'
+   grc = rc
+   if grc \= 0 then do
+      'DROPBUF'
+      return 'HASHERROR'
+   end
+   if queued() \= 1 then do
+      'DROPBUF'
+      return 'HASHERROR'
+   end
+   pull oid
+   'DROPBUF'
+   if length(oid) \= 40 then return 'HASHERROR'
+   return oid
