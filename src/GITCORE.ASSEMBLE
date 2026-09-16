@@ -1,6 +1,9 @@
 GITCORE  CSECT
          USING GITCORE,12
          LR    12,15
+         LA    13,4095(12)
+         LA    13,1(13)
+         USING GITCORE+4096,13
          LR    11,0
          USING EPLIST,11
          L     2,EPLARGBG
@@ -31,7 +34,7 @@ GITCORE  CSECT
          BR    14
          LTORG
 *
-* Keep the M2 object buffer near the M2 routines for R12 addressability.
+* Keep the M2 object buffer near the M2 routines.
 *
 OBJBUF   DS    512C
 *
