@@ -4,46 +4,48 @@ address command
 c1 = '54BACE2202BB0C96980CDD0AAE9A752E6188D666'
 c2 = '1E99ED02563737B793C60359F94BA587F6C1B8BD'
 
-say 'M5 REFS TEST 1: commit prerequisites remain valid'
+say 'M5 REFS TEST 1: target-proven GIT core remains intact'
 'EXEC GIT VERIFY-OBJECT' c1
 if rc \= 0 then exit rc
 'EXEC GIT VERIFY-OBJECT' c2
 if rc \= 0 then exit rc
 
-say 'M5 REFS TEST 2: initialize repository metadata'
+say 'M5 REFS TEST 2: initialize repository metadata with proven GIT core'
 'EXEC GIT INIT'
+if rc \= 0 then exit rc
+'EXEC GITREF INIT'
 if rc \= 0 then exit rc
 
 say 'M5 REFS TEST 3: create main branch at initial commit'
-'EXEC GIT BRANCH main' c1
+'EXEC GITREF BRANCH main' c1
 if rc \= 0 then exit rc
 
 say 'M5 REFS TEST 4: symbolic HEAD resolves to main'
-'EXEC GIT SYMBOLIC-REF'
+'EXEC GITREF SYMBOLIC-REF'
 if rc \= 0 then exit rc
-'EXEC GIT REV-PARSE HEAD'
+'EXEC GITREF REV-PARSE HEAD'
 if rc \= 0 then exit rc
 
 say 'M5 REFS TEST 5: create mixed-case Feature branch'
-'EXEC GIT BRANCH Feature' c2
+'EXEC GITREF BRANCH Feature' c2
 if rc \= 0 then exit rc
 
 say 'M5 REFS TEST 6: resolve full and short branch names'
-'EXEC GIT REV-PARSE refs/heads/Feature'
+'EXEC GITREF REV-PARSE refs/heads/Feature'
 if rc \= 0 then exit rc
-'EXEC GIT REV-PARSE Feature'
+'EXEC GITREF REV-PARSE Feature'
 if rc \= 0 then exit rc
 
 say 'M5 REFS TEST 7: switch symbolic HEAD to Feature'
-'EXEC GIT SYMBOLIC-REF refs/heads/Feature'
+'EXEC GITREF SYMBOLIC-REF refs/heads/Feature'
 if rc \= 0 then exit rc
-'EXEC GIT REV-PARSE HEAD'
+'EXEC GITREF REV-PARSE HEAD'
 if rc \= 0 then exit rc
 
 say 'M5 REFS TEST 8: list branches and refs'
-'EXEC GIT BRANCH'
+'EXEC GITREF BRANCH'
 if rc \= 0 then exit rc
-'EXEC GIT SHOW-REF'
+'EXEC GITREF SHOW-REF'
 if rc \= 0 then exit rc
 
 say 'M5 CMS-NATIVE REFS/BRANCHES TESTS PASSED'
