@@ -1,0 +1,34 @@
+/* M4 multiple-entry Git tree regression */
+address command
+
+blob1 = 'F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
+blob2 = 'F96567C0F557CCE820219AE6483F2171A106810B'
+want = 'E11636C5C257E21ADBBE98AE3EBB677E81AF94EB'
+
+say 'M4 MULTI TEST 1: create two-entry tree in reverse Git order'
+cmd = 'EXEC GIT WRITE-TREE 100644 README'
+cmd = cmd blob1
+cmd = cmd '100644 BIGFILE'
+cmd = cmd blob2
+address command cmd
+if rc \= 0 then do
+   say 'M4MULTI: WRITE-TREE failed RC=' rc
+   exit rc
+end
+
+say 'M4 MULTI TEST 2: verify independently known ordered tree OID'
+'EXEC GIT VERIFY-OBJECT' want
+if rc \= 0 then do
+   say 'M4MULTI: tree verification failed RC=' rc
+   exit rc
+end
+
+say 'M4 MULTI TEST 3: cat newly written ordered tree'
+'EXEC GIT CAT-OBJECT' want
+if rc \= 0 then do
+   say 'M4MULTI: tree cat failed RC=' rc
+   exit rc
+end
+
+say 'M4 MULTIPLE-ENTRY TREE TESTS PASSED'
+exit 0
