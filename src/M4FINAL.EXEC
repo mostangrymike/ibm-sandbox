@@ -1,0 +1,46 @@
+/* Final M4 tree/commit correctness regression */
+address command
+
+blob = 'F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
+subtree = 'C2421DE5E21D352FCC0CA2F81FD2D06D7B68FD72'
+root = '16202BB74533B0AA9E941E3C1D22ACCA53A2B72B'
+caseTree = 'B9E7816426B28421D7050FF4F501E7E796BC244A'
+p1 = '54BACE2202BB0C96980CDD0AAE9A752E6188D666'
+p2 = '1E99ED02563737B793C60359F94BA587F6C1B8BD'
+merge = 'C72FFDE0A46ED667E494842150FA4011C99BC9A0'
+
+say 'M4 FINAL TEST 1: prerequisite blob remains valid'
+'EXEC GIT VERIFY-OBJECT' blob
+if rc \= 0 then exit rc
+
+say 'M4 FINAL TEST 2: create subtree A/x'
+'EXEC GIT WRITE-TREE 100644 x' blob
+if rc \= 0 then exit rc
+say 'M4 FINAL TEST 3: verify independently known subtree OID'
+'EXEC GIT VERIFY-OBJECT' subtree
+if rc \= 0 then exit rc
+
+say 'M4 FINAL TEST 4: reverse-input file A and directory A'
+'EXEC GIT WRITE-TREE 40000 A' subtree '100644 A' blob
+if rc \= 0 then exit rc
+say 'M4 FINAL TEST 5: verify Git directory-order tree OID'
+'EXEC GIT VERIFY-OBJECT' root
+if rc \= 0 then exit rc
+
+say 'M4 FINAL TEST 6: create two-parent merge commit'
+cmd = 'EXEC GIT COMMIT-TREE' caseTree
+cmd = cmd '-P' p1 '-P' p2
+cmd = cmd '-A Merge_Test_<merge@example.invalid>'
+cmd = cmd '-C Merge_Test_<merge@example.invalid>'
+cmd = cmd '-T 2 -Z +0000 -M Merge_commit'
+address command cmd
+if rc \= 0 then exit rc
+say 'M4 FINAL TEST 7: verify independently known merge OID'
+'EXEC GIT VERIFY-OBJECT' merge
+if rc \= 0 then exit rc
+say 'M4 FINAL TEST 8: cat merge commit'
+'EXEC GIT CAT-OBJECT' merge
+if rc \= 0 then exit rc
+
+say 'M4 FINAL TREE/COMMIT CORRECTNESS TESTS PASSED'
+exit 0
