@@ -142,6 +142,7 @@ HEXBAD   LINEWRT DATA=(HEXUSE,HEXULEN)
          LA    15,4
          L     14,CALLRET
          BR    14
+         LTORG
 *
 * M1C: SHA1GEN accepts binary bytes and a byte count.
 * It pads internally. Tests include empty, abc, 56, and 80 bytes.
@@ -275,6 +276,7 @@ GENLAST  L     4,GENHI
          L     14,GENRET
          SR    15,15
          BR    14
+         LTORG
 *
 * SHA1BLK - SHA-1 compression of one 64-byte block.
 * R2 -> block. HASH0-HASH4 hold input and output chaining state.
@@ -383,6 +385,7 @@ FCALC    LR    14,4
          LM    9,14,SAVEREGS+24
          SR    15,15
          BR    14
+         LTORG
 *
 VERSION  DC    C'GITCORE 0.7 CMS/ZVM'
 VERLEN   EQU   *-VERSION
