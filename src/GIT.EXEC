@@ -6,12 +6,10 @@ if command = '' then do
    say 'Usage: GIT command [arguments]'
    exit 4
 end
-
 if command = 'VERSION' then do
    'GITCORE VERSION'
    exit rc
 end
-
 if command = 'INIT' then do
    parse upper var rest extra
    if extra \= '' then do
@@ -24,10 +22,7 @@ if command = 'INIT' then do
    meta.3 = 'TEXT-RECORD-SEPARATOR LF'
    meta.4 = 'HEAD refs/heads/main'
    'EXECIO' meta.0 'DISKW GITMETA REPO A 1 (STEM META. FINIS'
-   if rc \= 0 then do
-      say 'GIT: cannot create repository metadata on filemode A'
-      exit rc
-   end
+   if rc \= 0 then exit rc
    say 'Initialized native CMS Git repository on filemode A'
    exit 0
 end
@@ -35,45 +30,11 @@ end
 if command = 'VERIFY-OBJECT' | command = 'CAT-OBJECT' then do
    parse upper var rest oid extra
    if oid = '' | extra \= '' | length(oid) \= 40 then do
-      if command = 'VERIFY-OBJECT' then
-         say 'Usage: GIT VERIFY-OBJECT object-id'
-      else
-         say 'Usage: GIT CAT-OBJECT object-id'
+      say 'Usage: GIT' command 'object-id'
       exit 4
    end
-   objfn = substr(oid,1,8)
-   drop obj.
-   'EXECIO * DISKR' objfn 'GITOBJ A 1 (STEM OBJ. FINIS'
-   if rc \= 0 then do
-      say 'GIT: object not found' oid
-      exit rc
-   end
-   if obj.0 \= 3 then do
-      say 'GIT: corrupt object' oid '- expected 3 records'
-      exit 8
-   end
-   if word(obj.1,1) \= 'OID' | word(obj.2,1) \= 'TYPE' |,
-      word(obj.3,1) \= 'DATA' then do
-      say 'GIT: corrupt object' oid '- invalid record layout'
-      exit 8
-   end
-   storedoid = word(obj.1,2)
-   objtype = word(obj.2,2)
-   datahex = word(obj.3,2)
-   if length(storedoid) \= 40 | storedoid \= oid then do
-      say 'GIT: corrupt object' oid '- stored OID mismatch'
-      exit 8
-   end
-   if objtype \= 'BLOB' & objtype \= 'TREE' &,
-      objtype \= 'COMMIT' then do
-      say 'GIT: unsupported object type' objtype
-      exit 8
-   end
-   if length(datahex) // 2 \= 0 |,
-      verify(datahex,'0123456789ABCDEF') \= 0 then do
-      say 'GIT: corrupt object' oid '- invalid DATA hex'
-      exit 8
-   end
+   call readobject oid
+   if result \= 'OK' then exit 8
    call hashstored objtype, datahex
    actualoid = result
    if actualoid = 'HASHERROR' then exit 8
@@ -91,7 +52,6 @@ if command = 'VERIFY-OBJECT' | command = 'CAT-OBJECT' then do
    exit 0
 end
 
-/* M4 first public tree writer: one exact Git tree entry. */
 if command = 'WRITE-TREE' then do
    parse upper var rest mode name oid extra
    if mode = '' | name = '' | oid = '' | extra \= '' then do
@@ -109,27 +69,16 @@ if command = 'WRITE-TREE' then do
       exit 4
    end
    call toasciihex mode || ' ' || name
-   entryhex = result
-   datahex = entryhex || '00' || oid
+   datahex = result || '00' || oid
    call hashstored 'TREE', datahex
    treeoid = result
    if treeoid = 'HASHERROR' then exit 8
-   objfn = substr(treeoid,1,8)
-   obj.0 = 3
-   obj.1 = 'OID' treeoid
-   obj.2 = 'TYPE TREE'
-   obj.3 = 'DATA' datahex
-   'EXECIO' obj.0 'DISKW' objfn 'GITOBJ A 1 (STEM OBJ. FINIS'
-   if rc \= 0 then do
-      say 'GIT: cannot store tree' treeoid
-      exit rc
-   end
+   call storeobject treeoid, 'TREE', datahex
+   if result \= 'OK' then exit 8
    say treeoid
    exit 0
 end
 
-/* M4 deterministic initial commit writer. */
-/* Identity/time are fixed only for the exact M4 interoperability gate. */
 if command = 'COMMIT-TREE' then do
    parse upper var rest treeoid extra
    if treeoid = '' | extra \= '' | length(treeoid) \= 40 |,
@@ -150,11 +99,6 @@ if command = 'COMMIT-TREE' then do
       exit 8
    end
    lower = translate(treeoid,'abcdef','ABCDEF')
-   body = 'tree ' || lower || '0A' ||,
-          'author CMS Git <cms@example.invalid> 0 +0000' || '0A' ||,
-          'committer CMS Git <cms@example.invalid> 0 +0000' || '0A0A' ||,
-          'Initial commit' || '0A'
-   /* body above is CMS text plus literal hex separators; convert fields */
    call toasciihex 'tree ' || lower
    datahex = result || '0A'
    call toasciihex 'author CMS Git <cms@example.invalid> 0 +0000'
@@ -166,16 +110,8 @@ if command = 'COMMIT-TREE' then do
    call hashstored 'COMMIT', datahex
    commitoid = result
    if commitoid = 'HASHERROR' then exit 8
-   objfn = substr(commitoid,1,8)
-   obj.0 = 3
-   obj.1 = 'OID' commitoid
-   obj.2 = 'TYPE COMMIT'
-   obj.3 = 'DATA' datahex
-   'EXECIO' obj.0 'DISKW' objfn 'GITOBJ A 1 (STEM OBJ. FINIS'
-   if rc \= 0 then do
-      say 'GIT: cannot store commit' commitoid
-      exit rc
-   end
+   call storeobject commitoid, 'COMMIT', datahex
+   if result \= 'OK' then exit 8
    say commitoid
    exit 0
 end
@@ -183,10 +119,7 @@ end
 if command = 'HASH-OBJECT' | command = 'WRITE-OBJECT' then do
    parse upper var rest fn ft fm extra
    if fn = '' | ft = '' | extra \= '' then do
-      if command = 'HASH-OBJECT' then
-         say 'Usage: GIT HASH-OBJECT filename filetype [filemode]'
-      else
-         say 'Usage: GIT WRITE-OBJECT filename filetype [filemode]'
+      say 'Usage: GIT' command 'filename filetype [filemode]'
       exit 4
    end
    if fm = '' then fm = '*'
@@ -209,16 +142,8 @@ if command = 'HASH-OBJECT' | command = 'WRITE-OBJECT' then do
       say oid
       exit 0
    end
-   objfn = substr(oid,1,8)
-   obj.0 = 3
-   obj.1 = 'OID' oid
-   obj.2 = 'TYPE BLOB'
-   obj.3 = 'DATA' hex
-   'EXECIO' obj.0 'DISKW' objfn 'GITOBJ A 1 (STEM OBJ. FINIS'
-   if rc \= 0 then do
-      say 'GIT: cannot store object' oid
-      exit rc
-   end
+   call storeobject oid, 'BLOB', hex
+   if result \= 'OK' then exit 8
    say oid
    exit 0
 end
@@ -226,7 +151,103 @@ end
 say 'GIT: unknown command' command
 exit 4
 
-/* Convert CMS EBCDIC text to ASCII hexadecimal with TCPXLBIN. */
+/* New layout: OID, TYPE, SIZE, then bounded DATA records. */
+/* Existing three-record OID/TYPE/DATA objects remain readable. */
+storeobject: procedure
+   parse upper arg oid, type, datahex
+   objfn = substr(oid,1,8)
+   drop old.
+   'EXECIO * DISKR' objfn 'GITOBJ A 1 (STEM OLD. FINIS'
+   oldrc = rc
+   if oldrc = 0 & old.0 > 0 then do
+      if word(old.1,1) \= 'OID' | word(old.1,2) \= oid then do
+         say 'GIT: object filename collision' objfn
+         return 'ERROR'
+      end
+   end
+   drop out.
+   out.1 = 'OID' oid
+   out.2 = 'TYPE' type
+   out.3 = 'SIZE' length(datahex) % 2
+   n = 3
+   pos = 1
+   do while pos <= length(datahex)
+      take = min(128,length(datahex)-pos+1)
+      n = n + 1
+      out.n = 'DATA' substr(datahex,pos,take)
+      pos = pos + take
+   end
+   out.0 = n
+   'EXECIO' out.0 'DISKW' objfn 'GITOBJ A 1 (STEM OUT. FINIS'
+   if rc \= 0 then do
+      say 'GIT: cannot store object' oid
+      return 'ERROR'
+   end
+   return 'OK'
+
+readobject: procedure expose storedoid objtype datahex
+   parse upper arg oid
+   objfn = substr(oid,1,8)
+   drop obj.
+   'EXECIO * DISKR' objfn 'GITOBJ A 1 (STEM OBJ. FINIS'
+   if rc \= 0 then do
+      say 'GIT: object not found' oid
+      return 'ERROR'
+   end
+   if obj.0 < 3 | word(obj.1,1) \= 'OID' |,
+      word(obj.2,1) \= 'TYPE' then do
+      say 'GIT: corrupt object' oid '- invalid record layout'
+      return 'ERROR'
+   end
+   storedoid = word(obj.1,2)
+   objtype = word(obj.2,2)
+   if length(storedoid) \= 40 | storedoid \= oid then do
+      say 'GIT: corrupt object' oid '- stored OID mismatch'
+      return 'ERROR'
+   end
+   if objtype \= 'BLOB' & objtype \= 'TREE' &,
+      objtype \= 'COMMIT' then do
+      say 'GIT: unsupported object type' objtype
+      return 'ERROR'
+   end
+   datahex = ''
+   if obj.0 = 3 & word(obj.3,1) = 'DATA' then do
+      datahex = word(obj.3,2)
+   end
+   else do
+      if word(obj.3,1) \= 'SIZE' then do
+         say 'GIT: corrupt object' oid '- SIZE record missing'
+         return 'ERROR'
+      end
+      size = word(obj.3,2)
+      if datatype(size,'W') \= 1 | size < 0 then do
+         say 'GIT: corrupt object' oid '- invalid SIZE'
+         return 'ERROR'
+      end
+      do i = 4 to obj.0
+         if word(obj.i,1) \= 'DATA' then do
+            say 'GIT: corrupt object' oid '- invalid DATA record'
+            return 'ERROR'
+         end
+         chunk = word(obj.i,2)
+         if length(chunk) > 128 then do
+            say 'GIT: corrupt object' oid '- DATA chunk too long'
+            return 'ERROR'
+         end
+         datahex = datahex || chunk
+      end
+      if length(datahex) % 2 \= size then do
+         say 'GIT: corrupt object' oid '- SIZE mismatch'
+         return 'ERROR'
+      end
+   end
+   if length(datahex) // 2 \= 0 |,
+      verify(datahex,'0123456789ABCDEF') \= 0 then do
+      say 'GIT: corrupt object' oid '- invalid DATA hex'
+      return 'ERROR'
+   end
+   return 'OK'
+
 toasciihex: procedure
    parse arg text
    e2ahex = '000102031A091A7F1A1A1A0B0C0D0E0F' ||,
