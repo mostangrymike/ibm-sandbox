@@ -5,7 +5,25 @@ blob1 = 'F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
 blob2 = 'F96567C0F557CCE820219AE6483F2171A106810B'
 want = 'E11636C5C257E21ADBBE98AE3EBB677E81AF94EB'
 
-say 'M4 MULTI TEST 1: create two-entry tree in reverse Git order'
+say 'M4 MULTI TEST 1: create prerequisite README blob'
+t.0 = 1
+t.1 = 'abc'
+'EXECIO 1 DISKW M4SMALL TXT A 1 (STEM T. FINIS'
+if rc \= 0 then exit rc
+'EXEC GIT WRITE-OBJECT M4SMALL TXT A'
+if rc \= 0 then do
+   say 'M4MULTI: small blob creation failed RC=' rc
+   exit rc
+end
+
+say 'M4 MULTI TEST 2: verify prerequisite large blob exists'
+'EXEC GIT VERIFY-OBJECT' blob2
+if rc \= 0 then do
+   say 'M4MULTI: large prerequisite blob missing RC=' rc
+   exit rc
+end
+
+say 'M4 MULTI TEST 3: create two-entry tree in reverse Git order'
 cmd = 'EXEC GIT WRITE-TREE 100644 README'
 cmd = cmd blob1
 cmd = cmd '100644 BIGFILE'
@@ -16,14 +34,14 @@ if rc \= 0 then do
    exit rc
 end
 
-say 'M4 MULTI TEST 2: verify independently known ordered tree OID'
+say 'M4 MULTI TEST 4: verify independently known ordered tree OID'
 'EXEC GIT VERIFY-OBJECT' want
 if rc \= 0 then do
    say 'M4MULTI: tree verification failed RC=' rc
    exit rc
 end
 
-say 'M4 MULTI TEST 3: cat newly written ordered tree'
+say 'M4 MULTI TEST 5: cat newly written ordered tree'
 'EXEC GIT CAT-OBJECT' want
 if rc \= 0 then do
    say 'M4MULTI: tree cat failed RC=' rc
