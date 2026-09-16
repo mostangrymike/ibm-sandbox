@@ -339,6 +339,12 @@ BADARG   LINEWRT DATA=(USAGE,USAGELEN)
          LA    15,4
          BR    14
 *
+* Keep SHA work areas near the SHA routines for R12 addressability.
+*
+PADBLOCK DS    64C
+SAVEREGS DS    12F
+WARRAY   DS    80F
+*
 * SHA1GEN - binary-safe SHA-1 driver.
 * R2 -> input bytes, R3 = unsigned byte length (up to 2^32-1).
 * Initializes state, consumes full blocks, and creates SHA-1 padding.
@@ -591,8 +597,5 @@ HASH4    DS    F
 HEXDIG   DS    40C
 HEXBUF   DS    256C
 OBJBUF   DS    512C
-PADBLOCK DS    64C
-SAVEREGS DS    12F
-WARRAY   DS    80F
          EPLIST
          END   GITCORE
