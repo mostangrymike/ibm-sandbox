@@ -52,21 +52,22 @@ READLP   L     8,REMAIN
          C     8,=F'64'
          BH    NEED64
 *
-* Temporary M4 diagnostic: preserve and print the exact values seen by
-* GITSTRM immediately before the final-chunk comparison.  Values are
-* eight hexadecimal digits so no decimal-conversion service is needed.
+* Reload the persisted chunk length before comparing it with REMAIN.
+* The input length is state, not scratch-register state.
 *
+         L     3,CHUNKLN
          ST    3,DBGR3
          ST    8,DBGR8
          L     4,REMAIN
          ST    4,DBGREM
          BAL   14,DBGVALS
-         L     3,DBGR3
-         L     8,DBGR8
+         L     3,CHUNKLN
+         L     8,REMAIN
          CR    3,8
          BNE   BADFINAL
          B     DECODE
-NEED64   C     3,=F'64'
+NEED64   L     3,CHUNKLN
+         C     3,=F'64'
          BNE   BADD64
 DECODE   LA    2,INBUF
          LA    4,BINBUF
@@ -153,8 +154,6 @@ OUTLP    XR    5,5
          L     14,RETADDR
          BR    14
 *
-* Convert exactly eight hexadecimal characters at R2 to a fullword R5.
-*
 HEXWORD  ST    14,HEXRET
          SR    6,6
 HWLP     BAL   14,HEXNIB
@@ -171,8 +170,6 @@ HWLP     BAL   14,HEXNIB
 HWBAD    LA    15,4
          L     14,HEXRET
          BR    14
-*
-* Convert one EBCDIC hexadecimal digit at R2 to binary nibble R5.
 *
 HEXNIB   XR    5,5
          IC    5,0(2)
@@ -200,9 +197,6 @@ HXLOW    C     5,=F'129'
 HXBADD   LA    15,4
          BR    14
 *
-* Temporary diagnostic formatter.  Render DBGR3, DBGR8, and DBGREM as
-* fixed-width hexadecimal into DBGMSG, then write one line.
-*
 DBGVALS  ST    14,DBGRET
          L     5,DBGR3
          LA    3,DBGR3HX
@@ -225,8 +219,6 @@ HX32LP   LR    6,5
          LA    3,1(3)
          BCT   4,HX32LP
          BR    14
-*
-* SHA-1 compression of one 64-byte block at R2.
 *
 SHA1BLK  STM   3,14,SAVEREGS
          LA    3,WARRAY
@@ -329,8 +321,6 @@ FCALC    LR    14,4
          LM    9,14,SAVEREGS+24
          SR    15,15
          BR    14
-*
-* Distinct input diagnostics.  These are temporary M3E bring-up aids.
 *
 BADHREAD LA    2,MHREAD
          LA    3,LHREAD
