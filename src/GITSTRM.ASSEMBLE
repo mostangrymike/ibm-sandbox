@@ -1,0 +1,334 @@
+GITSTRM  CSECT
+         USING GITSTRM,12
+         LR    12,15
+         ST    14,RETADDR
+*
+* M3E streaming SHA-1 prototype.
+* Input is supplied on the CMS program stack:
+*   first line: 8 hexadecimal digits = total byte length
+*   following lines: hexadecimal data, at most 128 digits per line
+* Each nonfinal data line must represent exactly 64 bytes.
+* The final line may represent 0-64 bytes.  The module consumes exactly
+* the byte count declared by the first line and stacks the 40-digit SHA-1.
+*
+         LINERD DATA=(INBUF,128),TYPE=STACK,CASE=MIXED,TRANS=NO,       X
+               PAD=NONE,ERROR=BADIN
+         LR    3,0
+         C     3,=F'8'
+         BNE   BADIN
+         LA    2,INBUF
+         LA    3,8
+         BAL   14,HEXWORD
+         LTR   15,15
+         BNZ   BADIN
+         ST    5,TOTLEN
+         ST    5,REMAIN
+         LR    4,5
+         SRL   4,29
+         ST    4,BITHI
+         LR    4,5
+         SLL   4,3
+         ST    4,BITLO
+         MVC   HASH0(20),H0INIT
+*
+READLP   L     8,REMAIN
+         LTR   8,8
+         BZ    FINAL
+         LINERD DATA=(INBUF,128),TYPE=STACK,CASE=MIXED,TRANS=NO,       X
+               PAD=NONE,ERROR=BADIN
+         LR    3,0
+         LTR   3,3
+         BZ    BADIN
+         LR    4,3
+         N     4,=F'1'
+         LTR   4,4
+         BNZ   BADIN
+         C     3,=F'128'
+         BH    BADIN
+         SRL   3,1
+         ST    3,CHUNKLN
+         C     3,REMAIN
+         BH    BADIN
+         L     8,REMAIN
+         C     8,=F'64'
+         BH    NEED64
+         C     3,8
+         BNE   BADIN
+         B     DECODE
+NEED64   C     3,=F'64'
+         BNE   BADIN
+DECODE   LA    2,INBUF
+         LA    4,BINBUF
+         L     3,CHUNKLN
+DECLP    BAL   14,HEXNIB
+         LTR   15,15
+         BNZ   BADIN
+         SLL   5,4
+         LR    6,5
+         LA    2,1(2)
+         BAL   14,HEXNIB
+         LTR   15,15
+         BNZ   BADIN
+         OR    6,5
+         STC   6,0(4)
+         LA    2,1(2)
+         LA    4,1(4)
+         BCT   3,DECLP
+         L     3,CHUNKLN
+         L     8,REMAIN
+         SR    8,3
+         ST    8,REMAIN
+         C     3,=F'64'
+         BL    SAVETAIL
+         LA    2,BINBUF
+         BAL   14,SHA1BLK
+         B     READLP
+SAVETAIL ST    3,TAILLEN
+         LTR   3,3
+         BZ    READLP
+         LA    2,BINBUF
+         LA    4,TAILBUF
+TAILCP   IC    5,0(2)
+         STC   5,0(4)
+         LA    2,1(2)
+         LA    4,1(4)
+         BCT   3,TAILCP
+         B     READLP
+*
+FINAL    XC    PADBLK(64),PADBLK
+         L     3,TAILLEN
+         LA    2,TAILBUF
+         LA    4,PADBLK
+         LTR   3,3
+         BZ    MARK
+FINCP    IC    5,0(2)
+         STC   5,0(4)
+         LA    2,1(2)
+         LA    4,1(4)
+         BCT   3,FINCP
+MARK     MVI   0(4),X'80'
+         L     3,TAILLEN
+         C     3,=F'56'
+         BL    LASTBLK
+         LA    2,PADBLK
+         BAL   14,SHA1BLK
+         XC    PADBLK(64),PADBLK
+LASTBLK  L     4,BITHI
+         ST    4,PADBLK+56
+         L     4,BITLO
+         ST    4,PADBLK+60
+         LA    2,PADBLK
+         BAL   14,SHA1BLK
+*
+* Convert digest to uppercase hexadecimal and return it on the stack.
+*
+         LA    2,HASH0
+         LA    3,HEXDIG
+         LA    4,20
+OUTLP    XR    5,5
+         IC    5,0(2)
+         LR    6,5
+         SRL   6,4
+         N     5,=F'15'
+         IC    7,HEXTAB(6)
+         STC   7,0(3)
+         IC    7,HEXTAB(5)
+         STC   7,1(3)
+         LA    2,1(2)
+         LA    3,2(3)
+         BCT   4,OUTLP
+         CMSSTACK TEXT=(HEXDIG,40)
+         SR    15,15
+         L     14,RETADDR
+         BR    14
+*
+* Convert exactly eight hexadecimal characters at R2 to a fullword R5.
+*
+HEXWORD  ST    14,HEXRET
+         SR    6,6
+HWLP     BAL   14,HEXNIB
+         LTR   15,15
+         BNZ   HWBAD
+         SLL   6,4
+         OR    6,5
+         LA    2,1(2)
+         BCT   3,HWLP
+         LR    5,6
+         SR    15,15
+         L     14,HEXRET
+         BR    14
+HWBAD    LA    15,4
+         L     14,HEXRET
+         BR    14
+*
+* Convert one EBCDIC hexadecimal digit at R2 to binary nibble R5.
+*
+HEXNIB   XR    5,5
+         IC    5,0(2)
+         C     5,=F'240'
+         BL    HXALPHA
+         C     5,=F'249'
+         BH    HXBADD
+         S     5,=F'240'
+         SR    15,15
+         BR    14
+HXALPHA  C     5,=F'193'
+         BL    HXLOW
+         C     5,=F'198'
+         BH    HXBADD
+         S     5,=F'183'
+         SR    15,15
+         BR    14
+HXLOW    C     5,=F'129'
+         BL    HXBADD
+         C     5,=F'134'
+         BH    HXBADD
+         S     5,=F'119'
+         SR    15,15
+         BR    14
+HXBADD   LA    15,4
+         BR    14
+*
+* SHA-1 compression of one 64-byte block at R2.
+*
+SHA1BLK  STM   3,14,SAVEREGS
+         LA    3,WARRAY
+         LA    4,16
+         LR    5,2
+LOADW    L     6,0(5)
+         ST    6,0(3)
+         LA    5,4(5)
+         LA    3,4(3)
+         BCT   4,LOADW
+         LA    4,64
+         LA    3,WARRAY+64
+EXPAND   LR    5,3
+         S     5,=F'12'
+         L     6,0(5)
+         LR    5,3
+         S     5,=F'32'
+         X     6,0(5)
+         LR    5,3
+         S     5,=F'56'
+         X     6,0(5)
+         LR    5,3
+         S     5,=F'64'
+         X     6,0(5)
+         LR    7,6
+         SLL   6,1
+         SRL   7,31
+         OR    6,7
+         ST    6,0(3)
+         LA    3,4(3)
+         BCT   4,EXPAND
+         L     4,HASH0
+         L     5,HASH1
+         L     6,HASH2
+         L     7,HASH3
+         L     8,HASH4
+         LA    9,WARRAY
+         SR    10,10
+ROUND    LR    3,5
+         C     10,=F'20'
+         BL    R0
+         C     10,=F'40'
+         BL    R20
+         C     10,=F'60'
+         BL    R40
+R60      XR    3,6
+         XR    3,7
+         L     11,K3
+         B     FCALC
+R40      NR    3,6
+         LR    11,5
+         OR    11,6
+         NR    11,7
+         OR    3,11
+         L     11,K2
+         B     FCALC
+R20      XR    3,6
+         XR    3,7
+         L     11,K1
+         B     FCALC
+R0       NR    3,6
+         LR    11,5
+         X     11,=X'FFFFFFFF'
+         NR    11,7
+         OR    3,11
+         L     11,K0
+FCALC    LR    14,4
+         SLL   14,5
+         LR    2,4
+         SRL   2,27
+         OR    14,2
+         AR    14,3
+         AR    14,8
+         AR    14,11
+         A     14,0(9)
+         LR    8,7
+         LR    7,6
+         LR    3,5
+         SRL   3,2
+         LR    2,5
+         SLL   2,30
+         OR    3,2
+         LR    6,3
+         LR    5,4
+         LR    4,14
+         LA    9,4(9)
+         LA    10,1(10)
+         C     10,=F'80'
+         BL    ROUND
+         A     4,HASH0
+         A     5,HASH1
+         A     6,HASH2
+         A     7,HASH3
+         A     8,HASH4
+         ST    4,HASH0
+         ST    5,HASH1
+         ST    6,HASH2
+         ST    7,HASH3
+         ST    8,HASH4
+         LM    9,14,SAVEREGS+24
+         SR    15,15
+         BR    14
+*
+BADIN    LINEWRT DATA=(BADMSG,BADLEN)
+         LA    15,4
+         L     14,RETADDR
+         BR    14
+         LTORG
+*
+BADMSG   DC    C'GITSTRM: INVALID STACK INPUT'
+BADLEN   EQU   *-BADMSG
+HEXTAB   DC    C'0123456789ABCDEF'
+H0INIT   DC    X'67452301'
+         DC    X'EFCDAB89'
+         DC    X'98BADCFE'
+         DC    X'10325476'
+         DC    X'C3D2E1F0'
+K0       DC    X'5A827999'
+K1       DC    X'6ED9EBA1'
+K2       DC    X'8F1BBCDC'
+K3       DC    X'CA62C1D6'
+RETADDR  DS    F
+HEXRET   DS    F
+TOTLEN   DS    F
+REMAIN   DS    F
+CHUNKLN  DS    F
+TAILLEN  DC    F'0'
+BITHI    DS    F
+BITLO    DS    F
+HASH0    DS    F
+HASH1    DS    F
+HASH2    DS    F
+HASH3    DS    F
+HASH4    DS    F
+HEXDIG   DS    40C
+INBUF    DS    128C
+BINBUF   DS    64C
+TAILBUF  DS    64C
+PADBLK   DS    64C
+SAVEREGS DS    12F
+WARRAY   DS    80F
+         END   GITSTRM
