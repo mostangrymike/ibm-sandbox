@@ -120,7 +120,9 @@ if command = 'HASH-OBJECT' | command = 'WRITE-OBJECT' then do
    if fm = '' then fm = '*'
 
    drop line.
-   'EXECIO * DISKR' fn ft fm '1 (STEM LINE. FINIS STRIP'
+   /* Do not use EXECIO STRIP here.  IBM documents STRIP as removing */
+   /* trailing blanks; those bytes are significant to a Git blob.   */
+   'EXECIO * DISKR' fn ft fm '1 (STEM LINE. FINIS'
    if rc \= 0 then do
       say 'GIT: cannot read' fn ft fm
       exit rc
