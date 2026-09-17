@@ -1,0 +1,96 @@
+/* M6J isolated Git delta instruction interpreter. */
+parse arg command rest
+command = translate(command)
+
+if command = 'APPLY' then do
+   parse var rest base delta extra
+   base = translate(base)
+   delta = translate(delta)
+   if extra \= '' | length(base) // 2 \= 0 | length(delta) // 2 \= 0 |,
+      verify(base,'0123456789ABCDEF') \= 0 |,
+      verify(delta,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITDAPP APPLY base-hex delta-hex'
+      exit 4
+   end
+   pos = 1
+   call readvarint delta, pos
+   if result = 'ERROR' then exit 8
+   parse var result basesize pos
+   call readvarint delta, pos
+   if result = 'ERROR' then exit 8
+   parse var result resultsize pos
+   if basesize \= length(base) % 2 then do
+      say 'GITDAPP: base size mismatch'
+      exit 8
+   end
+   out = ''
+   do while pos <= length(delta)
+      op = x2d(substr(delta,pos,2))
+      pos = pos + 2
+      if op = 0 then do
+         say 'GITDAPP: reserved delta opcode 00'
+         exit 8
+      end
+      if op >= 128 then do
+         off = 0
+         sz = 0
+         if op // 2 = 1 then do; call getbyte delta,pos; if result='ERROR' then exit 8; off=off+x2d(result); pos=pos+2; end
+         if (op % 2) // 2 = 1 then do; call getbyte delta,pos; if result='ERROR' then exit 8; off=off+x2d(result)*256; pos=pos+2; end
+         if (op % 4) // 2 = 1 then do; call getbyte delta,pos; if result='ERROR' then exit 8; off=off+x2d(result)*65536; pos=pos+2; end
+         if (op % 8) // 2 = 1 then do; call getbyte delta,pos; if result='ERROR' then exit 8; off=off+x2d(result)*16777216; pos=pos+2; end
+         if (op % 16) // 2 = 1 then do; call getbyte delta,pos; if result='ERROR' then exit 8; sz=sz+x2d(result); pos=pos+2; end
+         if (op % 32) // 2 = 1 then do; call getbyte delta,pos; if result='ERROR' then exit 8; sz=sz+x2d(result)*256; pos=pos+2; end
+         if (op % 64) // 2 = 1 then do; call getbyte delta,pos; if result='ERROR' then exit 8; sz=sz+x2d(result)*65536; pos=pos+2; end
+         if sz = 0 then sz = 65536
+         if off + sz > length(base) % 2 then do
+            say 'GITDAPP: copy exceeds base object'
+            exit 8
+         end
+         out = out || substr(base,off*2+1,sz*2)
+      end
+      else do
+         n = op
+         if pos + n*2 - 1 > length(delta) then do
+            say 'GITDAPP: truncated insert data'
+            exit 8
+         end
+         out = out || substr(delta,pos,n*2)
+         pos = pos + n*2
+      end
+   end
+   if length(out) % 2 \= resultsize then do
+      say 'GITDAPP: result size mismatch'
+      exit 8
+   end
+   say out
+   exit 0
+end
+say 'GITDAPP: unknown command' command
+exit 4
+
+getbyte: procedure
+   parse arg data,pos
+   if pos + 1 > length(data) then do
+      say 'GITDAPP: truncated copy instruction'
+      return 'ERROR'
+   end
+   return substr(data,pos,2)
+
+readvarint: procedure
+   parse arg data,pos
+   value=0; shift=0
+   do forever
+      if pos + 1 > length(data) then do
+         say 'GITDAPP: truncated delta header'
+         return 'ERROR'
+      end
+      b=x2d(substr(data,pos,2)); pos=pos+2
+      value=value+(b // 128)*(2 ** shift)
+      if b < 128 then leave
+      shift=shift+7
+      if shift > 56 then do
+         say 'GITDAPP: delta size header too large'
+         return 'ERROR'
+      end
+   end
+   return value pos
