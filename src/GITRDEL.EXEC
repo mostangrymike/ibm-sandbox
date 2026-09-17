@@ -1,0 +1,79 @@
+/* M6K isolated REF_DELTA base resolver for CMS object storage. */
+parse arg command rest
+command = translate(command)
+
+if command = 'RESOLVE' then do
+   parse var rest oid delta extra
+   oid = translate(oid)
+   delta = translate(delta)
+   if extra \= '' | length(oid) \= 40 |,
+      verify(oid,'0123456789ABCDEF') \= 0 | delta = '' |,
+      length(delta) // 2 \= 0 |,
+      verify(delta,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITRDEL RESOLVE base-oid delta-hex'
+      exit 4
+   end
+   call readbase oid
+   if result \= 'OK' then exit 8
+   'EXEC GITDAPP APPLY' datahex delta
+   exit rc
+end
+
+say 'GITRDEL: unknown command' command
+exit 4
+
+readbase: procedure expose datahex
+   parse upper arg oid
+   objfn = substr(oid,1,8)
+   drop obj.
+   'EXECIO * DISKR' objfn 'GITOBJ A 1 (STEM OBJ. FINIS'
+   if rc \= 0 then do
+      say 'GITRDEL: base object not found' oid
+      return 'ERROR'
+   end
+   if obj.0 < 3 | word(obj.1,1) \= 'OID' |,
+      word(obj.2,1) \= 'TYPE' then do
+      say 'GITRDEL: corrupt base object' oid
+      return 'ERROR'
+   end
+   if word(obj.1,2) \= oid then do
+      say 'GITRDEL: stored base OID mismatch'
+      return 'ERROR'
+   end
+   datahex = ''
+   if obj.0 = 3 & word(obj.3,1) = 'DATA' then do
+      datahex = word(obj.3,2)
+   end
+   else do
+      if word(obj.3,1) \= 'SIZE' then do
+         say 'GITRDEL: base SIZE record missing'
+         return 'ERROR'
+      end
+      size = word(obj.3,2)
+      if datatype(size,'W') \= 1 | size < 0 then do
+         say 'GITRDEL: invalid base SIZE'
+         return 'ERROR'
+      end
+      do i = 4 to obj.0
+         if word(obj.i,1) \= 'DATA' then do
+            say 'GITRDEL: invalid base DATA record'
+            return 'ERROR'
+         end
+         chunk = word(obj.i,2)
+         if length(chunk) > 128 then do
+            say 'GITRDEL: base DATA chunk too long'
+            return 'ERROR'
+         end
+         datahex = datahex || chunk
+      end
+      if length(datahex) % 2 \= size then do
+         say 'GITRDEL: base SIZE mismatch'
+         return 'ERROR'
+      end
+   end
+   if length(datahex) // 2 \= 0 |,
+      verify(datahex,'0123456789ABCDEF') \= 0 then do
+      say 'GITRDEL: invalid base DATA hex'
+      return 'ERROR'
+   end
+   return 'OK'
