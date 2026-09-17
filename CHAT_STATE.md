@@ -27,8 +27,8 @@ Goal: genuine Git interoperability, eventually smart HTTP with native TLS.
 ## Completed
 M1 SHA-1; M2 object encoding; M3 CMS object DB; M4 trees/commits; M5 refs/HEAD;
 M6 protocol/delta through M6N; M7 compression through M7I; M8 complete PACK
-ordinary/OFS/REF through M8C; M9A/M9B bounded storage; M9C bounded pack SHA-1.
-All completed milestones are target proven.
+ordinary/OFS/REF through M8C; M9A/M9B bounded storage; M9C bounded pack SHA-1;
+M9D bounded inflater primitive. All completed milestones are target proven.
 
 ## M8 complete PACK summary
 M8A ordinary complete pack passed including trailer SHA and negative tests.
@@ -83,23 +83,35 @@ A direct GITPSHA VERIFY against the prior M9B arbitrary 80-byte test buffer also
 correctly rejected its final 20 bytes as a nonmatching trailer, RC=8. This was an
 expected pre-regression sanity check, not a failure of M9C.
 
-M9C bounds the pack-checksum path, but the M8 walker/inflater still consume large
-REXX hex strings and GITPCTX still stores whole object datahex in one record.
+### M9D bounded inflater primitive — DONE/TARGET PROVEN
+`src/GITPINFL.EXEC` provides an isolated GITPBUF reader-driven inflater path for
+the stored-DEFLATE form used by the known M8A ordinary object. It does not first
+assemble the complete compressed stream or complete PACK into one REXX hex
+string. `src/M9DINF.EXEC` builds the known M8A pack incrementally and exercises
+the primitive at the first object's zlib offset.
+
+Target result:
+- first ordinary object inflated to `DATA 616263` (`abc`).
+- inflater reported `ZLIB BYTES 14`.
+- next packed object remained at byte offset 27 with header `33`.
+- final `M9D BOUNDED INFLATER TESTS PASSED`.
+
+This is the first bounded-inflater gate. The existing general `GITINFL` remains
+target proven and unchanged; its fixed/dynamic/mixed DEFLATE support still uses
+a complete input hex string and whole output hex string.
 
 ## NEXT ACTION
-M9D: make inflater consumption incremental from GITPBUF. Introduce an isolated,
-bounded reader-driven path that can inflate a compressed ordinary PACK object
-without first assembling the complete compressed stream or complete PACK as one
-REXX hex string. Reuse the target-proven inflater/DEFLATE core and GITPBUF logical
-byte offsets. Preserve M7/M8 regressions and do not migrate the full pack walker
-until this primitive is target proven. Start with the known M8A first ordinary
-object at pack offset 12 (`33` header followed by zlib stream) and prove the
-reconstructed bytes are `616263` (`abc`) while reads remain bounded.
+M9E: extend the isolated bounded GITPBUF inflater path beyond stored DEFLATE so
+it can consume fixed and dynamic Huffman streams incrementally while preserving
+the target-proven M7 inflater semantics. Keep the full M8 pack walker unchanged
+until the bounded inflater supports the general DEFLATE cases and is target
+proven. Add focused regressions using existing M7 fixed/dynamic/mixed vectors,
+then rerun the relevant M7/M8 regressions before integrating the bounded path.
 
 ## Important implementation facts
-M8 walker/inflater still accumulate whole hex strings; GITPCTX stores whole
-object datahex in one record. Git hash input exact ASCII `type + space + decimal
-size + NUL + binary content`. CMS text strips trailing EBCDIC padding blanks,
-preserves leading blanks, joins records with ASCII LF, no final LF. Arbitrary
-bytes require binary-safe mode. Native GSK/Dynamic SSL exists; use documented
-native TLS later rather than implementing TLS ourselves.
+M8 walker/general inflater still accumulate whole hex strings; GITPCTX stores
+whole object datahex in one record. Git hash input exact ASCII `type + space +
+decimal size + NUL + binary content`. CMS text strips trailing EBCDIC padding
+blanks, preserves leading blanks, joins records with ASCII LF, no final LF.
+Arbitrary bytes require binary-safe mode. Native GSK/Dynamic SSL exists; use
+documented native TLS later rather than implementing TLS ourselves.
