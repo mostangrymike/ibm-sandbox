@@ -36,7 +36,8 @@ if command = 'ADD' then do
    exit 0
 end
 
-if command = 'GET' then do
+if command = 'GET' | command = 'GETSTACK' then do
+   stackmode = command = 'GETSTACK'
    parse var rest position extra
    if extra \= '' | datatype(position,'W') \= 1 | position < 0 then do
       say 'Usage: GITPCTX GET position'
@@ -46,9 +47,15 @@ if command = 'GET' then do
    if result \= 'OK' then exit 8
    do i = 1 to count
       if pos.i = position then do
-         say 'POSITION' pos.i
-         say 'TYPE' typ.i
-         say 'DATA' dat.i
+         if stackmode then do
+            queue typ.i
+            queue dat.i
+         end
+         else do
+            say 'POSITION' pos.i
+            say 'TYPE' typ.i
+            say 'DATA' dat.i
+         end
          exit 0
       end
    end
