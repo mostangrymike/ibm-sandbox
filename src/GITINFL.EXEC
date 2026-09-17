@@ -202,7 +202,7 @@ huffblock:
       end
    end
 
-bits:
+bits: procedure expose data bitpos
    parse arg count
    value = 0
    do i = 0 to count - 1
