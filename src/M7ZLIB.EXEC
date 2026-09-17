@@ -1,0 +1,49 @@
+/* M7B RFC 1950 zlib wrapper parser regression. */
+address command
+
+say 'M7 ZLIB TEST 1: valid zlib stream for abc'
+'EXEC GITZLIB PARSE 789C4B4C4A0600024D0127'
+if rc \= 0 then exit rc
+
+say 'M7 ZLIB TEST 2: valid empty zlib stream'
+'EXEC GITZLIB PARSE 789C030000000001'
+if rc \= 0 then exit rc
+
+say 'M7 ZLIB TEST 3: bad FCHECK is rejected'
+'EXEC GITZLIB PARSE 789D4B4C4A0600024D0127'
+if rc = 0 then do
+   say 'M7ZLIB: bad FCHECK unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 ZLIB TEST 4: non-DEFLATE method is rejected'
+'EXEC GITZLIB PARSE 79054B4C4A0600024D0127'
+if rc = 0 then do
+   say 'M7ZLIB: unsupported method unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 ZLIB TEST 5: invalid CINFO is rejected'
+'EXEC GITZLIB PARSE 881C4B4C4A0600024D0127'
+if rc = 0 then do
+   say 'M7ZLIB: invalid window unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 ZLIB TEST 6: FDICT header exposes DICTID'
+'EXEC GITZLIB PARSE 782000000001030000000001'
+if rc \= 0 then exit rc
+
+say 'M7 ZLIB TEST 7: truncated stream is rejected'
+'EXEC GITZLIB PARSE 789C0300'
+if rc = 0 then do
+   say 'M7ZLIB: truncated stream unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 ZLIB WRAPPER PARSER TESTS PASSED'
+exit 0
