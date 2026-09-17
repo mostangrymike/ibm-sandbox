@@ -1,8 +1,8 @@
 /* M6J Git delta instruction application regression. */
 address command
 
-say 'M6 DAPP TEST 1: insert-only abc'
-'EXEC GITDAPP APPLY  0003616263'
+say 'M6 DAPP TEST 1: insert-only abc from one-byte base'
+'EXEC GITDAPP APPLY 00 010301616263'
 if rc \= 0 then exit rc
 
 say 'M6 DAPP TEST 2: copy entire abc base'
