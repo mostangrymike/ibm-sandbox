@@ -2,25 +2,28 @@
 address command
 
 oid = '54BACE2202BB0C96980CDD0AAE9A752E6188D666'
+main = '726566732F68656164732F6D61696E'
+feature = '726566732F68656164732F46656174757265'
+caps = '6D756C74695F61636B207468696E2D7061636B20'
+caps = caps || '736964652D62616E642D36346B206F66732D64656C7461'
 
 say 'M6 ADV TEST 1: parse ordinary advertised main ref'
-payload = oid || '20' || c2x('refs/heads/main')
+payload = oid || '20' || main
 'EXEC GITADV PARSE' payload
 if rc \= 0 then exit rc
 
 say 'M6 ADV TEST 2: parse first ref with NUL capability list'
-payload = oid || '20' || c2x('refs/heads/main') || '00' ||,
-          c2x('multi_ack thin-pack side-band-64k ofs-delta')
+payload = oid || '20' || main || '00' || caps
 'EXEC GITADV PARSE' payload
 if rc \= 0 then exit rc
 
 say 'M6 ADV TEST 3: mixed-case ref name is preserved'
-payload = oid || '20' || c2x('refs/heads/Feature')
+payload = oid || '20' || feature
 'EXEC GITADV PARSE' payload
 if rc \= 0 then exit rc
 
 say 'M6 ADV TEST 4: short object-id is rejected'
-payload = '54BACE22' || '20' || c2x('refs/heads/main')
+payload = '54BACE22' || '20' || main
 'EXEC GITADV PARSE' payload
 if rc = 0 then do
    say 'M6ADV: short object-id unexpectedly succeeded'
