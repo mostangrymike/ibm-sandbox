@@ -1,0 +1,36 @@
+/* M6K REF_DELTA base-object resolution regression. */
+address command
+
+base = 'F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
+
+say 'M6 RDEL TEST 1: prerequisite abc blob exists'
+'GIT VERIFY-OBJECT' base
+if rc \= 0 then exit rc
+
+say 'M6 RDEL TEST 2: resolve base by full REF_DELTA OID and copy abc'
+'EXEC GITRDEL RESOLVE' base '03039003'
+if rc \= 0 then exit rc
+
+say 'M6 RDEL TEST 3: resolve base and reconstruct abX'
+'EXEC GITRDEL RESOLVE' base '030390020158'
+if rc \= 0 then exit rc
+
+say 'M6 RDEL TEST 4: missing base object is rejected'
+missing = '0000000000000000000000000000000000000000'
+'EXEC GITRDEL RESOLVE' missing '0000'
+if rc = 0 then do
+   say 'M6RDEL: missing base unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 RDEL TEST 5: malformed base OID is rejected'
+'EXEC GITRDEL RESOLVE BAD 0000'
+if rc = 0 then do
+   say 'M6RDEL: malformed OID unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 REF_DELTA BASE RESOLUTION TESTS PASSED'
+exit 0
