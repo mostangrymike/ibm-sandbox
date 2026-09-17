@@ -1,0 +1,47 @@
+/* M6F isolated Git packfile header parser. */
+parse arg command rest
+command = translate(command)
+
+if command = 'HEADER' then do
+   parse var rest data extra
+   if data = '' | extra \= '' | length(data) // 2 \= 0 |,
+      verify(translate(data),'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITPACK HEADER pack-header-hex'
+      exit 4
+   end
+   if length(data) < 24 then do
+      say 'GITPACK: truncated pack header'
+      exit 8
+   end
+   sig = translate(substr(data,1,8))
+   if sig \= '5041434B' then do
+      say 'GITPACK: invalid pack signature'
+      exit 8
+   end
+   verhex = substr(data,9,8)
+   cnthex = substr(data,17,8)
+   version = hex32(verhex)
+   if version = 'ERROR' then exit 8
+   count = hex32(cnthex)
+   if count = 'ERROR' then exit 8
+   if version \= 2 & version \= 3 then do
+      say 'GITPACK: unsupported pack version' version
+      exit 8
+   end
+   say 'PACK'
+   say 'VERSION' version
+   say 'OBJECTS' count
+   exit 0
+end
+
+say 'GITPACK: unknown command' command
+exit 4
+
+hex32: procedure
+   parse arg h
+   h = translate(h)
+   if length(h) \= 8 | verify(h,'0123456789ABCDEF') \= 0 then return 'ERROR'
+   /* Avoid relying on a signed 32-bit D2X/X2D boundary. */
+   n1 = x2d(substr(h,1,4))
+   n2 = x2d(substr(h,5,4))
+   return n1 * 65536 + n2
