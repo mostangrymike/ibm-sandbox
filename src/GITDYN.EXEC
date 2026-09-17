@@ -45,13 +45,13 @@ do i = 1 to hclen
    k = word(order,i)
    cl.k = result
 end
-call maketree 'cl.',19,'ct.'
+call maketree 'CL',19,'CT'
 if result \= 'OK' then exit 8
 total = hlit + hdist
 drop lens.
 n = 0
 do while n < total
-   call getsym 'ct.'
+   call getsym 'CT'
    if result = 'ERROR' then exit 8
    s = result
    if s <= 15 then do
@@ -109,13 +109,13 @@ if ll.256 = 0 then do
    say 'GITDYN: literal/length tree lacks end-of-block'
    exit 8
 end
-call maketree 'll.',hlit,'lt.'
+call maketree 'LL',hlit,'LT'
 if result \= 'OK' then exit 8
-call maketree 'dd.',hdist,'dt.'
+call maketree 'DD',hdist,'DT'
 if result \= 'OK' then exit 8
 out = ''
 do forever
-   call getsym 'lt.'
+   call getsym 'LT'
    if result = 'ERROR' then exit 8
    s = result
    if s < 256 then out = out || d2x(s,2)
@@ -128,7 +128,7 @@ do forever
       call getlen s
       if result = 'ERROR' then exit 8
       mlen = result
-      call getsym 'dt.'
+      call getsym 'DT'
       if result = 'ERROR' then exit 8
       ds = result
       if ds > 29 then do
@@ -178,7 +178,10 @@ maketree: procedure expose cl. ll. dd. ct. lt. dt.
       bl.i = 0
    end
    do s = 0 to count - 1
-      l = value(src||s)
+      if src = 'CL' then l = cl.s
+      else if src = 'LL' then l = ll.s
+      else if src = 'DD' then l = dd.s
+      else return 'ERROR'
       if l < 0 | l > 15 then return 'ERROR'
       if l > 0 then bl.l = bl.l + 1
    end
@@ -189,7 +192,9 @@ maketree: procedure expose cl. ll. dd. ct. lt. dt.
       next.l = code
    end
    do s = 0 to count - 1
-      l = value(src||s)
+      if src = 'CL' then l = cl.s
+      else if src = 'LL' then l = ll.s
+      else l = dd.s
       if l > 0 then do
          c = next.l
          next.l = c + 1
@@ -199,7 +204,10 @@ maketree: procedure expose cl. ll. dd. ct. lt. dt.
             r = r * 2 + (x // 2)
             x = x % 2
          end
-         old = value(dst||l||'.'||r,s)
+         if dst = 'CT' then ct.l.r = s
+         else if dst = 'LT' then lt.l.r = s
+         else if dst = 'DT' then dt.l.r = s
+         else return 'ERROR'
       end
    end
    return 'OK'
@@ -215,8 +223,19 @@ getsym: procedure expose bits bp ct. lt. dt.
       end
       if substr(bits,bp,1) = '1' then code = code + mult
       bp = bp + 1
-      name = tree||l||'.'||code
-      if symbol(name) = 'VAR' then return value(name)
+      if tree = 'CT' then do
+         name = 'CT.'||l||'.'||code
+         if symbol(name) = 'VAR' then return ct.l.code
+      end
+      else if tree = 'LT' then do
+         name = 'LT.'||l||'.'||code
+         if symbol(name) = 'VAR' then return lt.l.code
+      end
+      else if tree = 'DT' then do
+         name = 'DT.'||l||'.'||code
+         if symbol(name) = 'VAR' then return dt.l.code
+      end
+      else return 'ERROR'
       mult = mult * 2
    end
    say 'GITDYN: invalid Huffman code'
