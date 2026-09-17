@@ -4,7 +4,7 @@ address command
 base = 'F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
 
 say 'M6 RDEL TEST 1: prerequisite abc blob exists'
-'GIT VERIFY-OBJECT' base
+'EXEC GIT VERIFY-OBJECT' base
 if rc \= 0 then exit rc
 
 say 'M6 RDEL TEST 2: resolve base by full REF_DELTA OID and copy abc'
