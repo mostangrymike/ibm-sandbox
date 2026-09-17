@@ -21,85 +21,74 @@ Repository: `mostangrymike/ibm-sandbox`, branch `main`
 ## Environment and architecture
 
 IBM z/VM 6.3 Evaluation Edition under Hercules Aethra on Raspberry Pi 5/Debian.
-TCP/IP works. C89 front end exists but compiler backend is absent. Native
-assembler is Assembler XF with DMSGPI. REXX orchestrates; assembler is for
-binary/native/performance work. The client must be genuinely Git-compatible and
-eventually use smart HTTP.
+TCP/IP works. Native assembler is Assembler XF with DMSGPI. REXX orchestrates;
+assembler is for binary/native/performance work. Client must be genuinely
+Git-compatible and eventually use smart HTTP.
 
 ## Completed milestones
 
-M1 SHA-1; M2 Git object encoding; M3 CMS-native object DB; M4 trees/commits;
-M5 refs/branches/HEAD; M6A pkt-line; M6B advertisement parser; M6C fetch
-negotiation; M6D ACK/NAK; M6E side-band; M6F pack header; M6G packed-object
-header; M6H OFS_DELTA offset; M6I delta header; M6J delta application; M6K
-REF_DELTA resolution; M6L OFS_DELTA base position; M6M pack-entry context; M6N
-OFS_DELTA context/application. M4 onward listed above are target proven.
+M1 SHA-1; M2 object encoding; M3 CMS-native object DB; M4 trees/commits; M5
+refs/branches/HEAD; M6 protocol/delta primitives through M6N; M7 RFC1950/DEFLATE
+and compressed pack-entry/delta integration through M7I. All listed completion
+milestones are target proven.
 
 M6M context stores whole `datahex` in a CMS record and remains a small prototype,
 not scalable to real pack objects.
 
 ## M7 compression
 
-- M7A native RFC1950/1951 zlib capability: DONE, none found.
-- M7B `GITZLIB` wrapper parser: DONE, target proven.
-- M7C `GITSTOR` stored DEFLATE: DONE, target proven.
-- M7D `GITFIX` fixed Huffman + LZ77: DONE, target proven.
-- M7E `GITDYN` dynamic Huffman + LZ77: DONE, target proven.
-- M7F `GITINFL` general/mixed inflater: DONE, target proven.
-- M7G `GITADLER` Adler-32: DONE, target proven.
-- M7H `GITPINF` ordinary pack-entry inflate: DONE, target proven.
-- M7I compressed REF_DELTA/OFS_DELTA integration: DONE, TARGET PROVEN.
+M7A native zlib investigation DONE none found; M7B wrapper; M7C stored; M7D fixed
+Huffman/LZ77; M7E dynamic Huffman/LZ77; M7F general/mixed inflater; M7G Adler-32;
+M7H ordinary pack-entry inflate; M7I compressed REF/OFS delta integration: all
+DONE and target proven.
 
-## M7 implementation lessons
+CMS REXX lessons: PROCEDURE isolates variables; expose only required state. Do
+not use two-argument dynamic VALUE assignment here. Compute compound-stem indices
+explicitly. Keep EXEC source lines <=80 chars for fixed-80 transfer.
 
-CMS REXX `PROCEDURE` isolates variables; expose only required stems/variables.
-Do not use two-argument dynamic `VALUE()` assignment on this target path. Use
-explicit stems. `lens.i+1` is not compound index `i+1`; calculate an index first.
-Canonical Huffman next-code recurrence uses previous bit-length count explicitly.
-Keep EXEC source lines <=80 chars for fixed-80 c3270 transfer.
+`GITINFL` has stack-return integration modes. Always rerun `M7INFL` after changing
+it because it is now shared pack infrastructure.
 
-`GITINFL` gained `INFLATESTACK` for integration. Existing `M7INFL` was rerun
-after this change and passed completely, preserving the proven inflater path.
+## M8 whole-pack integration
 
-## M7H target result
-
-Ordinary blob packed entry inflated to TYPE 3 BLOB, SIZE 3, DATA `616263`, Adler
-`024D0127`. Wrong Adler, pack-size mismatch, and invalid FCHECK rejected RC=8.
-Delta entries were deliberately deferred. Final line:
-`M7 PACK-ENTRY INFLATE INTEGRATION TESTS PASSED`.
-
-## M7I compressed delta final result
+### M8A whole-PACK walker — DONE, TARGET PROVEN
 
 Files/commits:
-- `src/GITZDREF.EXEC` commit `6e6e9bd4418c6bfafc6d518d8b5e2a788e45ba16`
-- `src/GITZDOFS.EXEC` commit `777f61877a93099c95d4d12aa8f0db7ca3a6b8b5`
-- `src/M7ZDEL.EXEC` commit `9150519bb1d857a5886bc503dc5bb2c0a8982d14`
+- `src/GITINFL.EXEC` consumed-byte reporting commit
+  `edccb52f4cc60db41502d1ae30d2fcfec67f5652`
+- `src/GITPWALK.EXEC` commit `efadd73dca8e55027803c73e0c115aa35f6f2c51`
+- `src/M8PACK.EXEC` commit `58fa809d1b971455cba1f8eb8ab88b2c98d36d78`
 
-M7I inflates and verifies a zlib-compressed Git delta instruction stream, then
-hands it to the existing target-proven M6 resolver/application path rather than
-duplicating delta logic.
+M7F was rerun after changing GITINFL and passed completely.
 
-Final CMS target run:
-- compressed REF_DELTA reconstructed `abcd` -> `61626364`
-- compressed OFS_DELTA reconstructed `abcd` -> `61626364`
-- initial `DMSSTT002E File GITPCTX PACK A not found` during context setup is the
-  known harmless first-file diagnostic; the OFS test subsequently succeeded
-- bad compressed-delta Adler rejected RC=8
-- bad OFS base position rejected RC=8 after successful inflation
-- final line: `M7 COMPRESSED DELTA INTEGRATION TESTS PASSED`
+Final M8A CMS target run on deterministic two-entry PACK:
+- entry 1 at byte position 12: BLOB size 3, data `616263` (`abc`)
+- entry 2 at byte position 27: BLOB size 3, data `78797A` (`xyz`)
+- PACK version 2, object count 2
+- trailing PACK SHA-1 verified as
+  `5F1C02695D4BC807AE4A5DD622AD1D28E7659429`
+- both reconstructed entries retrieved correctly from GITPCTX
+- bad trailing pack SHA-1 rejected RC=8 with expected/actual values
+- bad declared count rejected RC=8 after the two available entries
+- final line: `M8 WHOLE-PACK WALKER TESTS PASSED`
 
-M7 compression/decompression functionality required for receiving Git pack
-objects is now functionally proven in isolated vectors, including ordinary
-objects and both Git delta forms. The next gap is no longer a DEFLATE primitive;
-it is whole-pack walking/integration and scalability.
+The repeated `DMSSTT002E File GITPCTX PACK A not found` is the known harmless
+first-file diagnostic after context clear. In the bad-count test output,
+`78797AGITPWALK...` is only adjacent console output; the intended count failure
+occurred and RC=8 was observed.
 
-NEXT ACTION: begin the next isolated milestone for walking a complete Git PACK
-byte stream: validate PACK header/version/count, iterate entries from their byte
-positions, parse each entry header and delta base metadata, determine each zlib
-stream boundary, inflate/reconstruct it, add reconstructed entries to pack
-context, and validate the trailing pack SHA-1. Preserve all M6/M7 target-proven
-components. Start with a tiny deterministic multi-entry pack before addressing
-streaming/scalability.
+M8A proves the walker can validate a complete PACK header, use inflater consumed
+byte counts to advance across adjacent zlib streams, reconstruct ordinary
+entries at actual pack positions, populate context, and verify the pack trailer.
+It currently covers ordinary entries only; whole-pack REF/OFS delta dispatch is
+the next integration gate.
+
+NEXT ACTION: M8B extend GITPWALK to parse REF_DELTA and OFS_DELTA metadata inside
+a complete PACK and reconstruct them using the already-proven M6/M7 delta paths.
+Use a deterministic complete pack containing an ordinary base plus at least one
+delta entry, preserve M8A and M7F regressions, and verify final PACK SHA-1. Avoid
+rewriting proven delta/inflater algorithms. After whole-pack delta walking works,
+address scalable storage/streaming instead of whole-pack/whole-object REXX hex.
 
 ## Important implementation facts
 
@@ -108,8 +97,7 @@ content`. CMS text policy strips trailing EBCDIC record-padding blanks, preserve
 leading blanks, joins records with ASCII LF, and adds no final LF. Binary-safe
 mode is required for arbitrary bytes.
 
-Known cosmetic first-file `DMSSTT002E`/similar messages are accepted where
-correctness is unaffected. Do not weaken collision/ref integrity to hide them.
-Checkout currently means symbolic HEAD switching only. TLS support exists via
-native GSK/Dynamic SSL facilities; use documented native TLS later rather than
-implementing TLS ourselves.
+Known cosmetic first-file diagnostics are accepted where correctness is
+unaffected. Do not weaken integrity checks to hide them. Checkout currently means
+symbolic HEAD switching only. TLS support exists via native GSK/Dynamic SSL; use
+documented native TLS later rather than implementing TLS ourselves.
