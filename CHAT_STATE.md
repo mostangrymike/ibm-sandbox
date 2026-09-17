@@ -5,6 +5,10 @@ Repository: `mostangrymike/ibm-sandbox`, branch `main`
 
 ## Workflow/rules
 - GitHub canonical; edit there first, then user pulls/transfers/tests on CMS.
+- Whenever files must be transferred to CMS for testing, always provide the Mac
+  commands needed to fetch/prepare/transfer them, followed by the CMS commands.
+  Do not give only the CMS-side test command. Keep both command batches exact and
+  small, using the already-proven Mac-to-CMS transfer workflow from this project.
 - Exact small CMS command batches. IBM docs first for CMS/zVM; official Git/RFC
   docs for formats. No guessed CMS commands or purchased dependencies.
 - No BFS/OpenExtensions runtime dependency. Fixed-80 source <=80 columns.
