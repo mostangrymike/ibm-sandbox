@@ -47,8 +47,8 @@ prototype, not scalable to real pack objects.
 - M7D `GITFIX` fixed Huffman + LZ77: DONE, target proven.
 - M7E `GITDYN` dynamic Huffman + LZ77: DONE, target proven.
 - M7F `GITINFL` general/mixed-block inflater: DONE, target proven.
-- M7G `GITADLER` Adler-32 calculation/verification: DONE, TARGET PROVEN.
-- NEXT: M7H Git pack-entry inflate integration.
+- M7G `GITADLER` Adler-32 calculation/verification: DONE, target proven.
+- M7H `GITPINF` Git pack-entry inflate integration: DONE, TARGET PROVEN.
 
 ## M7E final result
 
@@ -56,11 +56,7 @@ After REXX compatibility fixes, canonical Huffman next-code correction, and safe
 compound-stem indexing, `M7DYN` passed on CMS. Final target output included an
 exact match between decoded and expected dynamic-Huffman data, correct truncated
 stream rejection RC=8, correct fixed-block rejection RC=8, and:
-
-`M7 DYNAMIC HUFFMAN TESTS PASSED`
-
-Last M7E source fix before target proof:
-`1aa209f01ac463d77ab371256f3664ff3c8aec12`.
+`M7 DYNAMIC HUFFMAN TESTS PASSED`.
 
 Important CMS REXX lessons from M7E:
 - Do not use two-argument `VALUE()` dynamic assignment on this target path.
@@ -72,45 +68,46 @@ Important CMS REXX lessons from M7E:
 
 ## M7F final result
 
-Files:
-- `src/GITINFL.EXEC`, initial commit
-  `f2eb9f0b043476e0f111474d801ce017fd4422bc`
-- `src/M7INFL.EXEC`, commit `5ca6a6b6630171aa63e0d83cf8bb4a373530db7f`
-- Bit-reader scope fix: `2f170e52edaa4611d0b2b5e64634f08616093b08`
-
-First target run passed stored and fixed but dynamic truncated. Cause: the shared
-REXX `bits` routine overwrote its caller's loop variable `i`. The fix made
-`bits` a PROCEDURE exposing only `data bitpos`.
-
-Final CMS target run passed all M7F gates:
-- final stored block -> `616263`
-- final fixed block -> `616263`
-- final dynamic block -> exact M7E expected output
-- stored then fixed mixed stream -> `616263616263`
-- reserved BTYPE rejected with RC=8
-- truncated mixed stream rejected with RC=8
-- `M7 GENERAL INFLATER TESTS PASSED`
-
-M7F therefore proves one continuous bit position and output/LZ77 history across
-DEFLATE blocks while dispatching stored, fixed, and dynamic block types.
+Files include `src/GITINFL.EXEC` and `src/M7INFL.EXEC`. Initial integration found
+a REXX loop-variable collision in `bits`; fix `2f170e52...` made `bits` a
+PROCEDURE exposing only `data bitpos`. Final target run passed stored, fixed,
+dynamic, mixed stored->fixed, reserved-BTYPE rejection, and truncation rejection.
+Final line: `M7 GENERAL INFLATER TESTS PASSED`.
 
 ## M7G final result
 
-Files:
-- `src/GITADLER.EXEC`, commit `eed6c7a65d453615fff1e58fac9bbc1735837bce`
-- `src/M7ADLER.EXEC`, commit `1319e89f321583c1bd15792a1a613aca2c6edbbb`
-
-Final CMS target run passed all M7G gates. `abc` calculated as `024D0127` and
-verified against that trailer. One zero byte calculated as `00010001`. A wrong
-checksum was rejected with RC=8 and displayed expected/actual values. A malformed
-4-hex-digit checksum was rejected with usage RC=4. Final line:
+Files: `src/GITADLER.EXEC`, `src/M7ADLER.EXEC`. Target verified `abc` Adler-32
+`024D0127`, mismatch RC=8, malformed checksum RC=4. Final line:
 `M7 ADLER-32 TESTS PASSED`.
 
-NEXT ACTION: implement isolated M7H Git pack-entry inflate integration. Preserve
-target-proven M7B/M7F/M7G components and integrate around them rather than
-rewriting them. Pack-entry integration must respect Git pack semantics: each
-object entry's compressed data is a zlib stream; base and delta entry headers
-remain handled by the target-proven M6 parsers/resolvers.
+## M7H final result
+
+Files/commits:
+- `src/GITINFL.EXEC` stack-return interface commit
+  `be9d955a62abce5e710f56de463678d615f9b06c`
+- `src/GITPINF.EXEC` integration commit
+  `4f79167865ce23ad9eae4d20645f4f1e35c27785`
+- `src/M7PINF.EXEC` regression commit
+  `73042dfbdc12f56ec8f086fe9e9d80b4ea94e04a`
+
+The existing M7F regression was rerun after touching GITINFL and still passed in
+full. M7H CMS target run then passed all gates:
+- ordinary blob pack entry: TYPE 3 BLOB, SIZE 3, DATA `616263`, Adler `024D0127`
+- wrong Adler rejected RC=8 with expected/actual values
+- pack-header size mismatch rejected RC=8
+- invalid zlib FCHECK rejected RC=8
+- delta entry deliberately deferred to the proven M6 delta path, RC=8
+- final line: `M7 PACK-ENTRY INFLATE INTEGRATION TESTS PASSED`
+
+M7H proves an ordinary Git packed-object entry can be parsed, its RFC1950 wrapper
+validated, DEFLATE payload reconstructed through GITINFL, Git entry size checked,
+and Adler-32 verified. Delta entries are not yet connected to this zlib path.
+
+NEXT ACTION: integrate compressed delta pack entries with the target-proven M6
+REF_DELTA/OFS_DELTA machinery. Keep ordinary M7H and all M6 regressions intact.
+The likely next isolated milestone should inflate the zlib payload of a delta
+entry, then feed the resulting Git delta instruction stream to GITDAPP plus the
+existing REF/OFS base resolver, rather than duplicating either subsystem.
 
 ## Important implementation facts
 
