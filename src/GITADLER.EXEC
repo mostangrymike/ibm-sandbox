@@ -1,0 +1,46 @@
+/* M7G isolated RFC 1950 Adler-32 calculator/verifier. */
+parse arg command data expected extra
+command = translate(command)
+data = translate(data)
+expected = translate(expected)
+if command \= 'CALC' & command \= 'VERIFY' then do
+   say 'Usage: GITADLER CALC hexdata'
+   say '   or: GITADLER VERIFY hexdata adler32'
+   exit 4
+end
+if data = '' | length(data) // 2 \= 0 |,
+   verify(data,'0123456789ABCDEF') \= 0 then do
+   say 'GITADLER: invalid hex data'
+   exit 4
+end
+if command = 'CALC' & (expected \= '' | extra \= '') then do
+   say 'Usage: GITADLER CALC hexdata'
+   exit 4
+end
+if command = 'VERIFY' then do
+   if extra \= '' | length(expected) \= 8 |,
+      verify(expected,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITADLER VERIFY hexdata adler32'
+      exit 4
+   end
+end
+s1 = 1
+s2 = 0
+do p = 1 to length(data) by 2
+   b = x2d(substr(data,p,2))
+   s1 = (s1 + b) // 65521
+   s2 = (s2 + s1) // 65521
+end
+actual = d2x(s2,4) || d2x(s1,4)
+if command = 'CALC' then do
+   say actual
+   exit 0
+end
+if actual \= expected then do
+   say 'GITADLER: Adler-32 mismatch'
+   say 'EXPECTED' expected
+   say 'ACTUAL' actual
+   exit 8
+end
+say actual
+exit 0
