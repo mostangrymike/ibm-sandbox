@@ -8,7 +8,12 @@ Repository: `mostangrymike/ibm-sandbox`, branch `main`
 - Whenever files must be transferred to CMS for testing, always provide the Mac
   commands needed to fetch/prepare/transfer them, followed by the CMS commands.
   Do not give only the CMS-side test command. Keep both command batches exact and
-  small, using the already-proven Mac-to-CMS transfer workflow from this project.
+  small.
+- Proven Mac workflow: user works from the local repository `src` directory and
+  runs `git pull`, then `./cms-upload.sh FILE1.EXEC FILE2.EXEC ...`. The upload
+  script maps each local `.EXEC` file to `NAME EXEC A` on CMS and performs the
+  established DFT transfer. Use this exact workflow in future instructions; do
+  not substitute raw c3270/nc transfer commands unless the user explicitly asks.
 - Exact small CMS command batches. IBM docs first for CMS/zVM; official Git/RFC
   docs for formats. No guessed CMS commands or purchased dependencies.
 - No BFS/OpenExtensions runtime dependency. Fixed-80 source <=80 columns.
