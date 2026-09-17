@@ -1,0 +1,247 @@
+/* M7E isolated dynamic-Huffman DEFLATE decoder. */
+parse arg command data
+command = translate(command)
+data = translate(data)
+if command \= 'INFLATE' | data = '' | length(data) // 2 \= 0 |,
+   verify(data,'0123456789ABCDEF') \= 0 then do
+   say 'Usage: GITDYN INFLATE deflate-hex'
+   exit 4
+end
+bits = ''
+do i = 1 to length(data) by 2
+   b = x2d(substr(data,i,2))
+   do j = 1 to 8
+      bits = bits || (b // 2)
+      b = b % 2
+   end
+end
+bp = 1
+call getbits 1
+if result = 'ERROR' then exit 8
+final = result
+call getbits 2
+if result = 'ERROR' then exit 8
+if result \= 2 then do
+   say 'GITDYN: expected dynamic Huffman block'
+   exit 8
+end
+call getbits 5
+if result = 'ERROR' then exit 8
+hlit = result + 257
+call getbits 5
+if result = 'ERROR' then exit 8
+hdist = result + 1
+call getbits 4
+if result = 'ERROR' then exit 8
+hclen = result + 4
+order = '16 17 18 0 8 7 9 6 10 5 11 4 12 3 13 2 14 1 15'
+drop cl.
+do i = 0 to 18
+   cl.i = 0
+end
+do i = 1 to hclen
+   call getbits 3
+   if result = 'ERROR' then exit 8
+   k = word(order,i)
+   cl.k = result
+end
+call maketree 'cl.',19,'ct.'
+if result \= 'OK' then exit 8
+total = hlit + hdist
+drop lens.
+n = 0
+do while n < total
+   call getsym 'ct.'
+   if result = 'ERROR' then exit 8
+   s = result
+   if s <= 15 then do
+      n = n + 1
+      lens.n = s
+   end
+   else if s = 16 then do
+      if n = 0 then do
+         say 'GITDYN: repeat-previous without previous length'
+         exit 8
+      end
+      call getbits 2
+      if result = 'ERROR' then exit 8
+      rep = result + 3
+      v = lens.n
+      do rep
+         n = n + 1
+         if n > total then do
+            say 'GITDYN: code-length repeat exceeds table'
+            exit 8
+         end
+         lens.n = v
+      end
+   end
+   else if s = 17 | s = 18 then do
+      if s = 17 then nb = 3
+      else nb = 7
+      call getbits nb
+      if result = 'ERROR' then exit 8
+      if s = 17 then rep = result + 3
+      else rep = result + 11
+      do rep
+         n = n + 1
+         if n > total then do
+            say 'GITDYN: zero repeat exceeds table'
+            exit 8
+         end
+         lens.n = 0
+      end
+   end
+   else do
+      say 'GITDYN: invalid code-length symbol' s
+      exit 8
+   end
+end
+drop ll. dd.
+do i = 0 to hlit - 1
+   ll.i = lens.i+1
+end
+do i = 0 to hdist - 1
+   k = hlit + i + 1
+   dd.i = lens.k
+end
+if ll.256 = 0 then do
+   say 'GITDYN: literal/length tree lacks end-of-block'
+   exit 8
+end
+call maketree 'll.',hlit,'lt.'
+if result \= 'OK' then exit 8
+call maketree 'dd.',hdist,'dt.'
+if result \= 'OK' then exit 8
+out = ''
+do forever
+   call getsym 'lt.'
+   if result = 'ERROR' then exit 8
+   s = result
+   if s < 256 then out = out || d2x(s,2)
+   else if s = 256 then leave
+   else do
+      if s < 257 | s > 285 then do
+         say 'GITDYN: invalid length symbol' s
+         exit 8
+      end
+      call getlen s
+      if result = 'ERROR' then exit 8
+      mlen = result
+      call getsym 'dt.'
+      if result = 'ERROR' then exit 8
+      ds = result
+      if ds > 29 then do
+         say 'GITDYN: invalid distance symbol' ds
+         exit 8
+      end
+      call getdist ds
+      if result = 'ERROR' then exit 8
+      dist = result
+      have = length(out) % 2
+      if dist < 1 | dist > have then do
+         say 'GITDYN: invalid backward distance' dist
+         exit 8
+      end
+      do mlen
+         p = length(out) - (dist * 2) + 1
+         out = out || substr(out,p,2)
+      end
+   end
+end
+if final \= 1 then do
+   say 'GITDYN: non-final blocks deferred to general inflater'
+   exit 8
+end
+say out
+exit 0
+
+getbits: procedure expose bits bp
+   parse arg n
+   if bp + n - 1 > length(bits) then do
+      say 'GITDYN: truncated DEFLATE bitstream'
+      return 'ERROR'
+   end
+   v = 0
+   mult = 1
+   do i = 1 to n
+      if substr(bits,bp,1) = '1' then v = v + mult
+      mult = mult * 2
+      bp = bp + 1
+   end
+   return v
+
+maketree: procedure
+   parse arg src, count, dst
+   drop bl. next.
+   do i = 0 to 15
+      bl.i = 0
+   end
+   do s = 0 to count - 1
+      l = value(src||s)
+      if l < 0 | l > 15 then return 'ERROR'
+      if l > 0 then bl.l = bl.l + 1
+   end
+   code = 0
+   bl.0 = 0
+   do l = 1 to 15
+      code = (code + bl.l-1) * 2
+      next.l = code
+   end
+   do s = 0 to count - 1
+      l = value(src||s)
+      if l > 0 then do
+         c = next.l
+         next.l = c + 1
+         r = 0
+         x = c
+         do j = 1 to l
+            r = r * 2 + (x // 2)
+            x = x % 2
+         end
+         call value dst||l||'.'||r,s
+      end
+   end
+   return 'OK'
+
+getsym: procedure expose bits bp
+   parse arg tree
+   code = 0
+   mult = 1
+   do l = 1 to 15
+      if bp > length(bits) then do
+         say 'GITDYN: truncated DEFLATE bitstream'
+         return 'ERROR'
+      end
+      if substr(bits,bp,1) = '1' then code = code + mult
+      bp = bp + 1
+      name = tree||l||'.'||code
+      if symbol(name) = 'VAR' then return value(name)
+      mult = mult * 2
+   end
+   say 'GITDYN: invalid Huffman code'
+   return 'ERROR'
+
+getlen: procedure expose bits bp
+   parse arg s
+   bases='3 4 5 6 7 8 9 10 11 13 15 17 19 23 27 31 35 43 51 59 67 83 99 115 131 163 195 227 258'
+   extras='0 0 0 0 0 0 0 0 1 1 1 1 2 2 2 2 3 3 3 3 4 4 4 4 5 5 5 5 0'
+   k = s - 256
+   base = word(bases,k)
+   n = word(extras,k)
+   if n = 0 then return base
+   call getbits n
+   if result = 'ERROR' then return 'ERROR'
+   return base + result
+
+getdist: procedure expose bits bp
+   parse arg s
+   bases='1 2 3 4 5 7 9 13 17 25 33 49 65 97 129 193 257 385 513 769 1025 1537 2049 3073 4097 6145 8193 12289 16385 24577'
+   extras='0 0 0 0 1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10 11 11 12 12 13 13'
+   k = s + 1
+   base = word(bases,k)
+   n = word(extras,k)
+   if n = 0 then return base
+   call getbits n
+   if result = 'ERROR' then return 'ERROR'
+   return base + result
