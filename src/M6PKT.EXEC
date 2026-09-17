@@ -1,0 +1,53 @@
+/* M6A Git pkt-line framing regression. */
+address command
+
+say 'M6 PKT TEST 1: encode empty payload'
+'EXEC GITPKT ENCODE'
+if rc \= 0 then exit rc
+
+say 'M6 PKT TEST 2: encode ASCII hello LF'
+'EXEC GITPKT ENCODE 68656C6C6F0A'
+if rc \= 0 then exit rc
+
+say 'M6 PKT TEST 3: decode ASCII hello LF packet'
+'EXEC GITPKT DECODE 000A68656C6C6F0A'
+if rc \= 0 then exit rc
+
+say 'M6 PKT TEST 4: control packets'
+'EXEC GITPKT FLUSH'
+if rc \= 0 then exit rc
+'EXEC GITPKT DELIM'
+if rc \= 0 then exit rc
+'EXEC GITPKT RESPONSE-END'
+if rc \= 0 then exit rc
+'EXEC GITPKT DECODE 0000'
+if rc \= 0 then exit rc
+'EXEC GITPKT DECODE 0001'
+if rc \= 0 then exit rc
+'EXEC GITPKT DECODE 0002'
+if rc \= 0 then exit rc
+
+say 'M6 PKT TEST 5: binary payload preserves NUL and FF'
+'EXEC GITPKT ENCODE 00616263FF'
+if rc \= 0 then exit rc
+'EXEC GITPKT DECODE 000900616263FF'
+if rc \= 0 then exit rc
+
+say 'M6 PKT TEST 6: malformed length is rejected'
+'EXEC GITPKT DECODE 000A68656C6C6F'
+if rc = 0 then do
+   say 'M6PKT: malformed packet unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 PKT TEST 7: reserved invalid length is rejected'
+'EXEC GITPKT DECODE 0003'
+if rc = 0 then do
+   say 'M6PKT: invalid reserved length unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 PKT-LINE FRAMING TESTS PASSED'
+exit 0
