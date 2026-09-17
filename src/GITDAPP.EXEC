@@ -1,8 +1,8 @@
 /* M6J isolated Git delta instruction interpreter. */
 parse arg command rest
 command = translate(command)
-
-if command = 'APPLY' then do
+stackmode = command = 'APPLYSTACK'
+if command = 'APPLY' | stackmode then do
    parse var rest base delta extra
    base = translate(base)
    delta = translate(delta)
@@ -98,7 +98,8 @@ if command = 'APPLY' then do
       say 'GITDAPP: result size mismatch'
       exit 8
    end
-   say out
+   if stackmode then queue out
+   else say out
    exit 0
 end
 say 'GITDAPP: unknown command' command
