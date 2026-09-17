@@ -30,14 +30,19 @@ end
 call requirecommit newoid
 if result \= 'OK' then exit 8
 
+/* Read and validate the physical refs records directly.  The updater only
+ * needs to replace one record, so retaining the EXECIO stem avoids a second
+ * dynamic-stem representation of the same database. */
 call readrefs
 if result \= 'OK' then exit 8
 found = 0
 slot = 0
-do i = 1 to refcount
-   if refname.i = name then do
+current = ''
+do i = 1 to rr.0
+   if word(rr.i,2) = name then do
       found = found + 1
       slot = i
+      current = word(rr.i,3)
    end
 end
 if found = 0 then do
@@ -49,7 +54,6 @@ if found \> 1 then do
    exit 8
 end
 
-current = refoid.slot
 /* Optional expected-old OID gives compare-and-swap semantics.  The refs file
  * is not written at all if the expected value does not match. */
 if oldoid \= '' & current \= oldoid then do
@@ -59,7 +63,7 @@ if oldoid \= '' & current \= oldoid then do
    exit 8
 end
 
-refoid.slot = newoid
+rr.slot = 'BRANCH' name newoid
 call writerefs
 if result \= 'OK' then exit 8
 say newoid ref
@@ -96,9 +100,7 @@ requirecommit: procedure
    end
    return 'OK'
 
-readrefs: procedure expose refcount refname. refoid.
-   drop refname. refoid.
-   refcount = 0
+readrefs: procedure expose rr.
    'STATE GITREFS REPO A'
    if rc \= 0 then do
       say 'GITUPD: refs database not found'
@@ -113,27 +115,18 @@ readrefs: procedure expose refcount refname. refoid.
          return 'ERROR'
       end
       tag = word(rr.i,1)
-      name = word(rr.i,2)
+      rname = word(rr.i,2)
       oid = word(rr.i,3)
-      if tag \= 'BRANCH' | name = '' |,
+      if tag \= 'BRANCH' | rname = '' |,
          length(oid) \= 40 | verify(oid,'0123456789ABCDEF') \= 0 then do
          say 'GITUPD: corrupt refs record' i
          return 'ERROR'
       end
-      refcount = refcount + 1
-      n = refcount
-      refname.n = name
-      refoid.n = oid
    end
    return 'OK'
 
-writerefs: procedure expose refcount refname. refoid.
-   drop wr.
-   wr.0 = refcount
-   do i = 1 to refcount
-      wr.i = 'BRANCH' refname.i refoid.i
-   end
-   'EXECIO' wr.0 'DISKW GITREFS REPO A 1 (STEM WR. FINIS'
+writerefs: procedure expose rr.
+   'EXECIO' rr.0 'DISKW GITREFS REPO A 1 (STEM RR. FINIS'
    if rc \= 0 then do
       say 'GITUPD: cannot write refs database'
       return 'ERROR'
