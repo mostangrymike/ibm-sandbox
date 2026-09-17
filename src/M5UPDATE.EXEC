@@ -1,0 +1,57 @@
+/* M5B safe ref update / compare-and-swap regression. */
+address command
+
+c1 = '54BACE2202BB0C96980CDD0AAE9A752E6188D666'
+c2 = '1E99ED02563737B793C60359F94BA587F6C1B8BD'
+blob = 'F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
+
+say 'M5 UPDATE TEST 1: starting refs resolve as expected'
+'EXEC GITREF REV-PARSE main'
+if rc \= 0 then exit rc
+'EXEC GITREF REV-PARSE Feature'
+if rc \= 0 then exit rc
+
+say 'M5 UPDATE TEST 2: update main with matching expected old OID'
+'EXEC GITUPD refs/heads/main' c2 c1
+if rc \= 0 then exit rc
+'EXEC GITREF REV-PARSE main'
+if rc \= 0 then exit rc
+
+say 'M5 UPDATE TEST 3: stale expected-old update must fail'
+'EXEC GITUPD refs/heads/main' c1 c1
+if rc = 0 then do
+   say 'M5 UPDATE ERROR: stale update unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M5 UPDATE TEST 4: stale failure left ref unchanged'
+'EXEC GITREF REV-PARSE main'
+if rc \= 0 then exit rc
+
+say 'M5 UPDATE TEST 5: BLOB target must be rejected'
+'EXEC GITUPD refs/heads/main' blob c2
+if rc = 0 then do
+   say 'M5 UPDATE ERROR: non-COMMIT target unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M5 UPDATE TEST 6: rejected BLOB left ref unchanged'
+'EXEC GITREF REV-PARSE main'
+if rc \= 0 then exit rc
+
+say 'M5 UPDATE TEST 7: restore main with matching expected old OID'
+'EXEC GITUPD refs/heads/main' c1 c2
+if rc \= 0 then exit rc
+'EXEC GITREF REV-PARSE main'
+if rc \= 0 then exit rc
+
+say 'M5 UPDATE TEST 8: HEAD still resolves independently through Feature'
+'EXEC GITREF SYMBOLIC-REF'
+if rc \= 0 then exit rc
+'EXEC GITREF REV-PARSE HEAD'
+if rc \= 0 then exit rc
+
+say 'M5 SAFE REF UPDATE TESTS PASSED'
+exit 0
