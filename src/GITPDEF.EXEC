@@ -1,0 +1,277 @@
+/* M9E bounded DEFLATE core over GITPBUF. */
+parse arg command,start
+if translate(command) \= 'INFLATESTACK' | datatype(start,'W') \= 1 then exit 4
+address command
+base = start
+bitpos = 0
+out = ''
+do forever
+   call bits 1
+   if result = 'ERROR' then exit 8
+   final = result
+   call bits 2
+   if result = 'ERROR' then exit 8
+   btype = result
+   if btype = 0 then call stored
+   else if btype = 1 then call fixed
+   else if btype = 2 then call dynamic
+   else do
+      say 'GITPDEF: reserved DEFLATE block type'
+      exit 8
+   end
+   if result \= 'OK' then exit 8
+   if final then leave
+end
+used = (bitpos + 7) % 8
+queue out
+queue used
+exit 0
+
+stored:
+   bitpos = ((bitpos + 7) % 8) * 8
+   call bits 16
+   if result = 'ERROR' then return 'ERROR'
+   len = result
+   call bits 16
+   if result = 'ERROR' then return 'ERROR'
+   if result \= 65535 - len then do
+      say 'GITPDEF: stored LEN/NLEN mismatch'
+      return 'ERROR'
+   end
+   do i = 1 to len
+      call bits 8
+      if result = 'ERROR' then return 'ERROR'
+      out = out || d2x(result,2)
+   end
+   return 'OK'
+
+fixed:
+   drop ll. dd. lt. dt.
+   do i = 0 to 143; ll.i = 8; end
+   do i = 144 to 255; ll.i = 9; end
+   do i = 256 to 279; ll.i = 7; end
+   do i = 280 to 287; ll.i = 8; end
+   do i = 0 to 31; dd.i = 5; end
+   call maketree 'LL',288,'LT'
+   if result \= 'OK' then return 'ERROR'
+   call maketree 'DD',32,'DT'
+   if result \= 'OK' then return 'ERROR'
+   call huffblock
+   return result
+
+dynamic:
+   drop cl. ll. dd. ct. lt. dt.
+   call bits 5
+   if result = 'ERROR' then return 'ERROR'
+   hlit = result + 257
+   call bits 5
+   if result = 'ERROR' then return 'ERROR'
+   hdist = result + 1
+   call bits 4
+   if result = 'ERROR' then return 'ERROR'
+   hclen = result + 4
+   order = '16 17 18 0 8 7 9 6 10 5 11 4 12 3 13 2 14 1 15'
+   do i = 0 to 18; cl.i = 0; end
+   do i = 1 to hclen
+      call bits 3
+      if result = 'ERROR' then return 'ERROR'
+      k = word(order,i)
+      cl.k = result
+   end
+   call maketree 'CL',19,'CT'
+   if result \= 'OK' then return 'ERROR'
+   total = hlit + hdist
+   drop lens.
+   n = 0
+   do while n < total
+      call getsym 'CT'
+      if result = 'ERROR' then return 'ERROR'
+      s = result
+      if s <= 15 then do
+         n = n + 1
+         lens.n = s
+      end
+      else if s = 16 then do
+         if n = 0 then return 'ERROR'
+         call bits 2
+         if result = 'ERROR' then return 'ERROR'
+         rep = result + 3
+         v = lens.n
+         do rep
+            n = n + 1
+            if n > total then return 'ERROR'
+            lens.n = v
+         end
+      end
+      else if s = 17 | s = 18 then do
+         if s = 17 then nb = 3
+         else nb = 7
+         call bits nb
+         if result = 'ERROR' then return 'ERROR'
+         if s = 17 then rep = result + 3
+         else rep = result + 11
+         do rep
+            n = n + 1
+            if n > total then return 'ERROR'
+            lens.n = 0
+         end
+      end
+      else return 'ERROR'
+   end
+   do i = 0 to hlit - 1
+      k = i + 1
+      ll.i = lens.k
+   end
+   do i = 0 to hdist - 1
+      k = hlit + i + 1
+      dd.i = lens.k
+   end
+   if ll.256 = 0 then return 'ERROR'
+   call maketree 'LL',hlit,'LT'
+   if result \= 'OK' then return 'ERROR'
+   call maketree 'DD',hdist,'DT'
+   if result \= 'OK' then return 'ERROR'
+   call huffblock
+   return result
+
+huffblock:
+   do forever
+      call getsym 'LT'
+      if result = 'ERROR' then return 'ERROR'
+      s = result
+      if s < 256 then out = out || d2x(s,2)
+      else if s = 256 then return 'OK'
+      else do
+         if s < 257 | s > 285 then return 'ERROR'
+         call getlen s
+         if result = 'ERROR' then return 'ERROR'
+         run = result
+         call getsym 'DT'
+         if result = 'ERROR' then return 'ERROR'
+         ds = result
+         if ds > 29 then return 'ERROR'
+         call getdist ds
+         if result = 'ERROR' then return 'ERROR'
+         dist = result
+         have = length(out) % 2
+         if dist < 1 | dist > have then return 'ERROR'
+         do j = 1 to run
+            have = length(out) % 2
+            p = (have - dist) * 2 + 1
+            out = out || substr(out,p,2)
+         end
+      end
+   end
+
+bits:
+   parse arg count
+   value = 0
+   do i = 0 to count - 1
+      byteix = bitpos % 8
+      'EXEC GITPBUF READSTACK' base + byteix 1
+      if rc \= 0 | queued() < 1 then do
+         say 'GITPDEF: truncated DEFLATE bitstream'
+         return 'ERROR'
+      end
+      parse pull h
+      b = x2d(h)
+      shift = bitpos // 8
+      bit = (b % (2 ** shift)) // 2
+      value = value + bit * (2 ** i)
+      bitpos = bitpos + 1
+   end
+   return value
+
+maketree:
+   parse arg src,count,dst
+   drop bl. next.
+   do i = 0 to 15; bl.i = 0; end
+   do s = 0 to count - 1
+      if src = 'CL' then l = cl.s
+      else if src = 'LL' then l = ll.s
+      else if src = 'DD' then l = dd.s
+      else return 'ERROR'
+      if l < 0 | l > 15 then return 'ERROR'
+      if l > 0 then bl.l = bl.l + 1
+   end
+   code = 0
+   bl.0 = 0
+   do l = 1 to 15
+      prev = l - 1
+      code = (code + bl.prev) * 2
+      next.l = code
+   end
+   do s = 0 to count - 1
+      if src = 'CL' then l = cl.s
+      else if src = 'LL' then l = ll.s
+      else l = dd.s
+      if l > 0 then do
+         c = next.l
+         next.l = c + 1
+         r = 0
+         x = c
+         do j = 1 to l
+            r = r * 2 + (x // 2)
+            x = x % 2
+         end
+         if dst = 'CT' then ct.l.r = s
+         else if dst = 'LT' then lt.l.r = s
+         else if dst = 'DT' then dt.l.r = s
+         else return 'ERROR'
+      end
+   end
+   return 'OK'
+
+getsym:
+   parse arg tree
+   code = 0
+   mult = 1
+   do l = 1 to 15
+      call bits 1
+      if result = 'ERROR' then return 'ERROR'
+      if result = 1 then code = code + mult
+      if tree = 'CT' then do
+         name = 'CT.'||l||'.'||code
+         if symbol(name) = 'VAR' then return ct.l.code
+      end
+      else if tree = 'LT' then do
+         name = 'LT.'||l||'.'||code
+         if symbol(name) = 'VAR' then return lt.l.code
+      end
+      else if tree = 'DT' then do
+         name = 'DT.'||l||'.'||code
+         if symbol(name) = 'VAR' then return dt.l.code
+      end
+      else return 'ERROR'
+      mult = mult * 2
+   end
+   return 'ERROR'
+
+getlen:
+   parse arg s
+   bases = '3 4 5 6 7 8 9 10 11 13 15 17 19 23 27 31'
+   bases = bases '35 43 51 59 67 83 99 115 131 163 195 227 258'
+   extras = '0 0 0 0 0 0 0 0 1 1 1 1 2 2 2 2'
+   extras = extras '3 3 3 3 4 4 4 4 5 5 5 5 0'
+   k = s - 256
+   basev = word(bases,k)
+   n = word(extras,k)
+   if n = 0 then return basev
+   call bits n
+   if result = 'ERROR' then return 'ERROR'
+   return basev + result
+
+getdist:
+   parse arg s
+   bases = '1 2 3 4 5 7 9 13 17 25 33 49 65 97 129'
+   bases = bases '193 257 385 513 769 1025 1537 2049 3073'
+   bases = bases '4097 6145 8193 12289 16385 24577'
+   extras = '0 0 0 0 1 1 2 2 3 3 4 4 5 5 6 6'
+   extras = extras '7 7 8 8 9 9 10 10 11 11 12 12 13 13'
+   k = s + 1
+   basev = word(bases,k)
+   n = word(extras,k)
+   if n = 0 then return basev
+   call bits n
+   if result = 'ERROR' then return 'ERROR'
+   return basev + result
