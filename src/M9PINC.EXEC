@@ -1,0 +1,59 @@
+/* M9B incremental bounded pack-buffer regression. */
+address command
+p1 = '00010203040506070809'
+p2 = '0A0B0C0D0E0F00010203040506070809'
+p2 = p2 || '0A0B0C0D0E0F00010203040506070809'
+p2 = p2 || '0A0B0C0D0E0F00010203040506070809'
+p2 = p2 || '0A0B0C0D0E0F'
+p3 = '000102030405060708090A0B0C0D0E0F'
+
+say 'M9 PINC TEST 1: initialize incremental pack buffer'
+'EXEC GITPBUF INIT'
+if rc \= 0 then exit rc
+
+say 'M9 PINC TEST 2: append 10, 54, then 16 bytes'
+'EXEC GITPBUF APPEND' p1
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p2
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p3
+if rc \= 0 then exit rc
+
+say 'M9 PINC TEST 3: reads are rejected before FINAL'
+'EXEC GITPBUF READ 0 1'
+if rc = 0 then do
+   say 'M9PINC: unfinished buffer unexpectedly readable'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M9 PINC TEST 4: finalize partial last record'
+'EXEC GITPBUF FINAL'
+if rc \= 0 then exit rc
+
+say 'M9 PINC TEST 5: read across 64-byte physical boundary'
+'EXEC GITPBUF READ 60 12'
+if rc \= 0 then exit rc
+say 'M9 PINC EXPECTED: 0C0D0E0F0001020304050607'
+
+say 'M9 PINC TEST 6: selective stack read at byte 63'
+'EXEC GITPBUF READSTACK 63 3'
+if rc \= 0 then exit rc
+if queued() < 1 then do
+   say 'M9PINC: stack result missing'
+   exit 8
+end
+parse pull got
+say got
+if got \= '0F0001' then do
+   say 'M9PINC: boundary result mismatch'
+   exit 8
+end
+
+say 'M9 PINC TEST 7: final eight bytes are intact'
+'EXEC GITPBUF READ 72 8'
+if rc \= 0 then exit rc
+say 'M9 PINC EXPECTED: 08090A0B0C0D0E0F'
+
+say 'M9 INCREMENTAL PACK BUFFER TESTS PASSED'
+exit 0
