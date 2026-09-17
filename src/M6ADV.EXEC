@@ -7,6 +7,13 @@ feature = '726566732F68656164732F46656174757265'
 caps = '6D756C74695F61636B207468696E2D7061636B20'
 caps = caps || '736964652D62616E642D36346B206F66732D64656C7461'
 
+/* These are literal ASCII Git wire bytes.  Do not build them with C2X()
+ * on CMS because C2X of a CMS text literal yields EBCDIC bytes. */
+if main \= '726566732F68656164732F6D61696E' then exit 8
+if feature \= '726566732F68656164732F46656174757265' then exit 8
+if caps \= '6D756C74695F61636B207468696E2D7061636B20' ||,
+   '736964652D62616E642D36346B206F66732D64656C7461' then exit 8
+
 say 'M6 ADV TEST 1: parse ordinary advertised main ref'
 payload = oid || '20' || main
 'EXEC GITADV PARSE' payload
