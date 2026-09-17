@@ -1,0 +1,41 @@
+/* M6F Git packfile header regression. */
+address command
+
+say 'M6 PACK TEST 1: version 2, three objects'
+'EXEC GITPACK HEADER 5041434B0000000200000003'
+if rc \= 0 then exit rc
+
+say 'M6 PACK TEST 2: version 3, zero objects'
+'EXEC GITPACK HEADER 5041434B0000000300000000'
+if rc \= 0 then exit rc
+
+say 'M6 PACK TEST 3: large unsigned object count'
+'EXEC GITPACK HEADER 5041434B000000027FFFFFFF'
+if rc \= 0 then exit rc
+
+say 'M6 PACK TEST 4: bad signature is rejected'
+'EXEC GITPACK HEADER 424144210000000200000003'
+if rc = 0 then do
+   say 'M6PACK: bad signature unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 PACK TEST 5: unsupported version is rejected'
+'EXEC GITPACK HEADER 5041434B0000000400000003'
+if rc = 0 then do
+   say 'M6PACK: unsupported version unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 PACK TEST 6: truncated header is rejected'
+'EXEC GITPACK HEADER 5041434B00000002'
+if rc = 0 then do
+   say 'M6PACK: truncated header unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 PACK HEADER TESTS PASSED'
+exit 0
