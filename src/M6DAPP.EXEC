@@ -14,7 +14,7 @@ say 'M6 DAPP TEST 3: copy ab then insert X'
 if rc \= 0 then exit rc
 
 say 'M6 DAPP TEST 4: copy with explicit offset 1 size 2'
-'EXEC GITDAPP APPLY 61626364 0403910102'
+'EXEC GITDAPP APPLY 61626364 0402910102'
 if rc \= 0 then exit rc
 
 say 'M6 DAPP TEST 5: base-size mismatch is rejected'
