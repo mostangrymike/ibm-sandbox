@@ -1,0 +1,48 @@
+/* M9C bounded Git PACK SHA-1 regression. */
+address command
+head = '5041434B0000000200000002'
+one = '337801010300FCFF616263024D0127'
+two = '337801010300FCFF78797A02D7016C'
+sha = '5F1C02695D4BC807AE4A5DD622AD1D28E7659429'
+
+say 'M9C TEST 1: build known M8A pack incrementally'
+'EXEC GITPBUF INIT'
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' head
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' one
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' two
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' sha
+if rc \= 0 then exit rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then exit rc
+
+say 'M9C TEST 2: verify payload through bounded reader'
+'EXEC GITPSHA VERIFY'
+if rc \= 0 then exit rc
+
+say 'M9C TEST 3: corrupted trailer is rejected'
+badsha = left(sha,length(sha)-2) || '28'
+'EXEC GITPBUF INIT'
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' head
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' one
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' two
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' badsha
+if rc \= 0 then exit rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then exit rc
+'EXEC GITPSHA VERIFY'
+if rc = 0 then do
+   say 'M9CSHA: corrupt trailer unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M9C BOUNDED PACK SHA-1 TESTS PASSED'
+exit 0
