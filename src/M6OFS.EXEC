@@ -1,0 +1,41 @@
+/* M6H Git OFS_DELTA negative-offset regression. */
+address command
+
+say 'M6 OFS TEST 1: one-byte distance 1'
+'EXEC GITOFS PARSE 01'
+if rc \= 0 then exit rc
+
+say 'M6 OFS TEST 2: one-byte maximum distance 127'
+'EXEC GITOFS PARSE 7F'
+if rc \= 0 then exit rc
+
+say 'M6 OFS TEST 3: two-byte minimum distance 128'
+'EXEC GITOFS PARSE 8000'
+if rc \= 0 then exit rc
+
+say 'M6 OFS TEST 4: two-byte distance 256'
+'EXEC GITOFS PARSE 8100'
+if rc \= 0 then exit rc
+
+say 'M6 OFS TEST 5: three-byte minimum distance 16512'
+'EXEC GITOFS PARSE 808000'
+if rc \= 0 then exit rc
+
+say 'M6 OFS TEST 6: truncated continuation is rejected'
+'EXEC GITOFS PARSE 80'
+if rc = 0 then do
+   say 'M6OFS: truncated offset unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 OFS TEST 7: trailing bytes are rejected'
+'EXEC GITOFS PARSE 0100'
+if rc = 0 then do
+   say 'M6OFS: trailing bytes unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 OFS_DELTA OFFSET TESTS PASSED'
+exit 0
