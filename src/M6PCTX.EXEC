@@ -1,0 +1,41 @@
+/* M6M decoded pack-entry context/index regression. */
+address command
+
+say 'M6 PCTX TEST 1: clear context'
+'EXEC GITPCTX CLEAR'
+if rc \= 0 then exit rc
+
+say 'M6 PCTX TEST 2: add base blob at pack position 100'
+'EXEC GITPCTX ADD 100 BLOB 616263'
+if rc \= 0 then exit rc
+
+say 'M6 PCTX TEST 3: retrieve exact base position'
+'EXEC GITPCTX GET 100'
+if rc \= 0 then exit rc
+
+say 'M6 PCTX TEST 4: add reconstructed delta result at position 140'
+'EXEC GITPCTX ADD 140 BLOB 616258'
+if rc \= 0 then exit rc
+
+say 'M6 PCTX TEST 5: retrieve reconstructed entry for delta chaining'
+'EXEC GITPCTX GET 140'
+if rc \= 0 then exit rc
+
+say 'M6 PCTX TEST 6: duplicate position is rejected'
+'EXEC GITPCTX ADD 100 BLOB 00'
+if rc = 0 then do
+   say 'M6PCTX: duplicate position unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 PCTX TEST 7: missing position is rejected'
+'EXEC GITPCTX GET 999'
+if rc = 0 then do
+   say 'M6PCTX: missing position unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 PACK ENTRY CONTEXT TESTS PASSED'
+exit 0
