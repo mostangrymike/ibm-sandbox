@@ -199,7 +199,7 @@ maketree: procedure expose cl. ll. dd. ct. lt. dt.
             r = r * 2 + (x // 2)
             x = x % 2
          end
-         call value dst||l||'.'||r,s
+         old = value(dst||l||'.'||r,s)
       end
    end
    return 'OK'
