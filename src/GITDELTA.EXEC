@@ -1,0 +1,48 @@
+/* M6I isolated Git delta instruction-stream header parser. */
+parse arg command rest
+command = translate(command)
+
+if command = 'HEADER' then do
+   parse var rest data extra
+   data = translate(data)
+   if data = '' | extra \= '' | length(data) // 2 \= 0 |,
+      verify(data,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITDELTA HEADER delta-hex'
+      exit 4
+   end
+   pos = 1
+   call readvarint data, pos
+   if result = 'ERROR' then exit 8
+   parse var result basesize pos
+   call readvarint data, pos
+   if result = 'ERROR' then exit 8
+   parse var result resultsize pos
+   say 'BASE-SIZE' basesize
+   say 'RESULT-SIZE' resultsize
+   say 'HEADER-BYTES' (pos - 1) % 2
+   exit 0
+end
+
+say 'GITDELTA: unknown command' command
+exit 4
+
+readvarint: procedure
+   parse arg data, pos
+   value = 0
+   shift = 0
+   do forever
+      if pos + 1 > length(data) then do
+         say 'GITDELTA: truncated delta header'
+         return 'ERROR'
+      end
+      b = x2d(substr(data,pos,2))
+      pos = pos + 2
+      value = value + (b // 128) * (2 ** shift)
+      if b < 128 then leave
+      shift = shift + 7
+      if shift > 56 then do
+         say 'GITDELTA: delta size header too large'
+         return 'ERROR'
+      end
+   end
+   return value pos
