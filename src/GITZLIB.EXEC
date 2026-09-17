@@ -1,0 +1,63 @@
+/* M7B isolated RFC 1950 zlib wrapper parser. */
+parse arg command rest
+command = translate(command)
+
+if command = 'PARSE' then do
+   parse var rest data extra
+   data = translate(data)
+   if extra \= '' | data = '' | length(data) // 2 \= 0 |,
+      verify(data,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITZLIB PARSE zlib-hex'
+      exit 4
+   end
+   if length(data) < 12 then do
+      say 'GITZLIB: zlib stream too short'
+      exit 8
+   end
+   cmf = x2d(substr(data,1,2))
+   flg = x2d(substr(data,3,2))
+   cm = cmf // 16
+   cinfo = cmf % 16
+   if cm \= 8 then do
+      say 'GITZLIB: unsupported compression method' cm
+      exit 8
+   end
+   if cinfo > 7 then do
+      say 'GITZLIB: invalid DEFLATE window size'
+      exit 8
+   end
+   if (cmf * 256 + flg) // 31 \= 0 then do
+      say 'GITZLIB: invalid FCHECK'
+      exit 8
+   end
+   fdict = (flg % 32) // 2
+   flevel = flg % 64
+   pos = 5
+   if fdict then do
+      if length(data) < 20 then do
+         say 'GITZLIB: truncated preset dictionary identifier'
+         exit 8
+      end
+      dictid = substr(data,pos,8)
+      pos = pos + 8
+   end
+   else dictid = '-'
+   trailer = length(data) - 7
+   if pos > trailer then do
+      say 'GITZLIB: missing DEFLATE payload'
+      exit 8
+   end
+   deflate = substr(data,pos,trailer-pos)
+   adler = substr(data,trailer,8)
+   say 'CM' cm
+   say 'CINFO' cinfo
+   say 'FDICT' fdict
+   say 'FLEVEL' flevel
+   say 'DICTID' dictid
+   say 'DEFLATE' deflate
+   say 'ADLER32' adler
+   exit 0
+end
+
+say 'GITZLIB: unknown command' command
+exit 4
