@@ -1,5 +1,5 @@
-/* M9D bounded GITPBUF inflater primitive: zlib stored block. */
-parse arg command offset extra
+/* M9E bounded GITPBUF zlib inflater. */
+parse arg command,offset,extra
 command = translate(command)
 if command \= 'INFLATESTACK' | extra \= '' |,
    datatype(offset,'W') \= 1 | offset < 0 then do
@@ -7,13 +7,12 @@ if command \= 'INFLATESTACK' | extra \= '' |,
    exit 4
 end
 address command
-pos = offset
-call getbyte
-if result = 'ERROR' then exit 8
-cmf = result
-call getbyte
-if result = 'ERROR' then exit 8
-flg = result
+'EXEC GITPBUF READSTACK' offset 2
+if rc \= 0 | queued() < 1 then exit 8
+parse pull head
+if length(head) \= 4 then exit 8
+cmf = x2d(substr(head,1,2))
+flg = x2d(substr(head,3,2))
 if cmf // 16 \= 8 | cmf % 16 > 7 then do
    say 'GITPINFL: invalid zlib method/window'
    exit 8
@@ -26,75 +25,28 @@ if (flg % 32) // 2 then do
    say 'GITPINFL: preset dictionary not supported'
    exit 8
 end
-out = ''
-do forever
-   call getbyte
-   if result = 'ERROR' then exit 8
-   b = result
-   final = b // 2
-   btype = (b % 8) // 4
-   if btype \= 0 then do
-      say 'GITPINFL: M9D supports stored DEFLATE blocks only'
-      exit 8
-   end
-   call getbyte
-   if result = 'ERROR' then exit 8
-   lo = result
-   call getbyte
-   if result = 'ERROR' then exit 8
-   hi = result
-   len = lo + hi * 256
-   call getbyte
-   if result = 'ERROR' then exit 8
-   nlo = result
-   call getbyte
-   if result = 'ERROR' then exit 8
-   nhi = result
-   nlen = nlo + nhi * 256
-   if nlen \= 65535 - len then do
-      say 'GITPINFL: stored LEN/NLEN mismatch'
-      exit 8
-   end
-   do i = 1 to len
-      call getbyte
-      if result = 'ERROR' then exit 8
-      out = out || d2x(result,2)
-   end
-   if final then leave
+defpos = offset + 2
+'EXEC GITPDEF INFLATESTACK' defpos
+if rc \= 0 then exit rc
+if queued() < 2 then do
+   say 'GITPINFL: DEFLATE result missing'
+   exit 8
 end
-adpos = pos
-call gethex 4
-if result = 'ERROR' then exit 8
-expected = result
+parse pull out
+parse pull defused
+if datatype(defused,'W') \= 1 | defused < 1 then exit 8
+trailer = defpos + defused
+'EXEC GITPBUF READSTACK' trailer 4
+if rc \= 0 | queued() < 1 then exit 8
+parse pull expected
 call adler out
 if result \= expected then do
    say 'GITPINFL: Adler-32 mismatch'
    exit 8
 end
 queue out
-queue pos - offset
+queue 2 + defused + 4
 exit 0
-
-getbyte:
-   call gethex 1
-   if result = 'ERROR' then return 'ERROR'
-   return x2d(result)
-
-gethex:
-   parse arg count
-   'EXEC GITPBUF READSTACK' pos count
-   if rc \= 0 then return 'ERROR'
-   if queued() < 1 then do
-      say 'GITPINFL: bounded read returned no data'
-      return 'ERROR'
-   end
-   parse pull h
-   if length(h) \= count * 2 then do
-      say 'GITPINFL: bounded read length mismatch'
-      return 'ERROR'
-   end
-   pos = pos + count
-   return h
 
 adler: procedure
    parse arg data
