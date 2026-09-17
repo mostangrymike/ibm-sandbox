@@ -16,12 +16,12 @@ end
 
 if command = 'PARSE' then do
    parse var rest datahex extra
-   datahex = translate(datahex)
    if datahex = '' | extra \= '' | length(datahex) // 2 \= 0 |,
-      verify(datahex,'0123456789ABCDEF') \= 0 then do
+      verify(translate(datahex),'0123456789ABCDEF') \= 0 then do
       say 'Usage: GITADV PARSE payload-hex'
       exit 4
    end
+   datahex = translate(datahex)
    nul = bytepos('00',datahex)
    if nul > 0 then do
       mainhex = substr(datahex,1,nul-1)
@@ -72,9 +72,9 @@ bytepos: procedure
    return 0
 
 asciitocms: procedure
-   parse upper arg hex
+   parse arg hex
    if length(hex) // 2 \= 0 |,
-      verify(hex,'0123456789ABCDEF') \= 0 then do
+      verify(translate(hex),'0123456789ABCDEF') \= 0 then do
       say 'GITADV: invalid ASCII hex'
       return 'ERROR'
    end
