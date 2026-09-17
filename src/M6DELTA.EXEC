@@ -1,0 +1,37 @@
+/* M6I Git delta instruction-stream header regression. */
+address command
+
+say 'M6 DELTA TEST 1: base 3, result 3'
+'EXEC GITDELTA HEADER 0303'
+if rc \= 0 then exit rc
+
+say 'M6 DELTA TEST 2: base 300, result 128'
+'EXEC GITDELTA HEADER AC028001'
+if rc \= 0 then exit rc
+
+say 'M6 DELTA TEST 3: zero sizes parse'
+'EXEC GITDELTA HEADER 0000'
+if rc \= 0 then exit rc
+
+say 'M6 DELTA TEST 4: instruction bytes may follow header'
+'EXEC GITDELTA HEADER 03039001'
+if rc \= 0 then exit rc
+
+say 'M6 DELTA TEST 5: truncated base size is rejected'
+'EXEC GITDELTA HEADER 80'
+if rc = 0 then do
+   say 'M6DELTA: truncated base size unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 DELTA TEST 6: missing result size is rejected'
+'EXEC GITDELTA HEADER 03'
+if rc = 0 then do
+   say 'M6DELTA: missing result size unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 DELTA HEADER TESTS PASSED'
+exit 0
