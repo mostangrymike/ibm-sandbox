@@ -1,0 +1,112 @@
+/* M6N isolated OFS_DELTA resolver against pack context. */
+parse arg command rest
+command = translate(command)
+
+if command = 'APPLY' then do
+   parse var rest current offhex delta extra
+   offhex = translate(offhex)
+   delta = translate(delta)
+   if extra \= '' | datatype(current,'W') \= 1 | current < 0 |,
+      offhex = '' | length(offhex) // 2 \= 0 |,
+      verify(offhex,'0123456789ABCDEF') \= 0 | delta = '' |,
+      length(delta) // 2 \= 0 |,
+      verify(delta,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITODLT APPLY current-position offset-hex delta-hex'
+      exit 4
+   end
+   call decodeofs offhex
+   if result = 'ERROR' then exit 8
+   distance = result
+   if distance <= 0 | distance > current then do
+      say 'GITODLT: OFS_DELTA base precedes pack data'
+      exit 8
+   end
+   basepos = current - distance
+   call readbase basepos
+   if result \= 'OK' then exit 8
+   'EXEC GITDAPP APPLY' basedata delta
+   exit rc
+end
+
+say 'GITODLT: unknown command' command
+exit 4
+
+readbase: procedure expose basetype basedata
+   parse arg wanted
+   drop in.
+   'EXECIO * DISKR GITPCTX PACK A 1 (STEM IN. FINIS'
+   if rc \= 0 then do
+      say 'GITODLT: pack context unavailable'
+      return 'ERROR'
+   end
+   found = 0
+   do i = 1 to in.0
+      parse var in.i tag p t d extra
+      if tag \= 'ENTRY' | extra \= '' then do
+         say 'GITODLT: corrupt pack context record' i
+         return 'ERROR'
+      end
+      if datatype(p,'W') \= 1 | p < 0 then do
+         say 'GITODLT: corrupt pack position' i
+         return 'ERROR'
+      end
+      if p = wanted then do
+         found = found + 1
+         basetype = t
+         basedata = d
+      end
+   end
+   if found = 0 then do
+      say 'GITODLT: OFS_DELTA base position not found' wanted
+      return 'ERROR'
+   end
+   if found > 1 then do
+      say 'GITODLT: duplicate OFS_DELTA base position' wanted
+      return 'ERROR'
+   end
+   if basetype \= 'BLOB' & basetype \= 'TREE' &,
+      basetype \= 'COMMIT' & basetype \= 'TAG' then do
+      say 'GITODLT: invalid base object type' basetype
+      return 'ERROR'
+   end
+   if length(basedata) // 2 \= 0 |,
+      verify(basedata,'0123456789ABCDEF') \= 0 then do
+      say 'GITODLT: invalid base object data'
+      return 'ERROR'
+   end
+   return 'OK'
+
+decodeofs: procedure
+   parse arg data
+   pos = 1
+   call nextbyte data, pos
+   if result = 'ERROR' then return 'ERROR'
+   b = result
+   pos = pos + 2
+   value = b // 128
+   more = b >= 128
+   do while more
+      call nextbyte data, pos
+      if result = 'ERROR' then return 'ERROR'
+      b = result
+      pos = pos + 2
+      value = (value + 1) * 128 + (b // 128)
+      more = b >= 128
+      if value > 9007199254740991 then do
+         say 'GITODLT: offset too large for exact REXX arithmetic'
+         return 'ERROR'
+      end
+   end
+   if pos <= length(data) then do
+      say 'GITODLT: trailing bytes after OFS_DELTA offset'
+      return 'ERROR'
+   end
+   return value
+
+nextbyte: procedure
+   parse arg data, pos
+   if pos + 1 > length(data) then do
+      say 'GITODLT: truncated OFS_DELTA offset'
+      return 'ERROR'
+   end
+   return x2d(substr(data,pos,2))
