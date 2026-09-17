@@ -1,0 +1,39 @@
+/* M8A whole Git PACK walker regression. */
+address command
+pack = '5041434B0000000200000002'
+pack = pack || '337801010300FCFF616263024D0127'
+pack = pack || '337801010300FCFF78797A02D7016C'
+pack = pack || '5F1C02695D4BC807AE4A5DD622AD1D28E7659429'
+
+say 'M8 PACK TEST 1: walk two-entry PACK and verify trailing SHA-1'
+'EXEC GITPWALK WALK' pack
+if rc \= 0 then exit rc
+
+say 'M8 PACK TEST 2: context contains first reconstructed blob'
+'EXEC GITPCTX GET 12'
+if rc \= 0 then exit rc
+
+say 'M8 PACK TEST 3: context contains second reconstructed blob'
+'EXEC GITPCTX GET 27'
+if rc \= 0 then exit rc
+
+say 'M8 PACK TEST 4: bad trailing pack SHA-1 is rejected'
+bad = left(pack,length(pack)-2) || '28'
+'EXEC GITPWALK WALK' bad
+if rc = 0 then do
+   say 'M8PACK: bad pack checksum unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M8 PACK TEST 5: bad declared object count is rejected'
+bad = substr(pack,1,22) || '03' || substr(pack,25)
+'EXEC GITPWALK WALK' bad
+if rc = 0 then do
+   say 'M8PACK: bad object count unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M8 WHOLE-PACK WALKER TESTS PASSED'
+exit 0
