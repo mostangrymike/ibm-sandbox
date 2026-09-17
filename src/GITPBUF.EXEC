@@ -1,0 +1,102 @@
+/* M9A bounded chunked binary pack buffer. */
+parse arg command rest
+command = translate(command)
+
+if command = 'CLEAR' then do
+   'ERASE GITPBUF PACK A'
+   exit 0
+end
+
+if command = 'WRITE' then do
+   parse var rest data extra
+   data = translate(data)
+   if extra \= '' | data = '' | length(data) // 2 \= 0 |,
+      verify(data,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITPBUF WRITE hexdata'
+      exit 4
+   end
+   drop out.
+   n = 0
+   do while data \= ''
+      n = n + 1
+      take = 128
+      if length(data) < take then take = length(data)
+      out.n = left(data,take)
+      data = substr(data,take+1)
+   end
+   out.0 = n
+   'EXECIO' n 'DISKW GITPBUF PACK A 1 (STEM OUT. FINIS'
+   if rc \= 0 then do
+      say 'GITPBUF: cannot write pack buffer'
+      exit 8
+   end
+   say 'CHUNKS' n
+   exit 0
+end
+
+if command = 'READ' | command = 'READSTACK' then do
+   stackmode = command = 'READSTACK'
+   parse var rest offset count extra
+   if extra \= '' | datatype(offset,'W') \= 1 | offset < 0 |,
+      datatype(count,'W') \= 1 | count < 0 then do
+      say 'Usage: GITPBUF READ byte-offset byte-count'
+      exit 4
+   end
+   call readrange offset,count
+   if result = 'ERROR' then exit 8
+   if stackmode then queue result
+   else say result
+   exit 0
+end
+
+say 'GITPBUF: unknown command' command
+exit 4
+
+readrange: procedure
+   parse arg offset,count
+   'STATE GITPBUF PACK A'
+   if rc \= 0 then do
+      say 'GITPBUF: pack buffer not found'
+      return 'ERROR'
+   end
+   drop in.
+   'EXECIO * DISKR GITPBUF PACK A 1 (STEM IN. FINIS'
+   if rc \= 0 then do
+      say 'GITPBUF: cannot read pack buffer'
+      return 'ERROR'
+   end
+   total = 0
+   do i = 1 to in.0
+      chunk = strip(in.i)
+      if length(chunk) // 2 \= 0 |,
+         verify(chunk,'0123456789ABCDEF') \= 0 then do
+         say 'GITPBUF: corrupt chunk' i
+         return 'ERROR'
+      end
+      total = total + length(chunk) % 2
+   end
+   if offset + count > total then do
+      say 'GITPBUF: read exceeds pack buffer'
+      return 'ERROR'
+   end
+   if count = 0 then return ''
+   needlo = offset
+   needhi = offset + count
+   base = 0
+   answer = ''
+   do i = 1 to in.0 while length(answer) % 2 < count
+      chunk = strip(in.i)
+      bytes = length(chunk) % 2
+      end = base + bytes
+      if needlo < end & needhi > base then do
+         lo = needlo - base
+         if lo < 0 then lo = 0
+         hi = needhi - base
+         if hi > bytes then hi = bytes
+         take = hi - lo
+         if take > 0 then answer = answer ||,
+            substr(chunk,lo*2+1,take*2)
+      end
+      base = end
+   end
+   return answer
