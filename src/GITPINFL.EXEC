@@ -1,5 +1,5 @@
 /* M9E bounded GITPBUF zlib inflater. */
-parse arg command,offset,extra
+parse arg command offset extra
 command = translate(command)
 if command \= 'INFLATESTACK' | extra \= '' |,
    datatype(offset,'W') \= 1 | offset < 0 then do
