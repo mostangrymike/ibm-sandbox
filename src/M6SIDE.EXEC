@@ -1,0 +1,33 @@
+/* M6E Git side-band payload regression. */
+address command
+
+say 'M6 SIDE TEST 1: channel 1 preserves binary pack bytes'
+'EXEC GITSIDE PARSE 015041434B000102FF'
+if rc \= 0 then exit rc
+
+say 'M6 SIDE TEST 2: channel 2 decodes progress text'
+'EXEC GITSIDE PARSE 02436F756E74696E67206F626A656374733A20330A'
+if rc \= 0 then exit rc
+
+say 'M6 SIDE TEST 3: channel 3 reports fatal text and fails'
+'EXEC GITSIDE PARSE 03466174616C206572726F720A'
+if rc = 0 then do
+   say 'M6SIDE: fatal channel unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 SIDE TEST 4: invalid channel is rejected'
+'EXEC GITSIDE PARSE 044261640A'
+if rc = 0 then do
+   say 'M6SIDE: invalid channel unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 SIDE TEST 5: empty channel-1 data is accepted'
+'EXEC GITSIDE PARSE 01'
+if rc \= 0 then exit rc
+
+say 'M6 SIDE-BAND PAYLOAD TESTS PASSED'
+exit 0
