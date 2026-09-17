@@ -48,13 +48,13 @@ do n = 1 to count
       call zentry
       if result \= 'OK' then exit 8
       deltahex = datahex
+      if length(deltahex) % 2 \= objsize then do
+         say 'GITPWALK: delta representation size mismatch'
+         exit 8
+      end
       'EXEC GITDAPP APPLYSTACK' basehex deltahex
       if rc \= 0 then exit rc
       parse pull datahex
-      if length(datahex) % 2 \= objsize then do
-         say 'GITPWALK: delta result size mismatch'
-         exit 8
-      end
    end
    else do
       if type = 1 then typename = 'COMMIT'
