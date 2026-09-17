@@ -1,0 +1,84 @@
+/* M6C isolated Git v0/v1 fetch negotiation request builder. */
+parse arg command rest
+command = translate(command)
+
+if command = 'WANT' then do
+   parse var rest oid caps
+   oid = translate(oid)
+   if \ validsha1(oid) then do
+      say 'Usage: GITNEG WANT 40hex-oid [capabilities]'
+      exit 4
+   end
+   payload = '77616E7420' || oid
+   if caps \= '' then do
+      caphex = cmstoascii(caps)
+      if caphex = 'ERROR' then exit 8
+      payload = payload || '20' || caphex
+   end
+   payload = payload || '0A'
+   call emitpkt payload
+   exit result
+end
+
+if command = 'HAVE' then do
+   parse var rest oid extra
+   oid = translate(oid)
+   if extra \= '' | \ validsha1(oid) then do
+      say 'Usage: GITNEG HAVE 40hex-oid'
+      exit 4
+   end
+   payload = '6861766520' || oid || '0A'
+   call emitpkt payload
+   exit result
+end
+
+if command = 'DONE' then do
+   if words(rest) \= 0 then exit 4
+   call emitpkt '646F6E650A'
+   exit result
+end
+
+if command = 'FLUSH' then do
+   if words(rest) \= 0 then exit 4
+   say '0000'
+   exit 0
+end
+
+say 'GITNEG: unknown command' command
+exit 4
+
+validsha1: procedure
+   parse arg oid
+   return length(oid) = 40 & verify(oid,'0123456789ABCDEF') = 0
+
+emitpkt: procedure
+   parse arg payload
+   bytes = length(payload) % 2
+   if bytes + 4 > 65520 then do
+      say 'GITNEG: pkt-line payload too large'
+      return 8
+   end
+   say right(d2x(bytes + 4),4,'0') || payload
+   return 0
+
+cmstoascii: procedure
+   parse arg text
+   etab = x2c('405A7F7B5B6C507D4D5D5C4E6B604B61')
+   etab = etab || x2c('F0F1F2F3F4F5F6F7F8F97A5E4C7E6E6F')
+   etab = etab || x2c('7CC1C2C3C4C5C6C7C8C9D1D2D3D4D5D6')
+   etab = etab || x2c('D7D8D9E2E3E4E5E6E7E8E9BAE0BBB06D')
+   etab = etab || x2c('79818283848586878889919293949596')
+   etab = etab || x2c('979899A2A3A4A5A6A7A8A9C04FD0A1')
+   atab = x2c('202122232425262728292A2B2C2D2E2F')
+   atab = atab || x2c('303132333435363738393A3B3C3D3E3F')
+   atab = atab || x2c('404142434445464748494A4B4C4D4E4F')
+   atab = atab || x2c('505152535455565758595A5B5C5D5E5F')
+   atab = atab || x2c('606162636465666768696A6B6C6D6E6F')
+   atab = atab || x2c('707172737475767778797A7B7C7D7E')
+   do i = 1 to length(text)
+      if pos(substr(text,i,1),etab) = 0 then do
+         say 'GITNEG: unsupported CMS character in wire text'
+         return 'ERROR'
+      end
+   end
+   return c2x(translate(text,atab,etab))
