@@ -1,0 +1,79 @@
+/* M8C pack object-id to pack-position index. */
+parse arg command rest
+command = translate(command)
+if command = 'CLEAR' then do
+   'ERASE GITPOID PACK A'
+   exit 0
+end
+if command = 'ADD' then do
+   parse var rest oid position extra
+   oid = translate(oid)
+   if extra \= '' | length(oid) \= 40 |,
+      verify(oid,'0123456789ABCDEF') \= 0 |,
+      datatype(position,'W') \= 1 | position < 0 then do
+      say 'Usage: GITPOID ADD oid position'
+      exit 4
+   end
+   call load
+   if result \= 'OK' then exit 8
+   do i = 1 to count
+      if ids.i = oid then do
+         say 'GITPOID: duplicate object id' oid
+         exit 8
+      end
+   end
+   count = count + 1
+   ids.count = oid
+   poss.count = position
+   call write
+   if result \= 'OK' then exit 8
+   exit 0
+end
+if command = 'FIND' then do
+   parse upper var rest oid extra
+   if extra \= '' | length(oid) \= 40 |,
+      verify(oid,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITPOID FIND oid'
+      exit 4
+   end
+   call load
+   if result \= 'OK' then exit 8
+   do i = 1 to count
+      if ids.i = oid then do
+         queue poss.i
+         exit 0
+      end
+   end
+   say 'GITPOID: object id not found' oid
+   exit 8
+end
+say 'GITPOID: unknown command' command
+exit 4
+
+load: procedure expose count ids. poss.
+   count = 0
+   drop ids. poss. in.
+   'STATE GITPOID PACK A'
+   if rc \= 0 then return 'OK'
+   'EXECIO * DISKR GITPOID PACK A 1 (STEM IN. FINIS'
+   if rc \= 0 then return 'ERROR'
+   do i = 1 to in.0
+      parse upper var in.i tag id p extra
+      if tag \= 'OID' | extra \= '' | length(id) \= 40 |,
+         verify(id,'0123456789ABCDEF') \= 0 |,
+         datatype(p,'W') \= 1 | p < 0 then return 'ERROR'
+      count = count + 1
+      ids.count = id
+      poss.count = p
+   end
+   return 'OK'
+
+write: procedure expose count ids. poss.
+   drop out.
+   out.0 = count
+   do i = 1 to count
+      out.i = 'OID' ids.i poss.i
+   end
+   'EXECIO' out.0 'DISKW GITPOID PACK A 1 (STEM OUT. FINIS'
+   if rc \= 0 then return 'ERROR'
+   return 'OK'
