@@ -15,17 +15,16 @@ Repository: `mostangrymike/ibm-sandbox`, branch `main`
   not want to purchase a compiler or other software.
 - Do not depend on BFS/OpenExtensions shell at runtime.
 - Fixed-80 CMS transfers require every source line <=80 characters.
-  `TRANS04 ... records segmented` means the source violated this constraint.
 - c3270 DFT buffer 2048 is proven; 16384 caused disconnects.
 - Do not modify target-proven core code unnecessarily. Keep milestones isolated.
 
 ## Environment and architecture
 
 IBM z/VM 6.3 Evaluation Edition under Hercules Aethra on Raspberry Pi 5/Debian.
-TCP/IP works. C89 front end exists but `CBXFINIT` compiler backend is absent; do
-not revisit buying XL C/C++ unless user asks. Native assembler is Assembler XF
-with DMSGPI. REXX orchestrates; assembler is for binary/native/performance work.
-The client must be genuinely Git-compatible and eventually use smart HTTP.
+TCP/IP works. C89 front end exists but compiler backend is absent. Native
+assembler is Assembler XF with DMSGPI. REXX orchestrates; assembler is for
+binary/native/performance work. The client must be genuinely Git-compatible and
+eventually use smart HTTP.
 
 ## Completed milestones
 
@@ -36,78 +35,71 @@ header; M6H OFS_DELTA offset; M6I delta header; M6J delta application; M6K
 REF_DELTA resolution; M6L OFS_DELTA base position; M6M pack-entry context; M6N
 OFS_DELTA context/application. M4 onward listed above are target proven.
 
-M6M context currently stores whole `datahex` in a CMS record and is only a small
-prototype, not scalable to real pack objects.
+M6M context stores whole `datahex` in a CMS record and remains a small prototype,
+not scalable to real pack objects.
 
 ## M7 compression
 
-- M7A existing native RFC1950/1951 zlib capability: DONE, none found.
+- M7A native RFC1950/1951 zlib capability: DONE, none found.
 - M7B `GITZLIB` wrapper parser: DONE, target proven.
-- M7C `GITSTOR` stored DEFLATE blocks: DONE, target proven.
+- M7C `GITSTOR` stored DEFLATE: DONE, target proven.
 - M7D `GITFIX` fixed Huffman + LZ77: DONE, target proven.
 - M7E `GITDYN` dynamic Huffman + LZ77: DONE, target proven.
-- M7F `GITINFL` general/mixed-block inflater: DONE, target proven.
-- M7G `GITADLER` Adler-32 calculation/verification: DONE, target proven.
-- M7H `GITPINF` Git pack-entry inflate integration: DONE, TARGET PROVEN.
+- M7F `GITINFL` general/mixed inflater: DONE, target proven.
+- M7G `GITADLER` Adler-32: DONE, target proven.
+- M7H `GITPINF` ordinary pack-entry inflate: DONE, target proven.
+- M7I compressed REF_DELTA/OFS_DELTA integration: DONE, TARGET PROVEN.
 
-## M7E final result
+## M7 implementation lessons
 
-After REXX compatibility fixes, canonical Huffman next-code correction, and safe
-compound-stem indexing, `M7DYN` passed on CMS. Final target output included an
-exact match between decoded and expected dynamic-Huffman data, correct truncated
-stream rejection RC=8, correct fixed-block rejection RC=8, and:
-`M7 DYNAMIC HUFFMAN TESTS PASSED`.
+CMS REXX `PROCEDURE` isolates variables; expose only required stems/variables.
+Do not use two-argument dynamic `VALUE()` assignment on this target path. Use
+explicit stems. `lens.i+1` is not compound index `i+1`; calculate an index first.
+Canonical Huffman next-code recurrence uses previous bit-length count explicitly.
+Keep EXEC source lines <=80 chars for fixed-80 c3270 transfer.
 
-Important CMS REXX lessons from M7E:
-- Do not use two-argument `VALUE()` dynamic assignment on this target path.
-- Use explicit stems for the known Huffman tables.
-- Expressions like `lens.i+1` do not mean compound index `i+1`; compute `k=i+1`
-  first and use `lens.k`.
-- Canonical next-code recurrence must use previous-length count explicitly:
-  `prev=l-1; code=(code+bl.prev)*2`.
+`GITINFL` gained `INFLATESTACK` for integration. Existing `M7INFL` was rerun
+after this change and passed completely, preserving the proven inflater path.
 
-## M7F final result
+## M7H target result
 
-Files include `src/GITINFL.EXEC` and `src/M7INFL.EXEC`. Initial integration found
-a REXX loop-variable collision in `bits`; fix `2f170e52...` made `bits` a
-PROCEDURE exposing only `data bitpos`. Final target run passed stored, fixed,
-dynamic, mixed stored->fixed, reserved-BTYPE rejection, and truncation rejection.
-Final line: `M7 GENERAL INFLATER TESTS PASSED`.
+Ordinary blob packed entry inflated to TYPE 3 BLOB, SIZE 3, DATA `616263`, Adler
+`024D0127`. Wrong Adler, pack-size mismatch, and invalid FCHECK rejected RC=8.
+Delta entries were deliberately deferred. Final line:
+`M7 PACK-ENTRY INFLATE INTEGRATION TESTS PASSED`.
 
-## M7G final result
-
-Files: `src/GITADLER.EXEC`, `src/M7ADLER.EXEC`. Target verified `abc` Adler-32
-`024D0127`, mismatch RC=8, malformed checksum RC=4. Final line:
-`M7 ADLER-32 TESTS PASSED`.
-
-## M7H final result
+## M7I compressed delta final result
 
 Files/commits:
-- `src/GITINFL.EXEC` stack-return interface commit
-  `be9d955a62abce5e710f56de463678d615f9b06c`
-- `src/GITPINF.EXEC` integration commit
-  `4f79167865ce23ad9eae4d20645f4f1e35c27785`
-- `src/M7PINF.EXEC` regression commit
-  `73042dfbdc12f56ec8f086fe9e9d80b4ea94e04a`
+- `src/GITZDREF.EXEC` commit `6e6e9bd4418c6bfafc6d518d8b5e2a788e45ba16`
+- `src/GITZDOFS.EXEC` commit `777f61877a93099c95d4d12aa8f0db7ca3a6b8b5`
+- `src/M7ZDEL.EXEC` commit `9150519bb1d857a5886bc503dc5bb2c0a8982d14`
 
-The existing M7F regression was rerun after touching GITINFL and still passed in
-full. M7H CMS target run then passed all gates:
-- ordinary blob pack entry: TYPE 3 BLOB, SIZE 3, DATA `616263`, Adler `024D0127`
-- wrong Adler rejected RC=8 with expected/actual values
-- pack-header size mismatch rejected RC=8
-- invalid zlib FCHECK rejected RC=8
-- delta entry deliberately deferred to the proven M6 delta path, RC=8
-- final line: `M7 PACK-ENTRY INFLATE INTEGRATION TESTS PASSED`
+M7I inflates and verifies a zlib-compressed Git delta instruction stream, then
+hands it to the existing target-proven M6 resolver/application path rather than
+duplicating delta logic.
 
-M7H proves an ordinary Git packed-object entry can be parsed, its RFC1950 wrapper
-validated, DEFLATE payload reconstructed through GITINFL, Git entry size checked,
-and Adler-32 verified. Delta entries are not yet connected to this zlib path.
+Final CMS target run:
+- compressed REF_DELTA reconstructed `abcd` -> `61626364`
+- compressed OFS_DELTA reconstructed `abcd` -> `61626364`
+- initial `DMSSTT002E File GITPCTX PACK A not found` during context setup is the
+  known harmless first-file diagnostic; the OFS test subsequently succeeded
+- bad compressed-delta Adler rejected RC=8
+- bad OFS base position rejected RC=8 after successful inflation
+- final line: `M7 COMPRESSED DELTA INTEGRATION TESTS PASSED`
 
-NEXT ACTION: integrate compressed delta pack entries with the target-proven M6
-REF_DELTA/OFS_DELTA machinery. Keep ordinary M7H and all M6 regressions intact.
-The likely next isolated milestone should inflate the zlib payload of a delta
-entry, then feed the resulting Git delta instruction stream to GITDAPP plus the
-existing REF/OFS base resolver, rather than duplicating either subsystem.
+M7 compression/decompression functionality required for receiving Git pack
+objects is now functionally proven in isolated vectors, including ordinary
+objects and both Git delta forms. The next gap is no longer a DEFLATE primitive;
+it is whole-pack walking/integration and scalability.
+
+NEXT ACTION: begin the next isolated milestone for walking a complete Git PACK
+byte stream: validate PACK header/version/count, iterate entries from their byte
+positions, parse each entry header and delta base metadata, determine each zlib
+stream boundary, inflate/reconstruct it, add reconstructed entries to pack
+context, and validate the trailing pack SHA-1. Preserve all M6/M7 target-proven
+components. Start with a tiny deterministic multi-entry pack before addressing
+streaming/scalability.
 
 ## Important implementation facts
 
