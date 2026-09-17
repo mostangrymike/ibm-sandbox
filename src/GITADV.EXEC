@@ -14,6 +14,15 @@ if command = 'MAPTEST' then do
    exit 0
 end
 
+if command = 'DIAG' then do
+   hex = '726566732F68656164732F6D61696E'
+   say 'INPUT' hex
+   mapped = asciitocms(hex)
+   say 'MAPPEDHEX' c2x(mapped)
+   say 'MAPPED' mapped
+   exit 0
+end
+
 if command = 'PARSE' then do
    parse var rest datahex extra
    if datahex = '' | extra \= '' | length(datahex) // 2 \= 0 |,
