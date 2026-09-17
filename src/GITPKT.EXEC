@@ -63,7 +63,10 @@ if command = 'DECODE' then do
       say 'GITPKT: pkt-line length too large' prefix
       exit 8
    end
-   if length(packet) \= total * 2 then do
+   /* packet stores the four wire prefix characters literally, while the
+      payload bytes are represented as two hex characters per byte. */
+   expected = 4 + (total - 4) * 2
+   if length(packet) \= expected then do
       say 'GITPKT: pkt-line length mismatch'
       exit 8
    end
