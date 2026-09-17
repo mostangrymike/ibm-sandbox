@@ -1,0 +1,53 @@
+/* M7C DEFLATE stored-block regression. */
+address command
+
+say 'M7 STOR TEST 1: final stored block containing abc'
+'EXEC GITSTOR INFLATE 010300FCFF616263'
+if rc \= 0 then exit rc
+
+say 'M7 STOR TEST 2: final empty stored block'
+'EXEC GITSTOR INFLATE 010000FFFF'
+if rc \= 0 then exit rc
+
+say 'M7 STOR TEST 3: ignored alignment bits do not affect stored block'
+'EXEC GITSTOR INFLATE F90300FCFF616263'
+if rc \= 0 then exit rc
+
+say 'M7 STOR TEST 4: two stored blocks concatenate output'
+'EXEC GITSTOR INFLATE 000200FDFF6162010100FEFF63'
+if rc \= 0 then exit rc
+
+say 'M7 STOR TEST 5: LEN/NLEN mismatch is rejected'
+'EXEC GITSTOR INFLATE 010300FFFF616263'
+if rc = 0 then do
+   say 'M7STOR: bad NLEN unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 STOR TEST 6: truncated data is rejected'
+'EXEC GITSTOR INFLATE 010300FCFF6162'
+if rc = 0 then do
+   say 'M7STOR: truncated data unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 STOR TEST 7: fixed Huffman block is deferred'
+'EXEC GITSTOR INFLATE 03'
+if rc = 0 then do
+   say 'M7STOR: unsupported fixed block unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 STOR TEST 8: reserved BTYPE is rejected'
+'EXEC GITSTOR INFLATE 07'
+if rc = 0 then do
+   say 'M7STOR: reserved block unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 DEFLATE STORED-BLOCK TESTS PASSED'
+exit 0
