@@ -1,0 +1,45 @@
+/* M6L OFS_DELTA base-position resolution regression. */
+address command
+
+say 'M6 ORES TEST 1: one-byte distance 1 from position 100'
+'EXEC GITORES RESOLVE 100 01'
+if rc \= 0 then exit rc
+
+say 'M6 ORES TEST 2: one-byte distance 127 from position 1000'
+'EXEC GITORES RESOLVE 1000 7F'
+if rc \= 0 then exit rc
+
+say 'M6 ORES TEST 3: two-byte distance 128 from position 1000'
+'EXEC GITORES RESOLVE 1000 8000'
+if rc \= 0 then exit rc
+
+say 'M6 ORES TEST 4: two-byte distance 256 from position 1000'
+'EXEC GITORES RESOLVE 1000 8100'
+if rc \= 0 then exit rc
+
+say 'M6 ORES TEST 5: distance beyond current position is rejected'
+'EXEC GITORES RESOLVE 100 7F'
+if rc = 0 then do
+   say 'M6ORES: invalid backward base unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 ORES TEST 6: truncated offset is rejected'
+'EXEC GITORES RESOLVE 1000 80'
+if rc = 0 then do
+   say 'M6ORES: truncated offset unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 ORES TEST 7: malformed current position is rejected'
+'EXEC GITORES RESOLVE BAD 01'
+if rc = 0 then do
+   say 'M6ORES: malformed position unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 OFS_DELTA BASE POSITION TESTS PASSED'
+exit 0
