@@ -1,0 +1,73 @@
+/* M5D integrated public-command regression. */
+address command
+
+c1 = '54BACE2202BB0C96980CDD0AAE9A752E6188D666'
+c2 = '1E99ED02563737B793C60359F94BA587F6C1B8BD'
+blob = 'F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
+
+say 'M5 FINAL TEST 1: proven M4 objects survive integration'
+'EXEC GIT VERIFY-OBJECT' c1
+if rc \= 0 then exit rc
+'EXEC GIT VERIFY-OBJECT' c2
+if rc \= 0 then exit rc
+
+say 'M5 FINAL TEST 2: public ref resolution and listing'
+'EXEC GIT SYMBOLIC-REF'
+if rc \= 0 then exit rc
+'EXEC GIT REV-PARSE HEAD'
+if rc \= 0 then exit rc
+'EXEC GIT REV-PARSE main'
+if rc \= 0 then exit rc
+'EXEC GIT REV-PARSE Feature'
+if rc \= 0 then exit rc
+'EXEC GIT SHOW-REF'
+if rc \= 0 then exit rc
+
+say 'M5 FINAL TEST 3: public checkout main'
+'EXEC GIT CHECKOUT main'
+if rc \= 0 then exit rc
+'EXEC GIT HEAD'
+if rc \= 0 then exit rc
+
+say 'M5 FINAL TEST 4: public safe update main c1 to c2'
+'EXEC GIT UPDATE-REF refs/heads/main' c2 c1
+if rc \= 0 then exit rc
+'EXEC GIT REV-PARSE main'
+if rc \= 0 then exit rc
+
+say 'M5 FINAL TEST 5: stale public update fails and preserves main'
+'EXEC GIT UPDATE-REF refs/heads/main' c1 c1
+if rc = 0 then do
+   say 'M5FINAL: stale update unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+'EXEC GIT REV-PARSE main'
+if rc \= 0 then exit rc
+
+say 'M5 FINAL TEST 6: public update rejects BLOB and preserves main'
+'EXEC GIT UPDATE-REF refs/heads/main' blob c2
+if rc = 0 then do
+   say 'M5FINAL: BLOB update unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+'EXEC GIT REV-PARSE main'
+if rc \= 0 then exit rc
+
+say 'M5 FINAL TEST 7: restore main and Feature HEAD'
+'EXEC GIT UPDATE-REF refs/heads/main' c1 c2
+if rc \= 0 then exit rc
+'EXEC GIT CHECKOUT Feature'
+if rc \= 0 then exit rc
+'EXEC GIT HEAD'
+if rc \= 0 then exit rc
+
+say 'M5 FINAL TEST 8: final refs exact'
+'EXEC GIT REV-PARSE main'
+if rc \= 0 then exit rc
+'EXEC GIT REV-PARSE Feature'
+if rc \= 0 then exit rc
+
+say 'M5 INTEGRATED REFS/HEAD TESTS PASSED'
+exit 0
