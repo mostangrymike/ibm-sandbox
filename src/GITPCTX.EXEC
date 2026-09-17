@@ -1,0 +1,99 @@
+/* M6M isolated decoded pack-entry context/index. */
+parse arg command rest
+command = translate(command)
+
+if command = 'CLEAR' then do
+   'ERASE GITPCTX PACK A'
+   exit 0
+end
+
+if command = 'ADD' then do
+   parse var rest position type datahex extra
+   type = translate(type)
+   datahex = translate(datahex)
+   if extra \= '' | datatype(position,'W') \= 1 | position < 0 |,
+      (type \= 'BLOB' & type \= 'TREE' & type \= 'COMMIT' &,
+       type \= 'TAG') | length(datahex) // 2 \= 0 |,
+      verify(datahex,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITPCTX ADD position type data-hex'
+      exit 4
+   end
+   call loadctx
+   if result \= 'OK' then exit 8
+   do i = 1 to count
+      if pos.i = position then do
+         say 'GITPCTX: duplicate pack position' position
+         exit 8
+      end
+   end
+   count = count + 1
+   n = count
+   pos.n = position
+   typ.n = type
+   dat.n = datahex
+   call writectx
+   if result \= 'OK' then exit 8
+   exit 0
+end
+
+if command = 'GET' then do
+   parse var rest position extra
+   if extra \= '' | datatype(position,'W') \= 1 | position < 0 then do
+      say 'Usage: GITPCTX GET position'
+      exit 4
+   end
+   call loadctx
+   if result \= 'OK' then exit 8
+   do i = 1 to count
+      if pos.i = position then do
+         say 'POSITION' pos.i
+         say 'TYPE' typ.i
+         say 'DATA' dat.i
+         exit 0
+      end
+   end
+   say 'GITPCTX: pack position not found' position
+   exit 8
+end
+
+say 'GITPCTX: unknown command' command
+exit 4
+
+loadctx: procedure expose count pos. typ. dat.
+   count = 0
+   drop pos. typ. dat. in.
+   'STATE GITPCTX PACK A'
+   if rc \= 0 then return 'OK'
+   'EXECIO * DISKR GITPCTX PACK A 1 (STEM IN. FINIS'
+   if rc \= 0 then do
+      say 'GITPCTX: cannot read pack context'
+      return 'ERROR'
+   end
+   do i = 1 to in.0
+      parse var in.i tag p t d extra
+      if tag \= 'ENTRY' | extra \= '' | datatype(p,'W') \= 1 | p < 0 |,
+         (t \= 'BLOB' & t \= 'TREE' & t \= 'COMMIT' & t \= 'TAG') |,
+         length(d) // 2 \= 0 | verify(d,'0123456789ABCDEF') \= 0 then do
+         say 'GITPCTX: corrupt pack context record' i
+         return 'ERROR'
+      end
+      count = count + 1
+      n = count
+      pos.n = p
+      typ.n = t
+      dat.n = d
+   end
+   return 'OK'
+
+writectx: procedure expose count pos. typ. dat.
+   drop out.
+   out.0 = count
+   do i = 1 to count
+      out.i = 'ENTRY' pos.i typ.i dat.i
+   end
+   'EXECIO' out.0 'DISKW GITPCTX PACK A 1 (STEM OUT. FINIS'
+   if rc \= 0 then do
+      say 'GITPCTX: cannot write pack context'
+      return 'ERROR'
+   end
+   return 'OK'
