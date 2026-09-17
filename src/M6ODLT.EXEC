@@ -1,0 +1,38 @@
+/* M6N OFS_DELTA context resolution/application regression. */
+address command
+
+say 'M6 ODLT TEST 1: initialize pack context with abc at position 100'
+'EXEC GITPCTX CLEAR'
+'EXEC GITPCTX ADD 100 BLOB 616263'
+if rc \= 0 then exit rc
+
+say 'M6 ODLT TEST 2: OFS_DELTA at 140 resolves position 100 and makes abX'
+'EXEC GITODLT APPLY 140 28 030390020158'
+if rc \= 0 then exit rc
+
+say 'M6 ODLT TEST 3: record reconstructed abX at position 140'
+'EXEC GITPCTX ADD 140 BLOB 616258'
+if rc \= 0 then exit rc
+
+say 'M6 ODLT TEST 4: chained OFS_DELTA at 160 resolves reconstructed base'
+'EXEC GITODLT APPLY 160 14 030390020159'
+if rc \= 0 then exit rc
+
+say 'M6 ODLT TEST 5: missing exact base position is rejected'
+'EXEC GITODLT APPLY 150 1E 03039003'
+if rc = 0 then do
+   say 'M6ODLT: missing base unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 ODLT TEST 6: offset before pack data is rejected'
+'EXEC GITODLT APPLY 10 7F 03039003'
+if rc = 0 then do
+   say 'M6ODLT: invalid backward offset unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 OFS_DELTA CONTEXT RESOLUTION TESTS PASSED'
+exit 0
