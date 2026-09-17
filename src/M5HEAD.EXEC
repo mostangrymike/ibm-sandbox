@@ -1,0 +1,56 @@
+/* M5C symbolic HEAD and branch checkout regression. */
+address command
+
+c1 = '54BACE2202BB0C96980CDD0AAE9A752E6188D666'
+c2 = '1E99ED02563737B793C60359F94BA587F6C1B8BD'
+
+say 'M5 HEAD TEST 1: starting HEAD is Feature'
+'EXEC GITREF SYMBOLIC-REF'
+if rc \= 0 then exit rc
+'EXEC GITREF REV-PARSE HEAD'
+if rc \= 0 then exit rc
+
+say 'M5 HEAD TEST 2: isolated HEAD command resolves Feature'
+'EXEC GITHEAD HEAD'
+if rc \= 0 then exit rc
+
+say 'M5 HEAD TEST 3: checkout main changes only symbolic HEAD'
+'EXEC GITHEAD CHECKOUT main'
+if rc \= 0 then exit rc
+'EXEC GITREF SYMBOLIC-REF'
+if rc \= 0 then exit rc
+'EXEC GITREF REV-PARSE HEAD'
+if rc \= 0 then exit rc
+
+say 'M5 HEAD TEST 4: branch targets remain unchanged after checkout'
+'EXEC GITREF REV-PARSE main'
+if rc \= 0 then exit rc
+'EXEC GITREF REV-PARSE Feature'
+if rc \= 0 then exit rc
+
+say 'M5 HEAD TEST 5: missing branch checkout fails without changing HEAD'
+'EXEC GITHEAD CHECKOUT Missing'
+if rc = 0 then do
+   say 'M5HEAD: missing branch unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+'EXEC GITREF SYMBOLIC-REF'
+if rc \= 0 then exit rc
+'EXEC GITREF REV-PARSE HEAD'
+if rc \= 0 then exit rc
+
+say 'M5 HEAD TEST 6: restore checkout to Feature'
+'EXEC GITHEAD CHECKOUT Feature'
+if rc \= 0 then exit rc
+'EXEC GITHEAD HEAD'
+if rc \= 0 then exit rc
+
+say 'M5 HEAD TEST 7: final branch targets still exact'
+'EXEC GITREF REV-PARSE main'
+if rc \= 0 then exit rc
+'EXEC GITREF REV-PARSE Feature'
+if rc \= 0 then exit rc
+
+say 'M5 SYMBOLIC HEAD/CHECKOUT TESTS PASSED'
+exit 0
