@@ -3,7 +3,8 @@ parse arg command data extra
 command = translate(command)
 data = translate(data)
 stackmode = command = 'INFLATESTACK'
-if command \= 'INFLATE' & \stackmode then do
+infomode = command = 'INFLATEINFO'
+if command \= 'INFLATE' & \stackmode & \infomode then do
    say 'Usage: GITINFL INFLATE deflate-hex'
    exit 4
 end
@@ -31,7 +32,12 @@ do forever
    if result \= 'OK' then exit 8
    if final = 1 then leave
 end
-if stackmode then queue out
+if infomode then do
+   used = (bitpos + 7) % 8
+   queue out
+   queue used
+end
+else if stackmode then queue out
 else say out
 exit 0
 
