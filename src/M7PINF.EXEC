@@ -1,0 +1,46 @@
+/* M7H Git pack-entry inflate integration regression. */
+address command
+
+say 'M7 PINF TEST 1: ordinary blob pack entry inflates and verifies'
+entry = '33789C4B4C4A0600024D0127'
+'EXEC GITPINF INFLATE' entry
+if rc \= 0 then exit rc
+
+say 'M7 PINF TEST 2: wrong zlib Adler-32 is rejected'
+bad = '33789C4B4C4A0600024D0128'
+'EXEC GITPINF INFLATE' bad
+if rc = 0 then do
+   say 'M7PINF: bad Adler-32 unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 PINF TEST 3: pack header size mismatch is rejected'
+bad = '34789C4B4C4A0600024D0127'
+'EXEC GITPINF INFLATE' bad
+if rc = 0 then do
+   say 'M7PINF: bad pack size unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 PINF TEST 4: invalid zlib FCHECK is rejected'
+bad = '33789D4B4C4A0600024D0127'
+'EXEC GITPINF INFLATE' bad
+if rc = 0 then do
+   say 'M7PINF: bad FCHECK unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 PINF TEST 5: delta entry is left to proven M6 delta path'
+bad = '63789C4B4C4A0600024D0127'
+'EXEC GITPINF INFLATE' bad
+if rc = 0 then do
+   say 'M7PINF: delta entry unexpectedly accepted as ordinary object'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 PACK-ENTRY INFLATE INTEGRATION TESTS PASSED'
+exit 0
