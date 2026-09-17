@@ -18,7 +18,8 @@ Goal: genuine Git interoperability, eventually smart HTTP with native TLS.
 ## Completed
 M1 SHA-1; M2 object encoding; M3 CMS object DB; M4 trees/commits; M5 refs/HEAD;
 M6 protocol/delta through M6N; M7 compression through M7I; M8 complete PACK
-ordinary/OFS/REF through M8C; M9A/M9B bounded pack storage. All target proven.
+ordinary/OFS/REF through M8C; M9A/M9B bounded storage; M9C bounded pack SHA-1.
+All completed milestones are target proven.
 
 ## M8 complete PACK summary
 M8A ordinary complete pack passed including trailer SHA and negative tests.
@@ -57,20 +58,34 @@ Target results after M9B change:
 Known harmless first-run diagnostics: DMSERS002E for absent GITPMETA/GITPBUF when
 CLEAR/WRITE removes files before creating them.
 
-M9B is materially bounded at the storage API: callers can append bounded chunks,
-and READ loads only records intersecting the requested range. Metadata tail is
-bounded below one physical record. It is not yet an end-to-end streaming Git pack
-pipeline because the M8 walker/inflater still consume large REXX hex strings.
+### M9C bounded PACK SHA-1 — DONE/TARGET PROVEN
+`src/GITPSHA.EXEC` verifies a finalized GITPBUF without assembling the complete
+pack in one REXX string. It reads the payload in chunks of at most 64 bytes via
+GITPBUF READSTACK, feeds the existing target-proven GITSTRM SHA-1 module, then
+reads the final 20-byte trailer separately and compares the digest.
+
+`src/M9CSHA.EXEC` stores the known M8A two-object pack through INIT/APPEND/FINAL.
+Target result computed and accepted
+`5F1C02695D4BC807AE4A5DD622AD1D28E7659429`. A trailer ending in `...9428`
+was rejected RC=8 while the computed payload digest remained `...9429`.
+Final target message: `M9C BOUNDED PACK SHA-1 TESTS PASSED`.
+
+A direct GITPSHA VERIFY against the prior M9B arbitrary 80-byte test buffer also
+correctly rejected its final 20 bytes as a nonmatching trailer, RC=8. This was an
+expected pre-regression sanity check, not a failure of M9C.
+
+M9C bounds the pack-checksum path, but the M8 walker/inflater still consume large
+REXX hex strings and GITPCTX still stores whole object datahex in one record.
 
 ## NEXT ACTION
-M9C: incremental PACK SHA-1 over GITPBUF. Build a bounded reader-driven hashing
-path that hashes the pack payload (all bytes except the final 20-byte trailer) in
-small chunks and compares against the trailer without assembling the whole pack
-hex string. Reuse proven SHA implementation, adding an incremental interface only
-if required; preserve existing SHA regressions. Use the known M8A pack checksum
-`5F1C02695D4BC807AE4A5DD622AD1D28E7659429` as deterministic vector stored via
-INIT/APPEND/FINAL. Test a corrupted trailer. Do not migrate the full walker yet.
-After M9C, make inflater consumption incremental from GITPBUF.
+M9D: make inflater consumption incremental from GITPBUF. Introduce an isolated,
+bounded reader-driven path that can inflate a compressed ordinary PACK object
+without first assembling the complete compressed stream or complete PACK as one
+REXX hex string. Reuse the target-proven inflater/DEFLATE core and GITPBUF logical
+byte offsets. Preserve M7/M8 regressions and do not migrate the full pack walker
+until this primitive is target proven. Start with the known M8A first ordinary
+object at pack offset 12 (`33` header followed by zlib stream) and prove the
+reconstructed bytes are `616263` (`abc`) while reads remain bounded.
 
 ## Important implementation facts
 M8 walker/inflater still accumulate whole hex strings; GITPCTX stores whole
