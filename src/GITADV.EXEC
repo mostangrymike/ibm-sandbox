@@ -54,8 +54,14 @@ if command = 'PARSE' then do
       say 'GITADV: missing ref name'
       exit 8
    end
+   if oidhex = '54BACE2202BB0C96980CDD0AAE9A752E6188D666' then do
+      say 'PARSE REFHEX' refhex
+   end
    refname = asciitocms(refhex)
    if refname = 'ERROR' then exit 8
+   if oidhex = '54BACE2202BB0C96980CDD0AAE9A752E6188D666' then do
+      say 'PARSE REFHEX OUT' c2x(refname)
+   end
    if pos(' ',refname) > 0 then do
       say 'GITADV: invalid ref name'
       exit 8
