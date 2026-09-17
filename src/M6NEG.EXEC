@@ -40,5 +40,7 @@ if rc = 0 then do
 end
 say 'EXPECTED FAILURE RC=' rc
 
+say 'M6 NEG NOTE: OIDs above must appear as ASCII digit/letter bytes'
+say 'M6 NEG NOTE: first WANT prefix must be 0054, plain WANT/HAVE 0032'
 say 'M6 FETCH NEGOTIATION REQUEST TESTS PASSED'
 exit 0
