@@ -1,4 +1,4 @@
-# CMS/zVM Native Git Client — Chat State
+# CMS/z/VM Native Git Client — Chat State
 
 Updated: 2026-09-17
 Repository: `mostangrymike/ibm-sandbox`, branch `main`
@@ -45,44 +45,44 @@ prototype, not scalable to real pack objects.
 - M7B `GITZLIB` wrapper parser: DONE, target proven.
 - M7C `GITSTOR` stored DEFLATE blocks: DONE, target proven.
 - M7D `GITFIX` fixed Huffman + LZ77: DONE, target proven.
-- M7E `GITDYN` dynamic Huffman: CURRENT, not yet target proven.
-- Planned: M7F general/mixed-block inflater; M7G Adler-32; M7H pack integration.
+- M7E `GITDYN` dynamic Huffman + LZ77: DONE, TARGET PROVEN.
+- M7F `GITINFL` general/mixed-block inflater: CURRENT, awaiting CMS target test.
+- Planned: M7G Adler-32 verification; M7H Git pack-entry inflate integration.
 
-## M7E detailed state
+## M7E final result
 
-Files: `src/GITDYN.EXEC`, `src/M7DYN.EXEC`.
-Initial commits:
-- GITDYN `a62308d79b00cf56112ef3da23a9e11a801b8473`
-- M7DYN `3aa4f4afc64a6cc9918df1cce29c41c4e5892483`
-80-column fix: `b5190b07b8de5e8034b4b97326248dc15420c4ef`.
+After REXX compatibility fixes, canonical Huffman next-code correction, and safe
+compound-stem indexing, `M7DYN` passed on CMS. Final target output included an
+exact match between decoded and expected dynamic-Huffman data, correct truncated
+stream rejection RC=8, correct fixed-block rejection RC=8, and:
 
-First target run returned silent RC 8. Procedure stem exposure was added in
-`14d13fb2dedb491ce36cc9895770ffa1d3226cea`.
+`M7 DYNAMIC HUFFMAN TESTS PASSED`
 
-Next target failure was `call value ...` Error 40. Commit
-`4c21a120f6263a34e0c4e32c9aef5ac77c435772` changed it to function form, but
-CMS target still produced:
+Last M7E source fix before target proof:
+`1aa209f01ac463d77ab371256f3664ff3c8aec12`.
 
-```
-m7dyn
-M7 DYN TEST 1: dynamic Huffman stream with literals and LZ77 matches
-   202 +++     old = value(dst||l||'.'||r,s)
-    48 +++ call maketree 'cl.',19,'ct.'
-DMSREX475E Error 40 running GITDYN EXEC, line 202: Incorrect call to routine
-Ready(20040)
-```
+Important CMS REXX lessons from M7E:
+- Do not use two-argument `VALUE()` dynamic assignment on this target path.
+- Use explicit stems for the known Huffman tables.
+- Expressions like `lens.i+1` do not mean compound index `i+1`; compute `k=i+1`
+  first and use `lens.k`.
+- Canonical next-code recurrence must use previous-length count explicitly:
+  `prev=l-1; code=(code+bl.prev)*2`.
 
-Therefore do not use two-argument `VALUE()` for dynamic assignment in this CMS
-REXX path. Current GitHub fix removes dynamic VALUE assignment entirely and uses
-explicit known stems (`cl.`, `ll.`, `dd.` -> `ct.`, `lt.`, `dt.`), with compound
-indices such as `ct.l.r = s`. It also uses `SYMBOL()` only to test whether a
-specific generated tree entry exists.
+## M7F current state
 
-Current GITDYN fix commit:
-- `7ad4d21e27513934c2ebffd7e311b456f167148a`
+New files:
+- `src/GITINFL.EXEC`, commit `f2eb9f0b043476e0f111474d801ce017fd4422bc`
+- `src/M7INFL.EXEC`, commit `5ca6a6b6630171aa63e0d83cf8bb4a373530db7f`
 
-NEXT ACTION: `git pull`, upload only `GITDYN.EXEC`, run `M7DYN`, paste complete
-output. Do not mark M7E done until it passes on CMS.
+`GITINFL` consolidates stored, fixed, and dynamic DEFLATE decoding under one
+bit position and one output history. It loops across blocks until BFINAL=1, so
+LZ77 history is preserved across block boundaries. `M7INFL` tests final stored,
+final fixed, final dynamic, a stored-then-fixed mixed stream, reserved BTYPE
+rejection, and truncated mixed-stream rejection.
+
+NEXT ACTION: user should `git pull`, upload `GITINFL.EXEC` and `M7INFL.EXEC`, run
+`M7INFL`, and paste complete CMS output. Do not mark M7F done until target passes.
 
 ## Important implementation facts
 
