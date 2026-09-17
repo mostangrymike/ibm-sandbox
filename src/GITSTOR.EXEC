@@ -1,0 +1,63 @@
+/* M7C isolated DEFLATE stored-block decoder. */
+parse arg command rest
+command = translate(command)
+
+if command = 'INFLATE' then do
+   parse var rest data extra
+   data = translate(data)
+   if extra \= '' | data = '' | length(data) // 2 \= 0 |,
+      verify(data,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITSTOR INFLATE deflate-hex'
+      exit 4
+   end
+   pos = 1
+   output = ''
+   done = 0
+   do while \done
+      if pos + 1 > length(data) then do
+         say 'GITSTOR: truncated block header'
+         exit 8
+      end
+      b = x2d(substr(data,pos,2))
+      pos = pos + 2
+      bfinal = b // 2
+      btype = (b % 2) // 4
+      if btype = 3 then do
+         say 'GITSTOR: reserved BTYPE'
+         exit 8
+      end
+      if btype \= 0 then do
+         say 'GITSTOR: unsupported BTYPE' btype
+         exit 8
+      end
+      /* Stored blocks discard bits 3..7 and continue byte-aligned. */
+      if pos + 7 > length(data) then do
+         say 'GITSTOR: truncated stored-block length'
+         exit 8
+      end
+      len = x2d(substr(data,pos+2,2) || substr(data,pos,2))
+      nlen = x2d(substr(data,pos+6,2) || substr(data,pos+4,2))
+      pos = pos + 8
+      if nlen \= 65535 - len then do
+         say 'GITSTOR: LEN/NLEN mismatch'
+         exit 8
+      end
+      need = len * 2
+      if pos + need - 1 > length(data) then do
+         say 'GITSTOR: truncated stored-block data'
+         exit 8
+      end
+      if need > 0 then output = output || substr(data,pos,need)
+      pos = pos + need
+      done = bfinal
+   end
+   if pos <= length(data) then do
+      say 'GITSTOR: trailing bytes after final block'
+      exit 8
+   end
+   say output
+   exit 0
+end
+
+say 'GITSTOR: unknown command' command
+exit 4
