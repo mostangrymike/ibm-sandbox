@@ -1,0 +1,49 @@
+/* M9A chunked pack-buffer regression. */
+address command
+part = '000102030405060708090A0B0C0D0E0F'
+data = part || part || part || part || part
+
+say 'M9 PBUF TEST 1: write 80 bytes into bounded chunks'
+'EXEC GITPBUF CLEAR'
+'EXEC GITPBUF WRITE' data
+if rc \= 0 then exit rc
+
+say 'M9 PBUF TEST 2: read first eight bytes'
+'EXEC GITPBUF READ 0 8'
+if rc \= 0 then exit rc
+say 'M9 PBUF EXPECTED: 0001020304050607'
+
+say 'M9 PBUF TEST 3: read across 64-byte record boundary'
+'EXEC GITPBUF READ 60 12'
+if rc \= 0 then exit rc
+say 'M9 PBUF EXPECTED: 0C0D0E0F0001020304050607'
+
+say 'M9 PBUF TEST 4: read final eight bytes'
+'EXEC GITPBUF READ 72 8'
+if rc \= 0 then exit rc
+say 'M9 PBUF EXPECTED: 08090A0B0C0D0E0F'
+
+say 'M9 PBUF TEST 5: stack read crosses record boundary'
+'EXEC GITPBUF READSTACK 63 3'
+if rc \= 0 then exit rc
+if queued() < 1 then do
+   say 'M9PBUF: stack result missing'
+   exit 8
+end
+parse pull got
+say got
+if got \= '0F0001' then do
+   say 'M9PBUF: stack boundary result mismatch'
+   exit 8
+end
+
+say 'M9 PBUF TEST 6: out-of-range read is rejected'
+'EXEC GITPBUF READ 79 2'
+if rc = 0 then do
+   say 'M9PBUF: out-of-range read unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M9 CHUNKED PACK BUFFER TESTS PASSED'
+exit 0
