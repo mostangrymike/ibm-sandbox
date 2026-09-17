@@ -171,7 +171,7 @@ getbits: procedure expose bits bp
    end
    return v
 
-maketree: procedure
+maketree: procedure expose cl. ll. dd. ct. lt. dt.
    parse arg src, count, dst
    drop bl. next.
    do i = 0 to 15
@@ -204,7 +204,7 @@ maketree: procedure
    end
    return 'OK'
 
-getsym: procedure expose bits bp
+getsym: procedure expose bits bp ct. lt. dt.
    parse arg tree
    code = 0
    mult = 1
