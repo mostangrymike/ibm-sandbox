@@ -1,0 +1,33 @@
+/* M7D fixed-Huffman DEFLATE regression. */
+address command
+
+say 'M7 FIX TEST 1: fixed Huffman abc'
+'EXEC GITFIX INFLATE 4B4C4A0600'
+if rc \= 0 then exit rc
+
+say 'M7 FIX TEST 2: length/distance reconstructs ten a bytes'
+'EXEC GITFIX INFLATE 4B4C840100'
+if rc \= 0 then exit rc
+
+say 'M7 FIX TEST 3: repeated abc exercises overlapping reconstruction'
+'EXEC GITFIX INFLATE 4B4C4A4E444500'
+if rc \= 0 then exit rc
+
+say 'M7 FIX TEST 4: truncated fixed stream is rejected'
+'EXEC GITFIX INFLATE 4B'
+if rc = 0 then do
+   say 'M7FIX: truncated stream unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 FIX TEST 5: stored block is rejected by fixed decoder'
+'EXEC GITFIX INFLATE 010300FCFF616263'
+if rc = 0 then do
+   say 'M7FIX: stored block unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 FIXED HUFFMAN TESTS PASSED'
+exit 0
