@@ -9,7 +9,9 @@ if command = 'WANT' then do
       say 'Usage: GITNEG WANT 40hex-oid [capabilities]'
       exit 4
    end
-   payload = '77616E7420' || oid
+   oidwire = cmstoascii(oid)
+   if oidwire = 'ERROR' then exit 8
+   payload = '77616E7420' || oidwire
    if caps \= '' then do
       caphex = cmstoascii(caps)
       if caphex = 'ERROR' then exit 8
@@ -27,7 +29,9 @@ if command = 'HAVE' then do
       say 'Usage: GITNEG HAVE 40hex-oid'
       exit 4
    end
-   payload = '6861766520' || oid || '0A'
+   oidwire = cmstoascii(oid)
+   if oidwire = 'ERROR' then exit 8
+   payload = '6861766520' || oidwire || '0A'
    call emitpkt payload
    exit result
 end
