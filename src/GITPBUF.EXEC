@@ -1,9 +1,12 @@
-/* M9A bounded chunked binary pack buffer. */
+/* M9B incremental bounded CMS pack buffer. */
 parse arg command rest
 command = translate(command)
 
-if command = 'CLEAR' then do
+if command = 'CLEAR' | command = 'INIT' then do
    'ERASE GITPBUF PACK A'
+   'ERASE GITPMETA PACK A'
+   call putmeta 0,'',0
+   if result \= 'OK' then exit 8
    exit 0
 end
 
@@ -15,22 +18,55 @@ if command = 'WRITE' then do
       say 'Usage: GITPBUF WRITE hexdata'
       exit 4
    end
-   drop out.
-   n = 0
-   do while data \= ''
-      n = n + 1
-      take = 128
-      if length(data) < take then take = length(data)
-      out.n = left(data,take)
-      data = substr(data,take+1)
+   call putwhole data
+   if result \= 'OK' then exit 8
+   say 'CHUNKS' chunks
+   exit 0
+end
+
+if command = 'APPEND' then do
+   parse var rest data extra
+   data = translate(data)
+   if extra \= '' | data = '' | length(data) > 128 |,
+      length(data) // 2 \= 0 |,
+      verify(data,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITPBUF APPEND hexdata-up-to-64-bytes'
+      exit 4
    end
-   out.0 = n
-   'EXECIO' n 'DISKW GITPBUF PACK A 1 (STEM OUT. FINIS'
-   if rc \= 0 then do
-      say 'GITPBUF: cannot write pack buffer'
+   call getmeta
+   if result \= 'OK' then exit 8
+   if final then do
+      say 'GITPBUF: cannot append after FINAL'
       exit 8
    end
-   say 'CHUNKS' n
+   bytes = length(data) % 2
+   work = tail || data
+   if length(work) >= 128 then do
+      record = left(work,128)
+      call appendrec record
+      if result \= 'OK' then exit 8
+      work = substr(work,129)
+   end
+   size = size + bytes
+   call putmeta size,work,0
+   if result \= 'OK' then exit 8
+   exit 0
+end
+
+if command = 'FINAL' then do
+   if strip(rest) \= '' then do
+      say 'Usage: GITPBUF FINAL'
+      exit 4
+   end
+   call getmeta
+   if result \= 'OK' then exit 8
+   if final then exit 0
+   if tail \= '' then do
+      call appendrec tail
+      if result \= 'OK' then exit 8
+   end
+   call putmeta size,'',1
+   if result \= 'OK' then exit 8
    exit 0
 end
 
@@ -52,51 +88,107 @@ end
 say 'GITPBUF: unknown command' command
 exit 4
 
+getmeta: procedure expose size tail final
+   drop m.
+   'EXECIO 1 DISKR GITPMETA PACK A 1 (STEM M. FINIS'
+   if rc \= 0 | m.0 \= 1 then do
+      say 'GITPBUF: pack metadata not found'
+      return 'ERROR'
+   end
+   parse var m.1 tag size t final extra
+   if tag \= 'META' | extra \= '' | datatype(size,'W') \= 1 |,
+      size < 0 | (final \= 0 & final \= 1) then do
+      say 'GITPBUF: corrupt pack metadata'
+      return 'ERROR'
+   end
+   if t = '-' then tail = ''
+   else tail = t
+   if length(tail) >= 128 | length(tail) // 2 \= 0 |,
+      verify(tail,'0123456789ABCDEF') \= 0 then do
+      say 'GITPBUF: corrupt pack tail'
+      return 'ERROR'
+   end
+   return 'OK'
+
+putmeta: procedure
+   parse arg size,tail,final
+   if tail = '' then t = '-'
+   else t = tail
+   m.1 = 'META' size t final
+   m.0 = 1
+   'EXECIO 1 DISKW GITPMETA PACK A 1 (STEM M. FINIS'
+   if rc \= 0 then do
+      say 'GITPBUF: cannot write pack metadata'
+      return 'ERROR'
+   end
+   return 'OK'
+
+appendrec: procedure
+   parse arg record
+   r.1 = record
+   r.0 = 1
+   'EXECIO 1 DISKW GITPBUF PACK A 0 (STEM R. FINIS'
+   if rc \= 0 then do
+      say 'GITPBUF: cannot append pack record'
+      return 'ERROR'
+   end
+   return 'OK'
+
+putwhole: procedure expose chunks
+   parse arg data
+   'ERASE GITPBUF PACK A'
+   'ERASE GITPMETA PACK A'
+   drop out.
+   chunks = 0
+   total = length(data) % 2
+   do while data \= ''
+      chunks = chunks + 1
+      take = 128
+      if length(data) < take then take = length(data)
+      out.chunks = left(data,take)
+      data = substr(data,take+1)
+   end
+   out.0 = chunks
+   'EXECIO' chunks 'DISKW GITPBUF PACK A 1 (STEM OUT. FINIS'
+   if rc \= 0 then do
+      say 'GITPBUF: cannot write pack buffer'
+      return 'ERROR'
+   end
+   call putmeta total,'',1
+   return result
+
 readrange: procedure
    parse arg offset,count
-   'STATE GITPBUF PACK A'
-   if rc \= 0 then do
-      say 'GITPBUF: pack buffer not found'
+   call getmeta
+   if result \= 'OK' then return 'ERROR'
+   if \final then do
+      say 'GITPBUF: pack buffer not finalized'
       return 'ERROR'
    end
-   drop in.
-   'EXECIO * DISKR GITPBUF PACK A 1 (STEM IN. FINIS'
-   if rc \= 0 then do
-      say 'GITPBUF: cannot read pack buffer'
-      return 'ERROR'
-   end
-   total = 0
-   do i = 1 to in.0
-      chunk = strip(in.i)
-      if length(chunk) // 2 \= 0 |,
-         verify(chunk,'0123456789ABCDEF') \= 0 then do
-         say 'GITPBUF: corrupt chunk' i
-         return 'ERROR'
-      end
-      total = total + length(chunk) % 2
-   end
-   if offset + count > total then do
+   if offset + count > size then do
       say 'GITPBUF: read exceeds pack buffer'
       return 'ERROR'
    end
    if count = 0 then return ''
-   needlo = offset
-   needhi = offset + count
-   base = 0
-   answer = ''
-   do i = 1 to in.0 while length(answer) % 2 < count
-      chunk = strip(in.i)
-      bytes = length(chunk) % 2
-      end = base + bytes
-      if needlo < end & needhi > base then do
-         lo = needlo - base
-         if lo < 0 then lo = 0
-         hi = needhi - base
-         if hi > bytes then hi = bytes
-         take = hi - lo
-         if take > 0 then answer = answer ||,
-            substr(chunk,lo*2+1,take*2)
-      end
-      base = end
+   first = offset % 64 + 1
+   last = (offset + count - 1) % 64 + 1
+   nrec = last - first + 1
+   drop in.
+   'EXECIO' nrec 'DISKR GITPBUF PACK A' first,
+      '(STEM IN. FINIS'
+   if rc \= 0 | in.0 \= nrec then do
+      say 'GITPBUF: cannot read requested pack records'
+      return 'ERROR'
    end
-   return answer
+   joined = ''
+   do i = 1 to in.0
+      chunk = strip(in.i)
+      if length(chunk) // 2 \= 0 |,
+         verify(chunk,'0123456789ABCDEF') \= 0 then do
+         say 'GITPBUF: corrupt chunk' first+i-1
+         return 'ERROR'
+      end
+      joined = joined || chunk
+   end
+   within = offset // 64
+   return substr(joined,within*2+1,count*2)
