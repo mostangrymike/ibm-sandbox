@@ -29,6 +29,23 @@ if command = 'INIT' then do
    exit 0
 end
 
+/* M5D integration boundary.  Keep the target-proven M4 object core below
+ * unchanged while routing ref/HEAD commands through the independently proven
+ * M5A/M5B/M5C implementations. */
+if command = 'BRANCH' | command = 'SHOW-REF' |,
+   command = 'SYMBOLIC-REF' | command = 'REV-PARSE' then do
+   'EXEC GITREF' command rest
+   exit rc
+end
+if command = 'UPDATE-REF' then do
+   'EXEC GITUPD' rest
+   exit rc
+end
+if command = 'CHECKOUT' | command = 'HEAD' then do
+   'EXEC GITHEAD' command rest
+   exit rc
+end
+
 if command = 'VERIFY-OBJECT' | command = 'CAT-OBJECT' then do
    parse var rest oid extra
    oid = translate(oid)
