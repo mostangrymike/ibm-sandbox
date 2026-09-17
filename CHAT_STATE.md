@@ -46,9 +46,9 @@ prototype, not scalable to real pack objects.
 - M7C `GITSTOR` stored DEFLATE blocks: DONE, target proven.
 - M7D `GITFIX` fixed Huffman + LZ77: DONE, target proven.
 - M7E `GITDYN` dynamic Huffman + LZ77: DONE, target proven.
-- M7F `GITINFL` general/mixed-block inflater: DONE, TARGET PROVEN.
-- NEXT: M7G Adler-32 verification.
-- Planned after M7G: M7H Git pack-entry inflate integration.
+- M7F `GITINFL` general/mixed-block inflater: DONE, target proven.
+- M7G `GITADLER` Adler-32 calculation/verification: DONE, TARGET PROVEN.
+- NEXT: M7H Git pack-entry inflate integration.
 
 ## M7E final result
 
@@ -94,8 +94,23 @@ Final CMS target run passed all M7F gates:
 M7F therefore proves one continuous bit position and output/LZ77 history across
 DEFLATE blocks while dispatching stored, fixed, and dynamic block types.
 
-NEXT ACTION: implement isolated M7G Adler-32 verification for RFC1950 zlib data,
-then target-test it before M7H pack-entry inflate integration.
+## M7G final result
+
+Files:
+- `src/GITADLER.EXEC`, commit `eed6c7a65d453615fff1e58fac9bbc1735837bce`
+- `src/M7ADLER.EXEC`, commit `1319e89f321583c1bd15792a1a613aca2c6edbbb`
+
+Final CMS target run passed all M7G gates. `abc` calculated as `024D0127` and
+verified against that trailer. One zero byte calculated as `00010001`. A wrong
+checksum was rejected with RC=8 and displayed expected/actual values. A malformed
+4-hex-digit checksum was rejected with usage RC=4. Final line:
+`M7 ADLER-32 TESTS PASSED`.
+
+NEXT ACTION: implement isolated M7H Git pack-entry inflate integration. Preserve
+target-proven M7B/M7F/M7G components and integrate around them rather than
+rewriting them. Pack-entry integration must respect Git pack semantics: each
+object entry's compressed data is a zlib stream; base and delta entry headers
+remain handled by the target-proven M6 parsers/resolvers.
 
 ## Important implementation facts
 
