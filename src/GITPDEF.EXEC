@@ -1,6 +1,7 @@
 /* M9E bounded DEFLATE core over GITPBUF. */
-parse arg command,start
-if translate(command) \= 'INFLATESTACK' | datatype(start,'W') \= 1 then exit 4
+parse arg command start extra
+if translate(command) \= 'INFLATESTACK' | extra \= '' |,
+   datatype(start,'W') \= 1 then exit 4
 address command
 base = start
 bitpos = 0
