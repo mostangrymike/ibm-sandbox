@@ -1,0 +1,50 @@
+/* M6D Git v0/v1 fetch ACK/NAK response regression. */
+address command
+
+oid = '54BACE2202BB0C96980CDD0AAE9A752E6188D666'
+oidascii = '3534424143453232303242423043393639383043444430414145394137353245'
+oidascii = oidascii || '3631383844363636'
+
+say 'M6 ACK TEST 1: NAK response'
+'EXEC GITACK PARSE 4E414B0A'
+if rc \= 0 then exit rc
+
+say 'M6 ACK TEST 2: final ACK response'
+payload = '41434B20' || oidascii || '0A'
+'EXEC GITACK PARSE' payload
+if rc \= 0 then exit rc
+
+say 'M6 ACK TEST 3: multi_ack continue response'
+payload = '41434B20' || oidascii || '20636F6E74696E75650A'
+'EXEC GITACK PARSE' payload
+if rc \= 0 then exit rc
+
+say 'M6 ACK TEST 4: detailed common response'
+payload = '41434B20' || oidascii || '20636F6D6D6F6E0A'
+'EXEC GITACK PARSE' payload
+if rc \= 0 then exit rc
+
+say 'M6 ACK TEST 5: detailed ready response'
+payload = '41434B20' || oidascii || '2072656164790A'
+'EXEC GITACK PARSE' payload
+if rc \= 0 then exit rc
+
+say 'M6 ACK TEST 6: invalid ACK status is rejected'
+payload = '41434B20' || oidascii || '20626F6775730A'
+'EXEC GITACK PARSE' payload
+if rc = 0 then do
+   say 'M6ACK: invalid ACK status unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 ACK TEST 7: malformed OID is rejected'
+'EXEC GITACK PARSE 41434B20313233340A'
+if rc = 0 then do
+   say 'M6ACK: malformed ACK unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 FETCH ACK/NAK RESPONSE TESTS PASSED'
+exit 0
