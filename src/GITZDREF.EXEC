@@ -1,0 +1,56 @@
+/* M7I compressed REF_DELTA integration. */
+parse arg command oid zdata extra
+command = translate(command)
+oid = translate(oid)
+zdata = translate(zdata)
+if command \= 'APPLY' | extra \= '' | length(oid) \= 40 |,
+   verify(oid,'0123456789ABCDEF') \= 0 | zdata = '' |,
+   length(zdata) // 2 \= 0 |,
+   verify(zdata,'0123456789ABCDEF') \= 0 then do
+   say 'Usage: GITZDREF APPLY base-oid zlib-hex'
+   exit 4
+end
+call inflatez zdata
+if result = 'ERROR' then exit 8
+delta = result
+'EXEC GITRDEL RESOLVE' oid delta
+exit rc
+
+inflatez: procedure
+   parse arg z
+   if length(z) < 12 then do
+      say 'GITZDREF: zlib stream too short'
+      return 'ERROR'
+   end
+   cmf = x2d(substr(z,1,2))
+   flg = x2d(substr(z,3,2))
+   if cmf // 16 \= 8 | cmf % 16 > 7 then do
+      say 'GITZDREF: invalid zlib method/window'
+      return 'ERROR'
+   end
+   if (cmf * 256 + flg) // 31 \= 0 then do
+      say 'GITZDREF: invalid FCHECK'
+      return 'ERROR'
+   end
+   if (flg % 32) // 2 then do
+      say 'GITZDREF: preset dictionary not supported'
+      return 'ERROR'
+   end
+   deflate = substr(z,5,length(z)-12)
+   expected = substr(z,length(z)-7,8)
+   'EXEC GITINFL INFLATESTACK' deflate
+   if rc \= 0 then return 'ERROR'
+   parse pull data
+   s1 = 1
+   s2 = 0
+   do p = 1 to length(data) by 2
+      b = x2d(substr(data,p,2))
+      s1 = (s1 + b) // 65521
+      s2 = (s2 + s1) // 65521
+   end
+   actual = d2x(s2,4) || d2x(s1,4)
+   if actual \= expected then do
+      say 'GITZDREF: Adler-32 mismatch'
+      return 'ERROR'
+   end
+   return data
