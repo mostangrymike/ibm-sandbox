@@ -58,7 +58,7 @@ if (cmf * 256 + flg) // 31 \= 0 then do
 end
 fdict = (flg % 32) // 2
 if fdict then do
-   say 'GITPINF: preset dictionary not supported for Git pack entry'
+   say 'GITPINF: preset dictionary not valid for Git pack entry'
    exit 8
 end
 zpos = pos + 4
@@ -69,19 +69,44 @@ if zpos > trailer then do
 end
 deflate = substr(entry,zpos,trailer-zpos)
 adler = substr(entry,trailer,8)
-/* Inline the target-proven general inflater interface via CMS stack capture. */
-'EXECIO 0 CP (STRING GITINFL INFLATE' deflate
-if rc \= 0 then do
-   say 'GITPINF: unable to stage inflater command'
+'EXEC GITINFL INFLATESTACK' deflate
+if rc \= 0 then exit rc
+if queued() < 1 then do
+   say 'GITPINF: inflater returned no data'
    exit 8
 end
-/* Direct EXEC invocation is used; test vectors keep output to one line. */
-'EXEC GITINFL INFLATE' deflate
-if rc \= 0 then exit rc
-/* M7H prototype needs the reconstructed bytes for size/checksum checks. */
-/* Reinflate locally through the shared GITINFL algorithm is deferred. */
-say 'GITPINF: integration requires capturable inflater output'
-exit 12
+pull out
+out = translate(out)
+if length(out) // 2 \= 0 |,
+   verify(out,'0123456789ABCDEF') \= 0 then do
+   say 'GITPINF: inflater returned invalid hex'
+   exit 8
+end
+if length(out) % 2 \= size then do
+   say 'GITPINF: packed object size mismatch'
+   say 'EXPECTED' size
+   say 'ACTUAL' length(out) % 2
+   exit 8
+end
+s1 = 1
+s2 = 0
+do p = 1 to length(out) by 2
+   v = x2d(substr(out,p,2))
+   s1 = (s1 + v) // 65521
+   s2 = (s2 + s1) // 65521
+end
+actual = d2x(s2,4) || d2x(s1,4)
+if actual \= adler then do
+   say 'GITPINF: Adler-32 mismatch'
+   say 'EXPECTED' adler
+   say 'ACTUAL' actual
+   exit 8
+end
+say 'TYPE' type typename(type)
+say 'SIZE' size
+say 'DATA' out
+say 'ADLER32' actual
+exit 0
 
 byte: procedure
    parse arg data, pos
@@ -90,3 +115,11 @@ byte: procedure
       return 'ERROR'
    end
    return x2d(substr(data,pos,2))
+
+typename: procedure
+   parse arg t
+   if t = 1 then return 'COMMIT'
+   if t = 2 then return 'TREE'
+   if t = 3 then return 'BLOB'
+   if t = 4 then return 'TAG'
+   return 'INVALID'
