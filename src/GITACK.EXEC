@@ -9,25 +9,30 @@ if command = 'PARSE' then do
       say 'Usage: GITACK PARSE payload-hex'
       exit 4
    end
+   /* Git ACK/NAK payloads end in ASCII LF.  Remove that wire byte before
+    * ASCII-to-CMS text conversion; LF is outside our printable translation. */
+   if length(payload) >= 2 & translate(right(payload,2)) = '0A' then do
+      payload = left(payload,length(payload)-2)
+   end
    text = asciitocms(payload)
    if text = 'ERROR' then exit 8
-   if text = 'NAK' | text = 'NAK'||d2c(37) then do
+   if text = 'NAK' then do
       say 'NAK'
       exit 0
    end
-   lf = d2c(37)
-   if right(text,1) = lf then text = left(text,length(text)-1)
    parse var text word oid status extra
-   if word \= 'ACK' | \ validsha1(translate(oid)) | extra \= '' then do
+   word = translate(word)
+   oid = translate(oid)
+   status = translate(status)
+   if word \= 'ACK' | \ validsha1(oid) | extra \= '' then do
       say 'GITACK: invalid ACK/NAK payload'
       exit 8
    end
-   oid = translate(oid)
    if status = '' then do
       say 'ACK' oid
       exit 0
    end
-   if status \= 'continue' & status \= 'common' & status \= 'ready' then do
+   if status \= 'CONTINUE' & status \= 'COMMON' & status \= 'READY' then do
       say 'GITACK: invalid ACK status' status
       exit 8
    end
