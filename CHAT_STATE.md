@@ -18,61 +18,58 @@ Goal: genuine Git interoperability, eventually smart HTTP with native TLS.
 ## Completed
 M1 SHA-1; M2 object encoding; M3 CMS object DB; M4 trees/commits; M5 refs/HEAD;
 M6 protocol/delta through M6N; M7 zlib/DEFLATE/inflate/Adler and compressed
-ordinary/REF/OFS integration through M7I; M8 complete PACK integration through
-M8C. All completed milestones target proven.
+ordinary/REF/OFS through M7I; M8 complete PACK ordinary/OFS/REF through M8C;
+M9A chunked pack buffer. All completed milestones target proven.
 
-## M8 complete PACK results
-M8A ordinary: two blobs positions 12/27, PACK v2 count 2, SHA-1
-`5F1C02695D4BC807AE4A5DD622AD1D28E7659429`, negative checksum/count tests pass.
+## M8 complete PACK summary
+M8A ordinary complete pack passed including trailer SHA and negative tests.
+M8B OFS_DELTA reconstructs abc -> abcd in complete pack and verifies trailer.
+M8C REF_DELTA resolves real base OID, reconstructs abc -> abcd and verifies
+trailer. M8 regressions all passed after integration.
 
-M8B OFS_DELTA: base abc at position 12; OFS delta at position 24 reconstructs
-abcd `61626364`; SHA-1 `8CA36BC28C5A2FDDD0EB9762CA36049A32D114B6`;
-invalid distance rejected. Existing M8PACK regression preserved.
+## M9 scalability
 
-### M8C REF_DELTA — DONE/TARGET PROVEN
-Changes:
-- `src/GITPOID.EXEC` commit `4123c0c3c7f40e5e4fed4547f7ea090ca9e58ebb`
-  provides reconstructed-object OID -> pack-position index.
-- `src/GITPWALK.EXEC` REF support commit
-  `6361d0796f3d5b3184cb8af399d3d9e466de034a`.
-- `src/M8REF.EXEC` regression commit
-  `97da5699286da4ccff9d8b548df9cb489f78895b`.
+### M9A chunked pack buffer — DONE/TARGET PROVEN
+Files/commits:
+- `src/GITPBUF.EXEC` commit `0aaaaf281c02854248e210f9455c2539130d79e0`
+- `src/M9PBUF.EXEC` commit `96473bc4fe1f6f43a78cdcbcb8cfcbb284eb2607`
 
-Regression gate after M8C changes:
-- M8PACK passed completely.
-- M8OFS passed completely.
-- M8REF passed completely.
+GITPBUF establishes a CMS-record-backed logical binary byte stream. WRITE splits
+hex input into records of at most 128 hex digits = 64 bytes. READ/READSTACK use
+zero-based logical byte offsets/counts independent of physical record boundaries.
+M9A deliberately does not modify the target-proven M8 walker.
 
-M8REF target details:
-- entry 1 position 12 BLOB size 3 DATA `616263` (abc)
-- its real Git blob OID is `F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F`
-- entry 2 position 24 REF_DELTA representation size 6 reconstructs inherited
-  BLOB DATA `61626364` (abcd)
-- PACK v2 count 2
-- trailing SHA-1 verified `7C95D709D4D46C612315060323DF0B5671650684`
-- unknown base OID `02BA...` rejected RC=8 by GITPOID
-- final `M8 WHOLE-PACK REF_DELTA TESTS PASSED`.
+Target regression:
+- wrote 80 bytes -> `CHUNKS 2`
+- bytes 0..7 -> `0001020304050607`
+- 12-byte read from offset 60 crossed the 64-byte record boundary and returned
+  `0C0D0E0F0001020304050607`
+- final 8 bytes from offset 72 -> `08090A0B0C0D0E0F`
+- READSTACK offset 63 count 3 -> `0F0001`
+- offset 79 count 2 correctly rejected RC=8
+- final `M9 CHUNKED PACK BUFFER TESTS PASSED`
 
-Known harmless first-file diagnostics now include GITPCTX/GITPOID PACK A not found
-after CLEAR. Initial M8PACK run also showed DMSERS002E for absent GITPOID before
-its first creation; functionality passed. Do not weaken correctness to hide these.
+Initial `DMSERS002E File GITPBUF PACK A not found` came from CLEAR before the
+first file existed and is harmless.
 
-## Current boundary / NEXT ACTION
-Whole-pack functional prototype is complete for ordinary, OFS_DELTA and REF_DELTA
-entries with zlib/DEFLATE, Adler, reconstructed object OIDs/context and trailing
-PACK SHA-1. Stop adding whole-hex prototype features now.
+Important limitation: M9A's WRITE still accepts one whole REXX hex argument and
+READ currently loads all physical records into a REXX stem before extracting the
+requested range. It proves logical chunk/boundary semantics, not bounded-memory
+I/O yet. Do not overclaim it as streaming.
 
-NEXT: M9 scalability architecture. Replace whole-pack/whole-object REXX hex and
-one-record context with bounded/chunked processing suitable for real Git packs.
-First isolated gate should establish a chunked binary-safe CMS pack input/storage
-abstraction and incremental byte reader, without changing the proven M8 walker
-algorithms yet. It should support reads across CMS record boundaries and bounded
-chunks, with deterministic boundary tests. Then adapt incremental SHA/inflate and
-object storage in later isolated steps. Preserve exact Git byte semantics.
+## NEXT ACTION
+M9B should make the pack-buffer API incrementally writable/readable so memory use
+can be bounded. Add INIT/APPEND (or equivalent) accepting one bounded chunk at a
+time and a reader that retrieves only the CMS record(s) needed for a requested
+range rather than EXECIO-reading the entire file. Preserve zero-based logical byte
+semantics and 64-byte physical records. Test append fragments that do not align to
+64-byte boundaries and reads spanning records. Do not migrate GITPWALK until this
+storage primitive is target proven. After M9B, adapt incremental pack SHA-1 and
+then inflater consumption to the bounded reader in isolated gates.
 
 ## Important implementation facts
-Current REXX paths accumulate whole hex strings; GITPCTX stores whole datahex in
-one CMS record. Prototype only, not scalable. Git hash input is exact ASCII
+Current M8 REXX paths accumulate whole hex strings; GITPCTX stores whole datahex
+in one CMS record. Prototype only. Git hash input is exact ASCII
 `type + space + decimal size + NUL + binary content`. CMS text strips trailing
 EBCDIC record-padding blanks, preserves leading blanks, joins records with ASCII
 LF, no final LF. Arbitrary bytes require binary-safe mode. Native GSK/Dynamic SSL
