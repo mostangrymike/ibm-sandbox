@@ -17,60 +17,65 @@ Goal: genuine Git interoperability, eventually smart HTTP with native TLS.
 
 ## Completed
 M1 SHA-1; M2 object encoding; M3 CMS object DB; M4 trees/commits; M5 refs/HEAD;
-M6 protocol/delta through M6N; M7 zlib/DEFLATE/inflate/Adler and compressed
-ordinary/REF/OFS through M7I; M8 complete PACK ordinary/OFS/REF through M8C;
-M9A chunked pack buffer. All completed milestones target proven.
+M6 protocol/delta through M6N; M7 compression through M7I; M8 complete PACK
+ordinary/OFS/REF through M8C; M9A/M9B bounded pack storage. All target proven.
 
 ## M8 complete PACK summary
 M8A ordinary complete pack passed including trailer SHA and negative tests.
-M8B OFS_DELTA reconstructs abc -> abcd in complete pack and verifies trailer.
-M8C REF_DELTA resolves real base OID, reconstructs abc -> abcd and verifies
-trailer. M8 regressions all passed after integration.
+M8B OFS_DELTA reconstructs abc -> abcd and verifies trailer. M8C REF_DELTA
+resolves real base OID, reconstructs abc -> abcd and verifies trailer. M8
+regressions all passed after integration.
 
 ## M9 scalability
 
-### M9A chunked pack buffer — DONE/TARGET PROVEN
-Files/commits:
-- `src/GITPBUF.EXEC` commit `0aaaaf281c02854248e210f9455c2539130d79e0`
-- `src/M9PBUF.EXEC` commit `96473bc4fe1f6f43a78cdcbcb8cfcbb284eb2607`
+### M9A chunk semantics — DONE/TARGET PROVEN
+`GITPBUF` logical byte offsets work across 64-byte CMS records. 80-byte test made
+two chunks; boundary and overrun tests passed.
 
-GITPBUF establishes a CMS-record-backed logical binary byte stream. WRITE splits
-hex input into records of at most 128 hex digits = 64 bytes. READ/READSTACK use
-zero-based logical byte offsets/counts independent of physical record boundaries.
-M9A deliberately does not modify the target-proven M8 walker.
+### M9B incremental/selective pack buffer — DONE/TARGET PROVEN
+Current `src/GITPBUF.EXEC` blob `47cd29329aed29fa0c99580835a007acf30aee4d`.
+M9B adds metadata file `GITPMETA PACK A`, INIT/APPEND/FINAL, and selective READ.
+APPEND accepts at most 64 bytes per call, carries a partial tail until a full
+64-byte physical record can be emitted, and FINAL emits the last partial record.
+READ is forbidden before FINAL and computes only the required CMS record range;
+it no longer EXECIO-reads the entire pack file. WRITE remains as compatibility
+path and now writes finalized metadata too.
 
-Target regression:
-- wrote 80 bytes -> `CHUNKS 2`
-- bytes 0..7 -> `0001020304050607`
-- 12-byte read from offset 60 crossed the 64-byte record boundary and returned
-  `0C0D0E0F0001020304050607`
-- final 8 bytes from offset 72 -> `08090A0B0C0D0E0F`
-- READSTACK offset 63 count 3 -> `0F0001`
-- offset 79 count 2 correctly rejected RC=8
-- final `M9 CHUNKED PACK BUFFER TESTS PASSED`
+Target results after M9B change:
+- existing M9PBUF regression passed fully: 80 bytes -> 2 chunks, normal/boundary/
+  stack reads correct, overrun rejected RC=8.
+- M9PINC incremental regression passed fully.
+- INIT succeeded.
+- APPEND fragments of 10, 54, then 16 bytes succeeded (non-aligned calls).
+- READ before FINAL rejected RC=8: `GITPBUF: pack buffer not finalized`.
+- FINAL flushed partial last record.
+- offset 60 count 12 -> `0C0D0E0F0001020304050607` across record boundary.
+- READSTACK offset 63 count 3 -> `0F0001`.
+- final eight bytes -> `08090A0B0C0D0E0F`.
+- final `M9 INCREMENTAL PACK BUFFER TESTS PASSED`.
 
-Initial `DMSERS002E File GITPBUF PACK A not found` came from CLEAR before the
-first file existed and is harmless.
+Known harmless first-run diagnostics: DMSERS002E for absent GITPMETA/GITPBUF when
+CLEAR/WRITE removes files before creating them.
 
-Important limitation: M9A's WRITE still accepts one whole REXX hex argument and
-READ currently loads all physical records into a REXX stem before extracting the
-requested range. It proves logical chunk/boundary semantics, not bounded-memory
-I/O yet. Do not overclaim it as streaming.
+M9B is materially bounded at the storage API: callers can append bounded chunks,
+and READ loads only records intersecting the requested range. Metadata tail is
+bounded below one physical record. It is not yet an end-to-end streaming Git pack
+pipeline because the M8 walker/inflater still consume large REXX hex strings.
 
 ## NEXT ACTION
-M9B should make the pack-buffer API incrementally writable/readable so memory use
-can be bounded. Add INIT/APPEND (or equivalent) accepting one bounded chunk at a
-time and a reader that retrieves only the CMS record(s) needed for a requested
-range rather than EXECIO-reading the entire file. Preserve zero-based logical byte
-semantics and 64-byte physical records. Test append fragments that do not align to
-64-byte boundaries and reads spanning records. Do not migrate GITPWALK until this
-storage primitive is target proven. After M9B, adapt incremental pack SHA-1 and
-then inflater consumption to the bounded reader in isolated gates.
+M9C: incremental PACK SHA-1 over GITPBUF. Build a bounded reader-driven hashing
+path that hashes the pack payload (all bytes except the final 20-byte trailer) in
+small chunks and compares against the trailer without assembling the whole pack
+hex string. Reuse proven SHA implementation, adding an incremental interface only
+if required; preserve existing SHA regressions. Use the known M8A pack checksum
+`5F1C02695D4BC807AE4A5DD622AD1D28E7659429` as deterministic vector stored via
+INIT/APPEND/FINAL. Test a corrupted trailer. Do not migrate the full walker yet.
+After M9C, make inflater consumption incremental from GITPBUF.
 
 ## Important implementation facts
-Current M8 REXX paths accumulate whole hex strings; GITPCTX stores whole datahex
-in one CMS record. Prototype only. Git hash input is exact ASCII
-`type + space + decimal size + NUL + binary content`. CMS text strips trailing
-EBCDIC record-padding blanks, preserves leading blanks, joins records with ASCII
-LF, no final LF. Arbitrary bytes require binary-safe mode. Native GSK/Dynamic SSL
-exists; use documented native TLS later rather than implementing TLS ourselves.
+M8 walker/inflater still accumulate whole hex strings; GITPCTX stores whole
+object datahex in one record. Git hash input exact ASCII `type + space + decimal
+size + NUL + binary content`. CMS text strips trailing EBCDIC padding blanks,
+preserves leading blanks, joins records with ASCII LF, no final LF. Arbitrary
+bytes require binary-safe mode. Native GSK/Dynamic SSL exists; use documented
+native TLS later rather than implementing TLS ourselves.
