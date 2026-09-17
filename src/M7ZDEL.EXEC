@@ -1,0 +1,37 @@
+/* M7I compressed Git delta integration regression. */
+address command
+z = '789C636699C0CC98020002DB0100'
+baseoid = 'F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
+
+say 'M7 ZDEL TEST 1: compressed REF_DELTA reconstructs abcd'
+'EXEC GITZDREF APPLY' baseoid z
+if rc \= 0 then exit rc
+say 'M7 ZDEL EXPECTED: 61626364'
+
+say 'M7 ZDEL TEST 2: compressed OFS_DELTA reconstructs abcd'
+'EXEC GITPCTX CLEAR'
+'EXEC GITPCTX ADD 100 BLOB 616263'
+if rc \= 0 then exit rc
+'EXEC GITZDOFS APPLY 110 0A' z
+if rc \= 0 then exit rc
+say 'M7 ZDEL EXPECTED: 61626364'
+
+say 'M7 ZDEL TEST 3: bad compressed delta checksum is rejected'
+bad = '789C636699C0CC98020002DB0101'
+'EXEC GITZDOFS APPLY 110 0A' bad
+if rc = 0 then do
+   say 'M7ZDEL: bad checksum unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 ZDEL TEST 4: bad OFS base position is rejected after inflate'
+'EXEC GITZDOFS APPLY 110 0B' z
+if rc = 0 then do
+   say 'M7ZDEL: missing OFS base unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 COMPRESSED DELTA INTEGRATION TESTS PASSED'
+exit 0
