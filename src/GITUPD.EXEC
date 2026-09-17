@@ -30,21 +30,29 @@ end
 call requirecommit newoid
 if result \= 'OK' then exit 8
 
-/* Read and validate the physical refs records directly.  The updater only
- * needs to replace one record, so retaining the EXECIO stem avoids a second
- * dynamic-stem representation of the same database. */
+/* Read and validate the physical refs records directly. */
 call readrefs
 if result \= 'OK' then exit 8
+
+/* Temporary target diagnostic: prove how the exposed EXECIO stem is seen by
+ * the caller before changing update semantics again. */
+say 'GITUPD DEBUG TARGET=' name
+say 'GITUPD DEBUG RR.0=' rr.0
 found = 0
 slot = 0
 current = ''
 do i = 1 to rr.0
-   if word(rr.i,2) = name then do
+   rline = rr.i
+   rname = word(rline,2)
+   say 'GITUPD DEBUG I=' i 'NAME=' rname 'LINE=' rline
+   if rname = name then do
       found = found + 1
       slot = i
-      current = word(rr.i,3)
+      current = word(rline,3)
+      say 'GITUPD DEBUG MATCH FOUND=' found 'SLOT=' slot
    end
 end
+say 'GITUPD DEBUG FINAL FOUND=' found 'SLOT=' slot 'CURRENT=' current
 if found = 0 then do
    say 'GITUPD: branch not found' name
    exit 8
