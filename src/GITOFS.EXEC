@@ -1,0 +1,48 @@
+/* M6H isolated Git OFS_DELTA negative-offset parser. */
+parse arg command rest
+command = translate(command)
+
+if command = 'PARSE' then do
+   parse var rest data extra
+   data = translate(data)
+   if data = '' | extra \= '' | length(data) // 2 \= 0 |,
+      verify(data,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITOFS PARSE offset-hex'
+      exit 4
+   end
+   pos = 1
+   b = nextbyte(data,pos)
+   if b = 'ERROR' then exit 8
+   pos = pos + 2
+   value = b // 128
+   more = b >= 128
+   do while more
+      b = nextbyte(data,pos)
+      if b = 'ERROR' then exit 8
+      pos = pos + 2
+      value = (value + 1) * 128 + (b // 128)
+      more = b >= 128
+      if value > 9007199254740991 then do
+         say 'GITOFS: offset too large for exact REXX arithmetic'
+         exit 8
+      end
+   end
+   if pos <= length(data) then do
+      say 'GITOFS: trailing bytes after offset'
+      exit 8
+   end
+   say 'DISTANCE' value
+   say 'BYTES' (pos - 1) % 2
+   exit 0
+end
+
+say 'GITOFS: unknown command' command
+exit 4
+
+nextbyte: procedure
+   parse arg data, pos
+   if pos + 1 > length(data) then do
+      say 'GITOFS: truncated OFS_DELTA offset'
+      return 'ERROR'
+   end
+   return x2d(substr(data,pos,2))
