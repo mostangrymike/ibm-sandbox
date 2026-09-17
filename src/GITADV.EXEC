@@ -11,8 +11,8 @@ if command = 'PARSE' then do
       exit 4
    end
 
-   nul = pos('00',datahex)
-   if nul > 0 & nul // 2 = 1 then do
+   nul = bytepos('00',datahex)
+   if nul > 0 then do
       mainhex = substr(datahex,1,nul-1)
       caphex = substr(datahex,nul+2)
    end
@@ -21,7 +21,7 @@ if command = 'PARSE' then do
       caphex = ''
    end
 
-   sp = pos('20',mainhex)
+   sp = bytepos('20',mainhex)
    if sp \= 41 then do
       say 'GITADV: invalid advertised ref payload'
       exit 8
@@ -56,6 +56,13 @@ end
 
 say 'GITADV: unknown command' command
 exit 4
+
+bytepos: procedure
+   parse upper arg needle, hex
+   do p = 1 to length(hex)-1 by 2
+      if substr(hex,p,2) = needle then return p
+   end
+   return 0
 
 asciifromhex: procedure
    parse upper arg hex
