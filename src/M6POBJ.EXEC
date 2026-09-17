@@ -1,0 +1,41 @@
+/* M6G Git packed-object header regression. */
+address command
+
+say 'M6 POBJ TEST 1: one-byte blob size 3'
+'EXEC GITPOBJ HEADER 33'
+if rc \= 0 then exit rc
+
+say 'M6 POBJ TEST 2: multi-byte blob size 300'
+'EXEC GITPOBJ HEADER BC12'
+if rc \= 0 then exit rc
+
+say 'M6 POBJ TEST 3: commit size 16'
+'EXEC GITPOBJ HEADER 9001'
+if rc \= 0 then exit rc
+
+say 'M6 POBJ TEST 4: OFS_DELTA type recognized'
+'EXEC GITPOBJ HEADER 61'
+if rc \= 0 then exit rc
+
+say 'M6 POBJ TEST 5: REF_DELTA type recognized'
+'EXEC GITPOBJ HEADER 71'
+if rc \= 0 then exit rc
+
+say 'M6 POBJ TEST 6: reserved type 0 is rejected'
+'EXEC GITPOBJ HEADER 01'
+if rc = 0 then do
+   say 'M6POBJ: reserved type unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 POBJ TEST 7: truncated continuation is rejected'
+'EXEC GITPOBJ HEADER B0'
+if rc = 0 then do
+   say 'M6POBJ: truncated header unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 PACKED OBJECT HEADER TESTS PASSED'
+exit 0
