@@ -7,10 +7,9 @@ if command = 'PARSE' then do
    datahex = translate(datahex)
    if datahex = '' | extra \= '' | length(datahex) // 2 \= 0 |,
       verify(datahex,'0123456789ABCDEF') \= 0 then do
-      say 'Usage: GITADV PARSE payload-hex'
+      say 'Usage: GITPKT PARSE payload-hex'
       exit 4
    end
-
    nul = bytepos('00',datahex)
    if nul > 0 then do
       mainhex = substr(datahex,1,nul-1)
@@ -20,7 +19,6 @@ if command = 'PARSE' then do
       mainhex = datahex
       caphex = ''
    end
-
    sp = bytepos('20',mainhex)
    if sp \= 41 then do
       say 'GITADV: invalid advertised ref payload'
@@ -43,7 +41,6 @@ if command = 'PARSE' then do
       say 'GITADV: invalid ref name'
       exit 8
    end
-
    say 'OID' oidhex
    say 'REF' refname
    if caphex \= '' then do
@@ -53,7 +50,6 @@ if command = 'PARSE' then do
    end
    exit 0
 end
-
 say 'GITADV: unknown command' command
 exit 4
 
@@ -66,26 +62,19 @@ bytepos: procedure
 
 asciitocms: procedure
    parse upper arg hex
-   if length(hex) // 2 \= 0 | verify(hex,'0123456789ABCDEF') \= 0 then do
+   if length(hex) // 2 \= 0 |,
+      verify(hex,'0123456789ABCDEF') \= 0 then do
       say 'GITADV: invalid ASCII hex'
       return 'ERROR'
    end
-   ascii = ''
-   do i = 1 to length(hex) by 2
-      n = x2d(substr(hex,i,2))
-      if n < 32 | n > 126 then do
-         say 'GITADV: unsupported non-printable ASCII byte'
-         return 'ERROR'
-      end
-      ascii = ascii || d2c(n)
-   end
-   /* CMS REXX strings are EBCDIC.  TRANSLATE maps ASCII bytes to CMS text. */
-   atab = x2c('202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F404142434445464748494A4B4C4D4E4F505152535455565758595A5B5C5D5E5F606162636465666768696A6B6C6D6E6F707172737475767778797A7B7C7D7E')
-   etab = ' '
-   do n = 33 to 126
-      etab = etab || d2c(n)
-   end
-   /* d2c above is native EBCDIC for the corresponding CMS character code only
-      for digits/letters is not portable; use explicit CMS conversion service
-      through the proven REXX C2X/X2C path by translating the printable set. */
+   ascii = x2c(hex)
+   atab = x2c('202122232425262728292A2B2C2D2E2F')
+   atab = atab || x2c('303132333435363738393A3B3C3D3E3F')
+   atab = atab || x2c('404142434445464748494A4B4C4D4E4F')
+   atab = atab || x2c('505152535455565758595A5B5C5D5E5F')
+   atab = atab || x2c('606162636465666768696A6B6C6D6E6F')
+   atab = atab || x2c('707172737475767778797A7B7C7D7E')
+   etab = ' !"#$%&''()*+,-./0123456789:;<=>?'
+   etab = etab || '@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_'
+   etab = etab || '`abcdefghijklmnopqrstuvwxyz{|}~'
    return translate(ascii,etab,atab)
