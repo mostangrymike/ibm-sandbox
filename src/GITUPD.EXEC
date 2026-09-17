@@ -1,0 +1,141 @@
+/* M5B safe CMS-native branch ref update prototype. */
+parse arg ref newoid oldoid extra
+
+if ref = '' | newoid = '' | extra \= '' then do
+   say 'Usage: GITUPD refs/heads/name new-commit-oid [expected-old-oid]'
+   exit 4
+end
+if left(ref,11) \= 'refs/heads/' then do
+   say 'GITUPD: ref must name refs/heads/<branch>'
+   exit 4
+end
+name = substr(ref,12)
+call validbranch name
+if result \= 'OK' then exit 4
+
+newoid = translate(newoid)
+oldoid = translate(oldoid)
+if length(newoid) \= 40 | verify(newoid,'0123456789ABCDEF') \= 0 then do
+   say 'GITUPD: invalid new object-id' newoid
+   exit 4
+end
+if oldoid \= '' then do
+   if length(oldoid) \= 40 | verify(oldoid,'0123456789ABCDEF') \= 0 then do
+      say 'GITUPD: invalid expected old object-id' oldoid
+      exit 4
+   end
+end
+
+/* A branch may only be advanced/moved to a locally present COMMIT object. */
+call requirecommit newoid
+if result \= 'OK' then exit 8
+
+call readrefs
+if result \= 'OK' then exit 8
+found = 0
+slot = 0
+do i = 1 to refcount
+   if refname.i = name then do
+      found = found + 1
+      slot = i
+   end
+end
+if found = 0 then do
+   say 'GITUPD: branch not found' name
+   exit 8
+end
+if found \> 1 then do
+   say 'GITUPD: duplicate branch records' name
+   exit 8
+end
+
+current = refoid.slot
+/* Optional expected-old OID gives compare-and-swap semantics.  The refs file
+ * is not written at all if the expected value does not match. */
+if oldoid \= '' & current \= oldoid then do
+   say 'GITUPD: stale ref' ref
+   say 'EXPECTED' oldoid
+   say 'ACTUAL' current
+   exit 8
+end
+
+refoid.slot = newoid
+call writerefs
+if result \= 'OK' then exit 8
+say newoid ref
+exit 0
+
+validbranch: procedure
+   parse arg name
+   if name = '' | name = '.' | name = '..' | pos('/',name) > 0 |,
+      pos(' ',name) > 0 | pos('..',name) > 0 | pos('~',name) > 0 |,
+      pos('^',name) > 0 | pos(':',name) > 0 | pos('?',name) > 0 |,
+      pos('*',name) > 0 | pos('[',name) > 0 | right(name,1) = '.' then do
+      say 'GITUPD: invalid branch name' name
+      return 'ERROR'
+   end
+   return 'OK'
+
+requirecommit: procedure
+   parse upper arg oid
+   fn = substr(oid,1,8)
+   drop obj.
+   'EXECIO * DISKR' fn 'GITOBJ A 1 (STEM OBJ. FINIS'
+   if rc \= 0 then do
+      say 'GITUPD: object not found' oid
+      return 'ERROR'
+   end
+   if obj.0 < 2 | word(obj.1,1) \= 'OID' | word(obj.1,2) \= oid |,
+      word(obj.2,1) \= 'TYPE' then do
+      say 'GITUPD: invalid object record' oid
+      return 'ERROR'
+   end
+   if word(obj.2,2) \= 'COMMIT' then do
+      say 'GITUPD: branch target is not a COMMIT object' oid
+      return 'ERROR'
+   end
+   return 'OK'
+
+readrefs: procedure expose refcount refname. refoid.
+   drop refname. refoid.
+   refcount = 0
+   'STATE GITREFS REPO A'
+   if rc \= 0 then do
+      say 'GITUPD: refs database not found'
+      return 'ERROR'
+   end
+   drop rr.
+   'EXECIO * DISKR GITREFS REPO A 1 (STEM RR. FINIS'
+   if rc \= 0 then return 'ERROR'
+   do i = 1 to rr.0
+      if words(rr.i) \= 3 then do
+         say 'GITUPD: corrupt refs record' i
+         return 'ERROR'
+      end
+      tag = word(rr.i,1)
+      name = word(rr.i,2)
+      oid = word(rr.i,3)
+      if tag \= 'BRANCH' | name = '' |,
+         length(oid) \= 40 | verify(oid,'0123456789ABCDEF') \= 0 then do
+         say 'GITUPD: corrupt refs record' i
+         return 'ERROR'
+      end
+      refcount = refcount + 1
+      n = refcount
+      refname.n = name
+      refoid.n = oid
+   end
+   return 'OK'
+
+writerefs: procedure expose refcount refname. refoid.
+   drop wr.
+   wr.0 = refcount
+   do i = 1 to refcount
+      wr.i = 'BRANCH' refname.i refoid.i
+   end
+   'EXECIO' wr.0 'DISKW GITREFS REPO A 1 (STEM WR. FINIS'
+   if rc \= 0 then do
+      say 'GITUPD: cannot write refs database'
+      return 'ERROR'
+   end
+   return 'OK'
