@@ -1,0 +1,30 @@
+/* M8B whole-PACK OFS_DELTA regression. */
+address command
+pack = '5041434B0000000200000002'
+pack = pack || '33789C4B4C4A0600024D0127'
+pack = pack || '660C789C636699C0CC98020002DB0100'
+pack = pack || '8CA36BC28C5A2FDDD0EB9762CA36049A32D114B6'
+
+say 'M8 OFS TEST 1: whole PACK reconstructs OFS_DELTA abcd'
+'EXEC GITPWALK WALK' pack
+if rc \= 0 then exit rc
+
+say 'M8 OFS TEST 2: base context is abc at position 12'
+'EXEC GITPCTX GET 12'
+if rc \= 0 then exit rc
+
+say 'M8 OFS TEST 3: delta context is reconstructed abcd at position 24'
+'EXEC GITPCTX GET 24'
+if rc \= 0 then exit rc
+
+say 'M8 OFS TEST 4: bad OFS distance is rejected'
+bad = substr(pack,1,51) || '0D' || substr(pack,54)
+'EXEC GITPWALK WALK' bad
+if rc = 0 then do
+   say 'M8OFS: bad OFS distance unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M8 WHOLE-PACK OFS_DELTA TESTS PASSED'
+exit 0
