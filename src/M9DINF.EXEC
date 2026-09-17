@@ -1,0 +1,53 @@
+/* M9D bounded inflater regression over known M8A first object. */
+address command
+p1 = '5041434B000000020000000233780101'
+p2 = '0300FCFF616263024D01273378010103'
+p3 = '00FCFF78797A02D7016C5F1C02695D'
+p4 = '4BC807AE4A5DD622AD1D28E7659429'
+
+say 'M9D TEST 1: build known M8A pack incrementally'
+'EXEC GITPBUF INIT'
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p1
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p2
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p3
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p4
+if rc \= 0 then exit rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then exit rc
+
+say 'M9D TEST 2: inflate first object from zlib offset 13'
+'EXEC GITPINFL INFLATESTACK 13'
+if rc \= 0 then exit rc
+if queued() < 2 then do
+   say 'M9DINF: inflater stack result missing'
+   exit 8
+end
+parse pull datahex
+parse pull used
+say 'DATA' datahex
+say 'ZLIB BYTES' used
+if datahex \= '616263' then do
+   say 'M9DINF: reconstructed data mismatch'
+   exit 8
+end
+if used \= 14 then do
+   say 'M9DINF: zlib byte count mismatch'
+   exit 8
+end
+
+say 'M9D TEST 3: second object remains at pack offset 27'
+'EXEC GITPBUF READSTACK 27 1'
+if rc \= 0 then exit rc
+parse pull next
+say 'NEXT HEADER' next
+if next \= '33' then do
+   say 'M9DINF: next object position mismatch'
+   exit 8
+end
+
+say 'M9D BOUNDED INFLATER TESTS PASSED'
+exit 0
