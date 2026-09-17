@@ -1,0 +1,93 @@
+/* M6A isolated Git pkt-line framing prototype. */
+parse arg command rest
+command = translate(command)
+
+if command = 'ENCODE' then do
+   parse var rest datahex extra
+   datahex = translate(datahex)
+   if extra \= '' | length(datahex) // 2 \= 0 |,
+      verify(datahex,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITPKT ENCODE hex-bytes'
+      exit 4
+   end
+   bytes = length(datahex) % 2
+   total = bytes + 4
+   if total > 65520 then do
+      say 'GITPKT: pkt-line payload too large'
+      exit 8
+   end
+   prefix = right(d2x(total),4,'0')
+   say prefix || datahex
+   exit 0
+end
+
+if command = 'DECODE' then do
+   parse var rest packet extra
+   packet = translate(packet)
+   if extra \= '' | length(packet) < 4 |,
+      verify(packet,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITPKT DECODE packet-hex'
+      exit 4
+   end
+   prefix = substr(packet,1,4)
+   if prefix = '0000' then do
+      if length(packet) \= 4 then do
+         say 'GITPKT: data follows flush packet'
+         exit 8
+      end
+      say 'FLUSH'
+      exit 0
+   end
+   if prefix = '0001' then do
+      if length(packet) \= 4 then do
+         say 'GITPKT: data follows delimiter packet'
+         exit 8
+      end
+      say 'DELIM'
+      exit 0
+   end
+   if prefix = '0002' then do
+      if length(packet) \= 4 then do
+         say 'GITPKT: data follows response-end packet'
+         exit 8
+      end
+      say 'RESPONSE-END'
+      exit 0
+   end
+   total = x2d(prefix)
+   if total < 4 then do
+      say 'GITPKT: invalid pkt-line length' prefix
+      exit 8
+   end
+   if total > 65520 then do
+      say 'GITPKT: pkt-line length too large' prefix
+      exit 8
+   end
+   if length(packet) \= total * 2 then do
+      say 'GITPKT: pkt-line length mismatch'
+      exit 8
+   end
+   say substr(packet,5)
+   exit 0
+end
+
+if command = 'FLUSH' then do
+   if words(rest) \= 0 then exit 4
+   say '0000'
+   exit 0
+end
+
+if command = 'DELIM' then do
+   if words(rest) \= 0 then exit 4
+   say '0001'
+   exit 0
+end
+
+if command = 'RESPONSE-END' then do
+   if words(rest) \= 0 then exit 4
+   say '0002'
+   exit 0
+end
+
+say 'GITPKT: unknown command' command
+exit 4
