@@ -1,4 +1,4 @@
-# CMS/z/VM Native Git Client — Chat State
+# CMS/zVM Native Git Client — Chat State
 
 Updated: 2026-09-17
 Repository: `mostangrymike/ibm-sandbox`, branch `main`
@@ -45,9 +45,10 @@ prototype, not scalable to real pack objects.
 - M7B `GITZLIB` wrapper parser: DONE, target proven.
 - M7C `GITSTOR` stored DEFLATE blocks: DONE, target proven.
 - M7D `GITFIX` fixed Huffman + LZ77: DONE, target proven.
-- M7E `GITDYN` dynamic Huffman + LZ77: DONE, TARGET PROVEN.
-- M7F `GITINFL` general/mixed-block inflater: CURRENT, awaiting CMS target test.
-- Planned: M7G Adler-32 verification; M7H Git pack-entry inflate integration.
+- M7E `GITDYN` dynamic Huffman + LZ77: DONE, target proven.
+- M7F `GITINFL` general/mixed-block inflater: DONE, TARGET PROVEN.
+- NEXT: M7G Adler-32 verification.
+- Planned after M7G: M7H Git pack-entry inflate integration.
 
 ## M7E final result
 
@@ -69,20 +70,32 @@ Important CMS REXX lessons from M7E:
 - Canonical next-code recurrence must use previous-length count explicitly:
   `prev=l-1; code=(code+bl.prev)*2`.
 
-## M7F current state
+## M7F final result
 
-New files:
-- `src/GITINFL.EXEC`, commit `f2eb9f0b043476e0f111474d801ce017fd4422bc`
+Files:
+- `src/GITINFL.EXEC`, initial commit
+  `f2eb9f0b043476e0f111474d801ce017fd4422bc`
 - `src/M7INFL.EXEC`, commit `5ca6a6b6630171aa63e0d83cf8bb4a373530db7f`
+- Bit-reader scope fix: `2f170e52edaa4611d0b2b5e64634f08616093b08`
 
-`GITINFL` consolidates stored, fixed, and dynamic DEFLATE decoding under one
-bit position and one output history. It loops across blocks until BFINAL=1, so
-LZ77 history is preserved across block boundaries. `M7INFL` tests final stored,
-final fixed, final dynamic, a stored-then-fixed mixed stream, reserved BTYPE
-rejection, and truncated mixed-stream rejection.
+First target run passed stored and fixed but dynamic truncated. Cause: the shared
+REXX `bits` routine overwrote its caller's loop variable `i`. The fix made
+`bits` a PROCEDURE exposing only `data bitpos`.
 
-NEXT ACTION: user should `git pull`, upload `GITINFL.EXEC` and `M7INFL.EXEC`, run
-`M7INFL`, and paste complete CMS output. Do not mark M7F done until target passes.
+Final CMS target run passed all M7F gates:
+- final stored block -> `616263`
+- final fixed block -> `616263`
+- final dynamic block -> exact M7E expected output
+- stored then fixed mixed stream -> `616263616263`
+- reserved BTYPE rejected with RC=8
+- truncated mixed stream rejected with RC=8
+- `M7 GENERAL INFLATER TESTS PASSED`
+
+M7F therefore proves one continuous bit position and output/LZ77 history across
+DEFLATE blocks while dispatching stored, fixed, and dynamic block types.
+
+NEXT ACTION: implement isolated M7G Adler-32 verification for RFC1950 zlib data,
+then target-test it before M7H pack-entry inflate integration.
 
 ## Important implementation facts
 
