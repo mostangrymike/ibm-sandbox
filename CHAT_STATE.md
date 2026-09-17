@@ -5,140 +5,84 @@ Repository: `mostangrymike/ibm-sandbox`, branch `main`
 
 ## User workflow and rules
 
-- GitHub is the canonical source. Make source changes on GitHub first.
-- User runs `git pull` on Mac, transfers source to CMS with c3270, runs target tests,
-  and pastes complete output.
+- GitHub is canonical. Make source changes on GitHub first.
+- User runs `git pull` on Mac, transfers source to CMS with c3270, runs target
+  tests, and pastes complete output.
 - Keep CMS command batches small and exact.
-- Prefer IBM documentation for CMS/z/VM questions and official Git/RFC documentation
-  for protocol formats. Do not guess CMS commands.
-- Use only software/facilities already available in the z/VM evaluation image; user
-  does not want to purchase a compiler or other software.
+- Prefer IBM documentation for CMS/z/VM and official Git/RFC documentation for
+  protocol formats. Do not guess CMS commands.
+- Use only facilities already available in the z/VM evaluation image. User does
+  not want to purchase a compiler or other software.
 - Do not depend on BFS/OpenExtensions shell at runtime.
-- Source transferred as fixed 80-byte CMS records must have every source line <=80
-  characters. `TRANS04 File transfer complete, with records segmented` is a failure
-  indicating an over-80 source line.
+- Fixed-80 CMS transfers require every source line <=80 characters.
+  `TRANS04 ... records segmented` means the source violated this constraint.
 - c3270 DFT buffer 2048 is proven; 16384 caused disconnects.
-- Do not modify target-proven core code unnecessarily. Keep new milestones isolated.
+- Do not modify target-proven core code unnecessarily. Keep milestones isolated.
 
-## Environment
+## Environment and architecture
 
-- IBM z/VM 6.3 Evaluation Edition under Hercules Aethra.
-- Hercules host: Raspberry Pi 5/Debian.
-- z/VM TCP/IP works.
-- C89 front end exists but compiler backend `CBXFINIT` is absent. Do not revisit
-  buying XL C/C++ unless user asks.
-- Native assembler toolchain is Assembler XF (`ASSEMBLE`), with DMSGPI macros.
-- REXX orchestrates; assembler is for binary/native/performance primitives.
-
-## Proven transfer workflow
-
-Interactive c3270 can be started with script port 3271. Generic uploader uses:
-
-`Transfer(Direction=send,"HostFile=NAME TYPE A",LocalFile=file,Host=vm,Mode=ascii,Exist=replace,Recfm=fixed,Lrecl=80,BufferSize=2048)`
-
-Uploader retries after `Clear()` on timeout. Source lines must be <=80 characters.
-
-## Project architecture
-
-Native CMS Git client with exact Git logical object compatibility. Physical local
-storage is CMS-native. REXX handles command/repository orchestration; assembler
-handles binary/network/hash/native primitives. Remote interoperability must use
-real Git smart HTTP protocol, not REST pretending to be Git.
+IBM z/VM 6.3 Evaluation Edition under Hercules Aethra on Raspberry Pi 5/Debian.
+TCP/IP works. C89 front end exists but `CBXFINIT` compiler backend is absent; do
+not revisit buying XL C/C++ unless user asks. Native assembler is Assembler XF
+with DMSGPI. REXX orchestrates; assembler is for binary/native/performance work.
+The client must be genuinely Git-compatible and eventually use smart HTTP.
 
 ## Completed milestones
 
-- M1 SHA-1 primitives — DONE.
-- M2 Git object encoding — DONE.
-- M3 CMS-native object DB — DONE.
-- M4 trees/commits — DONE, target proven.
-- M5 refs/branches/HEAD — DONE, target proven.
-- M6A pkt-line framing — DONE, target proven.
-- M6B ref advertisement parsing — DONE, target proven.
-- M6C fetch negotiation request construction — DONE, target proven.
-- M6D ACK/NAK parser — DONE, target proven.
-- M6E side-band demultiplexing — DONE, target proven.
-- M6F pack header parsing — DONE, target proven.
-- M6G packed-object entry header — DONE, target proven.
-- M6H OFS_DELTA offset decoding — DONE, target proven.
-- M6I delta header parsing — DONE, target proven.
-- M6J delta instruction application — DONE, target proven.
-- M6K REF_DELTA base resolution — DONE, target proven.
-- M6L OFS_DELTA base-position resolution — DONE, target proven.
-- M6M pack-entry context/indexing — DONE, target proven (prototype stores whole
-  datahex in a record; not scalable for real packs).
-- M6N OFS_DELTA context/application — DONE, target proven.
+M1 SHA-1; M2 Git object encoding; M3 CMS-native object DB; M4 trees/commits;
+M5 refs/branches/HEAD; M6A pkt-line; M6B advertisement parser; M6C fetch
+negotiation; M6D ACK/NAK; M6E side-band; M6F pack header; M6G packed-object
+header; M6H OFS_DELTA offset; M6I delta header; M6J delta application; M6K
+REF_DELTA resolution; M6L OFS_DELTA base position; M6M pack-entry context; M6N
+OFS_DELTA context/application. M4 onward listed above are target proven.
 
-## M7 compression status
+M6M context currently stores whole `datahex` in a CMS record and is only a small
+prototype, not scalable to real pack objects.
 
-Native zlib capability investigation found no usable RFC1950/1951 inflater on the
-accessible evaluation disks. IBM CMPSC is not DEFLATE. Therefore implementing a
-native inflater incrementally.
+## M7 compression
 
-### M7A
-Existing native zlib capability — DONE, none found.
+- M7A existing native RFC1950/1951 zlib capability: DONE, none found.
+- M7B `GITZLIB` wrapper parser: DONE, target proven.
+- M7C `GITSTOR` stored DEFLATE blocks: DONE, target proven.
+- M7D `GITFIX` fixed Huffman + LZ77: DONE, target proven.
+- M7E `GITDYN` dynamic Huffman: CURRENT, not yet target proven.
+- Planned: M7F general/mixed-block inflater; M7G Adler-32; M7H pack integration.
 
-### M7B
-`GITZLIB.EXEC` / `M7ZLIB.EXEC`: RFC1950 wrapper parser — DONE, target proven.
-Proven: CM=8, CINFO, FCHECK, FDICT/DICTID, FLEVEL, DEFLATE payload extraction,
-Adler trailer extraction, malformed/truncated rejection.
+## M7E detailed state
 
-### M7C
-`GITSTOR.EXEC` / `M7STOR.EXEC`: DEFLATE stored blocks — DONE, target proven.
-Proven: empty/data blocks, alignment, multiple stored blocks, LEN/NLEN,
-truncation, BTYPE validation.
-
-### M7D
-`GITFIX.EXEC` / `M7FIX.EXEC`: fixed Huffman + LZ77 — DONE, target proven.
-Proven: literals, length/distance, overlapping LZ77 copies, truncation and BTYPE
-rejection.
-
-### M7E — CURRENT
-`GITDYN.EXEC` / `M7DYN.EXEC`: dynamic Huffman decoder. Intended coverage:
-HLIT/HDIST/HCLEN, code-length permutation, repeat symbols 16/17/18, canonical
-runtime trees, literals/end-of-block, length/distance reconstruction.
-
+Files: `src/GITDYN.EXEC`, `src/M7DYN.EXEC`.
 Initial commits:
-- GITDYN: `a62308d79b00cf56112ef3da23a9e11a801b8473`
-- M7DYN: `3aa4f4afc64a6cc9918df1cce29c41c4e5892483`
+- GITDYN `a62308d79b00cf56112ef3da23a9e11a801b8473`
+- M7DYN `3aa4f4afc64a6cc9918df1cce29c41c4e5892483`
+80-column fix: `b5190b07b8de5e8034b4b97326248dc15420c4ef`.
 
-80-column source fix:
-- `b5190b07b8de5e8034b4b97326248dc15420c4ef`
+First target run returned silent RC 8. Procedure stem exposure was added in
+`14d13fb2dedb491ce36cc9895770ffa1d3226cea`.
 
-First target run returned RC 8 silently at test 1. A REXX procedure-scope fix was
-attempted:
-- `14d13fb2dedb491ce36cc9895770ffa1d3226cea`
-
-Next target run produced:
+Next target failure was `call value ...` Error 40. Commit
+`4c21a120f6263a34e0c4e32c9aef5ac77c435772` changed it to function form, but
+CMS target still produced:
 
 ```
 m7dyn
 M7 DYN TEST 1: dynamic Huffman stream with literals and LZ77 matches
-   202 +++     call value dst||l||'.'||r,s
+   202 +++     old = value(dst||l||'.'||r,s)
     48 +++ call maketree 'cl.',19,'ct.'
 DMSREX475E Error 40 running GITDYN EXEC, line 202: Incorrect call to routine
 Ready(20040)
 ```
 
-Root cause: REXX `VALUE()` is a function, not a CALL-able subroutine for assignment.
-The current GitHub fix changes:
+Therefore do not use two-argument `VALUE()` for dynamic assignment in this CMS
+REXX path. Current GitHub fix removes dynamic VALUE assignment entirely and uses
+explicit known stems (`cl.`, `ll.`, `dd.` -> `ct.`, `lt.`, `dt.`), with compound
+indices such as `ct.l.r = s`. It also uses `SYMBOL()` only to test whether a
+specific generated tree entry exists.
 
-`call value dst||l||'.'||r,s`
+Current GITDYN fix commit:
+- `7ad4d21e27513934c2ebffd7e311b456f167148a`
 
-to:
-
-`old = value(dst||l||'.'||r,s)`
-
-while retaining explicit stem exposure in `maketree` and `getsym`.
-Current fix commit:
-- `4c21a120f6263a34e0c4e32c9aef5ac77c435772`
-
-**NEXT ACTION:** user should `git pull`, upload only `GITDYN.EXEC`, then run
-`M7DYN` and paste complete output. Do not mark M7E done until target passes.
-
-Planned after M7E:
-- M7F general/mixed-block inflater.
-- M7G Adler-32 verification.
-- M7H Git pack-entry inflate integration.
+NEXT ACTION: `git pull`, upload only `GITDYN.EXEC`, run `M7DYN`, paste complete
+output. Do not mark M7E done until it passes on CMS.
 
 ## Important implementation facts
 
@@ -147,12 +91,8 @@ content`. CMS text policy strips trailing EBCDIC record-padding blanks, preserve
 leading blanks, joins records with ASCII LF, and adds no final LF. Binary-safe
 mode is required for arbitrary bytes.
 
-Known cosmetic first-file messages such as `DMSSTT002E File ... not found` are
-accepted where correctness is unaffected. Do not weaken collision/ref integrity
-to hide them.
-
-Checkout currently means symbolic HEAD switching only; working-tree
-materialization is later work.
-
-TLS exists on the evaluation system (`GSK*` modules and Dynamic SSL interfaces).
-Use documented native TLS later; do not implement TLS ourselves.
+Known cosmetic first-file `DMSSTT002E`/similar messages are accepted where
+correctness is unaffected. Do not weaken collision/ref integrity to hide them.
+Checkout currently means symbolic HEAD switching only. TLS support exists via
+native GSK/Dynamic SSL facilities; use documented native TLS later rather than
+implementing TLS ourselves.
