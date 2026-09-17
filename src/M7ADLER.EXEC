@@ -1,0 +1,35 @@
+/* M7G Adler-32 regression. */
+address command
+
+say 'M7 ADLER TEST 1: RFC 1950 abc vector calculates correctly'
+'EXEC GITADLER CALC 616263'
+if rc \= 0 then exit rc
+say 'M7 ADLER EXPECTED: 024D0127'
+
+say 'M7 ADLER TEST 2: abc trailer verifies'
+'EXEC GITADLER VERIFY 616263 024D0127'
+if rc \= 0 then exit rc
+
+say 'M7 ADLER TEST 3: empty data calculates initial value'
+'EXEC GITADLER CALC 00'
+if rc \= 0 then exit rc
+say 'M7 ADLER EXPECTED FOR 00: 00010001'
+
+say 'M7 ADLER TEST 4: wrong trailer is rejected'
+'EXEC GITADLER VERIFY 616263 024D0128'
+if rc = 0 then do
+   say 'M7ADLER: bad checksum unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 ADLER TEST 5: malformed checksum is rejected'
+'EXEC GITADLER VERIFY 616263 1234'
+if rc = 0 then do
+   say 'M7ADLER: malformed checksum unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 ADLER-32 TESTS PASSED'
+exit 0
