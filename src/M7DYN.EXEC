@@ -1,0 +1,33 @@
+/* M7E dynamic-Huffman DEFLATE regression. */
+address command
+
+say 'M7 DYN TEST 1: dynamic Huffman stream with literals and LZ77 matches'
+stream = '1589C11100300C825671358CB5FB6FD0F40507F460E740BD16746164CC76F8EC0C'
+stream = stream || 'EACEC8CD03'
+'EXEC GITDYN INFLATE' stream
+if rc \= 0 then exit rc
+
+say 'M7 DYN EXPECTED OUTPUT:'
+expected = '616665616262646561616662656162646120676161632062616261616262616161'
+expected = expected || '6261616663636120666162646420626664'
+say expected
+
+say 'M7 DYN TEST 2: truncated dynamic stream is rejected'
+bad = substr(stream,1,length(stream)-2)
+'EXEC GITDYN INFLATE' bad
+if rc = 0 then do
+   say 'M7DYN: truncated stream unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 DYN TEST 3: fixed Huffman stream is rejected by dynamic decoder'
+'EXEC GITDYN INFLATE 4B4C4A0600'
+if rc = 0 then do
+   say 'M7DYN: fixed stream unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 DYNAMIC HUFFMAN TESTS PASSED'
+exit 0
