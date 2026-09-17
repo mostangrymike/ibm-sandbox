@@ -1,0 +1,64 @@
+/* M6L isolated OFS_DELTA base-position resolver. */
+parse arg command rest
+command = translate(command)
+
+if command = 'RESOLVE' then do
+   parse var rest current offhex extra
+   offhex = translate(offhex)
+   if extra \= '' | datatype(current,'W') \= 1 | current < 0 |,
+      offhex = '' | length(offhex) // 2 \= 0 |,
+      verify(offhex,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITORES RESOLVE current-position offset-hex'
+      exit 4
+   end
+   call decodeofs offhex
+   if result = 'ERROR' then exit 8
+   distance = result
+   if distance <= 0 | distance > current then do
+      say 'GITORES: OFS_DELTA base precedes pack data'
+      exit 8
+   end
+   basepos = current - distance
+   say 'CURRENT' current
+   say 'DISTANCE' distance
+   say 'BASE-POSITION' basepos
+   exit 0
+end
+
+say 'GITORES: unknown command' command
+exit 4
+
+decodeofs: procedure
+   parse arg data
+   pos = 1
+   call nextbyte data, pos
+   if result = 'ERROR' then return 'ERROR'
+   b = result
+   pos = pos + 2
+   value = b // 128
+   more = b >= 128
+   do while more
+      call nextbyte data, pos
+      if result = 'ERROR' then return 'ERROR'
+      b = result
+      pos = pos + 2
+      value = (value + 1) * 128 + (b // 128)
+      more = b >= 128
+      if value > 9007199254740991 then do
+         say 'GITORES: offset too large for exact REXX arithmetic'
+         return 'ERROR'
+      end
+   end
+   if pos <= length(data) then do
+      say 'GITORES: trailing bytes after OFS_DELTA offset'
+      return 'ERROR'
+   end
+   return value
+
+nextbyte: procedure
+   parse arg data, pos
+   if pos + 1 > length(data) then do
+      say 'GITORES: truncated OFS_DELTA offset'
+      return 'ERROR'
+   end
+   return x2d(substr(data,pos,2))
