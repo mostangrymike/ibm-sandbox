@@ -1,4 +1,4 @@
-/* M8B complete PACK walker: ordinary and OFS_DELTA entries. */
+/* M8C complete PACK walker: ordinary, OFS_DELTA, REF_DELTA. */
 parse arg command pack extra
 command = translate(command)
 pack = translate(pack)
@@ -25,6 +25,7 @@ count = x2d(substr(pack,17,8))
 digestpos = length(pack) - 39
 pos = 25
 'EXEC GITPCTX CLEAR'
+'EXEC GITPOID CLEAR'
 do n = 1 to count
    if pos >= digestpos then do
       say 'GITPWALK: object count exceeds pack data'
@@ -34,10 +35,31 @@ do n = 1 to count
    call objhdr
    if result \= 'OK' then exit 8
    if type = 7 then do
-      say 'GITPWALK: REF_DELTA deferred to next pack-walker step'
-      exit 8
+      if pos + 39 >= digestpos then do
+         say 'GITPWALK: truncated REF_DELTA base id'
+         exit 8
+      end
+      baseoid = substr(pack,pos,40)
+      pos = pos + 40
+      'EXEC GITPOID FIND' baseoid
+      if rc \= 0 then exit rc
+      parse pull basepos
+      'EXEC GITPCTX GETSTACK' basepos
+      if rc \= 0 then exit rc
+      parse pull typename
+      parse pull basehex
+      call zentry
+      if result \= 'OK' then exit 8
+      deltahex = datahex
+      if length(deltahex) % 2 \= objsize then do
+         say 'GITPWALK: delta representation size mismatch'
+         exit 8
+      end
+      'EXEC GITDAPP APPLYSTACK' basehex deltahex
+      if rc \= 0 then exit rc
+      parse pull datahex
    end
-   if type = 6 then do
+   else if type = 6 then do
       call ofshdr
       if result \= 'OK' then exit 8
       basepos = entrypos - distance
@@ -74,6 +96,11 @@ do n = 1 to count
    end
    'EXEC GITPCTX ADD' entrypos typename datahex
    if rc \= 0 then exit rc
+   call objectoid typename,datahex
+   if result = 'ERROR' then exit 8
+   oid = result
+   'EXEC GITPOID ADD' oid entrypos
+   if rc \= 0 then exit rc
    say 'ENTRY' n 'POSITION' entrypos 'TYPE' typename 'SIZE' objsize
    say 'DATA' datahex
 end
@@ -83,7 +110,7 @@ if pos \= digestpos then do
 end
 payload = substr(pack,1,digestpos-1)
 expected = substr(pack,digestpos,40)
-call packsha payload
+call streamsha payload
 if result = 'ERROR' then exit 8
 actual = result
 if actual \= expected then do
@@ -190,6 +217,26 @@ nextbyte:
    pos = pos + 2
    return v
 
+objectoid: procedure
+   parse upper arg typename,data
+   if typename = 'BLOB' then head = '626C6F62'
+   else if typename = 'TREE' then head = '74726565'
+   else if typename = 'COMMIT' then head = '636F6D6D6974'
+   else if typename = 'TAG' then head = '746167'
+   else return 'ERROR'
+   size = length(data) % 2
+   dec = size
+   digits = ''
+   if dec = 0 then digits = '30'
+   else do while dec > 0
+      d = dec // 10
+      digits = d2x(48+d,2) || digits
+      dec = dec % 10
+   end
+   bytes = head || '20' || digits || '00' || data
+   call streamsha bytes
+   return result
+
 adler: procedure
    parse arg data
    s1 = 1
@@ -201,7 +248,7 @@ adler: procedure
    end
    return d2x(s2,4) || d2x(s1,4)
 
-packsha: procedure
+streamsha: procedure
    parse arg data
    bytes = length(data) % 2
    'MAKEBUF'
