@@ -3,14 +3,14 @@ parse arg command rest
 command = translate(command)
 
 if command = 'MAPTEST' then do
-   call asciitocms '2F'
-   say 'ASCII 2F -> EBCDIC' c2x(result)
-   call asciitocms '5F'
-   say 'ASCII 5F -> EBCDIC' c2x(result)
-   call asciitocms '61'
-   say 'ASCII 61 -> EBCDIC' c2x(result)
-   call asciitocms '20'
-   say 'ASCII 20 -> EBCDIC' c2x(result)
+   mapped = asciitocms('2F')
+   say 'ASCII 2F -> EBCDIC' c2x(mapped)
+   mapped = asciitocms('5F')
+   say 'ASCII 5F -> EBCDIC' c2x(mapped)
+   mapped = asciitocms('61')
+   say 'ASCII 61 -> EBCDIC' c2x(mapped)
+   mapped = asciitocms('20')
+   say 'ASCII 20 -> EBCDIC' c2x(mapped)
    exit 0
 end
 
@@ -46,9 +46,8 @@ if command = 'PARSE' then do
       say 'GITADV: missing ref name'
       exit 8
    end
-   call asciitocms refhex
-   if result = 'ERROR' then exit 8
-   refname = result
+   refname = asciitocms(refhex)
+   if refname = 'ERROR' then exit 8
    if pos(' ',refname) > 0 then do
       say 'GITADV: invalid ref name'
       exit 8
@@ -56,9 +55,9 @@ if command = 'PARSE' then do
    say 'OID' oidhex
    say 'REF' refname
    if caphex \= '' then do
-      call asciitocms caphex
-      if result = 'ERROR' then exit 8
-      say 'CAPS' result
+      caps = asciitocms(caphex)
+      if caps = 'ERROR' then exit 8
+      say 'CAPS' caps
    end
    exit 0
 end
