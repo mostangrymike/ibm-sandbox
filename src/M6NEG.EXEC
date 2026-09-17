@@ -1,0 +1,44 @@
+/* M6C Git v0/v1 fetch negotiation request regression. */
+address command
+
+oid1 = '54BACE2202BB0C96980CDD0AAE9A752E6188D666'
+oid2 = '1E99ED02563737B793C60359F94BA587F6C1B8BD'
+
+say 'M6 NEG TEST 1: first want with capabilities'
+'EXEC GITNEG WANT' oid1 'multi_ack side-band-64k ofs-delta'
+if rc \= 0 then exit rc
+
+say 'M6 NEG TEST 2: additional want without capabilities'
+'EXEC GITNEG WANT' oid2
+if rc \= 0 then exit rc
+
+say 'M6 NEG TEST 3: request flush'
+'EXEC GITNEG FLUSH'
+if rc \= 0 then exit rc
+
+say 'M6 NEG TEST 4: have line'
+'EXEC GITNEG HAVE' oid1
+if rc \= 0 then exit rc
+
+say 'M6 NEG TEST 5: done line'
+'EXEC GITNEG DONE'
+if rc \= 0 then exit rc
+
+say 'M6 NEG TEST 6: malformed want OID is rejected'
+'EXEC GITNEG WANT 1234'
+if rc = 0 then do
+   say 'M6NEG: malformed want unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 NEG TEST 7: malformed have OID is rejected'
+'EXEC GITNEG HAVE ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ'
+if rc = 0 then do
+   say 'M6NEG: malformed have unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 FETCH NEGOTIATION REQUEST TESTS PASSED'
+exit 0
