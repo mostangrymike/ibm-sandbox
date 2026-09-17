@@ -1,0 +1,58 @@
+/* M9E bounded fixed/dynamic/mixed DEFLATE regression. */
+address command
+
+say 'M9E TEST 1: fixed Huffman zlib stream'
+z = '789C4B4C4A0600024D0127'
+call load z
+if result \= 0 then exit result
+call inflate '616263'
+if result \= 0 then exit result
+
+say 'M9E TEST 2: dynamic Huffman zlib stream'
+d = '1589C11100300C825671358CB5FB6FD0F40507F460E740BD16746164CC76F8EC0C'
+d = d || 'EACEC8CD03'
+z = '789C' || d || 'D7EC123A'
+call load z
+if result \= 0 then exit result
+expected = '616665616262646561616662656162646120676161632062616261616262616161'
+expected = expected || '6261616663636120666162646420626664'
+call inflate expected
+if result \= 0 then exit result
+
+say 'M9E TEST 3: stored then fixed mixed zlib stream'
+z = '789C000300FCFF6162634B4C4A0600080C024D'
+call load z
+if result \= 0 then exit result
+call inflate '616263616263'
+if result \= 0 then exit result
+
+say 'M9E BOUNDED GENERAL INFLATER TESTS PASSED'
+exit 0
+
+load:
+   parse arg data
+   'EXEC GITPBUF INIT'
+   if rc \= 0 then return rc
+   do while data \= ''
+      part = left(data,128)
+      data = substr(data,129)
+      'EXEC GITPBUF APPEND' part
+      if rc \= 0 then return rc
+   end
+   'EXEC GITPBUF FINAL'
+   return rc
+
+inflate:
+   parse arg want
+   'EXEC GITPINFL INFLATESTACK 0'
+   if rc \= 0 then return rc
+   if queued() < 2 then return 8
+   parse pull got
+   parse pull used
+   say 'DATA' got
+   say 'ZLIB BYTES' used
+   if got \= want then do
+      say 'M9EINF: reconstructed data mismatch'
+      return 8
+   end
+   return 0
