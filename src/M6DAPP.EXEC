@@ -1,0 +1,45 @@
+/* M6J Git delta instruction application regression. */
+address command
+
+say 'M6 DAPP TEST 1: insert-only abc'
+'EXEC GITDAPP APPLY  0003616263'
+if rc \= 0 then exit rc
+
+say 'M6 DAPP TEST 2: copy entire abc base'
+'EXEC GITDAPP APPLY 616263 03039103'
+if rc \= 0 then exit rc
+
+say 'M6 DAPP TEST 3: copy ab then insert X'
+'EXEC GITDAPP APPLY 616263 030391020158'
+if rc \= 0 then exit rc
+
+say 'M6 DAPP TEST 4: copy with explicit offset 1 size 2'
+'EXEC GITDAPP APPLY 61626364 0403910102'
+if rc \= 0 then exit rc
+
+say 'M6 DAPP TEST 5: base-size mismatch is rejected'
+'EXEC GITDAPP APPLY 616263 04039103'
+if rc = 0 then do
+   say 'M6DAPP: base mismatch unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 DAPP TEST 6: copy beyond base is rejected'
+'EXEC GITDAPP APPLY 616263 03049104'
+if rc = 0 then do
+   say 'M6DAPP: oversized copy unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 DAPP TEST 7: reserved opcode is rejected'
+'EXEC GITDAPP APPLY 616263 030300'
+if rc = 0 then do
+   say 'M6DAPP: opcode zero unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M6 DELTA APPLICATION TESTS PASSED'
+exit 0
