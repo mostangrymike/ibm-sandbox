@@ -2,8 +2,13 @@
 parse arg command data extra
 command = translate(command)
 data = translate(data)
-if command \= 'INFLATE' | extra \= '' | data = '' |,
-   length(data) // 2 \= 0 | verify(data,'0123456789ABCDEF') \= 0 then do
+stackmode = command = 'INFLATESTACK'
+if command \= 'INFLATE' & \stackmode then do
+   say 'Usage: GITINFL INFLATE deflate-hex'
+   exit 4
+end
+if extra \= '' | data = '' | length(data) // 2 \= 0 |,
+   verify(data,'0123456789ABCDEF') \= 0 then do
    say 'Usage: GITINFL INFLATE deflate-hex'
    exit 4
 end
@@ -26,7 +31,8 @@ do forever
    if result \= 'OK' then exit 8
    if final = 1 then leave
 end
-say out
+if stackmode then queue out
+else say out
 exit 0
 
 stored:
