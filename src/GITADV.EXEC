@@ -7,7 +7,7 @@ if command = 'PARSE' then do
    datahex = translate(datahex)
    if datahex = '' | extra \= '' | length(datahex) // 2 \= 0 |,
       verify(datahex,'0123456789ABCDEF') \= 0 then do
-      say 'Usage: GITPKT PARSE payload-hex'
+      say 'Usage: GITADV PARSE payload-hex'
       exit 4
    end
    nul = bytepos('00',datahex)
@@ -74,7 +74,10 @@ asciitocms: procedure
    atab = atab || x2c('505152535455565758595A5B5C5D5E5F')
    atab = atab || x2c('606162636465666768696A6B6C6D6E6F')
    atab = atab || x2c('707172737475767778797A7B7C7D7E')
-   etab = ' !"#$%&''()*+,-./0123456789:;<=>?'
-   etab = etab || '@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_'
-   etab = etab || '`abcdefghijklmnopqrstuvwxyz{|}~'
+   etab = x2c('405A7F7B5B6C507D4D5D5C4E6B604B61')
+   etab = etab || x2c('F0F1F2F3F4F5F6F7F8F97A5E4C7E6E6F')
+   etab = etab || x2c('7CC1C2C3C4C5C6C7C8C9D1D2D3D4D5D6')
+   etab = etab || x2c('D7D8D9E2E3E4E5E6E7E8E9BAE0BBB06D')
+   etab = etab || x2c('798182838485868788899192939495969798')
+   etab = etab || x2c('99A2A3A4A5A6A7A8A9C04FD0A1')
    return translate(ascii,etab,atab)
