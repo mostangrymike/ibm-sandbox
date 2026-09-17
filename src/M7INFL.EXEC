@@ -1,0 +1,42 @@
+/* M7F general/mixed-block DEFLATE inflater regression. */
+address command
+
+say 'M7 INFL TEST 1: final stored block'
+'EXEC GITINFL INFLATE 010300FCFF616263'
+if rc \= 0 then exit rc
+
+say 'M7 INFL TEST 2: final fixed Huffman block'
+'EXEC GITINFL INFLATE 4B4C4A0600'
+if rc \= 0 then exit rc
+
+say 'M7 INFL TEST 3: final dynamic Huffman block'
+dyn = '1589C11100300C825671358CB5FB6FD0F40507F460E740BD16746164CC76F8EC0C'
+dyn = dyn || 'EACEC8CD03'
+'EXEC GITINFL INFLATE' dyn
+if rc \= 0 then exit rc
+
+say 'M7 INFL TEST 4: stored then fixed blocks concatenate output'
+mixed = '000300FCFF6162634B4C4A0600'
+'EXEC GITINFL INFLATE' mixed
+if rc \= 0 then exit rc
+say 'M7 INFL EXPECTED MIXED OUTPUT: 616263616263'
+
+say 'M7 INFL TEST 5: reserved block type is rejected'
+'EXEC GITINFL INFLATE 07'
+if rc = 0 then do
+   say 'M7INFL: reserved block unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 INFL TEST 6: truncated mixed stream is rejected'
+bad = substr(mixed,1,length(mixed)-2)
+'EXEC GITINFL INFLATE' bad
+if rc = 0 then do
+   say 'M7INFL: truncated stream unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+say 'M7 GENERAL INFLATER TESTS PASSED'
+exit 0
