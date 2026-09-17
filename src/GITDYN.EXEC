@@ -188,7 +188,8 @@ maketree: procedure expose cl. ll. dd. ct. lt. dt.
    code = 0
    bl.0 = 0
    do l = 1 to 15
-      code = (code + bl.l-1) * 2
+      prev = l - 1
+      code = (code + bl.prev) * 2
       next.l = code
    end
    do s = 0 to count - 1
