@@ -1,0 +1,60 @@
+/* M6D isolated Git v0/v1 fetch ACK/NAK response parser. */
+parse arg command rest
+command = translate(command)
+
+if command = 'PARSE' then do
+   parse var rest payload extra
+   if payload = '' | extra \= '' | length(payload) // 2 \= 0 |,
+      verify(translate(payload),'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITACK PARSE payload-hex'
+      exit 4
+   end
+   text = asciitocms(payload)
+   if text = 'ERROR' then exit 8
+   if text = 'NAK' | text = 'NAK'||d2c(37) then do
+      say 'NAK'
+      exit 0
+   end
+   lf = d2c(37)
+   if right(text,1) = lf then text = left(text,length(text)-1)
+   parse var text word oid status extra
+   if word \= 'ACK' | \ validsha1(translate(oid)) | extra \= '' then do
+      say 'GITACK: invalid ACK/NAK payload'
+      exit 8
+   end
+   oid = translate(oid)
+   if status = '' then do
+      say 'ACK' oid
+      exit 0
+   end
+   if status \= 'continue' & status \= 'common' & status \= 'ready' then do
+      say 'GITACK: invalid ACK status' status
+      exit 8
+   end
+   say 'ACK' oid status
+   exit 0
+end
+
+say 'GITACK: unknown command' command
+exit 4
+
+validsha1: procedure
+   parse arg oid
+   return length(oid) = 40 & verify(oid,'0123456789ABCDEF') = 0
+
+asciitocms: procedure
+   parse arg hex
+   ascii = x2c(hex)
+   atab = x2c('202122232425262728292A2B2C2D2E2F')
+   atab = atab || x2c('303132333435363738393A3B3C3D3E3F')
+   atab = atab || x2c('404142434445464748494A4B4C4D4E4F')
+   atab = atab || x2c('505152535455565758595A5B5C5D5E5F')
+   atab = atab || x2c('606162636465666768696A6B6C6D6E6F')
+   atab = atab || x2c('707172737475767778797A7B7C7D7E')
+   etab = x2c('405A7F7B5B6C507D4D5D5C4E6B604B61')
+   etab = etab || x2c('F0F1F2F3F4F5F6F7F8F97A5E4C7E6E6F')
+   etab = etab || x2c('7CC1C2C3C4C5C6C7C8C9D1D2D3D4D5D6')
+   etab = etab || x2c('D7D8D9E2E3E4E5E6E7E8E9BAE0BBB06D')
+   etab = etab || x2c('79818283848586878889919293949596')
+   etab = etab || x2c('979899A2A3A4A5A6A7A8A9C04FD0A1')
+   return translate(ascii,etab,atab)
