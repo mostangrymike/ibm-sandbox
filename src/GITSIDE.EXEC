@@ -1,0 +1,66 @@
+/* M6E isolated Git side-band/side-band-64k payload parser. */
+parse arg command rest
+command = translate(command)
+
+if command = 'PARSE' then do
+   parse var rest payload extra
+   if payload = '' | extra \= '' | length(payload) // 2 \= 0 |,
+      verify(translate(payload),'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITSIDE PARSE payload-hex'
+      exit 4
+   end
+   if length(payload) < 2 then do
+      say 'GITSIDE: missing side-band channel'
+      exit 8
+   end
+   channel = translate(left(payload,2))
+   data = substr(payload,3)
+   if channel = '01' then do
+      say 'PACK' data
+      exit 0
+   end
+   if channel = '02' then do
+      text = asciitocms(data)
+      if text = 'ERROR' then exit 8
+      say 'PROGRESS' text
+      exit 0
+   end
+   if channel = '03' then do
+      text = asciitocms(data)
+      if text = 'ERROR' then exit 8
+      say 'FATAL' text
+      exit 8
+   end
+   say 'GITSIDE: invalid side-band channel' channel
+   exit 8
+end
+
+say 'GITSIDE: unknown command' command
+exit 4
+
+asciitocms: procedure
+   parse arg hex
+   if hex = '' then return ''
+   if length(hex) // 2 \= 0 |,
+      verify(translate(hex),'0123456789ABCDEF') \= 0 then do
+      say 'GITSIDE: invalid ASCII hex'
+      return 'ERROR'
+   end
+   /* Strip one trailing Git wire LF before printable conversion. */
+   if length(hex) >= 2 & translate(right(hex,2)) = '0A' then do
+      hex = left(hex,length(hex)-2)
+   end
+   ascii = x2c(hex)
+   atab = x2c('202122232425262728292A2B2C2D2E2F')
+   atab = atab || x2c('303132333435363738393A3B3C3D3E3F')
+   atab = atab || x2c('404142434445464748494A4B4C4D4E4F')
+   atab = atab || x2c('505152535455565758595A5B5C5D5E5F')
+   atab = atab || x2c('606162636465666768696A6B6C6D6E6F')
+   atab = atab || x2c('707172737475767778797A7B7C7D7E')
+   etab = x2c('405A7F7B5B6C507D4D5D5C4E6B604B61')
+   etab = etab || x2c('F0F1F2F3F4F5F6F7F8F97A5E4C7E6E6F')
+   etab = etab || x2c('7CC1C2C3C4C5C6C7C8C9D1D2D3D4D5D6')
+   etab = etab || x2c('D7D8D9E2E3E4E5E6E7E8E9BAE0BBB06D')
+   etab = etab || x2c('79818283848586878889919293949596')
+   etab = etab || x2c('979899A2A3A4A5A6A7A8A9C04FD0A1')
+   return translate(ascii,etab,atab)
