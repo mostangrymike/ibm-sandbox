@@ -99,7 +99,8 @@ do while n < total
 end
 drop ll. dd.
 do i = 0 to hlit - 1
-   ll.i = lens.i+1
+   k = i + 1
+   ll.i = lens.k
 end
 do i = 0 to hdist - 1
    k = hlit + i + 1
