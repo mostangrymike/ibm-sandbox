@@ -1,0 +1,75 @@
+/* M6B isolated Git v0/v1 ref-advertisement parser. */
+parse arg command rest
+command = translate(command)
+
+if command = 'PARSE' then do
+   parse var rest datahex extra
+   datahex = translate(datahex)
+   if datahex = '' | extra \= '' | length(datahex) // 2 \= 0 |,
+      verify(datahex,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITADV PARSE payload-hex'
+      exit 4
+   end
+
+   nul = pos('00',datahex)
+   if nul > 0 & nul // 2 = 1 then do
+      mainhex = substr(datahex,1,nul-1)
+      caphex = substr(datahex,nul+2)
+   end
+   else do
+      mainhex = datahex
+      caphex = ''
+   end
+
+   sp = pos('20',mainhex)
+   if sp \= 41 then do
+      say 'GITADV: invalid advertised ref payload'
+      exit 8
+   end
+   oidhex = substr(mainhex,1,40)
+   if verify(oidhex,'0123456789ABCDEF') \= 0 then do
+      say 'GITADV: invalid object-id'
+      exit 8
+   end
+   refhex = substr(mainhex,43)
+   if refhex = '' then do
+      say 'GITADV: missing ref name'
+      exit 8
+   end
+   call asciifromhex refhex
+   if result = 'ERROR' then exit 8
+   refname = result
+   if pos(' ',refname) > 0 then do
+      say 'GITADV: invalid ref name'
+      exit 8
+   end
+
+   say 'OID' oidhex
+   say 'REF' refname
+   if caphex \= '' then do
+      call asciifromhex caphex
+      if result = 'ERROR' then exit 8
+      say 'CAPS' result
+   end
+   exit 0
+end
+
+say 'GITADV: unknown command' command
+exit 4
+
+asciifromhex: procedure
+   parse upper arg hex
+   if length(hex) // 2 \= 0 | verify(hex,'0123456789ABCDEF') \= 0 then do
+      say 'GITADV: invalid ASCII hex'
+      return 'ERROR'
+   end
+   out = ''
+   do i = 1 to length(hex) by 2
+      n = x2d(substr(hex,i,2))
+      if n < 32 | n > 126 then do
+         say 'GITADV: unsupported non-printable ASCII byte'
+         return 'ERROR'
+      end
+      out = out || d2c(n)
+   end
+   return out
