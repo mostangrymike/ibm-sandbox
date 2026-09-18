@@ -34,24 +34,11 @@ if cmd='FEED' then do
   end
   else if phase='BAND' then do
    if length(work)<2 then do
-    hdr=work
-    phase='BAND1'
-    work=''
-    iterate
+    say 'GIT10BF: odd internal band byte'
+    exit 8
    end
    band=left(work,2)
    work=substr(work,3)
-   remain=remain-1
-   if band\='01' & band\='02' & band\='03' then exit 8
-   if band='03' then exit 8
-   if remain=0 then phase='HDR'
-   else phase='PAY'
-  end
-  else if phase='BAND1' then do
-   if work='' then iterate
-   band=hdr||left(work,1)
-   hdr=''
-   work=substr(work,2)
    remain=remain-1
    if band\='01' & band\='02' & band\='03' then exit 8
    if band='03' then exit 8
