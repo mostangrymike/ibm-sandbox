@@ -18,7 +18,7 @@ say 'M11D TEST 3: stream remaining real Git body'
 do n=1 to 16
  'PIPE CMS G10DFIX' n '| VAR H'
  if rc\=0 then exit rc
- if n=1 then h=substr(h,41)
+ if n=1 then h=substr(h,39)
  if h\='' then do
   'EXEC GIT11HTP FEED' h
   if rc\=0 then exit rc
