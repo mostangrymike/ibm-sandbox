@@ -1,0 +1,36 @@
+/* M11D HTTP framing to real Git upload-pack fixture. */
+address command
+say 'M11D TEST 1: initialize HTTP to Git parser'
+'EXEC GIT11HTP INIT GIT'
+if rc\=0 then exit rc
+say 'M11D TEST 2: fragment HTTP header terminator'
+'EXEC GIT11HTP FEED 485454502F312E3120323030204F4B0D'
+if rc\=0 then exit rc
+'EXEC GIT11HTP FEED 0A436F6E74656E742D547970653A20'
+if rc\=0 then exit rc
+'EXEC GIT11HTP FEED 6170706C69636174696F6E2F782D6769742D'
+if rc\=0 then exit rc
+'EXEC GIT11HTP FEED 75706C6F61642D7061636B2D726573756C740D0A0D'
+if rc\=0 then exit rc
+'EXEC GIT11HTP FEED 0A303030384E414B0A3030323302456E756D6572'
+if rc\=0 then exit rc
+say 'M11D TEST 3: stream remaining real Git body'
+do n=1 to 16
+ 'EXEC G10DFIX' n
+ if rc\=0 then exit rc
+ parse pull h
+ if n=1 then h=substr(h,41)
+ if h\='' then do
+  'EXEC GIT11HTP FEED' h
+  if rc\=0 then exit rc
+ end
+end
+'EXEC GIT11HTP FINAL'
+if rc\=0 then exit rc
+say 'M11D TEST 4: verify exact Git-generated PACK'
+'EXEC GITPSHA VERIFY'
+if rc\=0 then exit rc
+'EXEC GITP9PWK WALK'
+if rc\=0 then exit rc
+say 'M11D HTTP TO REAL GIT PACK TEST PASSED'
+exit 0
