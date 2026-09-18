@@ -1,0 +1,128 @@
+/* M9L bounded OFS_DELTA PACK walker, isolated from M9K. */
+parse upper arg command extra
+if command \= 'WALK' | extra \= '' then exit 4
+address command
+call readhex 0,12
+if result='ERROR' then exit 8
+hdr=result
+if substr(hdr,1,8)\='5041434B' then exit 8
+version=x2d(substr(hdr,9,8)); objects=x2d(substr(hdr,17,8))
+if version\=2 then exit 8
+pos=12
+basepos=-1
+do entry=1 to objects
+ entrypos=pos
+ call readbyte pos
+ if result='ERROR' then exit 8
+ b=result; pos=pos+1
+ type=(b%16)//8
+ size=b//16; shift=4; more=b>=128
+ do while more
+  call readbyte pos
+  if result='ERROR' then exit 8
+  b=result; pos=pos+1
+  size=size+(b//128)*(2**shift)
+  shift=shift+7; more=b>=128
+ end
+ if type=3 then do
+  'EXEC GITPZBUF TOOBUF' pos
+  if rc\=0 then exit rc
+  parse pull used
+  parse pull outlen
+  if outlen\=size then exit 8
+  call savebase outlen
+  if result\='OK' then exit 8
+  basepos=entrypos
+  'EXEC GITBOID BLOB' outlen
+  if rc\=0 then exit rc
+  parse pull oid
+  say 'ENTRY' entry 'POSITION' entrypos 'TYPE BLOB SIZE' size
+  say 'OBJECT OID' oid
+  pos=pos+used
+ end
+ else if type=6 then do
+  c=0
+  do forever
+   call readbyte pos
+   if result='ERROR' then exit 8
+   b=result; pos=pos+1
+   if c=0 then dist=b//128
+   else dist=((dist+1)*128)+(b//128)
+   c=c+1
+   if b<128 then leave
+  end
+  want=entrypos-dist
+  if want\=basepos then do
+   say 'GITP9LWK: OFS base not available'
+   exit 8
+  end
+  'EXEC GITPZBUF TOOBUF' pos
+  if rc\=0 then exit rc
+  parse pull used
+  parse pull dlen
+  'EXEC GITBDAPP APPLY'
+  if rc\=0 then exit rc
+  parse pull outlen
+  if outlen\=size then exit 8
+  call installout outlen
+  if result\='OK' then exit 8
+  'EXEC GITBOID BLOB' outlen
+  if rc\=0 then exit rc
+  parse pull oid
+  say 'ENTRY' entry 'POSITION' entrypos 'TYPE OFS SIZE' size
+  say 'BASE POSITION' want
+  say 'OBJECT BYTES' outlen
+  say 'OBJECT OID' oid
+  pos=pos+used
+ end
+ else exit 8
+end
+say 'PACK VERSION' version
+say 'PACK OBJECTS' objects
+say 'PACK DATA END' pos
+exit 0
+savebase:
+ parse arg n
+ 'ERASE GITBASE DATA A'
+ off=0
+ do while off<n
+  take=n-off
+  if take>64 then take=64
+  'EXEC GITOBUF READSTACK' off take
+  if rc\=0 then return 'ERROR'
+  parse pull h
+  r.1=h; r.0=1
+  'EXECIO 1 DISKW GITBASE DATA A 0 (STEM R. FINIS'
+  if rc\=0 then return 'ERROR'
+  off=off+take
+ end
+ m.1='META' n '- 1'; m.0=1
+ 'EXECIO 1 DISKW GITBMETA DATA A 1 (STEM M. FINIS'
+ if rc\=0 then return 'ERROR'
+ return 'OK'
+installout:
+ parse arg n
+ 'EXEC GITOBUF INIT'
+ if rc\=0 then return 'ERROR'
+ drop r.
+ 'EXECIO * DISKR GITOUT DATA A 1 (STEM R. FINIS'
+ if rc\=0 then return 'ERROR'
+ do i=1 to r.0
+  'EXEC GITOBUF APPEND' strip(r.i)
+  if rc\=0 then return 'ERROR'
+ end
+ 'EXEC GITOBUF FINAL'
+ if rc\=0 then return 'ERROR'
+ return 'OK'
+readbyte:
+ parse arg off
+ call readhex off,1
+ if result='ERROR' then return 'ERROR'
+ return x2d(result)
+readhex:
+ parse arg off,n
+ 'EXEC GITPBUF READSTACK' off n
+ if rc\=0 then return 'ERROR'
+ parse pull h
+ if length(h)\=n*2 then return 'ERROR'
+ return translate(h)
