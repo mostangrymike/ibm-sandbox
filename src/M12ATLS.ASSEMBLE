@@ -175,6 +175,9 @@ SLOT3    DS    XL40
 QUERY    DS    CL58
          DS    0F
 VMCFECB  DC    F'0'
+QPRERC   DS    F
+         DS    0D
+QPREDEC  DS    D
 OLDCR0   DS    F
 SAVECR0  DS    F
 RETADDR  DS    F
