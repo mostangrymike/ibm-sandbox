@@ -317,10 +317,23 @@ NETSTAT showed IPv4 home 192.168.1.223/24 on OSA1 and default gateway
 192.168.1.254. PING to the gateway and 8.8.8.8 succeeded. The earlier timeout
 to 93.184.216.34 was destination-specific, not a native socket/routing failure.
 
-M11B is next: prove raw/binary socket operation with SO_ASCII left OFF, explicit
-ASCII wire bytes, bounded RECV, and exact wire-byte inspection before feeding
-network bytes into the M10 transport parser.
+M11B is DONE/TARGET PROVEN. SO_ASCII was confirmed OFF; 56 exact ASCII wire
+bytes were sent, raw RECV was bounded to 256 bytes, 828 bytes were received,
+and the exact raw prefix was 485454502F312E3120323030204F4B0D.
+
+M11C is DONE/TARGET PROVEN. GIT11HTP bounded HTTP header framing preserved a
+binary body containing 00, FF, and PACK bytes exactly across a deliberately
+fragmented CRLFCRLF boundary.
+
+M11D is DONE/TARGET PROVEN. GIT11HTP routed the bounded HTTP body directly into
+GIT10UP/GIT10BF/GITPBUF. The real Git 2.47.3 upload-pack fixture reproduced
+PACK SHA1 00C20177E759DC5FFD06EA42D0A1D1E1A9F53E7B, COMMIT OID
+59D72104FBF18B76536A3A99776C7F7930C27CD8, TREE OID
+747ABC3C651FC0DD12A37E5B5C47E0D02CD0DC4E, BLOB OID
+F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F, and PACK data end 180.
 
 ## NEXT ACTION
-Run M11BRAW target gate. If raw bytes are preserved exactly, integrate bounded
-native socket receive with M10 framing. M12 remains native z/VM SSL/GSK TLS.
+M11A-D are target proven. Begin M12 native z/VM SSL/GSK TLS, using IBM
+documentation as first source of truth and preserving the same raw bounded byte
+stream interface above GIT11HTP. No Pi proxy, Mac helper, BFS/OpenExtensions, or
+custom TLS runtime dependency.
