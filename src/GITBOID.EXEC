@@ -46,16 +46,7 @@ if data\='' then do
  if rc\=0 then exit 8
 end
 'MAKEBUF'
-queue right(d2x(total),8,'0')
-drop r.
-'EXECIO * DISKR GITHASH DATA A 1 (STEM R. FINIS'
-if rc\=0 then do
- 'DROPBUF'
- exit 8
-end
-do i=1 to r.0
- queue strip(r.i)
-end
+queue 'F'||right(d2x(total),8,'0')
 'GITSTRM'
 save=rc
 if save\=0 then do
