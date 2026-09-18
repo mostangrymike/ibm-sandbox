@@ -8,7 +8,7 @@ M12ATLS  CSECT
 *   VMCF AUTHORIZE, BEGINtcpIPservice, TLSQuery CALLCODE 128.
 * Blank TLS label asks whether the SSL server is available.
 *
-         HNDEXT SET,VMCFHND,CODE=4001,ECB=(VMCFECB,OS),ERROR=HNDERR
+         HNDEXT SET,'DUMMY',CODE=4001,ECB=(VMCFECB,OS),ERROR=HNDERR
          LTR   15,15
          BNZ   HNDERR
 *
@@ -38,10 +38,8 @@ M12ATLS  CSECT
          DC    X'83',X'12',XL2'0068'
          LTR   2,2
          BNZ   BEGDIAG
-         BAL   14,WAITNEXT
-         L     3,INTCOUNT
-         C     3,=F'1'
-         BL    BEGWAIT
+         WAITECB ECB=VMCFECB
+         MVC   SLOT1(40),VMCFBUF
          CLI   SLOT1+39,X'00'
          BNE   BEGRET
 *
@@ -63,14 +61,17 @@ M12ATLS  CSECT
          DC    X'83',X'12',XL2'0068'
          LTR   2,2
          BNZ   QDIAG
-         BAL   14,WAIT2
+         WAITECB ECB=VMCFECB
+         MVC   SLOT2(40),VMCFBUF
 *
 * Slot 2 is the preprocessing response.  Slot 3 is the
-* QUERYtlsCOMPLETE notification (CALLCODE 33).
+* QUERYtlsCOMPLETE notification (CALLCODE X'19').
 *
          CLI   SLOT2+39,X'00'
          BNE   QPRE
-         BAL   14,WAIT3
+         BAL   14,CLEARECB
+         WAITECB ECB=VMCFECB
+         MVC   SLOT3(40),VMCFBUF
          CLI   SLOT3+38,X'19'
          BNE   QBADNOTE
          BAL   14,REJNOTE
@@ -78,30 +79,6 @@ M12ATLS  CSECT
          BNE   QRESULT
          CMSSTACK TEXT=(PASSMSG,PASSLEN)
          B     CLEANOK
-*
-WAIT2    L     3,INTCOUNT
-         C     3,=F'2'
-         BNL   W2DONE
-         BAL   14,CLEARECB
-         L     3,INTCOUNT
-         C     3,=F'2'
-         BNL   W2DONE
-         WAITECB ECB=VMCFECB
-W2DONE   BR    14
-WAIT3    L     3,INTCOUNT
-         C     3,=F'3'
-         BNL   W3DONE
-         BAL   14,CLEARECB
-         L     3,INTCOUNT
-         C     3,=F'3'
-         BNL   W3DONE
-         WAITECB ECB=VMCFECB
-W3DONE   BR    14
-WAITNEXT EQU   *
-         WAITECB ECB=VMCFECB
-         BR    14
-CLEARECB XC    VMCFECB,VMCFECB
-         BR    14
 *
 * A QUERYtlsCOMPLETE notification is a SEND.  IBM requires
 * completion with VMCF REJECT using the interrupt header data.
@@ -115,32 +92,6 @@ REJNOTE  ST    14,WORKRET
          L     14,WORKRET
          BR    14
 *
-* HNDEXT handler.  CP has already placed VMCMHDR in VMCFBUF.
-* Preserve the first three interrupts so mainline cannot lose a
-* fast QUERYtlsCOMPLETE behind the preprocessing response.
-*
-VMCFHND  STM   0,15,0(13)
-         LR    12,15
-         S     12,=A(VMCFHND-M12ATLS)
-         L     3,INTCOUNT
-         LA    3,1(3)
-         ST    3,INTCOUNT
-         C     3,=F'1'
-         BE    HSLOT1
-         C     3,=F'2'
-         BE    HSLOT2
-         C     3,=F'3'
-         BE    HSLOT3
-         B     HRET
-HSLOT1   MVC   SLOT1(40),VMCFBUF
-         B     HRET
-HSLOT2   MVC   SLOT2(40),VMCFBUF
-         B     HRET
-HSLOT3   MVC   SLOT3(40),VMCFBUF
-HRET     LM    0,14,0(13)
-         SR    15,15
-         BR    14
-*
 * Error paths stack compact diagnostics.  Return code is 8.
 *
 HNDERR   CMSSTACK TEXT=(EHND,L'EHND)
@@ -148,8 +99,6 @@ HNDERR   CMSSTACK TEXT=(EHND,L'EHND)
 AUTHERR  CMSSTACK TEXT=(EAUTH,L'EAUTH)
          B     FAIL
 BEGDIAG  CMSSTACK TEXT=(EBEGD,L'EBEGD)
-         B     FAIL
-BEGWAIT  CMSSTACK TEXT=(EBEGW,L'EBEGW)
          B     FAIL
 BEGRET   CMSSTACK TEXT=(EBEGR,L'EBEGR)
          B     FAIL
@@ -181,7 +130,6 @@ SLOT2    DS    XL40
 SLOT3    DS    XL40
 QUERY    DS    CL58
 VMCFECB  DC    F'0'
-INTCOUNT DC    F'0'
 RETADDR  DS    F
 WORKRET  DS    F
 SAVERC   DS    F
@@ -190,7 +138,6 @@ PASSLEN  EQU   *-PASSMSG
 EHND     DC    C'M12A ERROR HNDEXT'
 EAUTH    DC    C'M12A ERROR VMCF AUTHORIZE'
 EBEGD    DC    C'M12A ERROR BEGIN DIAG'
-EBEGW    DC    C'M12A ERROR BEGIN RESPONSE MISSING'
 EBEGR    DC    C'M12A ERROR BEGIN RETURN'
 EQDIA    DC    C'M12A ERROR TLSQUERY DIAG'
 EQPRE    DC    C'M12A ERROR TLSQUERY PREPROCESS'
