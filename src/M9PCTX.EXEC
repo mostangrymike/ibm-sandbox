@@ -1,0 +1,29 @@
+/* M9P non-immediate base context regression. */
+address command
+say 'M9PCTX TEST 1: OFS base skips intervening object'
+pack='5041434B0000000200000003'
+pack=pack||'33789C4B4C4A0600024D0127'
+pack=pack||'33789CABA8AC020002D7016C'
+pack=pack||'6618789C636699C0CC98020002DB0100'
+pack=pack||'67EA1DDBCA8C7A7689A04DFA2D6F0908945F189B'
+'EXEC GITPBUF WRITE' pack
+if rc\=0 then exit rc
+'EXEC GITPSHA VERIFY'
+if rc\=0 then exit rc
+'EXEC GITP9PWK WALK'
+if rc\=0 then exit rc
+say 'M9PCTX TEST 2: REF base skips intervening object'
+oid='F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
+pack='5041434B0000000200000003'
+pack=pack||'33789C4B4C4A0600024D0127'
+pack=pack||'33789CABA8AC020002D7016C'
+pack=pack||'76'||oid||'789C636699C0CC98020002DB0100'
+pack=pack||'EF044837F1D0C7CEB6B4425EA8384D3D91E7DFC9'
+'EXEC GITPBUF WRITE' pack
+if rc\=0 then exit rc
+'EXEC GITPSHA VERIFY'
+if rc\=0 then exit rc
+'EXEC GITP9PWK WALK'
+if rc\=0 then exit rc
+say 'M9P NON-IMMEDIATE BASE CONTEXT TESTS PASSED'
+exit 0
