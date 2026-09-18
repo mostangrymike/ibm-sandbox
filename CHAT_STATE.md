@@ -149,9 +149,25 @@ Target result:
 - PACK data ended at offset 40.
 - final `M9G BOUNDED OFS_DELTA WALKER TESTS PASSED`.
 
+### M9H bounded REF_DELTA walker — DONE/TARGET PROVEN
+`src/GITPBWLK.EXEC` now reads REF_DELTA 20-byte base object IDs through bounded
+GITPBUF offsets, computes/stores OIDs for reconstructed blobs, resolves the base
+against already reconstructed objects, inflates the delta representation through
+GITPINFL, and applies it with target-proven GITDAPP.
+
+Target result:
+- bounded PACK SHA-1 accepted `7C95D709D4D46C612315060323DF0B5671650684`.
+- base entry at offset 12 reconstructed `616263` (abc).
+- REF_DELTA entry at offset 24 reconstructed `61626364` (abcd).
+- PACK data ended at offset 59.
+- final `M9H BOUNDED REF_DELTA WALKER TESTS PASSED`.
+
+M9F/M9G/M9H now provide an isolated bounded-input PACK path for ordinary blobs,
+OFS_DELTA, and REF_DELTA. The existing M8 whole-pack walker remains unchanged.
+
 ## NEXT ACTION
-M9H: extend the isolated bounded PACK walker to REF_DELTA. Read the 20-byte base
-object ID through bounded GITPBUF offsets, resolve it against OIDs for already
-reconstructed objects, inflate and apply the delta using the existing proven
-cores, and reproduce the M8C abc -> abcd REF_DELTA case. Keep the existing M8
-walker unchanged and defer bounded inflated-output/object storage.
+M9I: remove the remaining whole-inflated-object REXX-string scalability limit.
+Introduce bounded reconstructed-object storage so ordinary and delta objects can
+be consumed/stored incrementally instead of requiring the complete inflated
+object in one REXX variable. Preserve the target-proven M9F/M9G/M9H walker path
+while developing the new storage primitive in isolation first.
