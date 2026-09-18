@@ -165,9 +165,27 @@ Target result:
 M9F/M9G/M9H now provide an isolated bounded-input PACK path for ordinary blobs,
 OFS_DELTA, and REF_DELTA. The existing M8 whole-pack walker remains unchanged.
 
+### M9I bounded reconstructed-object store — DONE/TARGET PROVEN
+`src/GITOBUF.EXEC` provides an isolated CMS-backed reconstructed-object buffer
+with incremental appends of at most 64 bytes, 64-byte physical records, partial
+tail handling, FINAL, and bounded logical-offset reads. `src/M9IOBUF.EXEC`
+proved the primitive before integration into the inflater/walker.
+
+Target result:
+- 145 bytes appended across multiple physical records.
+- pre-FINAL read correctly rejected RC=8.
+- cross-record read at offset 60/count 12 returned 4 AA bytes + 8 BB bytes.
+- final 17-byte partial record returned all CC bytes.
+- overrun correctly rejected RC=8.
+- final `M9I BOUNDED OBJECT STORE TESTS PASSED`.
+
+The target-proven M9F/M9G/M9H walker path remains unchanged. GITPINFL/GITPDEF
+still return the complete inflated object as one REXX hex string.
+
 ## NEXT ACTION
-M9I: remove the remaining whole-inflated-object REXX-string scalability limit.
-Introduce bounded reconstructed-object storage so ordinary and delta objects can
-be consumed/stored incrementally instead of requiring the complete inflated
-object in one REXX variable. Preserve the target-proven M9F/M9G/M9H walker path
-while developing the new storage primitive in isolation first.
+M9J: add an isolated streaming-output mode to the bounded DEFLATE/zlib path that
+writes reconstructed bytes incrementally to GITOBUF instead of accumulating the
+complete inflated object in one REXX variable. Preserve the existing
+INFLATESTACK interface and M9E/M9F/M9G/M9H behavior while the new mode is proven.
+Start with ordinary-object inflation; delta application/storage integration
+remains a later gate.
