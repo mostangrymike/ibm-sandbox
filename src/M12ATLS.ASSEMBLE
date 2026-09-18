@@ -2,6 +2,19 @@ M12ATLS  CSECT
          USING M12ATLS,12
          LR    12,15
          ST    14,RETADDR
+         LA    2,CPURC
+         ST    2,CPUPL
+         LA    2,CPURS
+         ST    2,CPUPL+4
+         LA    2,BASEONLY
+         ST    2,CPUPL+8
+         LA    1,CPUPL
+         L     15,=V(VMCPUSL)
+         BALR  14,15
+         L     2,CPURC
+         LTR   2,2
+         BNZ   CPUERR
+         WRTERM MCPU,L'MCPU
          WRTERM MSTART,L'MSTART
 *
 * M12A: z/VM Dynamic SSL TLSQuery capability probe.
@@ -12,10 +25,19 @@ M12ATLS  CSECT
          HNDEXT SET,'DUMMY',CODE=4001,ECB=(VMCFECB,OS),ERROR=HNDERR
          LTR   15,15
          BNZ   HNDERR
+         ENABLE INTTYPE=ALL
+         STCTL 0,0,OLDCR0
+         MVC   SAVECR0(4),OLDCR0
+         OI    SAVECR0+3,X'01'
+         LCTL  0,0,SAVECR0
+         WRTERM MENAB,L'MENAB
 *
 * Authorize VMCF with a 40-byte external interrupt buffer.
 *
+         XC    VMCFBUF(40),VMCFBUF
          XC    VMCFPL(40),VMCFPL
+         MVI   VMCFPL,X'80'
+         MVC   VMCFPL+8(8),=CL8'TCPIP'
          LA    2,VMCFBUF
          ST    2,VMCFPL+16
          LA    2,40
@@ -31,10 +53,11 @@ M12ATLS  CSECT
          BAL   14,CLEARECB
          XC    VMCFPL(40),VMCFPL
          MVC   VMCFPL+2(2),=X'0002'
-         MVC   VMCFPL+4(4),=F'2'
+         MVC   VMCFPL+4(4),=X'00000002'
          MVC   VMCFPL+8(8),=CL8'TCPIP'
-         MVC   VMCFPL+20(4),=F'1'
+         MVC   VMCFPL+20(4),=X'00000001'
          MVC   VMCFPL+32(4),=X'06300000'
+         MVC   VMCFPL+36(2),=X'0000'
          MVI   VMCFPL+38,X'65'
          LA    1,VMCFPL
          DC    X'83',X'12',XL2'0068'
@@ -54,7 +77,7 @@ M12ATLS  CSECT
          MVC   QUERY(58),=CL58' '
          XC    VMCFPL(40),VMCFPL
          MVC   VMCFPL+2(2),=X'0003'
-         MVC   VMCFPL+4(4),=F'4'
+         MVC   VMCFPL+4(4),=X'00000004'
          MVC   VMCFPL+8(8),=CL8'TCPIP'
          LA    3,QUERY
          ST    3,VMCFPL+16
@@ -104,6 +127,10 @@ REJNOTE  ST    14,WORKRET
 *
 * Error paths stack compact diagnostics.  Return code is 8.
 *
+CPUERR   CMSSTACK TEXT=(ECPU,L'ECPU)
+         LA    15,8
+         L     14,RETADDR
+         BR    14
 HNDERR   CMSSTACK TEXT=(EHND,L'EHND)
          B     FAIL
 AUTHERR  CMSSTACK TEXT=(EAUTH,L'EAUTH)
@@ -123,6 +150,7 @@ FAIL     LA    15,8
          B     CLEAN
 CLEANOK  SR    15,15
 CLEAN    ST    15,SAVERC
+         LCTL  0,0,OLDCR0
          HNDEXT CLR,CODE=4001
          XC    VMCFPL(40),VMCFPL
          MVC   VMCFPL+2(2),=X'0001'
@@ -139,10 +167,21 @@ SLOT1    DS    XL40
 SLOT2    DS    XL40
 SLOT3    DS    XL40
 QUERY    DS    CL58
+         DS    0F
 VMCFECB  DC    F'0'
+OLDCR0   DS    F
+SAVECR0  DS    F
 RETADDR  DS    F
 WORKRET  DS    F
 SAVERC   DS    F
+CPUPL    DS    3F
+CPURC    DC    F'0'
+CPURS    DC    F'0'
+BASEONLY DC    F'0'
+         EXTRN VMCPUSL
+MCPU     DC    C'M12A BASE CPU SELECTED'
+ECPU     DC    C'M12A ERROR VCPUSELECT'
+MENAB    DC    C'M12A INTERRUPTS ENABLED'
 MSTART   DC    C'M12A START'
 MAUTH    DC    C'M12A VMCF AUTHORIZED'
 MBEGS    DC    C'M12A BEGIN SENT'
