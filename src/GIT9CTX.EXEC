@@ -1,16 +1,23 @@
-/* M9P bounded object context store with inherited object type. */
+/* M9P bounded context: one data file plus sequential index. */
 parse upper arg cmd key oid n otype extra
 address command
 if cmd='INIT' then do
  'ERASE G9CIDX DATA A'
- exit 0
+ 'ERASE G9CDATA DATA A'
+ 'ERASE G9CMETA DATA A'
+ r.1='NEXT 1'; r.0=1
+ 'EXECIO 1 DISKW G9CMETA DATA A 1 (STEM R. FINIS'
+ exit rc
 end
 if cmd='SAVE' then do
  if extra\='' | datatype(key,'W')\=1 | datatype(n,'W')\=1 then exit 4
  if otype='' then otype='BLOB'
- fn='G9C'||right(key,5,'0')
- 'ERASE' fn 'DATA A'
- off=0
+ drop r.
+ 'EXECIO 1 DISKR G9CMETA DATA A 1 (STEM R. FINIS'
+ if rc\=0 | r.0\=1 then exit 8
+ parse var r.1 word start
+ if word\='NEXT' | datatype(start,'W')\=1 then exit 8
+ off=0; nrec=0
  do while off<n
   take=n-off
   if take>64 then take=64
@@ -18,12 +25,16 @@ if cmd='SAVE' then do
   if rc\=0 then exit 8
   parse pull h
   r.1=h; r.0=1
-  'EXECIO 1 DISKW' fn 'DATA A 0 (STEM R. FINIS'
+  'EXECIO 1 DISKW G9CDATA DATA A 0 (STEM R. FINIS'
   if rc\=0 then exit 8
   off=off+take
+  nrec=nrec+1
  end
- r.1=key oid n fn otype; r.0=1
+ r.1=key oid n otype start nrec; r.0=1
  'EXECIO 1 DISKW G9CIDX DATA A 0 (STEM R. FINIS'
+ if rc\=0 then exit 8
+ r.1='NEXT' start+nrec; r.0=1
+ 'EXECIO 1 DISKW G9CMETA DATA A 1 (STEM R. FINIS'
  exit rc
 end
 if cmd='LOADPOS' | cmd='LOADOID' then do
@@ -32,21 +43,19 @@ if cmd='LOADPOS' | cmd='LOADOID' then do
   drop r.
   'EXECIO 1 DISKR G9CIDX DATA A' rec '(STEM R. FINIS'
   if rc\=0 | r.0=0 then leave
-  parse var r.1 p o sz fn typ
-  if typ='' then typ='BLOB'
+  parse var r.1 p o sz typ first count
   if (cmd='LOADPOS' & p=key) | (cmd='LOADOID' & o=key) then found=1
   rec=rec+1
  end
  if \found then exit 8
  'ERASE GITBASE DATA A'
- rec=1
- do while 1
+ do i=0 to count-1
   drop q.
-  'EXECIO 1 DISKR' fn 'DATA A' rec '(STEM Q. FINIS'
-  if rc\=0 | q.0=0 then leave
+  src=first+i
+  'EXECIO 1 DISKR G9CDATA DATA A' src '(STEM Q. FINIS'
+  if rc\=0 | q.0\=1 then exit 8
   'EXECIO 1 DISKW GITBASE DATA A 0 (STEM Q. FINIS'
   if rc\=0 then exit 8
-  rec=rec+1
  end
  m.1='META' sz '- 1'; m.0=1
  'EXECIO 1 DISKW GITBMETA DATA A 1 (STEM M. FINIS'
