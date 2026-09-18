@@ -9,7 +9,8 @@ if substr(hdr,1,8)\='5041434B' then exit 8
 version=x2d(substr(hdr,9,8)); objects=x2d(substr(hdr,17,8))
 if version\=2 then exit 8
 pos=12
-basepos=-1
+'EXEC GIT9CTX INIT'
+if rc\=0 then exit rc
 do entry=1 to objects
  entrypos=pos
  call readbyte pos
@@ -30,15 +31,15 @@ do entry=1 to objects
   parse pull used
   parse pull outlen
   if outlen\=size then exit 8
-  call savebase outlen
-  if result\='OK' then exit 8
-  basepos=entrypos
   'EXEC GITBOID BLOB' outlen
   if rc\=0 then exit rc
   parse pull oid
-  baseoid=oid
+  'EXEC GIT9CTX SAVE' entrypos oid outlen
+  if rc\=0 then exit rc
   say 'ENTRY' entry 'POSITION' entrypos 'TYPE BLOB SIZE' size
   say 'OBJECT OID' oid
+  'EXEC GIT9CTX SAVE' entrypos oid outlen
+  if rc\=0 then exit rc
   pos=pos+used
  end
  else if type=7 then do
@@ -46,10 +47,14 @@ do entry=1 to objects
   if result='ERROR' then exit 8
   wantoid=result
   pos=pos+20
-  if wantoid\=baseoid then do
+  'EXEC GIT9CTX LOADOID' wantoid
+  if rc\=0 then do
    say 'GITP9PWK: REF base not available'
    exit 8
   end
+  parse pull basepos
+  parse pull baseoid
+  parse pull basesize
   'EXEC GITPZBUF TOOBUF' pos
   if rc\=0 then exit rc
   parse pull used
@@ -67,6 +72,8 @@ do entry=1 to objects
   say 'BASE OID' wantoid
   say 'OBJECT BYTES' outlen
   say 'OBJECT OID' oid
+  'EXEC GIT9CTX SAVE' entrypos oid outlen
+  if rc\=0 then exit rc
   pos=pos+used
  end
  else if type=6 then do
@@ -81,10 +88,14 @@ do entry=1 to objects
    if b<128 then leave
   end
   want=entrypos-dist
-  if want\=basepos then do
+  'EXEC GIT9CTX LOADPOS' want
+  if rc\=0 then do
    say 'GITP9PWK: OFS base not available'
    exit 8
   end
+  parse pull basepos
+  parse pull baseoid
+  parse pull basesize
   'EXEC GITPZBUF TOOBUF' pos
   if rc\=0 then exit rc
   parse pull used
@@ -106,6 +117,8 @@ do entry=1 to objects
   say 'BASE POSITION' want
   say 'OBJECT BYTES' outlen
   say 'OBJECT OID' oid
+  'EXEC GIT9CTX SAVE' entrypos oid outlen
+  if rc\=0 then exit rc
   pos=pos+used
  end
  else exit 8
