@@ -24,7 +24,7 @@ say 'M9F TEST 2: verify bounded PACK SHA-1'
 if rc \= 0 then exit rc
 
 say 'M9F TEST 3: walk both ordinary objects by bounded offsets'
-'EXEC GITPBWALK WALK'
+'EXEC GITPBWLK WALK'
 if rc \= 0 then exit rc
 
 say 'M9F TEST 4: bytes after objects are the 20-byte trailer'
