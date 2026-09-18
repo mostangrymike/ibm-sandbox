@@ -31,7 +31,10 @@ M1 SHA-1; M2 object encoding; M3 CMS object DB; M4 trees/commits; M5 refs/HEAD;
 M6 protocol/delta through M6N; M7 compression through M7I; M8 complete PACK
 ordinary/OFS/REF through M8C; M9A/M9B bounded storage; M9C bounded pack SHA-1;
 M9D bounded inflater primitive; M9E bounded general inflater; M9F bounded
-ordinary PACK walker. All completed milestones are target proven.
+ordinary PACK walker; M9G/M9H bounded delta walkers; M9I bounded object store;
+M9J streaming DEFLATE/zlib; M9K ordinary streaming PACK; M9L bounded OFS_DELTA;
+M9M bounded REF_DELTA; M9N stress; M9O cached performance; M9P consolidated
+bounded PACK walker. All completed milestones are target proven.
 
 ## M8 complete PACK summary
 M8A ordinary complete pack passed including trailer SHA and negative tests.
@@ -182,10 +185,29 @@ Target result:
 The target-proven M9F/M9G/M9H walker path remains unchanged. GITPINFL/GITPDEF
 still return the complete inflated object as one REXX hex string.
 
+## M9J-M9P completion summary
+M9J true bounded streaming DEFLATE/zlib writes incrementally to GITOBUF and
+passes fixed, dynamic, mixed, and bad-Adler gates. M9K integrates ordinary PACK
+objects with bounded OID calculation. M9L and M9M integrate bounded OFS_DELTA
+and REF_DELTA reconstruction. M9N proves 4096-byte bounded delta reconstruction
+and a 512-byte streaming object. M9O adds bounded input/output caching; the
+4096-byte streaming gate passes with Git blob OID
+`9D235ED07CD19811A6CEB342DE82F190E49C9F68`.
+
+M9P consolidates ordinary, OFS_DELTA, and REF_DELTA into `GITP9PWK.EXEC`.
+`GIT9CTX.EXEC` provides disk-backed multi-object context keyed by PACK position
+and OID. Non-immediate OFS/REF bases were target proven, as was a chained delta
+where reconstructed `abcd` became the base for reconstructed `abcde`.
+The consolidated install path copies one CMS record at a time and does not use
+an arbitrary-size EXECIO * stem for reconstructed object data.
+
+Final target regression sweep on 2026-09-17 passed M9JSTRM, M9JZLIB, M9KWALK,
+M9LOFS, M9MREF, M9NSTRES, M9NSTRM, M9O4096, M9PCONS, M9PCTX, and M9PCHAIN.
+M9P and the M9 scalability milestone are complete/target proven.
+
 ## NEXT ACTION
-M9J: add an isolated streaming-output mode to the bounded DEFLATE/zlib path that
-writes reconstructed bytes incrementally to GITOBUF instead of accumulating the
-complete inflated object in one REXX variable. Preserve the existing
-INFLATESTACK interface and M9E/M9F/M9G/M9H behavior while the new mode is proven.
-Start with ordinary-object inflation; delta application/storage integration
-remains a later gate.
+M10: real Git transport feeding PACK data incrementally into the bounded M9 PACK
+path. Keep transport isolated from the later native CMS networking/HTTP (M11)
+and native z/VM SSL/GSK TLS (M12) milestones. First gate should consume real Git
+smart-HTTP protocol/pack framing incrementally without requiring the whole PACK
+or response in a REXX variable.
