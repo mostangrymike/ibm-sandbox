@@ -183,7 +183,7 @@ huffblock:
       end
    end
 
-bits: procedure expose base bitpos
+bits: procedure expose base bitpos packsize cacheoff cachedata
    parse arg count
    address command
    value = 0
