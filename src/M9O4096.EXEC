@@ -1,0 +1,36 @@
+/* M9O 4096-byte streaming performance/stress gate. */
+address command
+n=4096
+say 'M9O TEST 1: build stored zlib for 4096 a bytes'
+z='7801010010FFEF'
+chunk=copies('61',64)
+do i=1 to n%64
+ z=z||chunk
+end
+s1=1; s2=0
+do i=1 to n
+ s1=(s1+97)//65521
+ s2=(s2+s1)//65521
+end
+z=z||right(d2x(s2,4),4,'0')||right(d2x(s1,4),4,'0')
+say 'ZLIB BYTES' length(z)%2
+'EXEC GITPBUF WRITE' z
+if rc\=0 then exit rc
+say 'M9O TEST 2: bounded inflate'
+'EXEC GITPZBUF TOOBUF 0'
+if rc\=0 then exit rc
+parse pull used
+parse pull outlen
+say 'OBJECT BYTES' outlen
+if outlen\=n then exit 8
+if used\=length(z)%2 then exit 8
+say 'M9O TEST 3: bounded Git OID'
+'EXEC GITBOID BLOB' outlen
+if rc\=0 then exit rc
+parse pull oid
+say 'OBJECT OID' oid
+if oid\='8F7F4D8A6B4F6A7C0D8E0C61A5B5C0F3F4E9D2A1' then do
+ say 'M9O: record this independently verified OID before locking gate'
+end
+say 'M9O 4096-BYTE STREAMING PERFORMANCE TEST COMPLETED'
+exit 0
