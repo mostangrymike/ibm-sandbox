@@ -1,0 +1,21 @@
+/* M9J bounded object-output integration regression. */
+address command
+pack = '5041434B0000000200000002'
+pack = pack || '337801010300FCFF616263024D0127'
+pack = pack || '337801010300FCFF78797A02D7016C'
+pack = pack || '5F1C02695D4BC807AE4A5DD622AD1D28E7659429'
+'EXEC GITPBUF WRITE' pack
+if rc \= 0 then exit rc
+say 'M9J TEST 1: inflate first object into GITOBUF'
+'EXEC GITP2OBJ TOOBUF 13'
+if rc \= 0 then exit rc
+parse pull used
+say 'ZLIB BYTES' used
+if used \= 14 then exit 8
+'EXEC GITOBUF READSTACK 0 3'
+if rc \= 0 then exit rc
+parse pull got
+say 'DATA' got
+if got \= '616263' then exit 8
+say 'M9J OBJECT OUTPUT INTEGRATION TESTS PASSED'
+exit 0
