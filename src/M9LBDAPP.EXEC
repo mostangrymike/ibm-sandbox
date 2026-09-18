@@ -10,15 +10,10 @@ m.1='META 3 - 1'; m.0=1
 'EXECIO 1 DISKW GITBMETA DATA A 1 (STEM M. FINIS'
 if rc\=0 then exit 8
 say 'M9L TEST 2: create Git delta abc to abcd'
-/* base size 3, result size 4, copy 3 bytes, insert d */
-'EXEC GITOBUF WRITE 0304910364'
-if rc=0 then do
- say 'M9L: GITOBUF WRITE unexpectedly supported'
- exit 8
-end
+/* base 3, result 4, copy offset 0 size 3, insert d */
 'EXEC GITOBUF INIT'
 if rc\=0 then exit rc
-'EXEC GITOBUF APPEND 0304910364'
+'EXEC GITOBUF APPEND 030490030164'
 if rc\=0 then exit rc
 'EXEC GITOBUF FINAL'
 if rc\=0 then exit rc
