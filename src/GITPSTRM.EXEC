@@ -7,6 +7,9 @@ base = start
 bitpos = 0
 out = ''
 outlen = 0
+cacheoff = -1
+cachedata = ''
+outpend = ''
 'EXEC GITOBUF INIT'
 if rc \= 0 then exit rc
 do forever
@@ -27,6 +30,8 @@ do forever
    if final then leave
 end
 used = (bitpos + 7) % 8
+call flushout
+if result \= 'OK' then exit 8
 'EXEC GITOBUF FINAL'
 if rc \= 0 then exit rc
 queue used
@@ -179,12 +184,20 @@ bits: procedure expose base bitpos
    value = 0
    do i = 0 to count - 1
       byteix = bitpos % 8
-      'EXEC GITPBUF READSTACK' base + byteix 1
-      if rc \= 0 | queued() < 1 then do
-         say 'GITPDEF: truncated DEFLATE bitstream'
-         return 'ERROR'
+      abspos = base + byteix
+      block = (abspos % 64) * 64
+      if block \= cacheoff then do
+         'EXEC GITPBUF READSTACK' block 64
+         if rc \= 0 | queued() < 1 then do
+            say 'GITPDEF: truncated DEFLATE bitstream'
+            return 'ERROR'
+         end
+         parse pull cachedata
+         cacheoff = block
       end
-      parse pull h
+      within = abspos - cacheoff
+      if within * 2 + 2 > length(cachedata) then return 'ERROR'
+      h = substr(cachedata,within*2+1,2)
       b = x2d(h)
       shift = bitpos // 8
       bit = (b % (2 ** shift)) // 2
@@ -289,10 +302,20 @@ getdist:
 
 putbyte:
    parse arg v
-   h = d2x(v,2)
-   'EXEC GITOBUF APPEND' h
-   if rc \= 0 then return 'ERROR'
+   outpend = outpend || d2x(v,2)
    outlen = outlen + 1
+   if length(outpend) >= 128 then do
+      'EXEC GITOBUF APPEND' left(outpend,128)
+      if rc \= 0 then return 'ERROR'
+      outpend = substr(outpend,129)
+   end
+   return 'OK'
+
+flushout:
+   if outpend = '' then return 'OK'
+   'EXEC GITOBUF APPEND' outpend
+   if rc \= 0 then return 'ERROR'
+   outpend = ''
    return 'OK'
 
 histbyte:
