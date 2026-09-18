@@ -80,6 +80,9 @@ M12ATLS  CSECT
          CMSSTACK TEXT=(PASSMSG,PASSLEN)
          B     CLEANOK
 *
+CLEARECB XC    VMCFECB,VMCFECB
+         BR    14
+*
 * A QUERYtlsCOMPLETE notification is a SEND.  IBM requires
 * completion with VMCF REJECT using the interrupt header data.
 *
