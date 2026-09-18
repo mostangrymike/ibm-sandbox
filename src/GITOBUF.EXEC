@@ -1,0 +1,124 @@
+/* M9I bounded reconstructed-object store. */
+parse arg command rest
+command = translate(command)
+address command
+
+if command = 'INIT' | command = 'CLEAR' then do
+   'ERASE GITOBUF DATA A'
+   'ERASE GITOMETA DATA A'
+   call putmeta 0,'',0
+   if result \= 'OK' then exit 8
+   exit 0
+end
+
+if command = 'APPEND' then do
+   parse var rest data extra
+   data = translate(data)
+   if extra \= '' | data = '' | length(data) > 128 |,
+      length(data) // 2 \= 0 |,
+      verify(data,'0123456789ABCDEF') \= 0 then do
+      say 'Usage: GITOBUF APPEND hexdata-up-to-64-bytes'
+      exit 4
+   end
+   call getmeta
+   if result \= 'OK' then exit 8
+   if final then do
+      say 'GITOBUF: cannot append after FINAL'
+      exit 8
+   end
+   bytes = length(data) % 2
+   work = tail || data
+   if length(work) >= 128 then do
+      record = left(work,128)
+      call appendrec record
+      if result \= 'OK' then exit 8
+      work = substr(work,129)
+   end
+   size = size + bytes
+   call putmeta size,work,0
+   if result \= 'OK' then exit 8
+   exit 0
+end
+
+if command = 'FINAL' then do
+   if strip(rest) \= '' then exit 4
+   call getmeta
+   if result \= 'OK' then exit 8
+   if final then exit 0
+   if tail \= '' then do
+      call appendrec tail
+      if result \= 'OK' then exit 8
+   end
+   call putmeta size,'',1
+   if result \= 'OK' then exit 8
+   exit 0
+end
+
+if command = 'READ' | command = 'READSTACK' then do
+   stackmode = command = 'READSTACK'
+   parse var rest offset count extra
+   if extra \= '' | datatype(offset,'W') \= 1 | offset < 0 |,
+      datatype(count,'W') \= 1 | count < 0 then exit 4
+   call readrange offset,count
+   if result = 'ERROR' then exit 8
+   if stackmode then queue result
+   else say result
+   exit 0
+end
+
+say 'GITOBUF: unknown command' command
+exit 4
+
+getmeta: procedure expose size tail final
+   drop m.
+   'EXECIO 1 DISKR GITOMETA DATA A 1 (STEM M. FINIS'
+   if rc \= 0 | m.0 \= 1 then return 'ERROR'
+   parse var m.1 tag size t final extra
+   if tag \= 'META' | extra \= '' | datatype(size,'W') \= 1 then,
+      return 'ERROR'
+   if t = '-' then tail = ''
+   else tail = t
+   return 'OK'
+
+putmeta: procedure
+   parse arg size,tail,final
+   if tail = '' then tail = '-'
+   m.1 = 'META' size tail final
+   m.0 = 1
+   'EXECIO 1 DISKW GITOMETA DATA A 1 (STEM M. FINIS'
+   if rc \= 0 then return 'ERROR'
+   return 'OK'
+
+appendrec: procedure
+   parse arg record
+   r.1 = record
+   r.0 = 1
+   'EXECIO 1 DISKW GITOBUF DATA A 0 (STEM R. FINIS'
+   if rc \= 0 then return 'ERROR'
+   return 'OK'
+
+readrange: procedure
+   parse arg offset,count
+   call getmeta
+   if result \= 'OK' then return 'ERROR'
+   if \final then do
+      say 'GITOBUF: object buffer not finalized'
+      return 'ERROR'
+   end
+   if offset + count > size then do
+      say 'GITOBUF: read exceeds object buffer'
+      return 'ERROR'
+   end
+   if count = 0 then return ''
+   first = offset % 64 + 1
+   last = (offset + count - 1) % 64 + 1
+   nrec = last - first + 1
+   drop in.
+   'EXECIO' nrec 'DISKR GITOBUF DATA A' first '(STEM IN. FINIS'
+   if rc \= 0 | in.0 \= nrec then return 'ERROR'
+   joined = ''
+   do i = 1 to in.0
+      joined = joined || strip(in.i)
+   end
+   within = offset // 64
+   return substr(joined,within*2+1,count*2)
