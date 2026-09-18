@@ -1,0 +1,40 @@
+/* M9L bounded delta apply primitive regression. */
+address command
+say 'M9L TEST 1: create bounded base abc'
+'ERASE GITBASE DATA A'
+'ERASE GITBMETA DATA A'
+b.1='616263'; b.0=1
+'EXECIO 1 DISKW GITBASE DATA A 1 (STEM B. FINIS'
+if rc\=0 then exit 8
+m.1='META 3 - 1'; m.0=1
+'EXECIO 1 DISKW GITBMETA DATA A 1 (STEM M. FINIS'
+if rc\=0 then exit 8
+say 'M9L TEST 2: create Git delta abc to abcd'
+/* base size 3, result size 4, copy 3 bytes, insert d */
+'EXEC GITOBUF WRITE 0304910364'
+if rc=0 then do
+ say 'M9L: GITOBUF WRITE unexpectedly supported'
+ exit 8
+end
+'EXEC GITOBUF INIT'
+if rc\=0 then exit rc
+'EXEC GITOBUF APPEND 0304910364'
+if rc\=0 then exit rc
+'EXEC GITOBUF FINAL'
+if rc\=0 then exit rc
+say 'M9L TEST 3: bounded apply'
+'EXEC GITBDAPP APPLY'
+if rc\=0 then exit rc
+parse pull n
+if n\=4 then exit 8
+drop o.
+'EXECIO * DISKR GITOUT DATA A 1 (STEM O. FINIS'
+if rc\=0 then exit 8
+out=''
+do i=1 to o.0
+ out=out||strip(o.i)
+end
+say 'DATA' out
+if out\='61626364' then exit 8
+say 'M9L BOUNDED DELTA APPLY TESTS PASSED'
+exit 0
