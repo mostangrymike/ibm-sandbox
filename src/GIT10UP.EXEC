@@ -1,0 +1,78 @@
+/* M10C upload-pack response parser feeding M10B PACK sink. */
+parse upper arg cmd hex extra
+address command
+if cmd='INIT' then do
+ 'ERASE G10CMT DATA A'
+ m.1='META PRE -'; m.0=1
+ 'EXECIO 1 DISKW G10CMT DATA A 1 (STEM M. FINIS'
+ if rc\=0 then exit 8
+ 'EXEC GIT10BF INIT'
+ exit rc
+end
+if cmd='FEED' then do
+ if extra\='' | hex='' | length(hex)//2\=0 then exit 4
+ hex=translate(hex)
+ if verify(hex,'0123456789ABCDEF')\=0 then exit 4
+ call getmeta
+ if result='ERROR' then exit 8
+ work=tail||hex
+ do forever
+  if length(work)<8 then leave
+  n=x2d(x2c(substr(work,1,8)))
+  if n=0 | n=1 | n=2 then do
+   work=substr(work,9)
+   iterate
+  end
+  if n<4 then exit 8
+  need=n*2
+  if length(work)<need then leave
+  pkt=substr(work,1,need)
+  data=substr(pkt,9)
+  if state='PRE' then do
+   txt=x2c(data)
+   if left(txt,4)='NAK'||d2c(10) then nop
+   else if left(data,2)='01' | left(data,2)='02' |,
+      left(data,2)='03' then do
+    state='PACK'
+    'EXEC GIT10BF FEED' pkt
+    if rc\=0 then exit rc
+   end
+   else do
+    say 'GIT10UP: unexpected pre-PACK pkt-line'
+    exit 8
+   end
+  end
+  else do
+   'EXEC GIT10BF FEED' pkt
+   if rc\=0 then exit rc
+  end
+  work=substr(work,need+1)
+ end
+ call putmeta state,work
+ if result='ERROR' then exit 8
+ exit 0
+end
+if cmd='FINAL' then do
+ call getmeta
+ if result='ERROR' then exit 8
+ if tail\='' | state\='PACK' then exit 8
+ 'EXEC GIT10BF FINAL'
+ exit rc
+end
+exit 4
+getmeta:
+ drop m.
+ 'EXECIO 1 DISKR G10CMT DATA A 1 (STEM M. FINIS'
+ if rc\=0 | m.0\=1 then return 'ERROR'
+ parse var m.1 tag state t extra
+ if tag\='META' | extra\='' then return 'ERROR'
+ if t='-' then tail=''
+ else tail=t
+ return 'OK'
+putmeta:
+ parse arg s,t
+ if t='' then t='-'
+ m.1='META' s t; m.0=1
+ 'EXECIO 1 DISKW G10CMT DATA A 1 (STEM M. FINIS'
+ if rc\=0 then return 'ERROR'
+ return 'OK'
