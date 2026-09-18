@@ -1,0 +1,49 @@
+/* M9J true streaming DEFLATE regression. */
+address command
+
+say 'M9J STREAM TEST 1: fixed Huffman DEFLATE'
+z = '4B4C4A0600'
+call run z,'616263'
+if result \= 0 then exit result
+
+say 'M9J STREAM TEST 2: dynamic Huffman DEFLATE'
+z = '1589C11100300C825671358CB5FB6FD0F40507F460E740BD16746164CC76F8EC0C'
+z = z || 'EACEC8CD03'
+want = '616665616262646561616662656162646120676161632062616261616262616161'
+want = want || '6261616663636120666162646420626664'
+call run z,want
+if result \= 0 then exit result
+
+say 'M9J STREAM TEST 3: stored then fixed mixed DEFLATE'
+z = '000300FCFF6162634B4C4A0600'
+call run z,'616263616263'
+if result \= 0 then exit result
+
+say 'M9J TRUE STREAMING DEFLATE TESTS PASSED'
+exit 0
+
+run:
+   parse arg data,want
+   'EXEC GITPBUF INIT'
+   if rc \= 0 then return rc
+   do while data \= ''
+      part = left(data,128)
+      data = substr(data,length(part)+1)
+      'EXEC GITPBUF APPEND' part
+      if rc \= 0 then return rc
+   end
+   'EXEC GITPBUF FINAL'
+   if rc \= 0 then return rc
+   'EXEC GITPSTRM TOOBUF 0'
+   if rc \= 0 then return rc
+   if queued() < 2 then return 8
+   parse pull used
+   parse pull bytes
+   if bytes \= length(want)%2 then return 8
+   'EXEC GITOBUF READSTACK 0' bytes
+   if rc \= 0 then return rc
+   parse pull got
+   say 'DATA' got
+   say 'DEFLATE BYTES' used
+   if got \= want then return 8
+   return 0
