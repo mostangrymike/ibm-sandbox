@@ -1,0 +1,44 @@
+/* M9N bounded object/delta stress regression. */
+address command
+n=4096
+say 'M9N TEST 1: build 4096-byte bounded base'
+'ERASE GITBASE DATA A'
+'ERASE GITBMETA DATA A'
+rec=copies('61',64)
+r.1=rec; r.0=1
+do i=1 to n%64
+ 'EXECIO 1 DISKW GITBASE DATA A 0 (STEM R. FINIS'
+ if rc\=0 then exit 8
+end
+m.1='META' n '- 1'; m.0=1
+'EXECIO 1 DISKW GITBMETA DATA A 1 (STEM M. FINIS'
+if rc\=0 then exit 8
+say 'BASE BYTES' n
+say 'M9N TEST 2: build bounded delta copy 4096 plus insert b'
+/* varints: base 4096=8020, result 4097=8120. */
+/* copy opcode B0 + size bytes 0010 = 4096, then insert 62. */
+delta='80208120B000100162'
+'EXEC GITOBUF INIT'
+if rc\=0 then exit rc
+'EXEC GITOBUF APPEND' delta
+if rc\=0 then exit rc
+'EXEC GITOBUF FINAL'
+if rc\=0 then exit rc
+'EXEC GITBDAPP APPLY'
+if rc\=0 then exit rc
+parse pull outlen
+say 'RESULT BYTES' outlen
+if outlen\=4097 then exit 8
+say 'M9N TEST 3: verify bounded result edges'
+drop o.
+'EXECIO 1 DISKR GITOUT DATA A 1 (STEM O. FINIS'
+if rc\=0 | o.0\=1 then exit 8
+if strip(o.1)\=rec then exit 8
+drop o.
+'EXECIO 1 DISKR GITOUT DATA A 65 (STEM O. FINIS'
+if rc\=0 | o.0\=1 then exit 8
+if strip(o.1)\='62' then exit 8
+say 'FIRST RECORD BYTES 64'
+say 'LAST BYTE 62'
+say 'M9N 4096-BYTE BOUNDED DELTA STRESS TEST PASSED'
+exit 0
