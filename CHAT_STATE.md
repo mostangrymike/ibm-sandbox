@@ -28,7 +28,8 @@ Goal: genuine Git interoperability, eventually smart HTTP with native TLS.
 M1 SHA-1; M2 object encoding; M3 CMS object DB; M4 trees/commits; M5 refs/HEAD;
 M6 protocol/delta through M6N; M7 compression through M7I; M8 complete PACK
 ordinary/OFS/REF through M8C; M9A/M9B bounded storage; M9C bounded pack SHA-1;
-M9D bounded inflater primitive. All completed milestones are target proven.
+M9D bounded inflater primitive; M9E bounded general inflater. All completed
+milestones are target proven.
 
 ## M8 complete PACK summary
 M8A ordinary complete pack passed including trailer SHA and negative tests.
@@ -96,17 +97,37 @@ Target result:
 - next packed object remained at byte offset 27 with header `33`.
 - final `M9D BOUNDED INFLATER TESTS PASSED`.
 
-This is the first bounded-inflater gate. The existing general `GITINFL` remains
-target proven and unchanged; its fixed/dynamic/mixed DEFLATE support still uses
-a complete input hex string and whole output hex string.
+### M9E bounded general inflater — DONE/TARGET PROVEN
+`src/GITPDEF.EXEC` extends bounded GITPBUF DEFLATE consumption to stored, fixed,
+dynamic, and mixed blocks. `src/GITPINFL.EXEC` uses it behind the bounded zlib
+wrapper. `src/M9EINF.EXEC` exercises the existing M7 fixed/dynamic/mixed vectors.
+A REXX variable-scope bug in the first dynamic test was fixed by making the
+bounded `bits` routine a PROCEDURE exposing only `base bitpos` (commit
+`6f86ae8bb3be01c2708493639d5388ea89b7819b`).
+
+Target results:
+- fixed Huffman -> `616263`, `ZLIB BYTES 11`.
+- dynamic Huffman -> expected M7 dynamic payload, `ZLIB BYTES 44`.
+- stored then fixed -> `616263616263`, `ZLIB BYTES 19`.
+- final `M9E BOUNDED GENERAL INFLATER TESTS PASSED`.
+- M7INFL and M7DYN regressions passed, including expected negative cases.
+- M8PACK, M8OFS, and M8REF regressions passed, including expected negatives.
+- M9DINF passed again: `616263`, 14 zlib bytes, next header `33` at offset 27.
+
+The existing general `GITINFL` remains target proven and unchanged. M8 still
+uses its whole-pack/whole-string path; M9E has not yet been integrated into the
+full pack walker. The bounded inflater still accumulates the complete inflated
+object in one REXX hex string.
 
 ## NEXT ACTION
-M9E: extend the isolated bounded GITPBUF inflater path beyond stored DEFLATE so
-it can consume fixed and dynamic Huffman streams incrementally while preserving
-the target-proven M7 inflater semantics. Keep the full M8 pack walker unchanged
-until the bounded inflater supports the general DEFLATE cases and is target
-proven. Add focused regressions using existing M7 fixed/dynamic/mixed vectors,
-then rerun the relevant M7/M8 regressions before integrating the bounded path.
+M9F: integrate the target-proven bounded GITPBUF inflater into an isolated
+bounded ordinary-object PACK walker path. Parse PACK/object headers by logical
+GITPBUF offsets, invoke GITPINFL at the object's zlib offset, advance by its
+reported consumed-byte count, and prove both known M8A ordinary objects can be
+walked without assembling the complete PACK/compressed stream. Keep the existing
+M8 walker unchanged until this new path is target proven. Preserve bounded pack
+SHA verification via GITPSHA. Do not tackle bounded inflated-output/object
+storage yet; that remains a later scalability step.
 
 ## Important implementation facts
 M8 walker/general inflater still accumulate whole hex strings; GITPCTX stores
