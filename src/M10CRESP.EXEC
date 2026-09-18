@@ -1,0 +1,37 @@
+/* M10C upload-pack response framing regression. */
+address command
+pack='5041434B0000000200000002'
+pack=pack||'337801010300FCFF616263024D0127'
+pack=pack||'337801010300FCFF78797A02D7016C'
+pack=pack||'5F1C02695D4BC807AE4A5DD622AD1D28E7659429'
+nak=c2x('0008NAK'||d2c(10))
+p1=substr(pack,1,60)
+p2=substr(pack,61)
+n1=(length(p1)%2)+5
+n2=(length(p2)%2)+5
+q1=c2x(right(d2x(n1),4,'0'))||'01'||p1
+q2=c2x(right(d2x(n2),4,'0'))||'01'||p2
+stream=nak||q1||q2||c2x('0000')
+say 'M10C TEST 1: initialize upload-pack parser'
+'EXEC GIT10UP INIT'
+if rc\=0 then exit rc
+say 'M10C TEST 2: feed NAK, side-band PACK, flush'
+cuts='4 14 22 38 76'
+start=1
+do i=1 to words(cuts)
+ stop=word(cuts,i)
+ 'EXEC GIT10UP FEED' substr(stream,start,stop-start+1)
+ if rc\=0 then exit rc
+ start=stop+1
+end
+'EXEC GIT10UP FEED' substr(stream,start)
+if rc\=0 then exit rc
+'EXEC GIT10UP FINAL'
+if rc\=0 then exit rc
+say 'M10C TEST 3: verify and walk upload-pack PACK'
+'EXEC GITPSHA VERIFY'
+if rc\=0 then exit rc
+'EXEC GITP9PWK WALK'
+if rc\=0 then exit rc
+say 'M10C UPLOAD-PACK RESPONSE TEST PASSED'
+exit 0
