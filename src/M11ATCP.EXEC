@@ -1,37 +1,45 @@
 /* M11A native CMS TCP connect/send/bounded-receive probe. */
-parse upper arg ip port
-if ip='' then ip='93.184.216.34'
+parse upper arg host port
+if host='' then host='EXAMPLE.COM'
 if port='' then port=80
 say 'M11A TEST 1: initialize REXX/SOCKETS'
 r=Socket('Initialize','M11ATCP')
 say r
 parse var r rc rest
 if rc\=0 then exit 8
-say 'M11A TEST 2: create TCP socket'
+say 'M11A TEST 2: resolve IPv4 host' host
+r=Socket('GetHostByName',host)
+say r
+parse var r rc addrs
+if rc\=0 then call fail
+ip=word(addrs,1)
+if ip='' then call fail
+say 'IPV4 ADDRESS' ip
+say 'M11A TEST 3: create TCP socket'
 r=Socket('Socket')
 say r
 parse var r rc s
 if rc\=0 then call fail
-say 'M11A TEST 3: enable ASCII translation'
+say 'M11A TEST 4: enable ASCII translation'
 r=Socket('SetSockOpt',s,'SOL_SOCKET','SO_ASCII','ON')
 say r
 parse var r rc rest
 if rc\=0 then call closefail
-say 'M11A TEST 4: connect' ip port
+say 'M11A TEST 5: connect' ip port
 r=Socket('Connect',s,'AF_INET' port ip)
 say r
 parse var r rc rest
 if rc\=0 then call closefail
 req='GET / HTTP/1.0'||d2c(13)||d2c(10)
-req=req||'Host: example.com'||d2c(13)||d2c(10)
+req=req||'Host: '||host||d2c(13)||d2c(10)
 req=req||'Connection: close'||d2c(13)||d2c(10)||d2c(13)||d2c(10)
-say 'M11A TEST 5: send HTTP request'
+say 'M11A TEST 6: send HTTP request'
 r=Socket('Send',s,req)
 say r
 parse var r rc sent
 if rc\=0 then call closefail
 if sent\=length(req) then call closefail
-say 'M11A TEST 6: bounded receive'
+say 'M11A TEST 7: bounded receive'
 total=0
 do forever
  r=Socket('Recv',s,256)
