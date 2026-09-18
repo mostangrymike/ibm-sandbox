@@ -1,0 +1,29 @@
+/* M11C bounded HTTP parser fragmentation tests. */
+address command
+say 'M11C TEST 1: initialize HTTP parser'
+'EXEC GIT11HTTP INIT'
+if rc\=0 then exit rc
+say 'M11C TEST 2: split header terminator across feeds'
+'EXEC GIT11HTTP FEED 485454502F312E3120323030204F4B0D'
+if rc\=0 then exit rc
+'EXEC GIT11HTTP FEED 0A582D546573743A20310D0A0D'
+if rc\=0 then exit rc
+'EXEC GIT11HTTP FEED 0A00010203FF5041434B'
+if rc\=0 then exit rc
+'EXEC GIT11HTTP FINAL'
+if rc\=0 then exit rc
+say 'M11C TEST 3: verify exact raw body bytes'
+drop b.
+'EXECIO * DISKR M11BODY DATA A 1 (STEM B. FINIS'
+if rc\=0 then exit 8
+got=''
+do i=1 to b.0
+ got=got||b.i
+end
+if got\='00010203FF5041434B' then do
+ say 'M11C: body mismatch' got
+ exit 8
+end
+say 'BODY' got
+say 'M11C BOUNDED HTTP RESPONSE PARSER TESTS PASSED'
+exit 0
