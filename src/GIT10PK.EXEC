@@ -1,0 +1,52 @@
+/* M10A incremental Git side-band PACK feeder. */
+parse upper arg cmd hex extra
+address command
+if cmd='INIT' then do
+ if hex\='' then exit 4
+ 'EXEC GITPBUF INIT'
+ exit rc
+end
+if cmd='FEED' then do
+ if extra\='' | hex='' | length(hex)//2\=0 then exit 4
+ hex=translate(hex)
+ if verify(hex,'0123456789ABCDEF')\=0 then exit 4
+ do while hex\=''
+  if length(hex)<8 then exit 8
+  n=x2d(substr(hex,1,4))
+  if n=0 then do
+   hex=substr(hex,9)
+   iterate
+  end
+  if n<5 then exit 8
+  bytes=n-4
+  need=n*2
+  if length(hex)<need then exit 8
+  data=substr(hex,9,bytes*2)
+  band=substr(data,1,2)
+  if band='01' then do
+   p=substr(data,3)
+   do while p\=''
+    take=length(p)%2
+    if take>64 then take=64
+    h=substr(p,1,take*2)
+    'EXEC GITPBUF APPEND' h
+    if rc\=0 then exit rc
+    p=substr(p,take*2+1)
+   end
+  end
+  else if band='02' then nop
+  else if band='03' then do
+   say 'GIT10PK: remote fatal side-band'
+   exit 8
+  end
+  else exit 8
+  hex=substr(hex,need+1)
+ end
+ exit 0
+end
+if cmd='FINAL' then do
+ if hex\='' then exit 4
+ 'EXEC GITPBUF FINAL'
+ exit rc
+end
+exit 4
