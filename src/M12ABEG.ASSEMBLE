@@ -11,9 +11,11 @@ M12ABEG  CSECT
          LTR   15,15
          BNZ   HNDERR
 *
-* AUTHORIZE VMCF with a 40-byte external interrupt buffer.
+* AUTHORIZE SPECIFIC to TCPIP with a 40-byte interrupt buffer.
 *
          XC    VMCFPL(40),VMCFPL
+         MVI   VMCFPL,X'80'
+         MVC   VMCFPL+8(8),=CL8'TCPIP'
          LA    2,VMCFBUF
          ST    2,VMCFPL+16
          LA    2,40
