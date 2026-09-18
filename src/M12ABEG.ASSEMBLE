@@ -71,6 +71,30 @@ POLL     CLC   VMCFECB(4),=F'0'
          C     5,=F'5'
          BL    POLL
 TIMEOUT  WRTERM MTIME,L'MTIME
+*
+* Ask VMCF whether SEND message 2 is still pending.  CANCEL is a
+* diagnostic here: RC0=pending/cancelled, RC12=not found, RC14=too late.
+*
+         XC    VMCFPL(40),VMCFPL
+         MVC   VMCFPL+2(2),=X'0006'
+         MVC   VMCFPL+4(4),=X'00000002'
+         MVC   VMCFPL+8(8),=CL8'TCPIP'
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         ST    2,DIAGRC
+         LTR   2,2
+         BZ    CANOK
+         C     2,=F'12'
+         BE    CANNF
+         C     2,=F'14'
+         BE    CANTL
+         WRTERM ECANX,L'ECANX
+         B     FAIL
+CANOK    WRTERM MCAN0,L'MCAN0
+         B     FAIL
+CANNF    WRTERM MCAN12,L'MCAN12
+         B     FAIL
+CANTL    WRTERM MCAN14,L'MCAN14
          B     FAIL
 ECBPOST  WRTERM MECBP,L'MECBP
          B     GOTRESP
@@ -132,6 +156,10 @@ MBEGS    DC    C'M12A BEGIN SENT RC0'
 MECBP    DC    C'M12A ECB POSTED'
 MBUFC    DC    C'M12A VMCF BUFFER CHANGED'
 MTIME    DC    C'M12A POLL TIMEOUT'
+MCAN0    DC    C'M12A CANCEL RC0 PENDING'
+MCAN12   DC    C'M12A CANCEL RC12 NOT FOUND'
+MCAN14   DC    C'M12A CANCEL RC14 TOO LATE'
+ECANX    DC    C'M12A CANCEL OTHER RC'
 MBEGR    DC    C'M12A BEGIN RESPONSE'
 MPASS    DC    C'M12A BEGIN OK'
 EHND     DC    C'M12A ERROR HNDEXT'
