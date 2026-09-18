@@ -12,7 +12,9 @@ if cmd='FEED' then do
  if verify(hex,'0123456789ABCDEF')\=0 then exit 4
  do while hex\=''
   if length(hex)<8 then exit 8
-  n=x2d(x2c(substr(hex,1,8)))
+  call pktlen substr(hex,1,8)
+  if result='ERROR' then exit 8
+  n=result
   if n=0 then do
    hex=substr(hex,9)
    iterate
@@ -50,3 +52,16 @@ if cmd='FINAL' then do
  exit rc
 end
 exit 4
+
+pktlen: procedure
+ parse arg h
+ n=0
+ do i=1 to 4
+  b=x2d(substr(h,i*2-1,2))
+  if b>=48 & b<=57 then v=b-48
+  else if b>=65 & b<=70 then v=b-55
+  else if b>=97 & b<=102 then v=b-87
+  else return 'ERROR'
+  n=n*16+v
+ end
+ return n
