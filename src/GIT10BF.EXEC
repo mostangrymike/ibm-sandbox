@@ -1,11 +1,10 @@
-/* M10B arbitrary-boundary incremental pkt-line feeder. */
+/* M10 bounded side-band pkt-line state machine. */
 parse upper arg cmd hex extra
 address command
 if cmd='INIT' then do
  'ERASE G10META DATA A'
- m.1='META -'; m.0=1
- 'EXECIO 1 DISKW G10META DATA A 1 (STEM M. FINIS'
- if rc\=0 then exit 8
+ call putmeta 'HDR','-',0,'-'
+ if result='ERROR' then exit 8
  'EXEC GITPBUF INIT'
  exit rc
 end
@@ -15,44 +14,75 @@ if cmd='FEED' then do
  if verify(hex,'0123456789ABCDEF')\=0 then exit 4
  call getmeta
  if result='ERROR' then exit 8
- work=tail||hex
- do forever
-  if length(work)<8 then leave
-  call pktlen substr(work,1,8)
-  if result='ERROR' then exit 8
-  n=result
-  if n=0 then do
-   work=substr(work,9)
-   iterate
+ work=hex
+ do while work\=''
+  if phase='HDR' then do
+   need=8-length(hdr)
+   take=length(work)
+   if take>need then take=need
+   hdr=hdr||left(work,take)
+   work=substr(work,take+1)
+   if length(hdr)<8 then iterate
+   call pktlen hdr
+   if result='ERROR' then exit 8
+   n=result
+   hdr=''
+   if n=0 | n=1 | n=2 then iterate
+   if n<5 then exit 8
+   remain=n-4
+   phase='BAND'
   end
-  if n<5 then exit 8
-  need=n*2
-  if length(work)<need then leave
-  data=substr(work,9,(n-4)*2)
-  band=substr(data,1,2)
-  if band='01' then do
-   p=substr(data,3)
-   do while p\=''
-    take=length(p)%2
-    if take>64 then take=64
-    'EXEC GITPBUF APPEND' substr(p,1,take*2)
+  else if phase='BAND' then do
+   if length(work)<2 then do
+    hdr=work
+    phase='BAND1'
+    work=''
+    iterate
+   end
+   band=left(work,2)
+   work=substr(work,3)
+   remain=remain-1
+   if band\='01' & band\='02' & band\='03' then exit 8
+   if band='03' then exit 8
+   if remain=0 then phase='HDR'
+   else phase='PAY'
+  end
+  else if phase='BAND1' then do
+   if work='' then iterate
+   band=hdr||left(work,1)
+   hdr=''
+   work=substr(work,2)
+   remain=remain-1
+   if band\='01' & band\='02' & band\='03' then exit 8
+   if band='03' then exit 8
+   if remain=0 then phase='HDR'
+   else phase='PAY'
+  end
+  else if phase='PAY' then do
+   bytes=length(work)%2
+   take=bytes
+   if take>remain then take=remain
+   if take>64 then take=64
+   if band='01' & take>0 then do
+    'EXEC GITPBUF APPEND' left(work,take*2)
     if rc\=0 then exit rc
-    p=substr(p,take*2+1)
+   end
+   work=substr(work,take*2+1)
+   remain=remain-take
+   if remain=0 then do
+    phase='HDR'; band='-'
    end
   end
-  else if band='02' then nop
-  else if band='03' then exit 8
   else exit 8
-  work=substr(work,need+1)
  end
- call putmeta work
+ call putmeta phase,hdr,remain,band
  if result='ERROR' then exit 8
  exit 0
 end
 if cmd='FINAL' then do
  call getmeta
  if result='ERROR' then exit 8
- if tail\='' then do
+ if phase\='HDR' | hdr\='' then do
   say 'GIT10BF: incomplete pkt-line at FINAL'
   exit 8
  end
@@ -64,19 +94,18 @@ getmeta:
  drop m.
  'EXECIO 1 DISKR G10META DATA A 1 (STEM M. FINIS'
  if rc\=0 | m.0\=1 then return 'ERROR'
- parse var m.1 tag t extra
+ parse var m.1 tag phase h remain band extra
  if tag\='META' | extra\='' then return 'ERROR'
- if t='-' then tail=''
- else tail=t
+ if h='-' then hdr=''
+ else hdr=h
  return 'OK'
 putmeta:
- parse arg t
- if t='' then t='-'
- m.1='META' t; m.0=1
+ parse arg p,h,r,b
+ if h='' then h='-'
+ m.1='META' p h r b; m.0=1
  'EXECIO 1 DISKW G10META DATA A 1 (STEM M. FINIS'
  if rc\=0 then return 'ERROR'
  return 'OK'
-
 pktlen: procedure
  parse arg h
  n=0
