@@ -63,14 +63,9 @@ POLL     CLC   VMCFECB(4),=F'0'
          CLC   VMCFBUF(40),ZERO40
          BNE   BUFCHG
          STCK  NOWTOD
-         L     4,NOWTOD+4
-         SL    4,STARTTOD+4
          L     5,NOWTOD
-         SLB   5,STARTTOD
-         C     5,=F'4'
-         BH    TIMEOUT
-         BL    POLL
-         CL    4,=X'C4B40000'
+         S     5,STARTTOD
+         C     5,=F'5'
          BL    POLL
 TIMEOUT  WRTERM MTIME,L'MTIME
          B     FAIL
