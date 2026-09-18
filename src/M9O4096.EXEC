@@ -29,8 +29,9 @@ say 'M9O TEST 3: bounded Git OID'
 if rc\=0 then exit rc
 parse pull oid
 say 'OBJECT OID' oid
-if oid\='8F7F4D8A6B4F6A7C0D8E0C61A5B5C0F3F4E9D2A1' then do
- say 'M9O: record this independently verified OID before locking gate'
+if oid\='9D235ED07CD19811A6CEB342DE82F190E49C9F68' then do
+ say 'M9O: Git blob OID mismatch'
+ exit 8
 end
-say 'M9O 4096-BYTE STREAMING PERFORMANCE TEST COMPLETED'
+say 'M9O 4096-BYTE STREAMING PERFORMANCE TEST PASSED'
 exit 0
