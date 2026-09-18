@@ -282,9 +282,12 @@ Target gates after the final GITSTRM build:
   and PACK SHA1 00C20177E759DC5FFD06EA42D0A1D1E1A9F53E7B.
 
 The known pre-M11 unbounded whole-object REXX stem and context-position
-collision blockers are therefore closed. Before declaring transport
-boundedness stress-proven, add a dedicated large pkt-line fragmentation stress
-gate; existing M10B/C/D prove semantics and real-wire compatibility.
+collision blockers are therefore closed. M10E then stress-proved transport
+boundedness with a maximum normal pkt-line (ffff, 65535 total bytes): a
+channel-2 payload of 65530 bytes was delivered in 31-byte fragments through
+GIT10BF without retaining the pkt-line payload. M10ESTRS passed on target on
+2026-09-18 in T=7.55/9.05. M10B/C/D continue to prove semantics and real-wire
+compatibility.
 
 ## Persistence / restart point
 GitHub main is canonical. M10D is target proven independently of emulator state.
@@ -301,5 +304,5 @@ collide above position 99999. Also replace large incomplete pkt-line buffering
 with bounded streaming state before real side-band-64k traffic.
 
 ## NEXT ACTION
-Add a dedicated large pkt-line bounded-fragmentation stress gate, then begin
-M11 native CMS networking/HTTP. M12 remains native z/VM SSL/GSK TLS.
+M10 transport framing and boundedness are closed/target proven. Begin M11
+native CMS networking/HTTP. M12 remains native z/VM SSL/GSK TLS.
