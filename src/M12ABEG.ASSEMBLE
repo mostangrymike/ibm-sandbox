@@ -73,7 +73,7 @@ POLL     CLC   VMCFECB(4),=F'0'
 TIMEOUT  WRTERM MTIME,L'MTIME
 *
 * Ask VMCF whether SEND message 2 is still pending.  CANCEL is a
-* diagnostic here: RC0=pending/cancelled, RC12=not found, RC14=too late.
+* RC0=pending/cancelled, RC12=not found, RC14=too late.
 *
          XC    VMCFPL(40),VMCFPL
          MVC   VMCFPL+2(2),=X'0006'
