@@ -164,8 +164,9 @@ huffblock:
       end
    end
 
-bits:
+bits: procedure expose base bitpos
    parse arg count
+   address command
    value = 0
    do i = 0 to count - 1
       byteix = bitpos % 8
