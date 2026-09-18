@@ -10,6 +10,7 @@ drop m.
 if rc \= 0 | m.0 \= 1 then exit 8
 parse var m.1 tag dsize tail final junk
 if tag \= 'META' | junk \= '' | final \= 1 then exit 8
+if tail = '-' then tail = ''
 dpos=0
 call dvar
 if result='ERROR' then exit 8
