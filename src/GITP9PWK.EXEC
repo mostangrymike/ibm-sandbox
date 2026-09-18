@@ -25,21 +25,24 @@ do entry=1 to objects
   size=size+(b//128)*(2**shift)
   shift=shift+7; more=b>=128
  end
- if type=3 then do
+ if type>=1 & type<=4 then do
+  if type=1 then otype='COMMIT'
+  else if type=2 then otype='TREE'
+  else if type=3 then otype='BLOB'
+  else otype='TAG'
   'EXEC GITPZBUF TOOBUF' pos
   if rc\=0 then exit rc
   parse pull used
   parse pull outlen
   if outlen\=size then exit 8
-  'EXEC GITBOID BLOB' outlen
+  'EXEC GITBOID' otype outlen
   if rc\=0 then exit rc
   parse pull oid
-  'EXEC GIT9CTX SAVE' entrypos oid outlen
+  'EXEC GIT9CTX SAVE' entrypos oid outlen otype
   if rc\=0 then exit rc
-  say 'ENTRY' entry 'POSITION' entrypos 'TYPE BLOB SIZE' size
+  say 'ENTRY' entry 'POSITION' entrypos 'TYPE' otype 'SIZE' size
   say 'OBJECT OID' oid
-  'EXEC GIT9CTX SAVE' entrypos oid outlen
-  if rc\=0 then exit rc
+  /* SAVE once; context includes the resolved object type. */
   pos=pos+used
  end
  else if type=7 then do
@@ -55,6 +58,7 @@ do entry=1 to objects
   parse pull basepos
   parse pull baseoid
   parse pull basesize
+  parse pull otype
   'EXEC GITPZBUF TOOBUF' pos
   if rc\=0 then exit rc
   parse pull used
@@ -65,14 +69,14 @@ do entry=1 to objects
   parse pull outlen
   call installout outlen
   if result\='OK' then exit 8
-  'EXEC GITBOID BLOB' outlen
+  'EXEC GITBOID' otype outlen
   if rc\=0 then exit rc
   parse pull oid
   say 'ENTRY' entry 'POSITION' entrypos 'TYPE REF SIZE' size
   say 'BASE OID' wantoid
   say 'OBJECT BYTES' outlen
   say 'OBJECT OID' oid
-  'EXEC GIT9CTX SAVE' entrypos oid outlen
+  'EXEC GIT9CTX SAVE' entrypos oid outlen otype
   if rc\=0 then exit rc
   pos=pos+used
  end
@@ -96,6 +100,7 @@ do entry=1 to objects
   parse pull basepos
   parse pull baseoid
   parse pull basesize
+  parse pull otype
   'EXEC GITPZBUF TOOBUF' pos
   if rc\=0 then exit rc
   parse pull used
@@ -110,14 +115,14 @@ do entry=1 to objects
   parse pull outlen
   call installout outlen
   if result\='OK' then exit 8
-  'EXEC GITBOID BLOB' outlen
+  'EXEC GITBOID' otype outlen
   if rc\=0 then exit rc
   parse pull oid
   say 'ENTRY' entry 'POSITION' entrypos 'TYPE OFS SIZE' size
   say 'BASE POSITION' want
   say 'OBJECT BYTES' outlen
   say 'OBJECT OID' oid
-  'EXEC GIT9CTX SAVE' entrypos oid outlen
+  'EXEC GIT9CTX SAVE' entrypos oid outlen otype
   if rc\=0 then exit rc
   pos=pos+used
  end
