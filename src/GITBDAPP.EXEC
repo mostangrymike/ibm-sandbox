@@ -5,9 +5,24 @@ if command \= 'APPLY' | extra \= '' then do
  exit 4
 end
 address command
+drop m.
+'EXECIO 1 DISKR GITOMETA DATA A 1 (STEM M. FINIS'
+if rc \= 0 | m.0 \= 1 then exit 8
+parse var m.1 tag dsize tail final junk
+if tag \= 'META' | junk \= '' | final \= 1 then exit 8
+dpos=0
 call dvar
 if result='ERROR' then exit 8
 basesz=result
+drop m.
+'EXECIO 1 DISKR GITBMETA DATA A 1 (STEM M. FINIS'
+if rc \= 0 | m.0 \= 1 then exit 8
+parse var m.1 tag actual tail final junk
+if tag \= 'META' | junk \= '' | final \= 1 then exit 8
+if basesz \= actual then do
+ say 'GITBDAPP: base size mismatch'
+ exit 8
+end
 call dvar
 if result='ERROR' then exit 8
 resultsz=result
