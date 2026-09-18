@@ -136,18 +136,22 @@ Target result:
 - offset 42 contained the exact 20-byte PACK trailer.
 - final `M9F BOUNDED ORDINARY PACK WALKER TESTS PASSED`.
 
-## NEXT ACTION
-M9G: extend the isolated bounded PACK walker to OFS_DELTA while preserving the
-target-proven M8 walker. Parse the OFS base distance by bounded GITPBUF offsets,
-inflate the delta instruction stream through GITPINFL, resolve the already-seen
-base object in the isolated bounded walker context, and reconstruct the M8B
-`abc` -> `abcd` case. Keep REF_DELTA and bounded inflated-output/object storage
-for later gates.
+### M9G bounded OFS_DELTA walker — DONE/TARGET PROVEN
+`src/GITPBWLK.EXEC` now parses OFS_DELTA base distances by bounded GITPBUF
+offsets, resolves an already reconstructed base by PACK position, inflates the
+delta representation through GITPINFL, and applies it with target-proven
+GITDAPP. The existing M8 walker remains unchanged.
 
-## Important implementation facts
-M8 walker/general inflater still accumulate whole hex strings; GITPCTX stores
-whole object datahex in one record. Git hash input exact ASCII `type + space +
-decimal size + NUL + binary content`. CMS text strips trailing EBCDIC padding
-blanks, preserves leading blanks, joins records with ASCII LF, no final LF.
-Arbitrary bytes require binary-safe mode. Native GSK/Dynamic SSL exists; use
-documented native TLS later rather than implementing TLS ourselves.
+Target result:
+- bounded PACK SHA-1 accepted `8CA36BC28C5A2FDDD0EB9762CA36049A32D114B6`.
+- base entry at offset 12 reconstructed `616263` (abc).
+- OFS_DELTA entry at offset 24 reconstructed `61626364` (abcd).
+- PACK data ended at offset 40.
+- final `M9G BOUNDED OFS_DELTA WALKER TESTS PASSED`.
+
+## NEXT ACTION
+M9H: extend the isolated bounded PACK walker to REF_DELTA. Read the 20-byte base
+object ID through bounded GITPBUF offsets, resolve it against OIDs for already
+reconstructed objects, inflate and apply the delta using the existing proven
+cores, and reproduce the M8C abc -> abcd REF_DELTA case. Keep the existing M8
+walker unchanged and defer bounded inflated-output/object storage.
