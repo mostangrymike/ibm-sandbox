@@ -1,9 +1,12 @@
+         VMASMCPU
 M12ABEG  CSECT
          USING M12ABEG,12
          LR    12,15
          ST    14,RETADDR
-         VCPUSELECT CPURC,CPURS,BASEONLY
-         LTR   15,15
+         L     15,=A(VCPUSELECT)
+         CALL  (15),(CPURC,CPURS,BASEONLY),VL
+         L     2,CPURC
+         LTR   2,2
          BNZ   CPUERR
          WRTERM MCPU,L'MCPU
          WRTERM MSTART,L'MSTART
