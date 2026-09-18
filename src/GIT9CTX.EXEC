@@ -1,0 +1,58 @@
+/* M9P bounded object context store. */
+parse upper arg cmd key oid n extra
+address command
+if cmd='INIT' then do
+ 'ERASE G9CIDX DATA A'
+ exit 0
+end
+if cmd='SAVE' then do
+ if extra\='' | datatype(key,'W')\=1 | datatype(n,'W')\=1 then exit 4
+ fn='G9C'||right(key,5,'0')
+ 'ERASE' fn 'DATA A'
+ off=0
+ do while off<n
+  take=n-off
+  if take>64 then take=64
+  'EXEC GITOBUF READSTACK' off take
+  if rc\=0 then exit 8
+  parse pull h
+  r.1=h; r.0=1
+  'EXECIO 1 DISKW' fn 'DATA A 0 (STEM R. FINIS'
+  if rc\=0 then exit 8
+  off=off+take
+ end
+ r.1=key oid n fn; r.0=1
+ 'EXECIO 1 DISKW G9CIDX DATA A 0 (STEM R. FINIS'
+ exit rc
+end
+if cmd='LOADPOS' | cmd='LOADOID' then do
+ drop r.
+ 'EXECIO * DISKR G9CIDX DATA A 1 (STEM R. FINIS'
+ if rc\=0 then exit 8
+ found=0
+ do i=1 to r.0
+  parse var r.i p o sz fn
+  if (cmd='LOADPOS' & p=key) | (cmd='LOADOID' & o=key) then do
+   found=1; leave
+  end
+ end
+ if \found then exit 8
+ 'ERASE GITBASE DATA A'
+ rec=1
+ do while 1
+  drop q.
+  'EXECIO 1 DISKR' fn 'DATA A' rec '(STEM Q. FINIS'
+  if rc\=0 | q.0=0 then leave
+  'EXECIO 1 DISKW GITBASE DATA A 0 (STEM Q. FINIS'
+  if rc\=0 then exit 8
+  rec=rec+1
+ end
+ m.1='META' sz '- 1'; m.0=1
+ 'EXECIO 1 DISKW GITBMETA DATA A 1 (STEM M. FINIS'
+ if rc\=0 then exit 8
+ queue p
+ queue o
+ queue sz
+ exit 0
+end
+exit 4
