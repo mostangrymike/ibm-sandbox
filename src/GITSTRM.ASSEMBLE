@@ -379,7 +379,7 @@ K1       DC    X'6ED9EBA1'
 K2       DC    X'8F1BBCDC'
 K3       DC    X'CA62C1D6'
 HASHFILE FSCB  'GITHASH DATA A',BUFFER=INBUF,BSIZE=128,          X
-               RECFM=V,FORM=E
+               RECFM=V
 FILEMODE DS    C
 RETADDR  DS    F
 HEXRET   DS    F
