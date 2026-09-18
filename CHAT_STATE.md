@@ -332,8 +332,48 @@ PACK SHA1 00C20177E759DC5FFD06EA42D0A1D1E1A9F53E7B, COMMIT OID
 747ABC3C651FC0DD12A37E5B5C47E0D02CD0DC4E, BLOB OID
 F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F, and PACK data end 180.
 
+
+## M12 SSL/TLS rediscovery guard — 2026-09-18
+Do not repeat the early-project SSL configuration investigation. Prior work
+already established these facts for the z/VM 6.3 target:
+
+- z/VM 6.3 SSL/System SSL support on this installation is the native TLS path;
+  TLS 1.2 was established as the relevant/highest target SSL-server protocol.
+- Dynamic SSL/TLS is the intended application architecture. Ordinary native
+  sockets handle TCP; a native Dynamic SSL adapter handles TLS. Do not attempt
+  to make REXX/SOCKETS itself implement TLS, and do not add a Pi/Mac proxy,
+  BFS/OpenExtensions dependency, or custom TLS implementation.
+- Earlier inspection found Dynamic SSL material including TCPSSL PASCAL and
+  routines such as SkSslAcc and SkSslBnd. TCSSLSRV in ALLMACRO was also found,
+  but it is an internal SSL-server DSECT and is not the application API.
+- The normal socket headers did not expose SSL extensions.
+- SYSTEM DTCPARMS belongs on TCPIP 198, not TCPMAINT 198. Do not search
+  TCPMAINT 198 for that configuration again.
+- Current post-reboot inspection confirms TCPMAINT 592 (accessed as T) contains
+  GSKCMS31, GSKC31, GSKC31F, GSKSSL, GSKSUS31, GSKS31, and GSKS31F modules.
+- TCPMAINT 591 (accessed as U) contains GSKSSLDB LOADBFS, SSLADMIN EXEC,
+  SSLIDCSS EXEC, SSLPOOL EXEC, SSLSERV LOADBFS/MODULE, VMSSL EXEC,
+  GSKKYMAN EXEC/MODULE, GSKMSGA/GSKMSGS catalogs, and GSKTRACE EXEC/MODULE.
+- No matching SSL/GSK MACLIB or COPY files were found on TCPMAINT 591/592.
+- Q SSL00001 and Q SSLDCSSM returned HCPCQU045E not logged on. This proves
+  only that those users were not logged on; it does not prove they are absent
+  from the directory or that SSL requires reconfiguration.
+
+M12 must resume from the programming-interface question, not SSLPOOL setup:
+recover and verify the exact IBM z/VM 6.3 Dynamic SSL application API from IBM
+documentation/source material, especially the TCPSSL PASCAL interface and the
+assembler-callable contract for an outbound TLS client. IBM documentation is
+the first source of truth; observed target behavior is second. Do not guess API
+entry points or configuration commands.
+
+The desired M12 adapter must preserve the raw bounded-byte interface already
+proven above GIT11HTP: establish outbound native TLS, perform certificate and
+hostname/SNI handling as supported/required by the documented target API, and
+deliver bounded binary-safe decrypted HTTP bytes to the existing M11/M10 path.
+
 ## NEXT ACTION
-M11A-D are target proven. Begin M12 native z/VM SSL/GSK TLS, using IBM
-documentation as first source of truth and preserving the same raw bounded byte
-stream interface above GIT11HTP. No Pi proxy, Mac helper, BFS/OpenExtensions, or
-custom TLS runtime dependency.
+M11A-D are target proven. Resume M12 at the IBM Dynamic SSL programming
+interface, not SSLPOOL/configuration rediscovery. Recover the exact z/VM 6.3
+TCPSSL PASCAL / assembler-callable outbound-client contract from IBM docs and
+installed source material, then design the smallest native TLS probe while
+preserving the raw bounded-byte interface above GIT11HTP.
