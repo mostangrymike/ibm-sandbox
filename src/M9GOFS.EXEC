@@ -1,0 +1,31 @@
+/* M9G bounded OFS_DELTA PACK walker regression. */
+address command
+p1 = '5041434B000000020000000233789C4B'
+p2 = '4C4A0600024D0127660C789C636699C0'
+p3 = 'CC98020002DB01008CA36BC28C5A2FDD'
+p4 = 'D0EB9762CA36049A32D114B6'
+
+say 'M9G TEST 1: build known M8B OFS_DELTA pack'
+'EXEC GITPBUF INIT'
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p1
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p2
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p3
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p4
+if rc \= 0 then exit rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then exit rc
+
+say 'M9G TEST 2: verify bounded PACK SHA-1'
+'EXEC GITPSHA VERIFY'
+if rc \= 0 then exit rc
+
+say 'M9G TEST 3: reconstruct OFS_DELTA abc to abcd'
+'EXEC GITPBWLK WALK'
+if rc \= 0 then exit rc
+
+say 'M9G BOUNDED OFS_DELTA WALKER TESTS PASSED'
+exit 0
