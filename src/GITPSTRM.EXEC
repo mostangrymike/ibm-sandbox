@@ -10,6 +10,11 @@ outlen = 0
 cacheoff = -1
 cachedata = ''
 outpend = ''
+drop pm.
+'EXECIO 1 DISKR GITPMETA PACK A 1 (STEM PM. FINIS'
+if rc \= 0 | pm.0 \= 1 then exit 8
+parse var pm.1 ptag packsize ptail pfinal pextra
+if ptag \= 'META' | datatype(packsize,'W') \= 1 then exit 8
 'EXEC GITOBUF INIT'
 if rc \= 0 then exit rc
 do forever
@@ -187,12 +192,7 @@ bits: procedure expose base bitpos
       abspos = base + byteix
       block = (abspos % 64) * 64
       if block \= cacheoff then do
-         drop pm.
-         'EXECIO 1 DISKR GITPMETA PACK A 1 (STEM PM. FINIS'
-         if rc \= 0 | pm.0 \= 1 then return 'ERROR'
-         parse var pm.1 ptag psize ptail pfinal pextra
-         if ptag \= 'META' | datatype(psize,'W') \= 1 then return 'ERROR'
-         want = psize - block
+         want = packsize - block
          if want > 64 then want = 64
          if want < 1 then return 'ERROR'
          'EXEC GITPBUF READSTACK' block want
