@@ -39,6 +39,7 @@ if cmd='FEED' then do
     phase='PASS'
    end
    else do
+    prehdr=hdr
     hdr=''
     pre=''
     phase='PREPAY'
@@ -67,7 +68,7 @@ if cmd='FEED' then do
    remain=remain-take
    if length(pre)>=2 & left(pre,2)='01' then do
     state='PACK'
-    call passpre pre,remain
+    call passpre prehdr,pre
     if result='ERROR' then exit 8
     pre=''
     if remain=0 then phase='HDR'
@@ -76,7 +77,7 @@ if cmd='FEED' then do
    else if length(pre)>=2 &,
       (left(pre,2)='02' | left(pre,2)='03') then do
     state='PACK'
-    call passpre pre,remain
+    call passpre prehdr,pre
     if result='ERROR' then exit 8
     pre=''
     if remain=0 then phase='HDR'
@@ -93,6 +94,7 @@ if cmd='FEED' then do
   end
   else exit 8
  end
+ if phase='PREPAY' then hdr=prehdr
  call putmeta state,phase,hdr,remain,pre
  if result='ERROR' then exit 8
  exit 0
@@ -106,10 +108,7 @@ if cmd='FINAL' then do
 end
 exit 4
 passpre:
- parse arg p,r
- total=(length(p)%2)+r+4
- call ascii4 total
- h=result
+ parse arg h,p
  'EXEC GIT10BF FEED' h||p
  if rc\=0 then return 'ERROR'
  return 'OK'
@@ -121,6 +120,10 @@ getmeta:
  if tag\='META' | extra\='' then return 'ERROR'
  if h='-' then hdr=''
  else hdr=h
+ if phase='PREPAY' then do
+  prehdr=hdr
+  hdr=''
+ end
  if p='-' then pre=''
  else pre=p
  return 'OK'
