@@ -1,0 +1,62 @@
+/* M9K bounded blob OID: spool bounded bytes, then feed GITSTRM. */
+parse arg command size extra
+if translate(command) \= 'BLOB' | extra \= '' | datatype(size,'W') \= 1 then do
+   say 'Usage: GITBOID BLOB size'
+   exit 4
+end
+address command
+dec=size
+digits=''
+if dec=0 then digits='30'
+else do while dec>0
+ d=dec//10
+ digits=d2x(48+d,2)||digits
+ dec=dec%10
+end
+head='626C6F6220'||digits||'00'
+total=length(head)%2+size
+data=head
+pos=0
+'ERASE GITHASH DATA A'
+do while pos<size
+ count=size-pos
+ if count>64 then count=64
+ 'EXEC GITOBUF READSTACK' pos count
+ if rc\=0 | queued()<1 then exit 8
+ parse pull chunk
+ data=data||chunk
+ do while length(data)>=128
+  r.1=left(data,128); r.0=1
+  'EXECIO 1 DISKW GITHASH DATA A 0 (STEM R. FINIS'
+  if rc\=0 then exit 8
+  data=substr(data,129)
+ end
+ pos=pos+count
+end
+if data\='' then do
+ r.1=data; r.0=1
+ 'EXECIO 1 DISKW GITHASH DATA A 0 (STEM R. FINIS'
+ if rc\=0 then exit 8
+end
+'MAKEBUF'
+queue right(d2x(total),8,'0')
+drop r.
+'EXECIO * DISKR GITHASH DATA A 1 (STEM R. FINIS'
+if rc\=0 then do
+ 'DROPBUF'
+ exit 8
+end
+do i=1 to r.0
+ queue strip(r.i)
+end
+'GITSTRM'
+save=rc
+if save\=0 then do
+ 'DROPBUF'
+ exit save
+end
+parse pull digest
+'DROPBUF'
+'ERASE GITHASH DATA A'
+queue translate(digest)
+exit 0
