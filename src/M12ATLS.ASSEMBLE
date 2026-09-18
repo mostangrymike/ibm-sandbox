@@ -8,7 +8,7 @@ M12ATLS  CSECT
 *   VMCF AUTHORIZE, BEGINtcpIPservice, TLSQuery CALLCODE 128.
 * Blank TLS label asks whether the SSL server is available.
 *
-         HNDEXT SET,VMCFHND,CODE=X'4001',ECB=(VMCFECB,OS),ERROR=HNDERR
+         HNDEXT SET,VMCFHND,CODE=4001,ECB=(VMCFECB,OS),ERROR=HNDERR
          LTR   15,15
          BNZ   HNDERR
 *
@@ -20,7 +20,7 @@ M12ATLS  CSECT
          LA    2,40
          ST    2,VMCFPL+20
          LA    1,VMCFPL
-         DIAG  1,2,X'68'
+         DC    X'83',X'12',XL2'0068'
          LTR   2,2
          BNZ   AUTHERR
 *
@@ -35,7 +35,7 @@ M12ATLS  CSECT
          MVC   VMCFPL+32(4),=X'06300000'
          MVI   VMCFPL+38,X'65'
          LA    1,VMCFPL
-         DIAG  1,2,X'68'
+         DC    X'83',X'12',XL2'0068'
          LTR   2,2
          BNZ   BEGDIAG
          BAL   14,WAITNEXT
@@ -60,7 +60,7 @@ M12ATLS  CSECT
          ST    3,VMCFPL+20
          MVI   VMCFPL+38,X'80'
          LA    1,VMCFPL
-         DIAG  1,2,X'68'
+         DC    X'83',X'12',XL2'0068'
          LTR   2,2
          BNZ   QDIAG
          BAL   14,WAIT2
@@ -113,7 +113,7 @@ REJNOTE  ST    14,WORKRET
          MVC   VMCFPL+8(8),SLOT3+8
          MVC   VMCFPL+32(8),SLOT3+32
          LA    1,VMCFPL
-         DIAG  1,2,X'68'
+         DC    X'83',X'12',XL2'0068'
          L     14,WORKRET
          BR    14
 *
@@ -164,11 +164,11 @@ FAIL     LA    15,8
          B     CLEAN
 CLEANOK  SR    15,15
 CLEAN    ST    15,SAVERC
-         HNDEXT CLR,CODE=X'4001'
+         HNDEXT CLR,CODE=4001
          XC    VMCFPL(40),VMCFPL
          MVC   VMCFPL+2(2),=X'0001'
          LA    1,VMCFPL
-         DIAG  1,2,X'68'
+         DC    X'83',X'12',XL2'0068'
          L     15,SAVERC
          L     14,RETADDR
          BR    14
