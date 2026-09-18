@@ -1,0 +1,76 @@
+/* M10B arbitrary-boundary incremental pkt-line feeder. */
+parse upper arg cmd hex extra
+address command
+if cmd='INIT' then do
+ 'ERASE G10META DATA A'
+ m.1='META -'; m.0=1
+ 'EXECIO 1 DISKW G10META DATA A 1 (STEM M. FINIS'
+ if rc\=0 then exit 8
+ 'EXEC GITPBUF INIT'
+ exit rc
+end
+if cmd='FEED' then do
+ if extra\='' | hex='' | length(hex)//2\=0 then exit 4
+ hex=translate(hex)
+ if verify(hex,'0123456789ABCDEF')\=0 then exit 4
+ call getmeta
+ if result='ERROR' then exit 8
+ work=tail||hex
+ do forever
+  if length(work)<8 then leave
+  n=x2d(x2c(substr(work,1,8)))
+  if n=0 then do
+   work=substr(work,9)
+   iterate
+  end
+  if n<5 then exit 8
+  need=n*2
+  if length(work)<need then leave
+  data=substr(work,9,(n-4)*2)
+  band=substr(data,1,2)
+  if band='01' then do
+   p=substr(data,3)
+   do while p\=''
+    take=length(p)%2
+    if take>64 then take=64
+    'EXEC GITPBUF APPEND' substr(p,1,take*2)
+    if rc\=0 then exit rc
+    p=substr(p,take*2+1)
+   end
+  end
+  else if band='02' then nop
+  else if band='03' then exit 8
+  else exit 8
+  work=substr(work,need+1)
+ end
+ call putmeta work
+ if result='ERROR' then exit 8
+ exit 0
+end
+if cmd='FINAL' then do
+ call getmeta
+ if result='ERROR' then exit 8
+ if tail\='' then do
+  say 'GIT10BF: incomplete pkt-line at FINAL'
+  exit 8
+ end
+ 'EXEC GITPBUF FINAL'
+ exit rc
+end
+exit 4
+getmeta:
+ drop m.
+ 'EXECIO 1 DISKR G10META DATA A 1 (STEM M. FINIS'
+ if rc\=0 | m.0\=1 then return 'ERROR'
+ parse var m.1 tag t extra
+ if tag\='META' | extra\='' then return 'ERROR'
+ if t='-' then tail=''
+ else tail=t
+ return 'OK'
+putmeta:
+ parse arg t
+ if t='' then t='-'
+ m.1='META' t; m.0=1
+ 'EXECIO 1 DISKW G10META DATA A 1 (STEM M. FINIS'
+ if rc\=0 then return 'ERROR'
+ return 'OK'
