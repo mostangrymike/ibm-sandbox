@@ -1,0 +1,20 @@
+/* M9M bounded REF_DELTA PACK integration regression. */
+address command
+baseoid='F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
+say 'M9M REF TEST 1: build known M8C pack'
+pack='5041434B0000000200000002'
+pack=pack||'33789C4B4C4A0600024D0127'
+pack=pack||'76'||baseoid
+pack=pack||'789C636699C0CC98020002DB0100'
+pack=pack||'7C95D709D4D46C612315060323DF0B5671650684'
+'EXEC GITPBUF WRITE' pack
+if rc\=0 then exit rc
+say 'M9M REF TEST 2: verify bounded PACK SHA-1'
+'EXEC GITPSHA VERIFY'
+if rc\=0 then exit rc
+if queued()>0 then parse pull sha
+say 'M9M REF TEST 3: bounded REF reconstruction'
+'EXEC GITP9MWK WALK'
+if rc\=0 then exit rc
+say 'M9M BOUNDED REF_DELTA PACK TESTS PASSED'
+exit 0
