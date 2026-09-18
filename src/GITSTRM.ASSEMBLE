@@ -52,7 +52,7 @@ READLP   L     8,REMAIN
          LR    3,0
          B     GOTDATA
 FILERD   FSREAD FSCB=HASHFILE,FORM=E,ERROR=BADFREAD
-         LR    3,1
+         L     3,HASHFILE+20
 GOTDATA  EQU   *
          LTR   3,3
          BZ    BADDZERO
