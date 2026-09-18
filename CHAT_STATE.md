@@ -17,6 +17,8 @@ Repository: `mostangrymike/ibm-sandbox`, branch `main`
 - Exact small CMS command batches. IBM docs first for CMS/zVM; official Git/RFC
   docs for formats. No guessed CMS commands or purchased dependencies.
 - No BFS/OpenExtensions runtime dependency. Fixed-80 source <=80 columns.
+- CMS file names and file types must each be no longer than 8 characters. Enforce
+  this before creating or transferring any CMS-target file.
 - c3270 DFT 2048 proven. Preserve target-proven cores; isolate milestones.
 
 ## Architecture/environment
@@ -28,8 +30,8 @@ Goal: genuine Git interoperability, eventually smart HTTP with native TLS.
 M1 SHA-1; M2 object encoding; M3 CMS object DB; M4 trees/commits; M5 refs/HEAD;
 M6 protocol/delta through M6N; M7 compression through M7I; M8 complete PACK
 ordinary/OFS/REF through M8C; M9A/M9B bounded storage; M9C bounded pack SHA-1;
-M9D bounded inflater primitive; M9E bounded general inflater. All completed
-milestones are target proven.
+M9D bounded inflater primitive; M9E bounded general inflater; M9F bounded
+ordinary PACK walker. All completed milestones are target proven.
 
 ## M8 complete PACK summary
 M8A ordinary complete pack passed including trailer SHA and negative tests.
@@ -119,15 +121,28 @@ uses its whole-pack/whole-string path; M9E has not yet been integrated into the
 full pack walker. The bounded inflater still accumulates the complete inflated
 object in one REXX hex string.
 
+### M9F bounded ordinary PACK walker — DONE/TARGET PROVEN
+`src/GITPBWLK.EXEC` parses PACK and ordinary-object headers directly through
+bounded GITPBUF logical offsets and invokes GITPINFL at each zlib offset. It
+advances by the inflater's reported consumed-byte count. The initial overlength
+name `GITPBWALK` was corrected to CMS-safe `GITPBWLK` before target execution.
+`src/M9FWALK.EXEC` builds and verifies the known M8A pack incrementally.
+
+Target result:
+- bounded PACK SHA-1 accepted `5F1C02695D4BC807AE4A5DD622AD1D28E7659429`.
+- entry 1 at offset 12 reconstructed blob `616263`.
+- entry 2 at offset 27 reconstructed blob `78797A`.
+- PACK data ended at offset 42.
+- offset 42 contained the exact 20-byte PACK trailer.
+- final `M9F BOUNDED ORDINARY PACK WALKER TESTS PASSED`.
+
 ## NEXT ACTION
-M9F: integrate the target-proven bounded GITPBUF inflater into an isolated
-bounded ordinary-object PACK walker path. Parse PACK/object headers by logical
-GITPBUF offsets, invoke GITPINFL at the object's zlib offset, advance by its
-reported consumed-byte count, and prove both known M8A ordinary objects can be
-walked without assembling the complete PACK/compressed stream. Keep the existing
-M8 walker unchanged until this new path is target proven. Preserve bounded pack
-SHA verification via GITPSHA. Do not tackle bounded inflated-output/object
-storage yet; that remains a later scalability step.
+M9G: extend the isolated bounded PACK walker to OFS_DELTA while preserving the
+target-proven M8 walker. Parse the OFS base distance by bounded GITPBUF offsets,
+inflate the delta instruction stream through GITPINFL, resolve the already-seen
+base object in the isolated bounded walker context, and reconstruct the M8B
+`abc` -> `abcd` case. Keep REF_DELTA and bounded inflated-output/object storage
+for later gates.
 
 ## Important implementation facts
 M8 walker/general inflater still accumulate whole hex strings; GITPCTX stores
