@@ -1,0 +1,20 @@
+/* M9K streaming ordinary PACK walker regression. */
+address command
+say 'M9K TEST 1: build known M8A pack'
+pack = '5041434B0000000200000002'
+pack = pack || '337801010300FCFF616263024D0127'
+pack = pack || '337801010300FCFF78797A02D7016C'
+pack = pack || '5F1C02695D4BC807AE4A5DD622AD1D28E7659429'
+'EXEC GITPBUF WRITE' pack
+if rc \= 0 then exit rc
+say 'M9K TEST 2: verify bounded PACK SHA-1'
+'EXEC GITPSHA VERIFY'
+if rc \= 0 then exit rc
+parse pull sha
+say 'PACK SHA1' sha
+if sha \= '5F1C02695D4BC807AE4A5DD622AD1D28E7659429' then exit 8
+say 'M9K TEST 3: walk ordinary objects with streaming output'
+'EXEC GITP9KWK WALK'
+if rc \= 0 then exit rc
+say 'M9K STREAMING ORDINARY PACK WALKER TESTS PASSED'
+exit 0
