@@ -72,6 +72,7 @@ M12ATLS  CSECT
 *
 * TLSQuery: SEND/RECV, CALLCODE 128. Query record is 8 blank
 * label bytes plus 50 blank keyring bytes, as documented for VM.
+* IBM requires CIBB=UNSPECIFIEDconnection (-48, X'FFD0').
 *
          BAL   14,CLEARECB
          MVC   QUERY(58),=CL58' '
@@ -83,6 +84,7 @@ M12ATLS  CSECT
          ST    3,VMCFPL+16
          LA    3,58
          ST    3,VMCFPL+20
+         MVC   VMCFPL+36(2),=X'FFD0'
          MVI   VMCFPL+38,X'80'
          LA    1,VMCFPL
          DC    X'83',X'12',XL2'0068'
