@@ -40,8 +40,25 @@ do entry = 1 to objects
       shift = shift + 7
       more = b >= 128
    end
-   if type \= 3 then do
-      say 'GITPBWLK: M9F ordinary blob required'
+   if type = 6 then do
+      call ofshdr
+      if result = 'ERROR' then exit 8
+      basepos = entrypos - distance
+      found = 0
+      if ctxpos.0 \= 'CTXPOS.0' then do k = 1 to ctxpos.0
+         if ctxpos.k = basepos then do
+            basehex = ctxdata.k
+            found = 1
+            leave
+         end
+      end
+      if \found then do
+         say 'GITPBWLK: OFS base not found' basepos
+         exit 8
+      end
+   end
+   else if type \= 3 then do
+      say 'GITPBWLK: unsupported packed object type' type
       exit 8
    end
    'EXEC GITPINFL INFLATESTACK' pos
@@ -56,6 +73,14 @@ do entry = 1 to objects
       say 'GITPBWLK: inflated size mismatch'
       exit 8
    end
+   if type = 6 then do
+      'EXEC GITDAPP APPLYSTACK' basehex datahex
+      if rc \= 0 then exit rc
+      parse pull datahex
+   end
+   ctxpos.0 = entry
+   ctxpos.entry = entrypos
+   ctxdata.entry = datahex
    say 'ENTRY' entry 'POSITION' entrypos 'TYPE BLOB SIZE' size
    say 'DATA' datahex
    pos = pos + used
