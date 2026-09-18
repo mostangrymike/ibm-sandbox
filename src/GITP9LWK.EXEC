@@ -60,10 +60,14 @@ do entry=1 to objects
   if rc\=0 then exit rc
   parse pull used
   parse pull dlen
+  /* PACK size on a delta entry is delta-program size. */
+  if dlen\=size then do
+   say 'GITP9LWK: inflated delta size mismatch'
+   exit 8
+  end
   'EXEC GITBDAPP APPLY'
   if rc\=0 then exit rc
   parse pull outlen
-  if outlen\=size then exit 8
   call installout outlen
   if result\='OK' then exit 8
   'EXEC GITBOID BLOB' outlen
