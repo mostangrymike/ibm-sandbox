@@ -330,6 +330,13 @@ histbyte:
    parse arg dist
    if dist < 1 | dist > outlen then return 'ERROR'
    offset = outlen - dist
+   committed = outlen - length(outpend) % 2
+   if offset >= committed then do
+      poff = offset - committed
+      h = substr(outpend,poff*2+1,2)
+      if length(h) \= 2 then return 'ERROR'
+      return h
+   end
    'EXEC GITOBUF LIVE' offset 1
    if rc \= 0 | queued() < 1 then return 'ERROR'
    parse pull h
