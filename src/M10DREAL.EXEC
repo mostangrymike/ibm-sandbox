@@ -6,6 +6,8 @@ if rc\=0 then exit rc
 say 'M10D TEST 2: feed Git-generated response fixture'
 'EXEC G10DFIX'
 if rc\=0 then exit rc
+/* CMS EXEC leaves queued lines after the caller command line. */
+if queued()>0 then parse pull junk
 do while queued()>0
  parse pull h
  'EXEC GIT10UP FEED' h
