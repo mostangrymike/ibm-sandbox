@@ -1,0 +1,25 @@
+/* M9J ordinary zlib output into bounded GITOBUF. */
+parse arg command offset extra
+command = translate(command)
+if command \= 'TOOBUF' | extra \= '' | datatype(offset,'W') \= 1 then do
+   say 'Usage: GITP2OBJ TOOBUF zlib-offset'
+   exit 4
+end
+address command
+'EXEC GITPINFL INFLATESTACK' offset
+if rc \= 0 then exit rc
+if queued() < 2 then exit 8
+parse pull data
+parse pull used
+'EXEC GITOBUF INIT'
+if rc \= 0 then exit rc
+do while data \= ''
+   part = left(data,128)
+   data = substr(data,length(part)+1)
+   'EXEC GITOBUF APPEND' part
+   if rc \= 0 then exit rc
+end
+'EXEC GITOBUF FINAL'
+if rc \= 0 then exit rc
+queue used
+exit 0
