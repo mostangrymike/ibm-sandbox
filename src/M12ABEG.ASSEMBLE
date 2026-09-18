@@ -57,13 +57,22 @@ M12ABEG  CSECT
          LTR   2,2
          BNZ   BEGDIAG
          WRTERM MBEGS,L'MBEGS
-         LA    3,=F'1000000'
+         STCK  STARTTOD
 POLL     CLC   VMCFECB(4),=F'0'
          BNE   ECBPOST
          CLC   VMCFBUF(40),ZERO40
          BNE   BUFCHG
-         BCT   3,POLL
-         WRTERM MTIME,L'MTIME
+         STCK  NOWTOD
+         L     4,NOWTOD+4
+         SL    4,STARTTOD+4
+         L     5,NOWTOD
+         SLB   5,STARTTOD
+         C     5,=F'4'
+         BH    TIMEOUT
+         BL    POLL
+         CL    4,=X'C4B40000'
+         BL    POLL
+TIMEOUT  WRTERM MTIME,L'MTIME
          B     FAIL
 ECBPOST  WRTERM MECBP,L'MECBP
          B     GOTRESP
@@ -103,6 +112,9 @@ VMCFPL   DS    XL40
 VMCFBUF  DS    XL40
 SLOT1    DS    XL40
 ZERO40   DC    40X'00'
+         DS    0D
+STARTTOD DS    D
+NOWTOD   DS    D
          DS    0F
 VMCFECB  DC    F'0'
 DIAGRC   DS    F
