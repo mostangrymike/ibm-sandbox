@@ -17,7 +17,8 @@ head = '626C6F6220' || digits || '00'
 total = length(head)%2 + size
 'MAKEBUF'
 queue right(d2x(total),8,'0')
-queue head
+/* GITSTRM requires each queued data item to be a complete byte chunk. */
+data = head
 pos = 0
 do while pos < size
    count = size - pos
@@ -27,10 +28,15 @@ do while pos < size
       'DROPBUF'
       exit 8
    end
-   parse pull data
-   queue data
+   parse pull chunk
+   data = data || chunk
+   do while length(data) >= 128
+      queue left(data,128)
+      data = substr(data,129)
+   end
    pos = pos + count
 end
+if data \= '' then queue data
 'GITSTRM'
 save = rc
 if save \= 0 then do
