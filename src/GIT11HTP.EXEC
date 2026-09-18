@@ -2,11 +2,12 @@
 parse upper arg cmd hex mode extra
 address command
 if cmd='INIT' then do
- if mode='' then mode='FILE'
- if mode\='FILE' & mode\='GIT' then exit 4
- call putmeta 'HEAD','',mode
+ route=hex
+ if route='' then route='FILE'
+ if route\='FILE' & route\='GIT' then exit 4
+ call putmeta 'HEAD','',route
  if result='ERROR' then exit 8
- if mode='FILE' then 'ERASE M11BODY DATA A'
+ if route='FILE' then 'ERASE M11BODY DATA A'
  else do
   'EXEC GIT10UP INIT'
   if rc\=0 then exit rc
