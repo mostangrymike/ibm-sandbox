@@ -1,9 +1,11 @@
-/* M9K bounded blob OID: spool bounded bytes, then feed GITSTRM. */
+/* Bounded Git object OID: spool bytes, then feed GITSTRM. */
 parse arg command size extra
-if translate(command) \= 'BLOB' | extra \= '' | datatype(size,'W') \= 1 then do
-   say 'Usage: GITBOID BLOB size'
-   exit 4
+command=translate(command)
+if extra \= '' | datatype(size,'W') \= 1 then do
+ say 'Usage: GITBOID COMMIT|TREE|BLOB|TAG size'
+ exit 4
 end
+if command\='COMMIT' & command\='TREE' & command\='BLOB' & command\='TAG' then exit 4
 address command
 dec=size
 digits=''
@@ -13,7 +15,11 @@ else do while dec>0
  digits=d2x(48+d,2)||digits
  dec=dec%10
 end
-head='626C6F6220'||digits||'00'
+if command='COMMIT' then head='636F6D6D697420'
+else if command='TREE' then head='7472656520'
+else if command='BLOB' then head='626C6F6220'
+else head='74616720'
+head=head||digits||'00'
 total=length(head)%2+size
 data=head
 pos=0
