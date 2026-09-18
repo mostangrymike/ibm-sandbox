@@ -71,7 +71,7 @@ M12ATLS  CSECT
          CLI   SLOT2+39,X'00'
          BNE   QPRE
          BAL   14,WAIT3
-         CLI   SLOT3+38,X'21'
+         CLI   SLOT3+38,X'19'
          BNE   QBADNOTE
          BAL   14,REJNOTE
          CLI   SLOT3+39,X'00'
@@ -107,11 +107,9 @@ CLEARECB XC    VMCFECB,VMCFECB
 * completion with VMCF REJECT using the interrupt header data.
 *
 REJNOTE  ST    14,WORKRET
-         XC    VMCFPL(40),VMCFPL
+         MVC   VMCFPL(40),SLOT3
+         XC    VMCFPL(2),VMCFPL
          MVC   VMCFPL+2(2),=X'000B'
-         MVC   VMCFPL+4(4),SLOT3+4
-         MVC   VMCFPL+8(8),SLOT3+8
-         MVC   VMCFPL+32(8),SLOT3+32
          LA    1,VMCFPL
          DC    X'83',X'12',XL2'0068'
          L     14,WORKRET
@@ -121,7 +119,9 @@ REJNOTE  ST    14,WORKRET
 * Preserve the first three interrupts so mainline cannot lose a
 * fast QUERYtlsCOMPLETE behind the preprocessing response.
 *
-VMCFHND  STM   0,15,HNDSAVE
+VMCFHND  STM   0,15,0(13)
+         LR    12,15
+         S     12,=A(VMCFHND-M12ATLS)
          L     3,INTCOUNT
          LA    3,1(3)
          ST    3,INTCOUNT
@@ -137,7 +137,7 @@ HSLOT1   MVC   SLOT1(40),VMCFBUF
 HSLOT2   MVC   SLOT2(40),VMCFBUF
          B     HRET
 HSLOT3   MVC   SLOT3(40),VMCFBUF
-HRET     LM    0,14,HNDSAVE
+HRET     LM    0,14,0(13)
          SR    15,15
          BR    14
 *
@@ -185,7 +185,6 @@ INTCOUNT DC    F'0'
 RETADDR  DS    F
 WORKRET  DS    F
 SAVERC   DS    F
-HNDSAVE  DS    16F
 PASSMSG  DC    C'M12A TLSQUERY SSL SERVICE AVAILABLE'
 PASSLEN  EQU   *-PASSMSG
 EHND     DC    C'M12A ERROR HNDEXT'
