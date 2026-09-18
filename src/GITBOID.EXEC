@@ -5,7 +5,8 @@ if extra \= '' | datatype(size,'W') \= 1 then do
  say 'Usage: GITBOID COMMIT|TREE|BLOB|TAG size'
  exit 4
 end
-if command\='COMMIT' & command\='TREE' & command\='BLOB' & command\='TAG' then exit 4
+ok=command='COMMIT' | command='TREE' | command='BLOB' | command='TAG'
+if \ok then exit 4
 address command
 dec=size
 digits=''
