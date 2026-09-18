@@ -1,0 +1,89 @@
+M12ABEG  CSECT
+         USING M12ABEG,12
+         LR    12,15
+         ST    14,RETADDR
+         WRTERM MSTART,L'MSTART
+*
+* M12A BEGIN-only VMCF diagnostic probe.
+* VMCPARM and the OS ECB are explicitly aligned as IBM requires.
+*
+         HNDEXT SET,'DUMMY',CODE=4001,ECB=(VMCFECB,OS),ERROR=HNDERR
+         LTR   15,15
+         BNZ   HNDERR
+*
+* AUTHORIZE VMCF with a 40-byte external interrupt buffer.
+*
+         XC    VMCFPL(40),VMCFPL
+         LA    2,VMCFBUF
+         ST    2,VMCFPL+16
+         LA    2,40
+         ST    2,VMCFPL+20
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         ST    2,DIAGRC
+         LTR   2,2
+         BNZ   AUTHERR
+         WRTERM MAUTH,L'MAUTH
+*
+* BEGINtcpIPservice: SEND, MSGID 2, TCPIP, client level 6.3.0.
+*
+         XC    VMCFECB,VMCFECB
+         XC    VMCFPL(40),VMCFPL
+         MVC   VMCFPL+2(2),=X'0002'
+         MVC   VMCFPL+4(4),=F'2'
+         MVC   VMCFPL+8(8),=CL8'TCPIP'
+         MVC   VMCFPL+20(4),=F'1'
+         MVC   VMCFPL+32(4),=X'06300000'
+         MVI   VMCFPL+38,X'65'
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         ST    2,DIAGRC
+         LTR   2,2
+         BNZ   BEGDIAG
+         WRTERM MBEGS,L'MBEGS
+         WAITECB ECB=VMCFECB
+         MVC   SLOT1(40),VMCFBUF
+         WRTERM MBEGR,L'MBEGR
+         CLI   SLOT1+39,X'00'
+         BNE   BEGRET
+         WRTERM MPASS,L'MPASS
+         SR    15,15
+         B     CLEAN
+*
+HNDERR   WRTERM EHND,L'EHND
+         B     FAIL
+AUTHERR  WRTERM EAUTH,L'EAUTH
+         B     FAIL
+BEGDIAG  WRTERM EBEGD,L'EBEGD
+         B     FAIL
+BEGRET   WRTERM EBEGR,L'EBEGR
+FAIL     LA    15,8
+CLEAN    ST    15,SAVERC
+         HNDEXT CLR,CODE=4001
+         XC    VMCFPL(40),VMCFPL
+         MVC   VMCFPL+2(2),=X'0001'
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         L     15,SAVERC
+         L     14,RETADDR
+         BR    14
+*
+         DS    0D
+VMCFPL   DS    XL40
+VMCFBUF  DS    XL40
+SLOT1    DS    XL40
+         DS    0F
+VMCFECB  DC    F'0'
+DIAGRC   DS    F
+RETADDR  DS    F
+SAVERC   DS    F
+MSTART   DC    C'M12A BEGIN PROBE START'
+MAUTH    DC    C'M12A VMCF AUTHORIZED'
+MBEGS    DC    C'M12A BEGIN SENT RC0'
+MBEGR    DC    C'M12A BEGIN RESPONSE'
+MPASS    DC    C'M12A BEGIN OK'
+EHND     DC    C'M12A ERROR HNDEXT'
+EAUTH    DC    C'M12A ERROR VMCF AUTHORIZE'
+EBEGD    DC    C'M12A ERROR BEGIN DIAG'
+EBEGR    DC    C'M12A ERROR BEGIN RETURN'
+         END   M12ABEG
