@@ -1,11 +1,10 @@
-/* M10C upload-pack response parser feeding M10B PACK sink. */
+/* M10 bounded upload-pack response parser. */
 parse upper arg cmd hex extra
 address command
 if cmd='INIT' then do
  'ERASE G10CMT DATA A'
- m.1='META PRE -'; m.0=1
- 'EXECIO 1 DISKW G10CMT DATA A 1 (STEM M. FINIS'
- if rc\=0 then exit 8
+ call putmeta 'PRE','HDR','-',0,'-'
+ if result='ERROR' then exit 8
  'EXEC GIT10BF INIT'
  exit rc
 end
@@ -15,69 +14,134 @@ if cmd='FEED' then do
  if verify(hex,'0123456789ABCDEF')\=0 then exit 4
  call getmeta
  if result='ERROR' then exit 8
- work=tail||hex
- do forever
-  if length(work)<8 then leave
-  call pktlen substr(work,1,8)
-  if result='ERROR' then exit 8
-  n=result
-  if n=0 | n=1 | n=2 then do
-   work=substr(work,9)
-   iterate
-  end
-  if n<4 then exit 8
-  need=n*2
-  if length(work)<need then leave
-  pkt=substr(work,1,need)
-  data=substr(pkt,9)
-  if state='PRE' then do
-   if left(data,8)='4E414B0A' then nop
-   else if left(data,2)='01' | left(data,2)='02' |,
-      left(data,2)='03' then do
-    state='PACK'
-    'EXEC GIT10BF FEED' pkt
+ work=hex
+ do while work\=''
+  if phase='HDR' then do
+   need=8-length(hdr)
+   take=length(work)
+   if take>need then take=need
+   hdr=hdr||left(work,take)
+   work=substr(work,take+1)
+   if length(hdr)<8 then iterate
+   call pktlen hdr
+   if result='ERROR' then exit 8
+   n=result
+   if n=0 | n=1 | n=2 then do
+    hdr=''
+    iterate
+   end
+   if n<4 then exit 8
+   remain=n-4
+   if state='PACK' then do
+    'EXEC GIT10BF FEED' hdr
     if rc\=0 then exit rc
+    hdr=''
+    phase='PASS'
    end
    else do
-    say 'GIT10UP: unexpected pre-PACK pkt-line'
-    exit 8
+    hdr=''
+    pre=''
+    phase='PREPAY'
    end
   end
-  else do
-   'EXEC GIT10BF FEED' pkt
-   if rc\=0 then exit rc
+  else if phase='PASS' then do
+   bytes=length(work)%2
+   take=bytes
+   if take>remain then take=remain
+   if take>64 then take=64
+   if take>0 then do
+    'EXEC GIT10BF FEED' left(work,take*2)
+    if rc\=0 then exit rc
+   end
+   work=substr(work,take*2+1)
+   remain=remain-take
+   if remain=0 then phase='HDR'
   end
-  work=substr(work,need+1)
+  else if phase='PREPAY' then do
+   bytes=length(work)%2
+   take=bytes
+   if take>remain then take=remain
+   if take>5 then take=5
+   pre=pre||left(work,take*2)
+   work=substr(work,take*2+1)
+   remain=remain-take
+   if length(pre)>=2 & left(pre,2)='01' then do
+    state='PACK'
+    call passpre pre,remain
+    if result='ERROR' then exit 8
+    pre=''
+    if remain=0 then phase='HDR'
+    else phase='PASS'
+   end
+   else if length(pre)>=2 &,
+      (left(pre,2)='02' | left(pre,2)='03') then do
+    state='PACK'
+    call passpre pre,remain
+    if result='ERROR' then exit 8
+    pre=''
+    if remain=0 then phase='HDR'
+    else phase='PASS'
+   end
+   else if remain=0 then do
+    if pre\='4E414B0A' then do
+     say 'GIT10UP: unexpected pre-PACK pkt-line'
+     exit 8
+    end
+    pre=''
+    phase='HDR'
+   end
+  end
+  else exit 8
  end
- call putmeta state,work
+ call putmeta state,phase,hdr,remain,pre
  if result='ERROR' then exit 8
  exit 0
 end
 if cmd='FINAL' then do
  call getmeta
  if result='ERROR' then exit 8
- if tail\='' | state\='PACK' then exit 8
+ if state\='PACK' | phase\='HDR' | hdr\='' then exit 8
  'EXEC GIT10BF FINAL'
  exit rc
 end
 exit 4
+passpre:
+ parse arg p,r
+ total=(length(p)%2)+r+4
+ call ascii4 total
+ h=result
+ 'EXEC GIT10BF FEED' h||p
+ if rc\=0 then return 'ERROR'
+ return 'OK'
 getmeta:
  drop m.
  'EXECIO 1 DISKR G10CMT DATA A 1 (STEM M. FINIS'
  if rc\=0 | m.0\=1 then return 'ERROR'
- parse var m.1 tag state t extra
+ parse var m.1 tag state phase h remain p extra
  if tag\='META' | extra\='' then return 'ERROR'
- if t='-' then tail=''
- else tail=t
+ if h='-' then hdr=''
+ else hdr=h
+ if p='-' then pre=''
+ else pre=p
  return 'OK'
 putmeta:
- parse arg s,t
- if t='' then t='-'
- m.1='META' s t; m.0=1
+ parse arg s,ph,h,r,p
+ if h='' then h='-'
+ if p='' then p='-'
+ m.1='META' s ph h r p; m.0=1
  'EXECIO 1 DISKW G10CMT DATA A 1 (STEM M. FINIS'
  if rc\=0 then return 'ERROR'
  return 'OK'
-
+ascii4:
+ parse arg n
+ s=right(d2x(n),4,'0')
+ out=''
+ do i=1 to 4
+  p=pos(substr(s,i,1),'0123456789ABCDEF')-1
+  if p<10 then out=out||d2x(48+p,2)
+  else out=out||d2x(55+p,2)
+ end
+ return out
 pktlen: procedure
  parse arg h
  n=0
