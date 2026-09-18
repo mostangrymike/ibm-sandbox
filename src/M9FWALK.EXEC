@@ -1,0 +1,41 @@
+/* M9F bounded ordinary PACK walker regression. */
+address command
+p1 = '5041434B000000020000000233780101'
+p2 = '0300FCFF616263024D01273378010103'
+p3 = '00FCFF78797A02D7016C5F1C02695D'
+p4 = '4BC807AE4A5DD622AD1D28E7659429'
+
+say 'M9F TEST 1: build known M8A pack incrementally'
+'EXEC GITPBUF INIT'
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p1
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p2
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p3
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p4
+if rc \= 0 then exit rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then exit rc
+
+say 'M9F TEST 2: verify bounded PACK SHA-1'
+'EXEC GITPSHA VERIFY'
+if rc \= 0 then exit rc
+
+say 'M9F TEST 3: walk both ordinary objects by bounded offsets'
+'EXEC GITPBWALK WALK'
+if rc \= 0 then exit rc
+
+say 'M9F TEST 4: bytes after objects are the 20-byte trailer'
+'EXEC GITPBUF READSTACK 42 20'
+if rc \= 0 then exit rc
+parse pull trailer
+say 'TRAILER' trailer
+if trailer \= '5F1C02695D4BC807AE4A5DD622AD1D28E7659429' then do
+   say 'M9FWALK: trailer position mismatch'
+   exit 8
+end
+
+say 'M9F BOUNDED ORDINARY PACK WALKER TESTS PASSED'
+exit 0
