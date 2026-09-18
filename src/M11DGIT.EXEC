@@ -16,9 +16,8 @@ if rc\=0 then exit rc
 if rc\=0 then exit rc
 say 'M11D TEST 3: stream remaining real Git body'
 do n=1 to 16
- 'EXEC G10DFIX' n
+ 'PIPE CMS G10DFIX' n '| VAR H'
  if rc\=0 then exit rc
- parse pull h
  if n=1 then h=substr(h,41)
  if h\='' then do
   'EXEC GIT11HTP FEED' h
