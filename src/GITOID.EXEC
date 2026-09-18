@@ -16,7 +16,7 @@ end
 head = '626C6F6220' || digits || '00'
 total = length(head)%2 + size
 'MAKEBUF'
-/* CMS stack is LIFO: queue data first, length header last. */
+/* READSTACK uses QUEUE, so consume it before building GITSTRM stack. */
 data = head
 pos = 0
 do while pos < size
@@ -29,14 +29,15 @@ do while pos < size
    end
    parse pull chunk
    data = data || chunk
-   do while length(data) >= 128
-      queue left(data,128)
-      data = substr(data,129)
-   end
    pos = pos + count
 end
-if data \= '' then queue data
+/* For this gate size is bounded; stack header first, then data. */
 queue right(d2x(total),8,'0')
+do while length(data) > 128
+   queue left(data,128)
+   data = substr(data,129)
+end
+if data \= '' then queue data
 'GITSTRM'
 save = rc
 if save \= 0 then do
