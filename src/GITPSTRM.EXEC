@@ -298,5 +298,9 @@ putbyte:
 histbyte:
    parse arg dist
    if dist < 1 | dist > outlen then return 'ERROR'
-   /* GITOBUF READ requires FINAL, so stream history needs a later primitive. */
-   return 'ERROR'
+   offset = outlen - dist
+   'EXEC GITOBUF LIVE' offset 1
+   if rc \= 0 | queued() < 1 then return 'ERROR'
+   parse pull h
+   if length(h) \= 2 then return 'ERROR'
+   return h
