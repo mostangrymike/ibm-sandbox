@@ -1,10 +1,16 @@
-         VMASMCPU
 M12ABEG  CSECT
          USING M12ABEG,12
          LR    12,15
          ST    14,RETADDR
-         L     15,=A(VCPUSELECT)
-         CALL  (15),(CPURC,CPURS,BASEONLY),VL
+         LA    2,CPURC
+         ST    2,CPUPL
+         LA    2,CPURS
+         ST    2,CPUPL+4
+         LA    2,BASEONLY
+         ST    2,CPUPL+8
+         LA    1,CPUPL
+         L     15,=V(VMCPUSL)
+         BALR  14,15
          L     2,CPURC
          LTR   2,2
          BNZ   CPUERR
@@ -90,9 +96,11 @@ VMCFECB  DC    F'0'
 DIAGRC   DS    F
 RETADDR  DS    F
 SAVERC   DS    F
+CPUPL    DS    3F
 CPURC    DC    F'0'
 CPURS    DC    F'0'
 BASEONLY DC    F'0'
+         EXTRN VMCPUSL
 MCPU     DC    C'M12A BASE CPU SELECTED'
 ECPU     DC    C'M12A ERROR VCPUSELECT'
 MSTART   DC    C'M12A BEGIN PROBE START'
