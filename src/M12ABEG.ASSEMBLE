@@ -48,10 +48,11 @@ M12ABEG  CSECT
          XC    VMCFECB,VMCFECB
          XC    VMCFPL(40),VMCFPL
          MVC   VMCFPL+2(2),=X'0002'
-         MVC   VMCFPL+4(4),=F'2'
+         MVC   VMCFPL+4(4),=X'00000002'
          MVC   VMCFPL+8(8),=CL8'TCPIP'
-         MVC   VMCFPL+20(4),=F'1'
+         MVC   VMCFPL+20(4),=X'00000001'
          MVC   VMCFPL+32(4),=X'06300000'
+         MVC   VMCFPL+36(2),=X'0000'
          MVI   VMCFPL+38,X'65'
          LA    1,VMCFPL
          DC    X'83',X'12',XL2'0068'
