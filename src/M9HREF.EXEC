@@ -1,0 +1,35 @@
+/* M9H bounded REF_DELTA PACK walker regression. */
+address command
+baseoid = 'F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
+p1 = '5041434B000000020000000233789C4B'
+p2 = '4C4A0600024D012776' || baseoid
+p3 = '789C636699C0CC98020002DB0100'
+p4 = '7C95D709D4D46C612315060323DF0B56'
+p5 = '71650684'
+
+say 'M9H TEST 1: build known M8C REF_DELTA pack'
+'EXEC GITPBUF INIT'
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p1
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p2
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p3
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p4
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' p5
+if rc \= 0 then exit rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then exit rc
+
+say 'M9H TEST 2: verify bounded PACK SHA-1'
+'EXEC GITPSHA VERIFY'
+if rc \= 0 then exit rc
+
+say 'M9H TEST 3: reconstruct REF_DELTA abc to abcd'
+'EXEC GITPBWLK WALK'
+if rc \= 0 then exit rc
+
+say 'M9H BOUNDED REF_DELTA WALKER TESTS PASSED'
+exit 0
