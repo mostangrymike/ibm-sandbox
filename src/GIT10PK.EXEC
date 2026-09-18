@@ -12,7 +12,7 @@ if cmd='FEED' then do
  if verify(hex,'0123456789ABCDEF')\=0 then exit 4
  do while hex\=''
   if length(hex)<8 then exit 8
-  n=x2d(substr(hex,1,4))
+  n=x2d(c2x(x2c(substr(hex,1,8))))
   if n=0 then do
    hex=substr(hex,9)
    iterate
