@@ -24,6 +24,14 @@ M12ABEG  CSECT
          LTR   15,15
          BNZ   HNDERR
          ENABLE INTTYPE=ALL
+*
+* VMCF X'4001' interrupts also require CR0 bit 31.
+* Preserve CMS CR0, enable the VMCF submask, and restore it on exit.
+*
+         STCTL 0,0,OLDCR0
+         MVC   SAVECR0(4),OLDCR0
+         OI    SAVECR0+3,X'01'
+         LCTL  0,0,SAVECR0
          WRTERM MENAB,L'MENAB
 *
 * AUTHORIZE SPECIFIC to TCPIP with a 40-byte interrupt buffer.
@@ -139,6 +147,8 @@ STARTTOD DS    D
 NOWTOD   DS    D
          DS    0F
 VMCFECB  DC    F'0'
+OLDCR0   DS    F
+SAVECR0  DS    F
 DIAGRC   DS    F
 RETADDR  DS    F
 SAVERC   DS    F
