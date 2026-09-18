@@ -1,0 +1,52 @@
+/* M9I bounded reconstructed-object store regression. */
+address command
+say 'M9I TEST 1: initialize object store'
+'EXEC GITOBUF INIT'
+if rc \= 0 then exit rc
+
+a = copies('AA',64)
+b = copies('BB',64)
+c = copies('CC',17)
+say 'M9I TEST 2: append across physical record boundaries'
+'EXEC GITOBUF APPEND' a
+if rc \= 0 then exit rc
+'EXEC GITOBUF APPEND' b
+if rc \= 0 then exit rc
+'EXEC GITOBUF APPEND' c
+if rc \= 0 then exit rc
+
+say 'M9I TEST 3: reject reads before FINAL'
+'EXEC GITOBUF READSTACK 60 12'
+if rc = 0 then do
+   say 'M9IOBUF: pre-FINAL read unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+
+'EXEC GITOBUF FINAL'
+if rc \= 0 then exit rc
+
+say 'M9I TEST 4: bounded cross-record read'
+'EXEC GITOBUF READSTACK 60 12'
+if rc \= 0 then exit rc
+parse pull got
+want = copies('AA',4) || copies('BB',8)
+say 'DATA' got
+if got \= want then exit 8
+
+say 'M9I TEST 5: read final partial record'
+'EXEC GITOBUF READSTACK 128 17'
+if rc \= 0 then exit rc
+parse pull got
+say 'TAIL' got
+if got \= c then exit 8
+
+say 'M9I TEST 6: reject overrun'
+'EXEC GITOBUF READSTACK 144 2'
+if rc = 0 then do
+   say 'M9IOBUF: overrun unexpectedly succeeded'
+   exit 8
+end
+say 'EXPECTED FAILURE RC=' rc
+say 'M9I BOUNDED OBJECT STORE TESTS PASSED'
+exit 0
