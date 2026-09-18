@@ -240,6 +240,52 @@ GITBOID d06512a627e39b0577653a494ee8712bf09aaaad
 GIT9CTX 29d16766f2cb48389f8935a1fbdc45909008d574
 GITP9PWK 492eb2d25fd9b4e65373e65240ca3a51fe9c6f5d
 
+## 2026-09-18 boundedness hardening closure
+
+Post-reboot recovery and the remaining pre-M11 boundedness work are now target
+proven.
+
+GIT9CTX was redesigned to eliminate per-position CMS filenames and their
+five-digit position collision. It now uses G9CDATA DATA A plus G9CIDX DATA A
+and G9CMETA DATA A, with bounded sequential record access. Commit:
+4faf89e073c94b2b4644c2f62b48934cae07651f. M9PCONS, M9PCTX, M9PCHAIN, and
+M10DREAL passed after this redesign.
+
+GIT10BF was redesigned as a bounded pkt-line state machine: only a partial
+four-byte header and counters are retained; side-band channel 1 is forwarded
+incrementally to GITPBUF, channel 2 is discarded incrementally, and channel 3
+fails in a controlled way. Final commit:
+4a670109244cf18dc297683475ee22544a698ec1. M10BFRAG, M10CRESP, and M10DREAL
+passed on target.
+
+GIT10UP was likewise redesigned to avoid retaining an arbitrary incomplete
+pkt-line. The final fix preserves the original ASCII pkt-line header across
+fragmented PREPAY processing rather than reconstructing it from remaining
+bytes. Commit: 5383f2b10b6a376766b24be36b498ee60097feb8.
+M10CRESP and M10DREAL passed on target on 2026-09-18.
+
+The final GITBOID strict-boundedness issue is closed. GITBOID no longer uses
+EXECIO * DISKR GITHASH DATA A into a REXX stem. GITSTRM now has a CMS-file
+input mode and reads GITHASH DATA A sequentially with FSREAD while retaining
+the original program-stack interface for PACK SHA regression use. The z/VM
+6.3-compatible extended FSCB definition uses FORM=E, RECFM=V, BUFFER, and
+BSIZE, with the assembler continuation marker in column 72. Relevant commits:
+395dc3bd128ada29329a6e1e661b393ab1ebd564
+f2e1804315eb80e82f992ccb70a2df60b3af9105
+b387e6c4c6ad4a41a3d058b180b4f40fde86d8e4
+
+Target gates after the final GITSTRM build:
+- M9PCONS passed ordinary, OFS_DELTA, and REF_DELTA with exact prior OIDs.
+- M9PCHAIN passed abc -> abcd -> abcde; final OID
+  6A8165460570531A1247BD99A73B53A5A6E500D5.
+- M10DREAL passed the real Git fixture with exact COMMIT, TREE, and BLOB OIDs
+  and PACK SHA1 00C20177E759DC5FFD06EA42D0A1D1E1A9F53E7B.
+
+The known pre-M11 unbounded whole-object REXX stem and context-position
+collision blockers are therefore closed. Before declaring transport
+boundedness stress-proven, add a dedicated large pkt-line fragmentation stress
+gate; existing M10B/C/D prove semantics and real-wire compatibility.
+
 ## Persistence / restart point
 GitHub main is canonical. M10D is target proven independently of emulator state.
 After a target restart, retransmit required source with cms-upload.sh as needed.
@@ -255,6 +301,5 @@ collide above position 99999. Also replace large incomplete pkt-line buffering
 with bounded streaming state before real side-band-64k traffic.
 
 ## NEXT ACTION
-Run the M9P/M10 regression sweep. Fix regressions against real wire semantics.
-Then complete context and large-pkt-line boundedness hardening before M11 native
-CMS networking/HTTP. M12 remains native z/VM SSL/GSK TLS.
+Add a dedicated large pkt-line bounded-fragmentation stress gate, then begin
+M11 native CMS networking/HTTP. M12 remains native z/VM SSL/GSK TLS.
