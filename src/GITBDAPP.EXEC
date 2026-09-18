@@ -42,7 +42,7 @@ do while dpos<dsize
  else do
   off=0; n=0
   do bit=0 to 3
-   if (op % (2**(bit+1))) >= 2**bit then do
+   if (op // (2**(bit+1))) >= 2**bit then do
     call dbyte
     if result='ERROR' then exit 8
     off=off+result*(256**bit)
@@ -50,7 +50,7 @@ do while dpos<dsize
   end
   do bit=0 to 2
    flag=2**(bit+4)
-   if (op % (flag*2)) >= flag then do
+   if (op // (flag*2)) >= flag then do
     call dbyte
     if result='ERROR' then exit 8
     n=n+result*(256**bit)
