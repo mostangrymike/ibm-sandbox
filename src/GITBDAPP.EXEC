@@ -1,0 +1,109 @@
+/* M9L bounded delta apply: base GITBASE, delta GITOBUF -> GITOUT. */
+parse upper arg command extra
+if command \= 'APPLY' | extra \= '' then do
+ say 'Usage: GITBDAPP APPLY'
+ exit 4
+end
+address command
+call dvar
+if result='ERROR' then exit 8
+basesz=result
+call dvar
+if result='ERROR' then exit 8
+resultsz=result
+'ERASE GITOUT DATA A'
+outsz=0
+do while dpos<dsize
+ call dbyte
+ if result='ERROR' then exit 8
+ op=result
+ if op=0 then exit 8
+ if op<128 then do
+  n=op
+  call copydelta n
+  if result\='OK' then exit 8
+ end
+ else do
+  off=0; n=0
+  do bit=0 to 3
+   if (op % (2**(bit+1))) >= 2**bit then do
+    call dbyte
+    if result='ERROR' then exit 8
+    off=off+result*(256**bit)
+   end
+  end
+  do bit=0 to 2
+   flag=2**(bit+4)
+   if (op % (flag*2)) >= flag then do
+    call dbyte
+    if result='ERROR' then exit 8
+    n=n+result*(256**bit)
+   end
+  end
+  if n=0 then n=65536
+  call copybase off,n
+  if result\='OK' then exit 8
+ end
+end
+if outsz\=resultsz then do
+ say 'GITBDAPP: result size mismatch'
+ exit 8
+end
+queue resultsz
+exit 0
+dbyte:
+ 'EXEC GITOBUF READSTACK' dpos 1
+ if rc\=0 | queued()<1 then return 'ERROR'
+ parse pull h
+ dpos=dpos+1
+ return x2d(h)
+dvar:
+ value=0; shift=0
+ do forever
+  call dbyte
+  if result='ERROR' then return 'ERROR'
+  b=result
+  value=value+(b//128)*(2**shift)
+  if b<128 then leave
+  shift=shift+7
+  if shift>56 then return 'ERROR'
+ end
+ return value
+copydelta:
+ parse arg n
+ do while n>0
+  take=n
+  if take>64 then take=64
+  'EXEC GITOBUF READSTACK' dpos take
+  if rc\=0 | queued()<1 then return 'ERROR'
+  parse pull h
+  call put h
+  dpos=dpos+take
+  n=n-take
+ end
+ return 'OK'
+copybase:
+ parse arg off,n
+ do while n>0
+  take=n
+  if take>64 then take=64
+  'EXECIO 1 DISKR GITBASE DATA A' off%64+1 '(STEM B. FINIS'
+  if rc\=0 | b.0\=1 then return 'ERROR'
+  within=off//64
+  avail=64-within
+  if take>avail then take=avail
+  h=substr(strip(b.1),within*2+1,take*2)
+  if length(h)\=take*2 then return 'ERROR'
+  call put h
+  off=off+take
+  n=n-take
+ end
+ return 'OK'
+put:
+ parse arg h
+ r.1=h; r.0=1
+ 'EXECIO 1 DISKW GITOUT DATA A 0 (STEM R. FINIS'
+ if rc\=0 then return 'ERROR'
+ outsz=outsz+length(h)%2
+ return 'OK'
+/* metadata supplied by caller */
