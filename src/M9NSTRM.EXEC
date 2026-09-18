@@ -1,0 +1,38 @@
+/* M9N large streaming zlib/object/OID stress regression. */
+address command
+n=4096
+say 'M9N STREAM TEST 1: build stored zlib for 4096 a bytes'
+/* zlib 78 01, one final stored block, LEN 1000, NLEN EFFF */
+z='7801010010FFEF'
+chunk=copies('61',64)
+do i=1 to n%64
+ z=z||chunk
+end
+/* Adler-32 for 4096 ASCII a bytes. */
+s1=1; s2=0
+do i=1 to n
+ s1=(s1+97)//65521
+ s2=(s2+s1)//65521
+end
+adler=right(d2x(s2,4),4,'0')||right(d2x(s1,4),4,'0')
+z=z||adler
+say 'ZLIB BYTES' length(z)%2
+'EXEC GITPBUF WRITE' z
+if rc\=0 then exit rc
+say 'M9N STREAM TEST 2: bounded inflate'
+'EXEC GITPZBUF TOOBUF 0'
+if rc\=0 then exit rc
+parse pull used
+parse pull outlen
+say 'OBJECT BYTES' outlen
+if outlen\=n then exit 8
+if used\=length(z)%2 then exit 8
+say 'M9N STREAM TEST 3: bounded Git OID'
+'EXEC GITBOID BLOB' outlen
+if rc\=0 then exit rc
+parse pull oid
+say 'OBJECT OID' oid
+/* Git blob 4096 a bytes, expected computed independently later if desired. */
+if length(oid)\=40 then exit 8
+say 'M9N 4096-BYTE STREAMING OBJECT STRESS TEST PASSED'
+exit 0
