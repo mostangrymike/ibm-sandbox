@@ -1,0 +1,44 @@
+/* M9J live object-history regression. */
+address command
+say 'M9J LIVE TEST 1: initialize and append abc'
+'EXEC GITOBUF INIT'
+if rc \= 0 then exit rc
+'EXEC GITOBUF APPEND 616263'
+if rc \= 0 then exit rc
+'EXEC GITOBUF LIVE 0 3'
+if rc \= 0 then exit rc
+parse pull got
+say 'LIVE DATA' got
+if got \= '616263' then exit 8
+
+say 'M9J LIVE TEST 2: emulate overlapping distance-3 copy'
+do i = 1 to 6
+   'EXEC GITOBUF LIVE' i-1 1
+   if rc \= 0 then exit rc
+   parse pull byte
+   'EXEC GITOBUF APPEND' byte
+   if rc \= 0 then exit rc
+end
+'EXEC GITOBUF LIVE 0 9'
+if rc \= 0 then exit rc
+parse pull got
+say 'OVERLAP' got
+if got \= '616263616263616263' then exit 8
+
+say 'M9J LIVE TEST 3: cross disk-tail boundary'
+'EXEC GITOBUF INIT'
+if rc \= 0 then exit rc
+'EXEC GITOBUF APPEND' copies('AA',64)
+if rc \= 0 then exit rc
+'EXEC GITOBUF APPEND BBBBBBBB'
+if rc \= 0 then exit rc
+'EXEC GITOBUF LIVE 60 8'
+if rc \= 0 then exit rc
+parse pull got
+say 'BOUNDARY' got
+if got \= copies('AA',4)||'BBBBBBBB' then exit 8
+
+'EXEC GITOBUF FINAL'
+if rc \= 0 then exit rc
+say 'M9J LIVE OBJECT HISTORY TESTS PASSED'
+exit 0
