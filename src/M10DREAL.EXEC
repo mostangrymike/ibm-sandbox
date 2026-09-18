@@ -1,0 +1,22 @@
+/* M10D consume a response emitted by standard git upload-pack. */
+address command
+say 'M10D TEST 1: initialize upload-pack parser'
+'EXEC GIT10UP INIT'
+if rc\=0 then exit rc
+say 'M10D TEST 2: feed Git-generated response fixture'
+'EXEC G10DFIX'
+if rc\=0 then exit rc
+do while queued()>0
+ parse pull h
+ 'EXEC GIT10UP FEED' h
+ if rc\=0 then exit rc
+end
+'EXEC GIT10UP FINAL'
+if rc\=0 then exit rc
+say 'M10D TEST 3: verify Git-generated PACK'
+'EXEC GITPSHA VERIFY'
+if rc\=0 then exit rc
+'EXEC GITP9PWK WALK'
+if rc\=0 then exit rc
+say 'M10D REAL GIT UPLOAD-PACK FIXTURE TEST PASSED'
+exit 0
