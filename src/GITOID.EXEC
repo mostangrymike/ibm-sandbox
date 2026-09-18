@@ -1,0 +1,43 @@
+/* M9K bounded Git blob OID over finalized GITOBUF. */
+parse arg command size extra
+if translate(command) \= 'BLOB' | extra \= '' | datatype(size,'W') \= 1 then do
+   say 'Usage: GITOID BLOB size'
+   exit 4
+end
+address command
+dec = size
+digits = ''
+if dec = 0 then digits = '30'
+else do while dec > 0
+   d = dec // 10
+   digits = d2x(48+d,2) || digits
+   dec = dec % 10
+end
+head = '626C6F6220' || digits || '00'
+total = length(head)%2 + size
+'MAKEBUF'
+queue right(d2x(total),8,'0')
+queue head
+pos = 0
+do while pos < size
+   count = size - pos
+   if count > 64 then count = 64
+   'EXEC GITOBUF READSTACK' pos count
+   if rc \= 0 | queued() < 1 then do
+      'DROPBUF'
+      exit 8
+   end
+   parse pull data
+   queue data
+   pos = pos + count
+end
+'GITSTRM'
+save = rc
+if save \= 0 then do
+   'DROPBUF'
+   exit save
+end
+parse pull digest
+'DROPBUF'
+queue translate(digest)
+exit 0
