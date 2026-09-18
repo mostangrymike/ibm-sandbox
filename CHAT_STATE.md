@@ -371,9 +371,56 @@ proven above GIT11HTP: establish outbound native TLS, perform certificate and
 hostname/SNI handling as supported/required by the documented target API, and
 deliver bounded binary-safe decrypted HTTP bytes to the existing M11/M10 path.
 
+
+
+## M12 Dynamic SSL interface findings — 2026-09-18
+The new `src/cms-download.sh` helper (commit
+4bad2c8f9f8da05f7ca23f2ddb3da9dce9cda0bf) is target proven by downloading
+`ALLMACRO MACLIB T` (~3.9 MB) from CMS to the Mac through the existing c3270
+DFT path. Use this helper for future CMS-to-Mac source/interface inspection.
+
+Direct inspection of the downloaded IBM-supplied ALLMACRO plus the IBM
+Programmer's Reference corrected the earlier partial recollection:
+- TCSOCKC explicitly says SkSsl procedures are implemented in TCPSSL PASCAL.
+- Verified declarations include SkSslSoc, SkSslBnd, SkSslCon, SkSslLis,
+  SkSslAcc, and DoIoctlSSL. SkSslCon DOES exist; an earlier XEDIT search simply
+  missed it.
+- SockAddrSslType is the internal SOCKE_SSL address structure and includes real
+  server address/port, connection number, certificate label, and Ssl_OrigTcb
+  for Dynamic SSL. These SkSsl routines/structures are stack internals, not the
+  application-level interface to implement directly.
+- The documented application API for an outbound secure connection is
+  TcpSClient for Pascal. It takes a connection returned by TcpOpen/TcpWaitOpen,
+  a Wait flag, SecureDetailType, handshake result, and return code.
+- SecureDetailType contains TLSLabel, TLSTimeout, RequestClientCert,
+  ValidatePeerCert, CipherRequest, Reserved1, Keyring, and Buffer. The IBM
+  reference states TLSTimeout=0, RequestClientCert=0, Reserved1=0, and an empty
+  Keyring for this level; ValidatePeerCert=Full_Check requests certificate
+  validation.
+- The documented assembler/VMCF equivalent is CALLCODE TLSSCLIENTtcp. It uses
+  SEND/RECV, VADA=address of SecureDetailType, LENA=its length, VADB=0, LENB=1,
+  and CONN=the connection number from OPENtcp. Preprocessing status is returned
+  by VMCF REJECT; handshake completion arrives as SECUREhandshakeCOMPLETE.
+- TLSQuery CALLCODE 128 is the documented prerequisite probe for SSL-server
+  availability/label recognition. QUERYtlsCOMPLETE is notification 33;
+  SECUREhandshakeCOMPLETE is 34; READYforHANDSHAKE is 35.
+- Critical architecture consequence for z/VM 6.3: Dynamic SSL is tied to the
+  TCP connection number owned by the Pascal/VMCF TCP/IP API. The M11
+  REXX/SOCKETS descriptor does not expose that documented connection-number
+  contract. Therefore M12 should not try to wrap the M11 REXX socket. The
+  native assembler adapter should own OPENtcp/SENDtcp/RECEIVEtcp plus
+  TLSSCLIENTtcp, then present the same bounded raw-byte interface upward.
+- Do not confuse this with the later z/VM 6.4 client/server TLS ioctl support;
+  the 6.3 design must use the documented Dynamic SSL VMCF/Pascal API.
+
+Next M12 subgate: build the smallest assembler/VMCF TLSQuery capability probe,
+using the IBM VMCF parameter-list definitions/equates from the supplied
+ALLMACRO and Programmer's Reference. Once TLS availability is proven, extend
+that same adapter to OPENtcp + TLSSCLIENTtcp and bounded SEND/RECEIVE.
+
 ## NEXT ACTION
-M11A-D are target proven. Resume M12 at the IBM Dynamic SSL programming
-interface, not SSLPOOL/configuration rediscovery. Recover the exact z/VM 6.3
-TCPSSL PASCAL / assembler-callable outbound-client contract from IBM docs and
-installed source material, then design the smallest native TLS probe while
-preserving the raw bounded-byte interface above GIT11HTP.
+Build M12A as a minimal assembler/VMCF TLSQuery probe from the documented z/VM
+6.3 CALLCODE interface. Do not wrap the REXX/SOCKETS descriptor. After TLSQuery
+is target proven, extend the same native adapter to OPENtcp + TLSSCLIENTtcp +
+bounded SENDtcp/RECEIVEtcp, preserving the raw bounded-byte interface expected
+by GIT11HTP.
