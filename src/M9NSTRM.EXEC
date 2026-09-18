@@ -33,6 +33,9 @@ if rc\=0 then exit rc
 parse pull oid
 say 'OBJECT OID' oid
 /* Git blob 512 a bytes, expected computed independently later if desired. */
-if length(oid)\=40 then exit 8
+if oid\='4E840F673648BFE8024EDC14530A68C60765AB8C' then do
+ say 'M9NSTRM: Git blob OID mismatch'
+ exit 8
+end
 say 'M9N 512-BYTE STREAMING OBJECT STRESS TEST PASSED'
 exit 0
