@@ -205,9 +205,56 @@ Final target regression sweep on 2026-09-17 passed M9JSTRM, M9JZLIB, M9KWALK,
 M9LOFS, M9MREF, M9NSTRES, M9NSTRM, M9O4096, M9PCONS, M9PCTX, and M9PCHAIN.
 M9P and the M9 scalability milestone are complete/target proven.
 
+## M10 transport progress
+
+M10A side-band to bounded PACK, M10B arbitrary read boundaries, and M10C
+upload-pack response framing are DONE/TARGET PROVEN.
+
+M10D real Git upload-pack bytes is DONE/TARGET PROVEN. G10DFIX.EXEC contains
+a response captured from Git 2.47.3 upload-pack for a deterministic repository.
+M10DREAL.EXEC feeds the unchanged wire bytes through GIT10UP.
+
+The real fixture exposed an ASCII/EBCDIC bug hidden by synthetic tests. Git
+pkt-line length fields are ASCII wire bytes. GIT10UP, GIT10BF, and GIT10PK now
+decode the four length bytes numerically. GIT10UP recognizes NAK LF by wire hex
+4E414B0A.
+
+The real PACK also exposed the old blob-only ordinary-object limit. GITBOID now
+hashes COMMIT, TREE, BLOB, and TAG. GITP9PWK walks ordinary types 1 through 4
+and carries resolved type through deltas. GIT9CTX stores object type and scans
+its index one record at a time.
+
+M10D target result, 2026-09-17:
+PACK SHA1 00C20177E759DC5FFD06EA42D0A1D1E1A9F53E7B
+COMMIT position 12 size 148 OID 59D72104FBF18B76536A3A99776C7F7930C27CD8
+TREE position 124 size 33 OID 747ABC3C651FC0DD12A37E5B5C47E0D02CD0DC4E
+BLOB position 168 size 3 OID F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F
+PACK version 2, objects 3, data end 180.
+Final M10D REAL GIT UPLOAD-PACK FIXTURE TEST PASSED.
+
+Final relevant commits:
+GIT10UP af01f6da0a4545d759a7ae15cb2da2eef4529afc
+GIT10BF bad7631ee94d388965c00a0d63572dffb40b86eb
+GIT10PK 44c554802741129213d96cbcd9aeff05ed991e6f
+GITBOID d06512a627e39b0577653a494ee8712bf09aaaad
+GIT9CTX 29d16766f2cb48389f8935a1fbdc45909008d574
+GITP9PWK 492eb2d25fd9b4e65373e65240ca3a51fe9c6f5d
+
+## Persistence / restart point
+GitHub main is canonical. M10D is target proven independently of emulator state.
+After a target restart, retransmit required source with cms-upload.sh as needed.
+
+Next target regression sweep:
+M9PCONS, M9PCTX, M9PCHAIN, M10AFEED, M10BFRAG, M10CRESP, M10DREAL.
+
+M10A-C synthetic fixtures may expose their old EBCDIC header construction after
+the correct ASCII parser change. Fix those fixtures, not the production parser.
+
+Before M11, harden GIT9CTX: its G9C plus five-digit PACK-position filenames can
+collide above position 99999. Also replace large incomplete pkt-line buffering
+with bounded streaming state before real side-band-64k traffic.
+
 ## NEXT ACTION
-M10: real Git transport feeding PACK data incrementally into the bounded M9 PACK
-path. Keep transport isolated from the later native CMS networking/HTTP (M11)
-and native z/VM SSL/GSK TLS (M12) milestones. First gate should consume real Git
-smart-HTTP protocol/pack framing incrementally without requiring the whole PACK
-or response in a REXX variable.
+Run the M9P/M10 regression sweep. Fix regressions against real wire semantics.
+Then complete context and large-pkt-line boundedness hardening before M11 native
+CMS networking/HTTP. M12 remains native z/VM SSL/GSK TLS.
