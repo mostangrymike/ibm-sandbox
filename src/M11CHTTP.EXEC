@@ -1,16 +1,16 @@
 /* M11C bounded HTTP parser fragmentation tests. */
 address command
 say 'M11C TEST 1: initialize HTTP parser'
-'EXEC GIT11HTTP INIT'
+'EXEC GIT11HTP INIT'
 if rc\=0 then exit rc
 say 'M11C TEST 2: split header terminator across feeds'
-'EXEC GIT11HTTP FEED 485454502F312E3120323030204F4B0D'
+'EXEC GIT11HTP FEED 485454502F312E3120323030204F4B0D'
 if rc\=0 then exit rc
-'EXEC GIT11HTTP FEED 0A582D546573743A20310D0A0D'
+'EXEC GIT11HTP FEED 0A582D546573743A20310D0A0D'
 if rc\=0 then exit rc
-'EXEC GIT11HTTP FEED 0A00010203FF5041434B'
+'EXEC GIT11HTP FEED 0A00010203FF5041434B'
 if rc\=0 then exit rc
-'EXEC GIT11HTTP FINAL'
+'EXEC GIT11HTP FINAL'
 if rc\=0 then exit rc
 say 'M11C TEST 3: verify exact raw body bytes'
 drop b.
