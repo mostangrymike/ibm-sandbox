@@ -2,6 +2,7 @@ M12ATLS  CSECT
          USING M12ATLS,12
          LR    12,15
          ST    14,RETADDR
+         WRTERM TEXT=(MSTART,L'MSTART)
 *
 * M12A: z/VM Dynamic SSL TLSQuery capability probe.
 * IBM z/VM 6.3 TCP/IP Programmer's Reference:
@@ -23,6 +24,7 @@ M12ATLS  CSECT
          DC    X'83',X'12',XL2'0068'
          LTR   2,2
          BNZ   AUTHERR
+         WRTERM TEXT=(MAUTH,L'MAUTH)
 *
 * BEGINtcpIPservice: SEND, CALLCODE 101, TCPIP, client level 6.3.0.
 *
@@ -38,8 +40,10 @@ M12ATLS  CSECT
          DC    X'83',X'12',XL2'0068'
          LTR   2,2
          BNZ   BEGDIAG
+         WRTERM TEXT=(MBEGS,L'MBEGS)
          WAITECB ECB=VMCFECB
          MVC   SLOT1(40),VMCFBUF
+         WRTERM TEXT=(MBEGR,L'MBEGR)
          CLI   SLOT1+39,X'00'
          BNE   BEGRET
 *
@@ -61,8 +65,10 @@ M12ATLS  CSECT
          DC    X'83',X'12',XL2'0068'
          LTR   2,2
          BNZ   QDIAG
+         WRTERM TEXT=(MQSENT,L'MQSENT)
          WAITECB ECB=VMCFECB
          MVC   SLOT2(40),VMCFBUF
+         WRTERM TEXT=(MQPRE,L'MQPRE)
 *
 * Slot 2 is the preprocessing response.  Slot 3 is the
 * QUERYtlsCOMPLETE notification (CALLCODE X'19').
@@ -72,6 +78,7 @@ M12ATLS  CSECT
          BAL   14,CLEARECB
          WAITECB ECB=VMCFECB
          MVC   SLOT3(40),VMCFBUF
+         WRTERM TEXT=(MQDONE,L'MQDONE)
          CLI   SLOT3+38,X'19'
          BNE   QBADNOTE
          BAL   14,REJNOTE
@@ -136,6 +143,13 @@ VMCFECB  DC    F'0'
 RETADDR  DS    F
 WORKRET  DS    F
 SAVERC   DS    F
+MSTART   DC    C'M12A START'
+MAUTH    DC    C'M12A VMCF AUTHORIZED'
+MBEGS    DC    C'M12A BEGIN SENT'
+MBEGR    DC    C'M12A BEGIN RESPONSE'
+MQSENT   DC    C'M12A TLSQUERY SENT'
+MQPRE    DC    C'M12A TLSQUERY PREPROCESS RESPONSE'
+MQDONE   DC    C'M12A TLSQUERY COMPLETE'
 PASSMSG  DC    C'M12A TLSQUERY SSL SERVICE AVAILABLE'
 PASSLEN  EQU   *-PASSMSG
 EHND     DC    C'M12A ERROR HNDEXT'
