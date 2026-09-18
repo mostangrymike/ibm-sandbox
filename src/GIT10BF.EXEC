@@ -18,7 +18,9 @@ if cmd='FEED' then do
  work=tail||hex
  do forever
   if length(work)<8 then leave
-  n=x2d(x2c(substr(work,1,8)))
+  call pktlen substr(work,1,8)
+  if result='ERROR' then exit 8
+  n=result
   if n=0 then do
    work=substr(work,9)
    iterate
@@ -74,3 +76,16 @@ putmeta:
  'EXECIO 1 DISKW G10META DATA A 1 (STEM M. FINIS'
  if rc\=0 then return 'ERROR'
  return 'OK'
+
+pktlen: procedure
+ parse arg h
+ n=0
+ do i=1 to 4
+  b=x2d(substr(h,i*2-1,2))
+  if b>=48 & b<=57 then v=b-48
+  else if b>=65 & b<=70 then v=b-55
+  else if b>=97 & b<=102 then v=b-87
+  else return 'ERROR'
+  n=n*16+v
+ end
+ return n
