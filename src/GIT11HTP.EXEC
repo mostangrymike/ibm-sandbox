@@ -1,14 +1,20 @@
-/* M11C bounded raw HTTP response parser. */
-parse upper arg cmd hex extra
+/* M11D bounded HTTP response parser and body router. */
+parse upper arg cmd hex mode extra
 address command
 if cmd='INIT' then do
- call putmeta 'HEAD',''
+ if mode='' then mode='FILE'
+ if mode\='FILE' & mode\='GIT' then exit 4
+ call putmeta 'HEAD','',mode
  if result='ERROR' then exit 8
- 'ERASE M11BODY DATA A'
+ if mode='FILE' then 'ERASE M11BODY DATA A'
+ else do
+  'EXEC GIT10UP INIT'
+  if rc\=0 then exit rc
+ end
  exit 0
 end
 if cmd='FEED' then do
- if extra\='' | hex='' | length(hex)//2\=0 then exit 4
+ if mode\='' | extra\='' | hex='' | length(hex)//2\=0 then exit 4
  hex=translate(hex)
  if verify(hex,'0123456789ABCDEF')\=0 then exit 4
  call getmeta
@@ -31,7 +37,7 @@ if cmd='FEED' then do
    end
   end
  end
- call putmeta state,tail
+ call putmeta state,tail,route
  if result='ERROR' then exit 8
  exit 0
 end
@@ -39,6 +45,10 @@ if cmd='FINAL' then do
  call getmeta
  if result='ERROR' then exit 8
  if state\='BODY' then exit 8
+ if route='GIT' then do
+  'EXEC GIT10UP FINAL'
+  exit rc
+ end
  exit 0
 end
 exit 4
@@ -49,24 +59,30 @@ body:
   if n>128 then n=128
   piece=left(h,n)
   h=substr(h,n+1)
-  q.1=piece
-  q.0=1
-  'EXECIO 1 DISKW M11BODY DATA A 0 (STEM Q. FINIS'
-  if rc\=0 then return 'ERROR'
+  if route='GIT' then do
+   'EXEC GIT10UP FEED' piece
+   if rc\=0 then return 'ERROR'
+  end
+  else do
+   q.1=piece
+   q.0=1
+   'EXECIO 1 DISKW M11BODY DATA A 0 (STEM Q. FINIS'
+   if rc\=0 then return 'ERROR'
+  end
  end
  return 'OK'
 getmeta:
  drop m.
  'EXECIO 1 DISKR M11META DATA A 1 (STEM M. FINIS'
  if rc\=0 | m.0\=1 then return 'ERROR'
- parse var m.1 tag state tail extra
+ parse var m.1 tag state tail route extra
  if tag\='META' | extra\='' then return 'ERROR'
  if tail='-' then tail=''
  return 'OK'
 putmeta:
- parse arg s,t
+ parse arg s,t,r
  if t='' then t='-'
- m.1='META' s t
+ m.1='META' s t r
  m.0=1
  'EXECIO 1 DISKW M11META DATA A 1 (STEM M. FINIS'
  if rc\=0 then return 'ERROR'
