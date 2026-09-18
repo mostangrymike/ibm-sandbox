@@ -1,0 +1,61 @@
+/* M11A native CMS TCP connect/send/bounded-receive probe. */
+parse upper arg host port
+if host='' then host='EXAMPLE.COM'
+if port='' then port=80
+say 'M11A TEST 1: initialize REXX/SOCKETS'
+r=Socket('Initialize','M11ATCP')
+say r
+parse var r rc rest
+if rc\=0 then exit 8
+say 'M11A TEST 2: resolve host' host
+r=Socket('GetHostByName',host)
+say r
+parse var r rc name aliases addrs
+if rc\=0 then call fail
+ip=word(addrs,1)
+if ip='' then call fail
+say 'ADDRESS' ip
+say 'M11A TEST 3: create TCP socket'
+r=Socket('Socket','AF_INET','SOCK_STREAM','IPPROTO_TCP')
+say r
+parse var r rc s
+if rc\=0 then call fail
+say 'M11A TEST 4: connect' host port
+r=Socket('Connect',s,'AF_INET' port ip)
+say r
+parse var r rc rest
+if rc\=0 then call closefail
+req='GET / HTTP/1.0'||d2c(13)||d2c(10)
+req=req||'Host: '||translate(host)||d2c(13)||d2c(10)
+req=req||'Connection: close'||d2c(13)||d2c(10)||d2c(13)||d2c(10)
+say 'M11A TEST 5: send HTTP request'
+r=Socket('Send',s,req)
+say r
+parse var r rc sent
+if rc\=0 then call closefail
+say 'M11A TEST 6: bounded receive'
+total=0
+do forever
+ r=Socket('Recv',s,256)
+ parse var r rc got data
+ if rc\=0 then call closefail
+ if got=0 then leave
+ if got>256 then call closefail
+ total=total+got
+ if total>1048576 then call closefail
+end
+say 'RECEIVED BYTES' total
+r=Socket('Close',s)
+say r
+call term
+if total=0 then exit 8
+say 'M11A NATIVE TCP BOUNDED RECEIVE TEST PASSED'
+exit 0
+closefail:
+ call Socket 'Close',s
+fail:
+ call term
+ exit 8
+term:
+ r=Socket('Terminate')
+ return
