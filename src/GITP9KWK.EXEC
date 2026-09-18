@@ -48,8 +48,12 @@ do entry = 1 to objects
       say 'GITP9KWK: inflated size mismatch'
       exit 8
    end
+   'EXEC GITOID BLOB' outlen
+   if rc \= 0 | queued() < 1 then exit 8
+   parse pull oid
    say 'ENTRY' entry 'POSITION' entrypos 'TYPE BLOB SIZE' size
    say 'OBJECT BYTES' outlen
+   say 'OBJECT OID' oid
    pos = pos + used
 end
 say 'PACK VERSION' version
