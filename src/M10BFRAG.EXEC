@@ -1,0 +1,31 @@
+/* M10B split pkt-lines across arbitrary transport reads. */
+address command
+pack='5041434B0000000200000002'
+pack=pack||'337801010300FCFF616263024D0127'
+pack=pack||'337801010300FCFF78797A02D7016C'
+pack=pack||'5F1C02695D4BC807AE4A5DD622AD1D28E7659429'
+n=(length(pack)%2)+5
+pkt=c2x(right(d2x(n),4,'0'))||'01'||pack
+say 'M10B TEST 1: initialize arbitrary-boundary feeder'
+'EXEC GIT10BF INIT'
+if rc\=0 then exit rc
+say 'M10B TEST 2: split header, band, and payload'
+cuts='2 6 10 18 46 94'
+start=1
+do i=1 to words(cuts)
+ stop=word(cuts,i)
+ 'EXEC GIT10BF FEED' substr(pkt,start,stop-start+1)
+ if rc\=0 then exit rc
+ start=stop+1
+end
+'EXEC GIT10BF FEED' substr(pkt,start)
+if rc\=0 then exit rc
+'EXEC GIT10BF FINAL'
+if rc\=0 then exit rc
+say 'M10B TEST 3: verify and walk transported PACK'
+'EXEC GITPSHA VERIFY'
+if rc\=0 then exit rc
+'EXEC GITP9PWK WALK'
+if rc\=0 then exit rc
+say 'M10B ARBITRARY-BOUNDARY TRANSPORT TEST PASSED'
+exit 0
