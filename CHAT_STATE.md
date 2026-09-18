@@ -303,6 +303,24 @@ Before M11, harden GIT9CTX: its G9C plus five-digit PACK-position filenames can
 collide above position 99999. Also replace large incomplete pkt-line buffering
 with bounded streaming state before real side-band-64k traffic.
 
+## M11 native CMS networking/HTTP progress
+
+M11A is DONE/TARGET PROVEN on 2026-09-18. Native REXX/SOCKETS 3.03 initialized
+against TCPIP, resolved EXAMPLE.COM to current IPv4 addresses, connected on
+port 80, enabled SO_ASCII for the HTTP-text proof, sent all 56 request bytes,
+received 316 response bytes with each RECV bounded to 256 bytes, and closed
+cleanly. No BFS/OpenExtensions, Pi proxy, or Mac runtime helper was involved.
+
+After reboot, TCP/IP client commands/configuration required linking TCPMAINT 592
+read-only and accessing it as T. This exposed PING/NETSTAT and TCPIP DATA.
+NETSTAT showed IPv4 home 192.168.1.223/24 on OSA1 and default gateway
+192.168.1.254. PING to the gateway and 8.8.8.8 succeeded. The earlier timeout
+to 93.184.216.34 was destination-specific, not a native socket/routing failure.
+
+M11B is next: prove raw/binary socket operation with SO_ASCII left OFF, explicit
+ASCII wire bytes, bounded RECV, and exact wire-byte inspection before feeding
+network bytes into the M10 transport parser.
+
 ## NEXT ACTION
-M10 transport framing and boundedness are closed/target proven. Begin M11
-native CMS networking/HTTP. M12 remains native z/VM SSL/GSK TLS.
+Run M11BRAW target gate. If raw bytes are preserved exactly, integrate bounded
+native socket receive with M10 framing. M12 remains native z/VM SSL/GSK TLS.
