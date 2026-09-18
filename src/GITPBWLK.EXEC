@@ -78,3 +78,24 @@ readhex:
    parse pull h
    if length(h) \= count * 2 then return 'ERROR'
    return translate(h)
+
+ofshdr:
+   call readbyte pos
+   if result = 'ERROR' then return 'ERROR'
+   b = result
+   pos = pos + 1
+   distance = b // 128
+   more = b >= 128
+   do while more
+      call readbyte pos
+      if result = 'ERROR' then return 'ERROR'
+      b = result
+      pos = pos + 1
+      distance = (distance + 1) * 128 + (b // 128)
+      more = b >= 128
+   end
+   if distance < 1 | distance > entrypos then do
+      say 'GITPBWLK: invalid OFS_DELTA base distance' distance
+      return 'ERROR'
+   end
+   return 'OK'
