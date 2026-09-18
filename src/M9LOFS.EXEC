@@ -1,0 +1,18 @@
+/* M9L bounded OFS_DELTA PACK integration regression. */
+address command
+say 'M9L OFS TEST 1: build known M8B pack'
+pack='5041434B0000000200000002'
+pack=pack||'33789C4B4C4A0600024D0127'
+pack=pack||'660C789C636699C0CC98020002DB0100'
+pack=pack||'8CA36BC28C5A2FDDD0EB9762CA36049A32D114B6'
+'EXEC GITPBUF WRITE' pack
+if rc\=0 then exit rc
+say 'M9L OFS TEST 2: verify bounded PACK SHA-1'
+'EXEC GITPSHA VERIFY'
+if rc\=0 then exit rc
+if queued()>0 then parse pull sha
+say 'M9L OFS TEST 3: bounded OFS reconstruction'
+'EXEC GITP9LWK WALK'
+if rc\=0 then exit rc
+say 'M9L BOUNDED OFS_DELTA PACK TESTS PASSED'
+exit 0
