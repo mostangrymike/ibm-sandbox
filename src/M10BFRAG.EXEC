@@ -5,7 +5,7 @@ pack=pack||'337801010300FCFF616263024D0127'
 pack=pack||'337801010300FCFF78797A02D7016C'
 pack=pack||'5F1C02695D4BC807AE4A5DD622AD1D28E7659429'
 n=(length(pack)%2)+5
-pkt=c2x(right(d2x(n),4,'0'))||'01'||pack
+pkt=ascii4(n)||'01'||pack
 say 'M10B TEST 1: initialize arbitrary-boundary feeder'
 'EXEC GIT10BF INIT'
 if rc\=0 then exit rc
@@ -29,3 +29,14 @@ if rc\=0 then exit rc
 if rc\=0 then exit rc
 say 'M10B ARBITRARY-BOUNDARY TRANSPORT TEST PASSED'
 exit 0
+
+ascii4: procedure
+ parse arg n
+ s=right(d2x(n),4,'0')
+ out=''
+ do i=1 to 4
+  p=pos(substr(s,i,1),'0123456789ABCDEF')-1
+  if p<10 then out=out||d2x(48+p,2)
+  else out=out||d2x(55+p,2)
+ end
+ return out
