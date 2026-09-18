@@ -54,12 +54,14 @@ if command = 'FINAL' then do
    exit 0
 end
 
-if command = 'READ' | command = 'READSTACK' then do
-   stackmode = command = 'READSTACK'
+if command = 'READ' | command = 'READSTACK' | command = 'LIVE' then do
+   livemode = command = 'LIVE'
+   stackmode = command = 'READSTACK' | livemode
    parse var rest offset count extra
    if extra \= '' | datatype(offset,'W') \= 1 | offset < 0 |,
       datatype(count,'W') \= 1 | count < 0 then exit 4
-   call readrange offset,count
+   if livemode then call liverange offset,count
+   else call readrange offset,count
    if result = 'ERROR' then exit 8
    if stackmode then queue result
    else say result
@@ -122,3 +124,38 @@ readrange: procedure
    end
    within = offset // 64
    return substr(joined,within*2+1,count*2)
+
+liverange: procedure
+   parse arg offset,count
+   call getmeta
+   if result \= 'OK' then return 'ERROR'
+   if offset + count > size then do
+      say 'GITOBUF: live read exceeds object buffer'
+      return 'ERROR'
+   end
+   if count = 0 then return ''
+   diskbytes = size - length(tail) % 2
+   answer = ''
+   if offset < diskbytes then do
+      take = count
+      if offset + take > diskbytes then take = diskbytes - offset
+      first = offset % 64 + 1
+      last = (offset + take - 1) % 64 + 1
+      nrec = last - first + 1
+      drop in.
+      'EXECIO' nrec 'DISKR GITOBUF DATA A' first '(STEM IN. FINIS'
+      if rc \= 0 | in.0 \= nrec then return 'ERROR'
+      joined = ''
+      do i = 1 to in.0
+         joined = joined || strip(in.i)
+      end
+      within = offset // 64
+      answer = substr(joined,within*2+1,take*2)
+   end
+   have = length(answer) % 2
+   remain = count - have
+   if remain > 0 then do
+      tailoff = offset + have - diskbytes
+      answer = answer || substr(tail,tailoff*2+1,remain*2)
+   end
+   return answer
