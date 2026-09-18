@@ -1,0 +1,30 @@
+/* M10E large pkt-line bounded-fragmentation stress. */
+address command
+say 'M10E TEST 1: initialize bounded side-band parser'
+'EXEC GIT10BF INIT'
+if rc\=0 then exit rc
+/* Maximum normal pkt-line: ffff total bytes, 65530 payload bytes. */
+total=65535
+payload=total-5
+hdr='66666666'
+'EXEC GIT10BF FEED' left(hdr,2)
+if rc\=0 then exit rc
+'EXEC GIT10BF FEED' substr(hdr,3,4)
+if rc\=0 then exit rc
+'EXEC GIT10BF FEED' substr(hdr,7)||'02'
+if rc\=0 then exit rc
+say 'M10E TEST 2: stream 65530 channel-2 bytes in small fragments'
+chunk=copies('41',31)
+leftb=payload
+do while leftb>0
+ n=leftb
+ if n>31 then n=31
+ 'EXEC GIT10BF FEED' left(chunk,n*2)
+ if rc\=0 then exit rc
+ leftb=leftb-n
+end
+say 'M10E TEST 3: complete parser without retaining pkt payload'
+'EXEC GIT10BF FINAL'
+if rc\=0 then exit rc
+say 'M10E LARGE PKT-LINE BOUNDED STRESS TEST PASSED'
+exit 0
