@@ -16,8 +16,7 @@ end
 head = '626C6F6220' || digits || '00'
 total = length(head)%2 + size
 'MAKEBUF'
-queue right(d2x(total),8,'0')
-/* GITSTRM requires each queued data item to be a complete byte chunk. */
+/* CMS stack is LIFO: queue data first, length header last. */
 data = head
 pos = 0
 do while pos < size
@@ -37,6 +36,7 @@ do while pos < size
    pos = pos + count
 end
 if data \= '' then queue data
+queue right(d2x(total),8,'0')
 'GITSTRM'
 save = rc
 if save \= 0 then do
