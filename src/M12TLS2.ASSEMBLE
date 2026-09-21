@@ -86,6 +86,8 @@ M12TLS2  CSECT
          BNZ   QPRETO
          MVC   SLOT2(40),VMCFBUF
          WRTERM MQPRE,L'MQPRE
+         LA    2,SLOT2
+         BAL   14,DUMP40
          TM    SLOT2,X'80'
          BNO   QBADHDR
          CLI   SLOT2+1,X'00'
@@ -153,7 +155,29 @@ REJNOTE  ST    14,WORKRET
          L     14,WORKRET
          BR    14
 *
-* Error paths stack compact diagnostics.  Return code is 8.
+* Render the 40-byte interrupt header as 80 hexadecimal characters.
+*
+DUMP40   ST    14,DUMPRET
+         LA    3,HEXDUMP
+         LA    4,40
+DUMPLOOP SR    5,5
+         IC    5,0(2)
+         LR    6,5
+         SRL   6,4
+         N     6,=F'15'
+         IC    7,HEXTAB(6)
+         STC   7,0(3)
+         N     5,=F'15'
+         IC    7,HEXTAB(5)
+         STC   7,1(3)
+         LA    2,1(2)
+         LA    3,2(3)
+         BCT   4,DUMPLOOP
+         WRTERM HEXDUMP,80
+         L     14,DUMPRET
+         BR    14
+*
+* Error paths print compact diagnostics.  Return code is 8.
 *
 HNDERR   WRTERM EHND,L'EHND
          B     FAIL
@@ -235,6 +259,7 @@ SAVECR0  DS    F
 RETADDR  DS    F
 WORKRET  DS    F
 WAITRET  DS    F
+DUMPRET  DS    F
 SAVERC   DS    F
 MCPU     DC    C'M12A BASE CPU SELECTED'
 MENAB    DC    C'M12A INTERRUPTS ENABLED'
@@ -259,6 +284,8 @@ EQHDR    DC    C'M12A ERROR TLSQUERY RESPONSE HEADER'
 EQVMC    DC    C'M12A ERROR TLSQUERY VMCF RC'
 EQPRE    DC    C'M12A ERROR TLSQUERY PREPROCESS RC'
 QPRENUM  DC    CL4' '
+HEXTAB   DC    C'0123456789ABCDEF'
+HEXDUMP  DS    CL80
 EQNOT    DC    C'M12A ERROR TLSQUERY NOTIFICATION'
 EQRES    DC    C'M12A TLSQUERY SSL SERVICE UNAVAILABLE'
          END   M12TLS2
