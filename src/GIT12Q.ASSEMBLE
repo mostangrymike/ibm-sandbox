@@ -6,7 +6,7 @@ GIT12Q   CSECT
 * M12A: native VMCF TLSQuery probe against TCPIP.
 * Proves VMCF AUTHORIZE, BEGINtcpIPservice, and TLSQuery.
 *
-          HNDEXT SET,EXTHAND,CODE=X'4001',ECB=ECB,ERROR=HNDERR
+          HNDEXT SET,EXTHAND,CODE=4001,ECB=ECB,ERROR=HNDERR
           XC    VPARM(40),VPARM
           LA    2,VPARM
           LA    4,INTBUF
@@ -41,7 +41,7 @@ BEGPOST   CLI   BEGRC,0
 * Keyring is blank because keyring selection is not available here.
 *
           XC    PREPDONE(1),PREPDONE
-          XC    QUERYDONE(1),QUERYDONE
+          XC    QDONE(1),QDONE
           XC    ECB(4),ECB
           MVI   QREQ,X'40'
           MVC   QREQ+1(57),QREQ
@@ -62,7 +62,7 @@ BEGPOST   CLI   BEGRC,0
 PREPOST   CLI   PREPRC,0
           BNE   PREFAIL
           XC    ECB(4),ECB
-          CLI   QUERYDONE,1
+          CLI   QDONE,1
           BE    QPOST
           WAITECB ECB=ECB
 QPOST     CLI   QUERYRC,0
@@ -100,7 +100,7 @@ HNDERR    LINEWRT DATA=(HMSG,HMLEN)
           LA    15,4
           B     RETURN
 BADCLN    BAL   14,CLEANUP
-BADCLR    HNDEXT CLR,CODE=X'4001'
+BADCLR    HNDEXT CLR,CODE=4001
           LA    15,4
 RETURN    L     14,RETADDR
           BR    14
@@ -138,7 +138,7 @@ EXQ       CLI   INTBUF+38,128
 EXQC      CLI   INTBUF+38,33
           BNE   EXDONE
           MVC   QUERYRC(1),INTBUF+39
-          MVI   QUERYDONE,1
+          MVI   QDONE,1
 EXDONE    SR    15,15
           BR    14
 *
@@ -149,7 +149,7 @@ CLEANUP   ST    14,CLNRET
           MVC   2(2,2),=X'0001'
           LA    2,VPARM
           BAL   14,VMCFDIAG
-          HNDEXT CLR,CODE=X'4001'
+          HNDEXT CLR,CODE=4001
           L     14,CLNRET
           BR    14
 *
@@ -203,7 +203,7 @@ BEGDONE   DC    X'00'
 BEGRC     DC    X'00'
 PREPDONE  DC    X'00'
 PREPRC    DC    X'00'
-QUERYDONE DC    X'00'
+QDONE DC    X'00'
 QUERYRC   DC    X'00'
 OUTRC     DC    X'00'
 RETADDR   DS    F
