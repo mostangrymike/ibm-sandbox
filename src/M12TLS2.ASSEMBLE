@@ -1,0 +1,255 @@
+M12TLS2  CSECT
+         USING M12TLS2,12
+         LR    12,15
+         ST    14,RETADDR
+         WRTERM MCPU,L'MCPU
+         WRTERM MSTART,L'MSTART
+*
+* M12A: z/VM Dynamic SSL TLSQuery capability probe.
+* IBM z/VM 6.3 TCP/IP Programmer's Reference:
+*   VMCF AUTHORIZE, BEGINtcpIPservice, TLSQuery CALLCODE 128.
+* Blank TLS label asks whether the SSL server is available.
+*
+         HNDEXT SET,'DUMMY',CODE=4001,ECB=(VMCFECB,OS),ERROR=HNDERR
+         LTR   15,15
+         BNZ   HNDERR
+         ENABLE INTTYPE=ALL
+         STCTL 0,0,OLDCR0
+         MVC   SAVECR0(4),OLDCR0
+         OI    SAVECR0+3,X'01'
+         LCTL  0,0,SAVECR0
+         WRTERM MENAB,L'MENAB
+*
+* Authorize VMCF with a 40-byte external interrupt buffer.
+*
+         XC    VMCFBUF(40),VMCFBUF
+         XC    VMCFPL(40),VMCFPL
+         MVI   VMCFPL,X'80'
+         MVC   VMCFPL+8(8),=CL8'TCPIP'
+         LA    2,VMCFBUF
+         ST    2,VMCFPL+16
+         LA    2,40
+         ST    2,VMCFPL+20
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         LTR   2,2
+         BNZ   AUTHERR
+         WRTERM MAUTH,L'MAUTH
+*
+* BEGINtcpIPservice: SEND, CALLCODE 101, TCPIP, client level 6.3.0.
+*
+         BAL   14,CLEARECB
+         XC    VMCFPL(40),VMCFPL
+         MVC   VMCFPL+2(2),=X'0002'
+         MVC   VMCFPL+4(4),=X'00000002'
+         MVC   VMCFPL+8(8),=CL8'TCPIP'
+         MVC   VMCFPL+20(4),=X'00000001'
+         MVC   VMCFPL+32(4),=X'06300000'
+         MVC   VMCFPL+36(2),=X'0000'
+         MVI   VMCFPL+38,X'65'
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         LTR   2,2
+         BNZ   BEGDIAG
+         WRTERM MBEGS,L'MBEGS
+         BAL   14,WAITEVT
+         LTR   15,15
+         BNZ   BEGTO
+         MVC   SLOT1(40),VMCFBUF
+         WRTERM MBEGR,L'MBEGR
+         CLI   SLOT1+39,X'00'
+         BNE   BEGRET
+*
+* TLSQuery: SEND/RECV, CALLCODE 128. Query record is 8 blank
+* label bytes plus 50 blank keyring bytes, as documented for VM.
+* IBM requires CIBB=UNSPECIFIEDconnection (-48, X'FFD0').
+*
+         BAL   14,CLEARECB
+         MVC   QUERY(58),=CL58' '
+         XC    VMCFPL(40),VMCFPL
+         MVC   VMCFPL+2(2),=X'0003'
+         MVC   VMCFPL+4(4),=X'00000004'
+         MVC   VMCFPL+8(8),=CL8'TCPIP'
+         LA    3,QUERY
+         ST    3,VMCFPL+16
+         LA    3,58
+         ST    3,VMCFPL+20
+         MVC   VMCFPL+36(2),=X'FFD0'
+         MVI   VMCFPL+38,X'80'
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         LTR   2,2
+         BNZ   QDIAG
+         WRTERM MQSENT,L'MQSENT
+         BAL   14,WAITEVT
+         LTR   15,15
+         BNZ   QPRETO
+         MVC   SLOT2(40),VMCFBUF
+         WRTERM MQPRE,L'MQPRE
+         TM    SLOT2,X'80'
+         BNO   QBADHDR
+         CLI   SLOT2+1,X'00'
+         BNE   QVMCF
+         CLC   SLOT2+2(2),=X'0003'
+         BNE   QBADHDR
+         CLC   SLOT2+4(4),=X'00000004'
+         BNE   QBADHDR
+         CLI   SLOT2+38,X'80'
+         BNE   QBADHDR
+*
+* Slot 2 is the preprocessing response.  Slot 3 is the
+* QUERYtlsCOMPLETE notification (CALLCODE X'19').
+*
+         CLI   SLOT2+39,X'00'
+         BNE   QPRE
+         BAL   14,CLEARECB
+         BAL   14,WAITEVT
+         LTR   15,15
+         BNZ   QDONETO
+         MVC   SLOT3(40),VMCFBUF
+         WRTERM MQDONE,L'MQDONE
+         CLI   SLOT3+38,X'19'
+         BNE   QBADNOTE
+         BAL   14,REJNOTE
+         CLI   SLOT3+39,X'00'
+         BNE   QRESULT
+         CMSSTACK TEXT=(PASSMSG,PASSLEN)
+         B     CLEANOK
+*
+CLEARECB XC    VMCFECB,VMCFECB
+         BR    14
+*
+* Bounded wait for a VMCF event.  Return R15=0 when either the
+* ECB is posted or the interrupt buffer changes; R15=8 on timeout.
+*
+WAITEVT  ST    14,WAITRET
+         STCK  STARTTOD
+WAITLP   CLC   VMCFECB(4),=F'0'
+         BNE   WAITOK
+         CLC   VMCFBUF(40),ZERO40
+         BNE   WAITOK
+         STCK  NOWTOD
+         L     5,NOWTOD
+         S     5,STARTTOD
+         C     5,=F'5'
+         BL    WAITLP
+         LA    15,8
+         L     14,WAITRET
+         BR    14
+WAITOK   SR    15,15
+         L     14,WAITRET
+         BR    14
+*
+* A QUERYtlsCOMPLETE notification is a SEND.  IBM requires
+* completion with VMCF REJECT using the interrupt header data.
+*
+REJNOTE  ST    14,WORKRET
+         MVC   VMCFPL(40),SLOT3
+         XC    VMCFPL(2),VMCFPL
+         MVC   VMCFPL+2(2),=X'000B'
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         L     14,WORKRET
+         BR    14
+*
+* Error paths stack compact diagnostics.  Return code is 8.
+*
+HNDERR   CMSSTACK TEXT=(EHND,L'EHND)
+         B     FAIL
+AUTHERR  CMSSTACK TEXT=(EAUTH,L'EAUTH)
+         B     FAIL
+BEGDIAG  CMSSTACK TEXT=(EBEGD,L'EBEGD)
+         B     FAIL
+BEGRET   CMSSTACK TEXT=(EBEGR,L'EBEGR)
+         B     FAIL
+BEGTO    CMSSTACK TEXT=(EBEGTO,L'EBEGTO)
+         B     FAIL
+QDIAG    CMSSTACK TEXT=(EQDIA,L'EQDIA)
+         B     FAIL
+QPRETO   CMSSTACK TEXT=(EQPTO,L'EQPTO)
+         B     FAIL
+QDONETO  CMSSTACK TEXT=(EQDTO,L'EQDTO)
+         B     FAIL
+QBADHDR  CMSSTACK TEXT=(EQHDR,L'EQHDR)
+         B     FAIL
+QVMCF    IC    2,SLOT2+1
+         ST    2,QPRERC
+         CVD   2,QPREDEC
+         MVC   QPRENUM(3),=X'402020'
+         ED    QPRENUM(3),QPREDEC+6
+         WRTERM EQVMC,L'EQVMC
+         WRTERM QPRENUM,L'QPRENUM
+         B     FAIL
+QPRE     IC    2,SLOT2+39
+         ST    2,QPRERC
+         CVD   2,QPREDEC
+         MVC   QPRENUM(3),=X'402020'
+         ED    QPRENUM(3),QPREDEC+6
+         WRTERM EQPRE,L'EQPRE
+         WRTERM QPRENUM,L'QPRENUM
+         B     FAIL
+QBADNOTE CMSSTACK TEXT=(EQNOT,L'EQNOT)
+         B     FAIL
+QRESULT  CMSSTACK TEXT=(EQRES,L'EQRES)
+FAIL     LA    15,8
+         B     CLEAN
+CLEANOK  SR    15,15
+CLEAN    ST    15,SAVERC
+         LCTL  0,0,OLDCR0
+         HNDEXT CLR,CODE=4001
+         XC    VMCFPL(40),VMCFPL
+         MVC   VMCFPL+2(2),=X'0001'
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         L     15,SAVERC
+         L     14,RETADDR
+         BR    14
+*
+         DS    0D
+VMCFPL   DS    XL40
+VMCFBUF  DS    XL40
+SLOT1    DS    XL40
+SLOT2    DS    XL40
+SLOT3    DS    XL40
+ZERO40   DC    40X'00'
+QUERY    DS    CL58
+         DS    0D
+STARTTOD DS    D
+NOWTOD   DS    D
+         DS    0F
+VMCFECB  DC    F'0'
+QPRERC   DS    F
+         DS    0D
+QPREDEC  DS    D
+OLDCR0   DS    F
+SAVECR0  DS    F
+RETADDR  DS    F
+WORKRET  DS    F
+WAITRET  DS    F
+SAVERC   DS    F
+MCPU     DC    C'M12A BASE CPU SELECTED'
+MENAB    DC    C'M12A INTERRUPTS ENABLED'
+MSTART   DC    C'M12A START'
+MAUTH    DC    C'M12A VMCF AUTHORIZED'
+MBEGS    DC    C'M12A BEGIN SENT'
+MBEGR    DC    C'M12A BEGIN RESPONSE'
+MQSENT   DC    C'M12A TLSQUERY SENT'
+MQPRE    DC    C'M12A TLSQUERY PREPROCESS RESPONSE'
+MQDONE   DC    C'M12A TLSQUERY COMPLETE'
+PASSMSG  DC    C'M12A TLSQUERY SSL SERVICE AVAILABLE'
+PASSLEN  EQU   *-PASSMSG
+EHND     DC    C'M12A ERROR HNDEXT'
+EAUTH    DC    C'M12A ERROR VMCF AUTHORIZE'
+EBEGD    DC    C'M12A ERROR BEGIN DIAG'
+EBEGR    DC    C'M12A ERROR BEGIN RETURN'
+EBEGTO   DC    C'M12A ERROR BEGIN TIMEOUT'
+EQDIA    DC    C'M12A ERROR TLSQUERY DIAG'
+EQPTO    DC    C'M12A ERROR TLSQUERY PREPROCESS TIMEOUT'
+EQDTO    DC    C'M12A ERROR TLSQUERY COMPLETE TIMEOUT'
+EQHDR    DC    C'M12A ERROR TLSQUERY RESPONSE HEADER'
+EQVMC    DC    C'M12A ERROR TLSQUERY VMCF RC'
+EQPRE    DC    C'M12A ERROR TLSQUERY PREPROCESS RC'
+QPRENUM  DC    CL3' '
+EQNOT    DC    C'M12A ERROR TLSQUERY NOTIFICATION'
+EQRES    DC    C'M12A TLSQUERY SSL SERVICE UNAVAILABLE'
+         END   M12TLS2
