@@ -456,3 +456,28 @@ Build M12A as a minimal assembler/VMCF TLSQuery probe from the documented z/VM
 is target proven, extend the same native adapter to OPENtcp + TLSSCLIENTtcp +
 bounded SENDtcp/RECEIVEtcp, preserving the raw bounded-byte interface expected
 by GIT11HTP.
+
+## 2026-09-21 workflow rule and M12A execution diagnostic
+
+Workflow rule: proceed independently through all host-side research, source
+inspection, GitHub edits, and preparation. Do not stop to ask the user to
+perform intermediate work. Stop only when an action on the z/VM/CMS target is
+actually required; then provide the exact Mac transfer commands first (when a
+transfer is needed) and the smallest exact CMS command batch. Continue again
+independently as soon as the target output is returned.
+
+The native c3270 DFT control path is recovered and target proven. A single
+interactive c3270 session is launched with local script port 3271; transfer
+helpers send c3270 Transfer() actions to that port. The running c3270 resolves
+LocalFile relative to its own launch directory, not the helper shell's current
+directory. An absolute LocalFile path was proven by successfully uploading
+GIT12Q ASSEMBLE A. Preserve CMS filename/type limits of eight characters.
+
+GIT12Q assembled, LOADed, and GENMODed cleanly, but its first execution blocked
+until HX. Do not run GIT12Q again in that form. Inspection of the existing
+canonical M12 diagnostics shows the missing target mechanics: M12ABEG selects
+the base VCPU, installs HNDEXT X'4001', ENABLEs interrupts, enables CR0 bit 31,
+AUTHORIZEs TCPIP, and uses bounded polling for BEGINtcpIPservice rather than an
+unbounded WAITECB. M12ATLS contains the fuller TLSQuery sequence. Use the
+existing bounded diagnostic path to localize VMCF completion before resuming
+TLSQuery; do not introduce another unbounded wait.
