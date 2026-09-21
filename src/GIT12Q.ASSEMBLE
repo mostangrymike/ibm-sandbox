@@ -1,0 +1,213 @@
+GIT12Q   CSECT
+          USING GIT12Q,12
+          LR    12,15
+          ST    14,RETADDR
+*
+* M12A: native VMCF TLSQuery probe against TCPIP.
+* Proves VMCF AUTHORIZE, BEGINtcpIPservice, and TLSQuery.
+*
+          HNDEXT SET,EXTHAND,CODE=X'4001',ECB=ECB,ERROR=HNDERR
+          XC    VPARM(40),VPARM
+          LA    2,VPARM
+          LA    4,INTBUF
+          ST    4,16(2)
+          LA    4,40
+          ST    4,20(2)
+          BAL   14,VMCFDIAG
+          LTR   3,3
+          BNZ   AUTHERR
+*
+* BEGINtcpIPservice: VMCF SEND, CALLCODE 101.
+*
+          XC    BEGDONE(1),BEGDONE
+          XC    ECB(4),ECB
+          BAL   14,INITREQ
+          MVC   2(2,2),=X'0002'
+          MVC   4(4,2),=F'2'
+          LA    4,1
+          ST    4,20(2)
+          MVC   36(2,2),=X'0001'
+          MVI   38(2),101
+          BAL   14,VMCFDIAG
+          LTR   3,3
+          BNZ   BEGDIAG
+          CLI   BEGDONE,1
+          BE    BEGPOST
+          WAITECB ECB=ECB
+BEGPOST   CLI   BEGRC,0
+          BNE   BEGFAIL
+*
+* TLSQuery: blank label asks whether SSL server is available.
+* Keyring is blank because keyring selection is not available here.
+*
+          XC    PREPDONE(1),PREPDONE
+          XC    QUERYDONE(1),QUERYDONE
+          XC    ECB(4),ECB
+          MVI   QREQ,X'40'
+          MVC   QREQ+1(57),QREQ
+          BAL   14,INITREQ
+          MVC   2(2,2),=X'0003'
+          MVC   4(4,2),=F'4'
+          LA    4,QREQ
+          ST    4,16(2)
+          LA    4,58
+          ST    4,20(2)
+          MVI   38(2),128
+          BAL   14,VMCFDIAG
+          LTR   3,3
+          BNZ   QDIAG
+          CLI   PREPDONE,1
+          BE    PREPOST
+          WAITECB ECB=ECB
+PREPOST   CLI   PREPRC,0
+          BNE   PREFAIL
+          XC    ECB(4),ECB
+          CLI   QUERYDONE,1
+          BE    QPOST
+          WAITECB ECB=ECB
+QPOST     CLI   QUERYRC,0
+          BNE   QFAIL
+          LINEWRT DATA=(OKMSG,OKLEN)
+          BAL   14,CLEANUP
+          SR    15,15
+          B     RETURN
+*
+AUTHERR   STC   3,OUTRC
+          LINEWRT DATA=(AMSG,AMLEN)
+          BAL   14,SHOWRC
+          B     BADCLR
+BEGDIAG   STC   3,OUTRC
+          LINEWRT DATA=(BDMSG,BDLEN)
+          BAL   14,SHOWRC
+          B     BADCLN
+BEGFAIL   MVC   OUTRC(1),BEGRC
+          LINEWRT DATA=(BMSG,BMLEN)
+          BAL   14,SHOWRC
+          B     BADCLN
+QDIAG     STC   3,OUTRC
+          LINEWRT DATA=(QDMSG,QDLEN)
+          BAL   14,SHOWRC
+          B     BADCLN
+PREFAIL   MVC   OUTRC(1),PREPRC
+          LINEWRT DATA=(PMSG,PMLEN)
+          BAL   14,SHOWRC
+          B     BADCLN
+QFAIL     MVC   OUTRC(1),QUERYRC
+          LINEWRT DATA=(QMSG,QMLEN)
+          BAL   14,SHOWRC
+          B     BADCLN
+HNDERR    LINEWRT DATA=(HMSG,HMLEN)
+          LA    15,4
+          B     RETURN
+BADCLN    BAL   14,CLEANUP
+BADCLR    HNDEXT CLR,CODE=X'4001'
+          LA    15,4
+RETURN    L     14,RETADDR
+          BR    14
+*
+* Initialize common TCPIP VMCF request fields.
+*
+INITREQ   ST    14,SUBRET
+          XC    VPARM(40),VPARM
+          MVC   8(8,2),=CL8'TCPIP'
+          L     14,SUBRET
+          BR    14
+*
+* Execute DIAGNOSE X'68'. R2 -> VMCF parm, R3 returns CP code.
+*
+VMCFDIAG  ST    14,SUBRET
+          DC    X'83230068'
+          L     14,SUBRET
+          BR    14
+*
+* VMCF X'4001' handler. CP has already stored INTBUF.
+* Do no I/O here. Save only the completion state needed by M12A.
+*
+EXTHAND   CLI   INTBUF+38,101
+          BNE   EXQ
+          MVC   BEGRC(1),INTBUF+39
+          MVI   BEGDONE,1
+          B     EXDONE
+EXQ       CLI   INTBUF+38,128
+          BNE   EXQC
+          TM    INTBUF,X'80'
+          BZ    EXDONE
+          MVC   PREPRC(1),INTBUF+39
+          MVI   PREPDONE,1
+          B     EXDONE
+EXQC      CLI   INTBUF+38,33
+          BNE   EXDONE
+          MVC   QUERYRC(1),INTBUF+39
+          MVI   QUERYDONE,1
+EXDONE    SR    15,15
+          BR    14
+*
+* Best-effort cleanup: unauthorize VMCF and clear CMS handler.
+*
+CLEANUP   ST    14,CLNRET
+          XC    VPARM(40),VPARM
+          MVC   2(2,2),=X'0001'
+          LA    2,VPARM
+          BAL   14,VMCFDIAG
+          HNDEXT CLR,CODE=X'4001'
+          L     14,CLNRET
+          BR    14
+*
+* Display one-byte return code as two hexadecimal digits.
+* OUTRC contains the byte.
+*
+SHOWRC    ST    14,SHRET
+          XR    5,5
+          IC    5,OUTRC
+          LR    6,5
+          SRL   5,4
+          N     5,=F'15'
+          N     6,=F'15'
+          LA    7,HEXTAB
+          AR    5,7
+          AR    6,7
+          MVC   HEXOUT(1),0(5)
+          MVC   HEXOUT+1(1),0(6)
+          LINEWRT DATA=(RCMSG,RCLEN)
+          L     14,SHRET
+          BR    14
+          LTORG
+OKMSG     DC    C'M12A TLSQUERY OK: SSL SERVER AVAILABLE'
+OKLEN     EQU   *-OKMSG
+AMSG      DC    C'M12A VMCF AUTHORIZE DIAG FAILED'
+AMLEN     EQU   *-AMSG
+BDMSG     DC    C'M12A BEGIN DIAG FAILED'
+BDLEN     EQU   *-BDMSG
+BMSG      DC    C'M12A BEGIN TCPIP FAILED'
+BMLEN     EQU   *-BMSG
+QDMSG     DC    C'M12A TLSQUERY DIAG FAILED'
+QDLEN     EQU   *-QDMSG
+PMSG      DC    C'M12A TLSQUERY PREPROCESS FAILED'
+PMLEN     EQU   *-PMSG
+QMSG      DC    C'M12A TLSQUERY COMPLETE FAILED'
+QMLEN     EQU   *-QMSG
+HMSG      DC    C'M12A HNDEXT SET FAILED'
+HMLEN     EQU   *-HMSG
+RCMSG     DC    C'RETURN CODE X'''
+HEXOUT    DC    CL2'00'
+          DC    C''''
+RCLEN     EQU   *-RCMSG
+HEXTAB    DC    C'0123456789ABCDEF'
+          DS    0D
+VPARM     DS    40C
+          DS    0D
+INTBUF    DS    40C
+QREQ      DS    58C
+ECB       DC    F'0'
+BEGDONE   DC    X'00'
+BEGRC     DC    X'00'
+PREPDONE  DC    X'00'
+PREPRC    DC    X'00'
+QUERYDONE DC    X'00'
+QUERYRC   DC    X'00'
+OUTRC     DC    X'00'
+RETADDR   DS    F
+SUBRET    DS    F
+CLNRET    DS    F
+SHRET     DS    F
+          END   GIT12Q
