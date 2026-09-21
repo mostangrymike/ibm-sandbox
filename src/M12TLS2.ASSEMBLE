@@ -98,7 +98,7 @@ M12TLS2  CSECT
          BNE   QBADHDR
 *
 * Slot 2 is the preprocessing response.  Slot 3 is the
-* QUERYtlsCOMPLETE notification (CALLCODE X'19').
+* QUERYtlsCOMPLETE notification (CALLCODE X'23', decimal 35).
 *
          CLI   SLOT2+39,X'00'
          BNE   QPRE
@@ -108,7 +108,7 @@ M12TLS2  CSECT
          BNZ   QDONETO
          MVC   SLOT3(40),VMCFBUF
          WRTERM MQDONE,L'MQDONE
-         CLI   SLOT3+38,X'19'
+         CLI   SLOT3+38,X'23'
          BNE   QBADNOTE
          BAL   14,REJNOTE
          CLI   SLOT3+39,X'00'
@@ -117,6 +117,7 @@ M12TLS2  CSECT
          B     CLEANOK
 *
 CLEARECB XC    VMCFECB,VMCFECB
+         XC    VMCFBUF(40),VMCFBUF
          BR    14
 *
 * Bounded wait for a VMCF event.  Return R15=0 when either the
@@ -172,16 +173,24 @@ QDONETO  WRTERM EQDTO,L'EQDTO
          B     FAIL
 QBADHDR  WRTERM EQHDR,L'EQHDR
          B     FAIL
-QVMCF    IC    2,SLOT2+1
-         ST    2,QPRERC
+QVMCF    SR    2,2
+         IC    2,SLOT2+1
+         TM    SLOT2+1,X'80'
+         BZ    QVMCFP
+         O     2,=X'FFFFFF00'
+QVMCFP   ST    2,QPRERC
          CVD   2,QPREDEC
-         MVC   QPRENUM(3),=X'402020'
-         ED    QPRENUM(3),QPREDEC+6
+         MVC   QPRENUM(4),=X'40202020'
+         ED    QPRENUM(4),QPREDEC+6
          WRTERM EQVMC,L'EQVMC
          WRTERM QPRENUM,L'QPRENUM
          B     FAIL
-QPRE     IC    2,SLOT2+39
-         ST    2,QPRERC
+QPRE     SR    2,2
+         IC    2,SLOT2+39
+         TM    SLOT2+39,X'80'
+         BZ    QPREP
+         O     2,=X'FFFFFF00'
+QPREP    ST    2,QPRERC
          CVD   2,QPREDEC
          MVC   QPRENUM(3),=X'402020'
          ED    QPRENUM(3),QPREDEC+6
@@ -249,7 +258,7 @@ EQDTO    DC    C'M12A ERROR TLSQUERY COMPLETE TIMEOUT'
 EQHDR    DC    C'M12A ERROR TLSQUERY RESPONSE HEADER'
 EQVMC    DC    C'M12A ERROR TLSQUERY VMCF RC'
 EQPRE    DC    C'M12A ERROR TLSQUERY PREPROCESS RC'
-QPRENUM  DC    CL3' '
+QPRENUM  DC    CL4' '
 EQNOT    DC    C'M12A ERROR TLSQUERY NOTIFICATION'
 EQRES    DC    C'M12A TLSQUERY SSL SERVICE UNAVAILABLE'
          END   M12TLS2
