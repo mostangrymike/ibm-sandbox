@@ -52,7 +52,9 @@ M12ATLS  CSECT
          LTR   2,2
          BNZ   BEGDIAG
          WRTERM MBEGS,L'MBEGS
-         WAITECB ECB=VMCFECB
+         BAL   14,WAITEVT
+         LTR   15,15
+         BNZ   BEGTO
          MVC   SLOT1(40),VMCFBUF
          WRTERM MBEGR,L'MBEGR
          CLI   SLOT1+39,X'00'
@@ -79,7 +81,9 @@ M12ATLS  CSECT
          LTR   2,2
          BNZ   QDIAG
          WRTERM MQSENT,L'MQSENT
-         WAITECB ECB=VMCFECB
+         BAL   14,WAITEVT
+         LTR   15,15
+         BNZ   QPRETO
          MVC   SLOT2(40),VMCFBUF
          WRTERM MQPRE,L'MQPRE
          TM    SLOT2,X'80'
@@ -99,7 +103,9 @@ M12ATLS  CSECT
          CLI   SLOT2+39,X'00'
          BNE   QPRE
          BAL   14,CLEARECB
-         WAITECB ECB=VMCFECB
+         BAL   14,WAITEVT
+         LTR   15,15
+         BNZ   QDONETO
          MVC   SLOT3(40),VMCFBUF
          WRTERM MQDONE,L'MQDONE
          CLI   SLOT3+38,X'19'
@@ -111,6 +117,27 @@ M12ATLS  CSECT
          B     CLEANOK
 *
 CLEARECB XC    VMCFECB,VMCFECB
+         BR    14
+*
+* Bounded wait for a VMCF event.  Return R15=0 when either the
+* ECB is posted or the interrupt buffer changes; R15=8 on timeout.
+*
+WAITEVT  ST    14,WAITRET
+         STCK  STARTTOD
+WAITLP   CLC   VMCFECB(4),=F'0'
+         BNE   WAITOK
+         CLC   VMCFBUF(40),ZERO40
+         BNE   WAITOK
+         STCK  NOWTOD
+         L     5,NOWTOD
+         S     5,STARTTOD
+         C     5,=F'5'
+         BL    WAITLP
+         LA    15,8
+         L     14,WAITRET
+         BR    14
+WAITOK   SR    15,15
+         L     14,WAITRET
          BR    14
 *
 * A QUERYtlsCOMPLETE notification is a SEND.  IBM requires
@@ -135,7 +162,13 @@ BEGDIAG  CMSSTACK TEXT=(EBEGD,L'EBEGD)
          B     FAIL
 BEGRET   CMSSTACK TEXT=(EBEGR,L'EBEGR)
          B     FAIL
+BEGTO    CMSSTACK TEXT=(EBEGTO,L'EBEGTO)
+         B     FAIL
 QDIAG    CMSSTACK TEXT=(EQDIA,L'EQDIA)
+         B     FAIL
+QPRETO   CMSSTACK TEXT=(EQPTO,L'EQPTO)
+         B     FAIL
+QDONETO  CMSSTACK TEXT=(EQDTO,L'EQDTO)
          B     FAIL
 QBADHDR  CMSSTACK TEXT=(EQHDR,L'EQHDR)
          B     FAIL
@@ -178,7 +211,11 @@ VMCFBUF  DS    XL40
 SLOT1    DS    XL40
 SLOT2    DS    XL40
 SLOT3    DS    XL40
+ZERO40   DC    40X'00'
 QUERY    DS    CL58
+         DS    0D
+STARTTOD DS    D
+NOWTOD   DS    D
          DS    0F
 VMCFECB  DC    F'0'
 QPRERC   DS    F
@@ -188,6 +225,7 @@ OLDCR0   DS    F
 SAVECR0  DS    F
 RETADDR  DS    F
 WORKRET  DS    F
+WAITRET  DS    F
 SAVERC   DS    F
 MCPU     DC    C'M12A BASE CPU SELECTED'
 MENAB    DC    C'M12A INTERRUPTS ENABLED'
@@ -204,7 +242,10 @@ EHND     DC    C'M12A ERROR HNDEXT'
 EAUTH    DC    C'M12A ERROR VMCF AUTHORIZE'
 EBEGD    DC    C'M12A ERROR BEGIN DIAG'
 EBEGR    DC    C'M12A ERROR BEGIN RETURN'
+EBEGTO   DC    C'M12A ERROR BEGIN TIMEOUT'
 EQDIA    DC    C'M12A ERROR TLSQUERY DIAG'
+EQPTO    DC    C'M12A ERROR TLSQUERY PREPROCESS TIMEOUT'
+EQDTO    DC    C'M12A ERROR TLSQUERY COMPLETE TIMEOUT'
 EQHDR    DC    C'M12A ERROR TLSQUERY RESPONSE HEADER'
 EQVMC    DC    C'M12A ERROR TLSQUERY VMCF RC'
 EQPRE    DC    C'M12A ERROR TLSQUERY PREPROCESS RC'
