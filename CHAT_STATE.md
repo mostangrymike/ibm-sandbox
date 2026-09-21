@@ -1,6 +1,6 @@
 # CMS/zVM Native Git Client — Chat State
 
-Updated: 2026-09-17
+Updated: 2026-09-21
 Repository: `mostangrymike/ibm-sandbox`, branch `main`
 
 ## Workflow/rules
@@ -22,7 +22,9 @@ Repository: `mostangrymike/ibm-sandbox`, branch `main`
 - c3270 DFT 2048 proven. Preserve target-proven cores; isolate milestones.
 
 ## Architecture/environment
-z/VM 6.3 Evaluation under Hercules Aethra on Raspberry Pi 5/Debian. Assembler XF
+z/VM 6.3 Evaluation under Hercules Aethra on AWS EC2 Debian ARM64/aarch64, MP=2.
+Current z/VM network is native routed TAP: OSA1 192.168.200.2/24, Linux tap0
+192.168.200.1/24, outbound MASQUERADE through ens5. Assembler XF
 + DMSGPI available. REXX orchestrates; assembler for binary/native/performance.
 Goal: genuine Git interoperability, eventually smart HTTP with native TLS.
 
@@ -417,6 +419,36 @@ Next M12 subgate: build the smallest assembler/VMCF TLSQuery capability probe,
 using the IBM VMCF parameter-list definitions/equates from the supplied
 ALLMACRO and Programmer's Reference. Once TLS availability is proven, extend
 that same adapter to OPENtcp + TLSSCLIENTtcp and bounded SEND/RECEIVE.
+
+## 2026-09-21 EC2 TCP/IP and native TN3270 recovery
+
+The old Raspberry Pi 192.168.1.223/24 configuration was stale on the EC2 host.
+EC2 Debian has ens5 172.31.14.90/20 and tap0 192.168.200.1/24. IPv4 forwarding
+is enabled. iptables POSTROUTING has MASQUERADE for 192.168.200.0/24 out ens5.
+
+IBM IPWIZARD was made available to MAINT by linking/accessing MAINT 193 (2CC was
+already accessed). IPWIZARD reconfigured TCPIP successfully:
+- TCPIP VM: TCPIP
+- host TACOTICO, domain MIKE.LCL
+- OSA1 / DEV@0600, QDIO layer 2, MTU 1500, PMTU enabled
+- z/VM address 192.168.200.2/24
+- gateway 192.168.200.1
+- DNS 8.8.8.8
+IPWIZARD successfully pinged the interface, gateway, and DNS and regenerated
+PROFILE TCPIP and SYSTEM DTCPARMS on TCPIP 198 plus TCPIP DATA on TCPIP 592.
+NETSTAT DEVLINKS showed DEV@0600 OSD Ready and OSA1 QDIOETHERNET.
+
+MAINT PROFILE EXEC A was updated to persist TCP/IP client commands with:
+'CP LINK TCPMAINT 592 592 RR'
+'ACCESS 592 T'
+This restores PING/NETSTAT after login/profile execution.
+
+Native z/VM TN3270 is now proven. NETSTAT CONN showed INTCLIEN listening on
+TELNET port 23. From EC2 Debian, nc -vz 192.168.200.2 23 succeeded. The Mac uses
+an SSH local forward through EC2 to z/VM port 23, and c3270 connects through
+that path. 3270 oversize is confirmed working over the native z/VM TCP/IP/TN3270
+path. This is now the preferred ordinary network-login path; Hercules CNSLPORT
+remains useful for the system/operator console.
 
 ## NEXT ACTION
 Build M12A as a minimal assembler/VMCF TLSQuery probe from the documented z/VM
