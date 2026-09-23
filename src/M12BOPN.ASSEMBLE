@@ -1,0 +1,304 @@
+M12BOPN  CSECT
+         USING M12BOPN,12
+         LR    12,15
+         ST    14,RETADDR
+         WRTERM MSTART,L'MSTART
+*
+* M12B: direct VMCF OPENtcp probe to GitHub 140.82.114.3:443.
+* OPENtcp uses the IBM Connection Information Record verbatim.
+*
+         HNDEXT SET,'DUMMY',CODE=4001,ECB=(VMCFECB,OS),ERROR=HNDERR
+         LTR   15,15
+         BNZ   HNDERR
+         ENABLE INTTYPE=ALL
+         STCTL 0,0,OLDCR0
+         MVC   SAVECR0(4),OLDCR0
+         OI    SAVECR0+3,X'01'
+         LCTL  0,0,SAVECR0
+*
+* Authorize VMCF.
+*
+         XC    VMCFBUF(40),VMCFBUF
+         XC    VMCFPL(40),VMCFPL
+         MVI   VMCFPL,X'80'
+         MVC   VMCFPL+8(8),=CL8'TCPIP'
+         LA    2,VMCFBUF
+         ST    2,VMCFPL+16
+         LA    2,40
+         ST    2,VMCFPL+20
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         LTR   2,2
+         BNZ   AUTHERR
+*
+* BEGINtcpIPservice, client level 6.3.0.
+*
+         BAL   14,CLEAR
+         XC    VMCFPL(40),VMCFPL
+         MVC   VMCFPL+2(2),=X'0002'
+         MVC   VMCFPL+4(4),=X'00000002'
+         MVC   VMCFPL+8(8),=CL8'TCPIP'
+         MVC   VMCFPL+20(4),=X'00000001'
+         MVC   VMCFPL+32(4),=X'06300000'
+         MVI   VMCFPL+38,X'65'
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         LTR   2,2
+         BNZ   FAIL
+         BAL   14,WAIT
+         LTR   15,15
+         BNZ   FAIL
+         CLI   VMCFBUF+39,X'00'
+         BNE   FAIL
+*
+* HANDLEnotice.  This RSU requires all bits for TLS notifications.
+*
+         BAL   14,CLEAR
+         XC    VMCFPL(40),VMCFPL
+         MVC   VMCFPL+2(2),=X'0002'
+         MVC   VMCFPL+4(4),=X'00000002'
+         MVC   VMCFPL+8(8),=CL8'TCPIP'
+         MVC   VMCFPL+20(4),=X'00000001'
+         MVC   VMCFPL+24(4),=X'FFFFFFFF'
+         MVI   VMCFPL+38,X'69'
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         LTR   2,2
+         BNZ   FAIL
+         BAL   14,WAIT
+         LTR   15,15
+         BNZ   FAIL
+         CLI   VMCFBUF+39,X'00'
+         BNE   FAIL
+*
+* Build IBM Connection Information Record.
+*
+         XC    OPENREQ(OPENLEN),OPENREQ
+         MVC   OTIME,=F'30'
+         MVC   OFADDR,=X'8C527203'
+         MVC   OFPORT,=X'01BB'
+         XC    OPENRPL(OPENLEN),OPENRPL
+*
+* OPENtcp: SEND/RECV, VADA=request, VADB=reply, CONN=-48.
+*
+         BAL   14,CLEAR
+         XC    VMCFPL(40),VMCFPL
+         MVC   VMCFPL+2(2),=X'0003'
+         MVC   VMCFPL+4(4),=X'00000004'
+         MVC   VMCFPL+8(8),=CL8'TCPIP'
+         LA    3,OPENREQ
+         ST    3,VMCFPL+16
+         LA    3,OPENLEN
+         ST    3,VMCFPL+20
+         LA    3,OPENRPL
+         ST    3,VMCFPL+24
+         LA    3,OPENLEN
+         ST    3,VMCFPL+28
+         MVC   VMCFPL+36(2),=X'FFD0'
+         MVI   VMCFPL+38,X'6E'
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         LTR   2,2
+         BNZ   OPDIAG
+         WRTERM MOPS,L'MOPS
+         BAL   14,WAIT
+         LTR   15,15
+         BNZ   OPTO
+         MVC   SLOT1(40),VMCFBUF
+         WRTERM MOPR,L'MOPR
+         LA    2,SLOT1
+         BAL   14,DUMP40
+         CLI   SLOT1+39,X'00'
+         BNE   OPRET
+         MVC   CONN(2),OPENRPL
+         WRTERM MCIR,L'MCIR
+         LA    2,OPENRPL
+         BAL   14,DUMPOPEN
+*
+* Wait for first two connection-state notifications and dump them.
+*
+         XC    VMCFECB,VMCFECB
+         BAL   14,WAITNXT
+         LTR   15,15
+         BNZ   NTO
+         MVC   SLOT2(40),VMCFBUF
+         WRTERM MNOTE1,L'MNOTE1
+         LA    2,SLOT2
+         BAL   14,DUMP40
+         BAL   14,REJ2
+         XC    VMCFECB,VMCFECB
+         BAL   14,WAITNXT
+         LTR   15,15
+         BNZ   NTO
+         MVC   SLOT3(40),VMCFBUF
+         WRTERM MNOTE2,L'MNOTE2
+         LA    2,SLOT3
+         BAL   14,DUMP40
+         BAL   14,REJ3
+         WRTERM PASSMSG,L'PASSMSG
+         SR    15,15
+         B     CLEAN
+*
+CLEAR    XC    VMCFECB,VMCFECB
+         XC    VMCFBUF(40),VMCFBUF
+         BR    14
+WAIT     ST    14,WAITRET
+         STCK  STARTTOD
+WAITLP   CLC   VMCFECB(4),=F'0'
+         BNE   WAITOK
+         CLC   VMCFBUF(40),ZERO40
+         BNE   WAITOK
+         STCK  NOWTOD
+         L     5,NOWTOD
+         S     5,STARTTOD
+         C     5,=F'10'
+         BL    WAITLP
+         LA    15,8
+         L     14,WAITRET
+         BR    14
+WAITOK   SR    15,15
+         L     14,WAITRET
+         BR    14
+WAITNXT  ST    14,WAITRET
+         MVC   PREVBUF(40),VMCFBUF
+         STCK  STARTTOD
+WNLP     CLC   VMCFBUF(40),PREVBUF
+         BNE   WAITOK
+         STCK  NOWTOD
+         L     5,NOWTOD
+         S     5,STARTTOD
+         C     5,=F'15'
+         BL    WNLP
+         LA    15,8
+         L     14,WAITRET
+         BR    14
+*
+REJ2     MVC   VMCFPL(40),SLOT2
+         B     REJCOM
+REJ3     MVC   VMCFPL(40),SLOT3
+REJCOM   XC    VMCFPL(2),VMCFPL
+         MVC   VMCFPL+2(2),=X'000B'
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         BR    14
+*
+DUMP40   ST    14,DUMPRET
+         LA    3,HEXDUMP
+         LA    4,40
+D40LP    SR    5,5
+         IC    5,0(2)
+         LR    6,5
+         SRL   6,4
+         N     6,=F'15'
+         IC    7,HEXTAB(6)
+         STC   7,0(3)
+         N     5,=F'15'
+         IC    7,HEXTAB(5)
+         STC   7,1(3)
+         LA    2,1(2)
+         LA    3,2(3)
+         BCT   4,D40LP
+         WRTERM HEXDUMP,80
+         L     14,DUMPRET
+         BR    14
+DUMPOPEN ST    14,DUMPRET
+         LA    3,OPENHEX
+         LA    4,OPENLEN
+DOLP     SR    5,5
+         IC    5,0(2)
+         LR    6,5
+         SRL   6,4
+         N     6,=F'15'
+         IC    7,HEXTAB(6)
+         STC   7,0(3)
+         N     5,=F'15'
+         IC    7,HEXTAB(5)
+         STC   7,1(3)
+         LA    2,1(2)
+         LA    3,2(3)
+         BCT   4,DOLP
+         WRTERM OPENHEX,OPENLEN*2
+         L     14,DUMPRET
+         BR    14
+*
+HNDERR   WRTERM EHND,L'EHND
+         B     FAIL
+AUTHERR  WRTERM EAUTH,L'EAUTH
+         B     FAIL
+OPDIAG   WRTERM EOPD,L'EOPD
+         B     FAIL
+OPTO     WRTERM EOPT,L'EOPT
+         B     FAIL
+OPRET    WRTERM EOPR,L'EOPR
+         B     FAIL
+NTO      WRTERM ENTO,L'ENTO
+FAIL     LA    15,8
+CLEAN    ST    15,SAVERC
+         ENABLE INTTYPE=IO
+         LCTL  0,0,OLDCR0
+         HNDEXT CLR,CODE=4001
+         XC    VMCFPL(40),VMCFPL
+         MVC   VMCFPL+2(2),=X'0001'
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         L     15,SAVERC
+         L     14,RETADDR
+         BR    14
+*
+         DS    0D
+VMCFPL   DS    XL40
+VMCFBUF  DS    XL40
+PREVBUF  DS    XL40
+SLOT1    DS    XL40
+SLOT2    DS    XL40
+SLOT3    DS    XL40
+ZERO40   DC    40X'00'
+         DS    0F
+OPENREQ  DS    0CL38
+OCONN    DS    H
+         DS    H
+OTIME    DS    F
+OSEC     DS    H
+OCOMP    DS    H
+OPREC    DS    X
+         DS    XL1
+OBREAD   DS    F
+OUNACK   DS    F
+OSTATE   DS    X
+         DS    XL3
+OLADDR   DS    F
+OLPORT   DS    H
+         DS    H
+OFADDR   DS    F
+OFPORT   DS    H
+OPENEND  EQU   *
+OPENLEN  EQU   OPENEND-OPENREQ
+OPENRPL  DS    CL38
+CONN     DS    H
+         DS    0D
+STARTTOD DS    D
+NOWTOD   DS    D
+VMCFECB  DC    F'0'
+OLDCR0   DS    F
+SAVECR0  DS    F
+RETADDR  DS    F
+WAITRET  DS    F
+DUMPRET  DS    F
+SAVERC   DS    F
+HEXTAB   DC    C'0123456789ABCDEF'
+HEXDUMP  DS    CL80
+OPENHEX  DS    CL76
+MSTART   DC    C'M12B OPEN START'
+MOPS     DC    C'M12B OPEN SENT'
+MOPR     DC    C'M12B OPEN RESPONSE'
+MCIR     DC    C'M12B OPEN CIR'
+MNOTE1   DC    C'M12B OPEN NOTIFICATION 1'
+MNOTE2   DC    C'M12B OPEN NOTIFICATION 2'
+PASSMSG  DC    C'M12B OPEN ASYNC PATH PROVEN'
+EHND     DC    C'M12B ERROR HNDEXT'
+EAUTH    DC    C'M12B ERROR VMCF AUTHORIZE'
+EOPD     DC    C'M12B ERROR OPEN DIAG'
+EOPT     DC    C'M12B ERROR OPEN TIMEOUT'
+EOPR     DC    C'M12B ERROR OPEN RETURN'
+ENTO     DC    C'M12B ERROR NOTIFICATION TIMEOUT'
+         END   M12BOPN
