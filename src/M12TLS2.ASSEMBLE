@@ -124,12 +124,11 @@ M12TLS2  CSECT
          BNZ   PNGNOTE
 *
 * TLSQuery: SEND/RECV, CALLCODE 128.  Use a deliberately unknown
-* nonblank label to force SSL-server label verification. Keyring blank.
+* blank label asks whether the SSL server itself is available.
 * IBM requires CIBB=UNSPECIFIEDconnection (-48, X'FFD0').
 *
 TLSQRY   BAL   14,CLEARECB
          MVC   QUERY(58),=CL58' '
-         MVC   QUERY(8),=CL8'M12NONE'
          XC    VMCFPL(40),VMCFPL
          MVC   VMCFPL+2(2),=X'0003'
          MVC   VMCFPL+4(4),=X'00000004'
@@ -164,7 +163,7 @@ TLSQRY   BAL   14,CLEARECB
          BNE   QBADHDR
 *
 * Slot 2 is the preprocessing response.  Slot 3 is the
-* QUERYtlsCOMPLETE notification (z/VM 6.3 CALLCODE X'21', decimal 33).
+* QUERYtlsCOMPLETE notification observed on this z/VM 6.3 TCP/IP as X'23'.
 *
          CLI   SLOT2+39,X'00'
          BNE   QPRE
@@ -176,7 +175,7 @@ TLSQRY   BAL   14,CLEARECB
          WRTERM MQDONE,L'MQDONE
          LA    2,SLOT3
          BAL   14,DUMP40
-         CLI   SLOT3+38,X'21'
+         CLI   SLOT3+38,X'23'
          BNE   QBADNOTE
          BAL   14,REJNOTE
          CLI   SLOT3+39,X'00'
