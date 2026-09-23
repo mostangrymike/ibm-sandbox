@@ -126,12 +126,18 @@ M12TLS4  CSECT
          XC    VMCFECB,VMCFECB
          BAL   14,WAITNXT
          LTR   15,15
-         BNZ   NTO
+         BNZ   OPENQ
          MVC   SLOT2(40),VMCFBUF
          WRTERM MNOTE1,L'MNOTE1
          LA    2,SLOT2
          BAL   14,DUMP40
          BAL   14,REJ2
+         B     OPENOK
+OPENQ    WRTERM MOPENQ,L'MOPENQ
+OPENOK   DS    0H
+*
+* OPEN preprocessing already returned the allocated connection.
+* Continue to TLSSCLIENTtcp even if no state notice was delivered.
 *
 * z/VM 6.3 SecureDetailType: 322 bytes, pre-extension form.
 * Blank label/keyring, timeout zero, Full_Check, Default cipher,
@@ -507,6 +513,7 @@ MOPS     DC    C'M12C OPEN SENT'
 MOPR     DC    C'M12C OPEN RESPONSE'
 MCIR     DC    C'M12C OPEN CIR'
 MNOTE1   DC    C'M12C OPEN NOTIFICATION'
+MOPENQ   DC    C'M12C OPEN NOTICE NOT SEEN; CONTINUING'
 MNOTE2   DC    C'M12C UNUSED'
 PASSMSG  DC    C'M12D TLS HTTP RECEIVE PROVEN'
 MTLSS    DC    C'M12C TLSSCLIENT SENT'
