@@ -344,6 +344,9 @@ FAIL     LA    15,8
          B     CLEAN
 CLEANOK  SR    15,15
 CLEAN    ST    15,SAVERC
+* Disable external interrupts before removing the VMCF handler.
+* Otherwise a pending X'1004' can reach the CMS default handler.
+         ENABLE INTTYPE=IO
          LCTL  0,0,OLDCR0
          HNDEXT CLR,CODE=4001
          XC    VMCFPL(40),VMCFPL
