@@ -74,7 +74,10 @@ M12BOPN  CSECT
 * Build IBM Connection Information Record.
 *
          XC    OPENREQ(OPENLEN),OPENREQ
+         MVC   OCONN,=X'FFD0'
          MVC   OTIME,=F'30'
+         MVI   OSTATE,X'06'
+         MVC   OLPORT,=X'FFFF'
          MVC   OFADDR,=X'8C527203'
          MVC   OFPORT,=X'01BB'
          XC    OPENRPL(OPENLEN),OPENRPL
