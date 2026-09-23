@@ -85,10 +85,10 @@ M12TLS2  CSECT
          CLI   SLOTH+39,X'00'
          BNE   HNDRET
 *
-* Prove unsolicited VMCF notifications independently of SSL.
-* PING 8.8.8.8 with an 8-byte packet and 5-second TCP/IP timeout.
+* Isolate TLSQuery: do not create any preceding PING notification.
+* This proves whether an earlier outstanding notification can block TLSQuery.
 *
-         BAL   14,CLEARECB
+         B     TLSQRY
          XC    VMCFPL(40),VMCFPL
          MVC   VMCFPL+2(2),=X'0002'
          MVC   VMCFPL+4(4),=X'00000006'
@@ -127,7 +127,7 @@ M12TLS2  CSECT
 * label bytes plus 50 blank keyring bytes, as documented for VM.
 * IBM requires CIBB=UNSPECIFIEDconnection (-48, X'FFD0').
 *
-         BAL   14,CLEARECB
+TLSQRY   BAL   14,CLEARECB
          MVC   QUERY(58),=CL58' '
          XC    VMCFPL(40),VMCFPL
          MVC   VMCFPL+2(2),=X'0003'
