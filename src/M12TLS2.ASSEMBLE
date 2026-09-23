@@ -70,7 +70,7 @@ M12TLS2  CSECT
          MVC   VMCFPL+4(4),=X'00000002'
          MVC   VMCFPL+8(8),=CL8'TCPIP'
          MVC   VMCFPL+20(4),=X'00000001'
-         MVC   VMCFPL+24(4),=X'00100000'
+         MVC   VMCFPL+24(4),=X'FFFFFFFF'
          MVI   VMCFPL+38,X'69'
          LA    1,VMCFPL
          DC    X'83',X'12',XL2'0068'
