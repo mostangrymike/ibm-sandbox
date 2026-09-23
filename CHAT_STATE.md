@@ -492,10 +492,13 @@ TLSQuery; do not introduce another unbounded wait.
   five SSL servers and SHA-256 cipher suites included.
 - M12TLS3 target-proved TLSSCLIENTtcp preprocessing: CALLCODE X'83',
   connection X'03E8', return X'00'.
-- The asynchronous TLS notification on this target is CALLCODE X'25',
-  connection X'03E8', return X'00'. This is the proven handshake
-  completion path for the current z/VM 6.3 RSU.
-- M12TLS3 printed M12C TLS ASYNC REQUEST PROVEN and returned RC 0.
-- Next milestone: prove encrypted SENDtcp/RECEIVEtcp over that secure
-  connection, then route HTTPS Git smart-HTTP through the existing
-  bounded pack/object pipeline.
+- CALLCODE X'25' on this target is READYforHANDSHAKE, not handshake
+  completion. CALLCODE X'24' is SECUREhandshakeCOMPLETE.
+- M12TLS4 target-proved X'25' followed by X'24', SENDtcp X'76' RC 0,
+  RECEIVEtcp X'71' RC 0, DATAdelivered X'0C', and VMCF RECEIVE X'0005'.
+- The X'24' notification carries a four-byte SecureHSCompleteDetail
+  through VADB. M12TLS4 must receive and validate that detail before
+  treating the TLS handshake as successful.
+- Next milestone: validate SecureHSCompleteDetail and prove that
+  received application bytes are decrypted HTTP before routing HTTPS
+  Git smart-HTTP through the bounded pack/object pipeline.
