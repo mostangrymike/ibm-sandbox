@@ -85,8 +85,8 @@ M12TLS2  CSECT
          CLI   SLOTH+39,X'00'
          BNE   HNDRET
 *
-* Isolate TLSQuery: do not create any preceding PING notification.
-* This proves whether an earlier outstanding notification can block TLSQuery.
+* Isolate TLSQuery from the preceding PING notification.
+* No asynchronous notification precedes this TLSQuery.
 *
          B     TLSQRY
          XC    VMCFPL(40),VMCFPL
