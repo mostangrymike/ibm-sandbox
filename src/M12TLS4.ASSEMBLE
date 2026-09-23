@@ -278,7 +278,7 @@ SENDOK   DS    0H
          BNE   BADNOTE
 * Complete DATAdelivered transaction with VMCF RECEIVE.
          MVC   VMCFPL(40),SLOT7
-         XC    VMCFPL(2),VMCFPL
+         XC    VMCFPL(8),VMCFPL
          MVC   VMCFPL+2(2),=X'0004'
          LA    3,RECVBUF
          ST    3,VMCFPL+16
