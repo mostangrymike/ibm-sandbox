@@ -105,7 +105,7 @@ M12TLS2  CSECT
          CLI   SLOT2+39,X'00'
          BNE   QPRE
          XC    VMCFECB,VMCFECB
-         BAL   14,WAITNEXT
+         BAL   14,WAITNXT
          LTR   15,15
          BNZ   QDONETO
          MVC   SLOT3(40),VMCFBUF
