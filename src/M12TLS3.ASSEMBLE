@@ -135,7 +135,8 @@ M12TLS3  CSECT
 * empty Pascal string buffer.
 *
          MVI   SECDET,C' '
-         MVC   SECDET+1(SECLEN-1),SECDET
+         MVC   SECDET+1(255),SECDET
+         MVC   SECDET+256(SECLEN-256),SECDET
          XC    STIME(4),STIME
          XC    SREQ(4),SREQ
          XC    SBUF(256),SBUF
