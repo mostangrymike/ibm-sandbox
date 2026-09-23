@@ -296,7 +296,21 @@ RECVTRY  BAL   14,CLEAR
          LA    2,SLOT7
          BAL   14,DUMP40
          CLI   SLOT7+38,X'0C'
+         BE    GOTDATA
+* OPEN notification X'0B' can arrive between receive transactions.
+         CLI   SLOT7+38,X'0B'
          BNE   BADNOTE
+         XC    VMCFECB,VMCFECB
+         BAL   14,WAITNXT
+         LTR   15,15
+         BNZ   DATATO
+         MVC   SLOT7(40),VMCFBUF
+         WRTERM MDATA,L'MDATA
+         LA    2,SLOT7
+         BAL   14,DUMP40
+         CLI   SLOT7+38,X'0C'
+         BNE   BADNOTE
+GOTDATA  DS    0H
 * Complete DATAdelivered transaction with VMCF RECEIVE.
          MVC   VMCFPL(40),SLOT7
          XC    VMCFPL(2),VMCFPL
