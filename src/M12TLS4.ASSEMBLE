@@ -148,6 +148,8 @@ OPENOK   DS    0H
          MVC   SECDET+256(SECLEN-256),SECDET
          XC    STIME(4),STIME
          XC    SREQ(4),SREQ
+* Diagnostic only: No_Check=1 isolates the certificate trust path.
+         MVI   SVALID,X'01'
          XC    SBUF(256),SBUF
 *
 * TLSSCLIENTtcp: SEND/RECV, SecureDetailType in VADA, conn from OPEN.
