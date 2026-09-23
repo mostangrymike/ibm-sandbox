@@ -140,8 +140,9 @@ OPENOK   DS    0H
 * Continue to TLSSCLIENTtcp even if no state notice was delivered.
 *
 * z/VM 6.3 SecureDetailType: 322 bytes, pre-extension form.
-* Blank label/keyring, timeout zero, Full_Check, Default cipher,
-* empty Pascal string buffer.
+* Blank label/keyring, timeout zero, No_Check client flags, Default cipher,
+* empty Pascal string buffer.  Server certificate validation is mandatory
+* for TcpSClient; No_Check only controls client-certificate checking.
 *
          MVI   SECDET,C' '
          MVC   SECDET+1(255),SECDET
