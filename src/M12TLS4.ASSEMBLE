@@ -300,6 +300,7 @@ RECVTRY  BAL   14,CLEAR
 * OPEN notification X'0B' can arrive between receive transactions.
          CLI   SLOT7+38,X'0B'
          BNE   BADNOTE
+         BAL   14,REJ7
          XC    VMCFECB,VMCFECB
          BAL   14,WAITNXT
          LTR   15,15
@@ -376,6 +377,8 @@ REJ2     MVC   VMCFPL(40),SLOT2
 REJ3     MVC   VMCFPL(40),SLOT3
          B     REJCOM
 REJ4     MVC   VMCFPL(40),SLOT4
+         B     REJCOM
+REJ7     MVC   VMCFPL(40),SLOT7
 REJCOM   XC    VMCFPL(2),VMCFPL
          MVC   VMCFPL+2(2),=X'000B'
          LA    1,VMCFPL
