@@ -200,9 +200,12 @@ OPENOK   DS    0H
          BAL   14,DUMP40
          CLI   SLOT4+38,X'24'
          BNE   BADNOTE
-* IBM requires SECUREhandshakeCOMPLETE to be VMCF REJECT-completed.
-* Its interrupt RETCODE is the handshake status; zero means success.
-         CLI   SLOT4+39,X'00'
+* X'24' VADB contains SecureHSCompleteDetail inline:
+* ReturnCode, AlertLevel, AlertDescription.  NOALERT is zero.
+         WRTERM MHSD,L'MHSD
+         LA    2,SLOT4+24
+         BAL   14,DUMP8
+         CLI   SLOT4+24,X'00'
          BNE   HSFAIL
          BAL   14,REJ4
 * Verify TCPIP reports this connection dynamically secured.
