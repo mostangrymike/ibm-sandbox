@@ -70,6 +70,7 @@ M12TLS2  CSECT
          MVC   VMCFPL+4(4),=X'00000002'
          MVC   VMCFPL+8(8),=CL8'TCPIP'
          MVC   VMCFPL+20(4),=X'00000001'
+         MVC   VMCFPL+24(4),=X'00100000'
          MVI   VMCFPL+38,X'69'
          LA    1,VMCFPL
          DC    X'83',X'12',XL2'0068'
@@ -83,6 +84,43 @@ M12TLS2  CSECT
          WRTERM MHNDR,L'MHNDR
          CLI   SLOTH+39,X'00'
          BNE   HNDRET
+*
+* Prove unsolicited VMCF notifications independently of SSL.
+* PING 8.8.8.8 with an 8-byte packet and 5-second TCP/IP timeout.
+*
+         BAL   14,CLEARECB
+         XC    VMCFPL(40),VMCFPL
+         MVC   VMCFPL+2(2),=X'0002'
+         MVC   VMCFPL+4(4),=X'00000006'
+         MVC   VMCFPL+8(8),=CL8'TCPIP'
+         MVC   VMCFPL+20(4),=X'00000001'
+         MVC   VMCFPL+24(4),=X'08080808'
+         MVC   VMCFPL+28(4),=X'00000008'
+         MVC   VMCFPL+32(4),=X'00000005'
+         MVI   VMCFPL+38,X'7F'
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         LTR   2,2
+         BNZ   PNGDIAG
+         WRTERM MPINGS,L'MPINGS
+         BAL   14,WAITEVT
+         LTR   15,15
+         BNZ   PNGPTO
+         MVC   SLOTP(40),VMCFBUF
+         WRTERM MPINGP,L'MPINGP
+         CLI   SLOTP+39,X'00'
+         BNE   PNGPRE
+         XC    VMCFECB,VMCFECB
+         BAL   14,WAITPNG
+         LTR   15,15
+         BNZ   PNGNTO
+         MVC   SLOTN(40),VMCFBUF
+         WRTERM MPINGN,L'MPINGN
+         LA    2,SLOTN
+         BAL   14,DUMP40
+         CLI   SLOTN+38,X'1E'
+         BNE   PNGNOTE
+         BAL   14,REJPNG
 *
 * TLSQuery: SEND/RECV, CALLCODE 128. Query record is 8 blank
 * label bytes plus 50 blank keyring bytes, as documented for VM.
@@ -183,6 +221,28 @@ WAITNLP  CLC   VMCFBUF(40),SLOT2
          L     14,WAITRET
          BR    14
 *
+WAITPNG  ST    14,WAITRET
+         STCK  STARTTOD
+PNGWLP   CLC   VMCFBUF(40),SLOTP
+         BNE   WAITOK
+         STCK  NOWTOD
+         L     5,NOWTOD
+         S     5,STARTTOD
+         C     5,=F'10'
+         BL    PNGWLP
+         LA    15,8
+         L     14,WAITRET
+         BR    14
+*
+REJPNG   ST    14,WORKRET
+         MVC   VMCFPL(40),SLOTN
+         XC    VMCFPL(2),VMCFPL
+         MVC   VMCFPL+2(2),=X'000B'
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         L     14,WORKRET
+         BR    14
+*
 * A QUERYtlsCOMPLETE notification is a SEND.  IBM requires
 * completion with VMCF REJECT using the interrupt header data.
 *
@@ -234,6 +294,16 @@ HNDDIAG  WRTERM EHNDD,L'EHNDD
 HNDTO    WRTERM EHNDTO,L'EHNDTO
          B     FAIL
 HNDRET   WRTERM EHNDRET,L'EHNDRET
+         B     FAIL
+PNGDIAG  WRTERM EPNGD,L'EPNGD
+         B     FAIL
+PNGPTO   WRTERM EPNGPT,L'EPNGPT
+         B     FAIL
+PNGPRE   WRTERM EPNGPR,L'EPNGPR
+         B     FAIL
+PNGNTO   WRTERM EPNGNT,L'EPNGNT
+         B     FAIL
+PNGNOTE  WRTERM EPNGNO,L'EPNGNO
          B     FAIL
 QDIAG    WRTERM EQDIA,L'EQDIA
          B     FAIL
@@ -289,6 +359,8 @@ VMCFPL   DS    XL40
 VMCFBUF  DS    XL40
 SLOT1    DS    XL40
 SLOTH    DS    XL40
+SLOTP    DS    XL40
+SLOTN    DS    XL40
 SLOT2    DS    XL40
 SLOT3    DS    XL40
 ZERO40   DC    40X'00'
@@ -316,6 +388,9 @@ MBEGS    DC    C'M12A BEGIN SENT'
 MBEGR    DC    C'M12A BEGIN RESPONSE'
 MHNDS    DC    C'M12A HANDLE SENT'
 MHNDR    DC    C'M12A HANDLE RESPONSE'
+MPINGS   DC    C'M12A PING SENT'
+MPINGP   DC    C'M12A PING PREPROCESS RESPONSE'
+MPINGN   DC    C'M12A PING NOTIFICATION'
 MQSENT   DC    C'M12A TLSQUERY SENT'
 MQPRE    DC    C'M12A TLSQUERY PREPROCESS RESPONSE'
 MQDONE   DC    C'M12A TLSQUERY COMPLETE'
@@ -329,6 +404,11 @@ EBEGTO   DC    C'M12A ERROR BEGIN TIMEOUT'
 EHNDD    DC    C'M12A ERROR HANDLE DIAG'
 EHNDTO   DC    C'M12A ERROR HANDLE TIMEOUT'
 EHNDRET  DC    C'M12A ERROR HANDLE RETURN'
+EPNGD    DC    C'M12A ERROR PING DIAG'
+EPNGPT   DC    C'M12A ERROR PING PREPROCESS TIMEOUT'
+EPNGPR   DC    C'M12A ERROR PING PREPROCESS RC'
+EPNGNT   DC    C'M12A ERROR PING NOTIFICATION TIMEOUT'
+EPNGNO   DC    C'M12A ERROR PING NOTIFICATION'
 EQDIA    DC    C'M12A ERROR TLSQUERY DIAG'
 EQPTO    DC    C'M12A ERROR TLSQUERY PREPROCESS TIMEOUT'
 EQDTO    DC    C'M12A ERROR TLSQUERY COMPLETE TIMEOUT'
