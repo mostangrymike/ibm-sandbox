@@ -217,6 +217,35 @@ OPENOK   DS    0H
          BAL   14,DUMP40
          CLC   HSDETAIL(4),=XL4'00000000'
          BNE   HSFAIL
+* Verify TCPIP reports this connection dynamically secured.
+         BAL   14,CLEAR
+         XC    TLSSTAT(8),TLSSTAT
+         XC    VMCFPL(40),VMCFPL
+         MVC   VMCFPL+2(2),=X'0003'
+         MVC   VMCFPL+4(4),=X'00000004'
+         MVC   VMCFPL+8(8),=CL8'TCPIP'
+         LA    3,TLSSTAT
+         ST    3,VMCFPL+24
+         MVC   VMCFPL+28(4),=F'8'
+         MVC   VMCFPL+36(2),CONN
+         MVI   VMCFPL+38,X'81'
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         LTR   2,2
+         BNZ   STDIAG
+         WRTERM MSTATS,L'MSTATS
+         BAL   14,WAIT
+         LTR   15,15
+         BNZ   STTO
+         MVC   SLOT6(40),VMCFBUF
+         WRTERM MSTATR,L'MSTATR
+         LA    2,SLOT6
+         BAL   14,DUMP40
+         WRTERM MSTATD,L'MSTATD
+         LA    2,TLSSTAT
+         BAL   14,DUMP8
+         CLI   SLOT6+39,X'00'
+         BNE   STRC
          STCK  STARTTOD
 * SENDtcp ASCII HTTP/1.0 request through secure connection.
 SENDTRY  DS    0H
@@ -404,6 +433,25 @@ D40LP    SR    5,5
          WRTERM HEXDUMP,80
          L     14,DUMPRET
          BR    14
+DUMP8    ST    14,DUMPRET
+         LA    3,STATHEX
+         LA    4,8
+D8LP     SR    5,5
+         IC    5,0(2)
+         LR    6,5
+         SRL   6,4
+         N     6,=F'15'
+         IC    7,HEXTAB(6)
+         STC   7,0(3)
+         N     5,=F'15'
+         IC    7,HEXTAB(5)
+         STC   7,1(3)
+         LA    2,1(2)
+         LA    3,2(3)
+         BCT   4,D8LP
+         WRTERM STATHEX,16
+         L     14,DUMPRET
+         BR    14
 DUMP80   ST    14,DUMPRET
          LA    3,DATAHEX
          LA    4,80
@@ -460,6 +508,12 @@ DATATO   WRTERM EDT,L'EDT
 BADNOTE  WRTERM EBN,L'EBN
          B     FAIL
 DATADG   WRTERM EDD,L'EDD
+         B     FAIL
+STDIAG   WRTERM ESDG,L'ESDG
+         B     FAIL
+STTO     WRTERM ESTO,L'ESTO
+         B     FAIL
+STRC     WRTERM ESRC,L'ESRC
          B     FAIL
 HNDERR   WRTERM EHND,L'EHND
          B     FAIL
@@ -560,6 +614,8 @@ HEXTAB   DC    C'0123456789ABCDEF'
 HEXDUMP  DS    CL80
 OPENHEX  DS    CL64
 DATAHEX  DS    CL160
+STATHEX  DS    CL16
+TLSSTAT  DS    XL8
 HSSCRAT DS    XL16
 HSDETAIL DS    XL4
          DS    XL20
@@ -589,6 +645,12 @@ MRECS    DC    C'M12D RECEIVETCP SENT'
 MRECR    DC    C'M12D RECEIVETCP RESPONSE'
 MDATA    DC    C'M12D DATADELIVERED NOTIFICATION'
 MHEX     DC    C'M12D FIRST 80 RESPONSE BYTES'
+MSTATS   DC    C'M12D TLS STATUS SENT'
+MSTATR   DC    C'M12D TLS STATUS RESPONSE'
+MSTATD   DC    C'M12D TLS STATUS DETAIL'
+ESDG     DC    C'M12D ERROR TLS STATUS DIAG'
+ESTO     DC    C'M12D ERROR TLS STATUS TIMEOUT'
+ESRC     DC    C'M12D ERROR TLS STATUS RETURN'
 ESD      DC    C'M12D ERROR SENDTCP DIAG'
 EST      DC    C'M12D ERROR SENDTCP TIMEOUT'
 ESR      DC    C'M12D ERROR SENDTCP RETURN'
