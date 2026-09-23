@@ -60,6 +60,30 @@ M12TLS2  CSECT
          CLI   SLOT1+39,X'00'
          BNE   BEGRET
 *
+* IBM requires HANDLEnotice after BEGINtcpIPservice and before using
+* TCP/IP services.  No ordinary notification classes are needed by
+* this TLSQuery probe, so use a zero notification mask.
+*
+         BAL   14,CLEARECB
+         XC    VMCFPL(40),VMCFPL
+         MVC   VMCFPL+2(2),=X'0002'
+         MVC   VMCFPL+4(4),=X'00000002'
+         MVC   VMCFPL+8(8),=CL8'TCPIP'
+         MVC   VMCFPL+20(4),=X'00000001'
+         MVI   VMCFPL+38,X'69'
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         LTR   2,2
+         BNZ   HNDDIAG
+         WRTERM MHNDS,L'MHNDS
+         BAL   14,WAITEVT
+         LTR   15,15
+         BNZ   HNDTO
+         MVC   SLOTH(40),VMCFBUF
+         WRTERM MHNDR,L'MHNDR
+         CLI   SLOTH+39,X'00'
+         BNE   HNDRET
+*
 * TLSQuery: SEND/RECV, CALLCODE 128. Query record is 8 blank
 * label bytes plus 50 blank keyring bytes, as documented for VM.
 * IBM requires CIBB=UNSPECIFIEDconnection (-48, X'FFD0').
@@ -258,6 +282,7 @@ CLEAN    ST    15,SAVERC
 VMCFPL   DS    XL40
 VMCFBUF  DS    XL40
 SLOT1    DS    XL40
+SLOTH    DS    XL40
 SLOT2    DS    XL40
 SLOT3    DS    XL40
 ZERO40   DC    40X'00'
@@ -283,6 +308,8 @@ MSTART   DC    C'M12A START'
 MAUTH    DC    C'M12A VMCF AUTHORIZED'
 MBEGS    DC    C'M12A BEGIN SENT'
 MBEGR    DC    C'M12A BEGIN RESPONSE'
+MHNDS    DC    C'M12A HANDLE SENT'
+MHNDR    DC    C'M12A HANDLE RESPONSE'
 MQSENT   DC    C'M12A TLSQUERY SENT'
 MQPRE    DC    C'M12A TLSQUERY PREPROCESS RESPONSE'
 MQDONE   DC    C'M12A TLSQUERY COMPLETE'
@@ -293,6 +320,9 @@ EAUTH    DC    C'M12A ERROR VMCF AUTHORIZE'
 EBEGD    DC    C'M12A ERROR BEGIN DIAG'
 EBEGR    DC    C'M12A ERROR BEGIN RETURN'
 EBEGTO   DC    C'M12A ERROR BEGIN TIMEOUT'
+EHNDD    DC    C'M12A ERROR HANDLE DIAG'
+EHNDTO   DC    C'M12A ERROR HANDLE TIMEOUT'
+EHNDRET  DC    C'M12A ERROR HANDLE RETURN'
 EQDIA    DC    C'M12A ERROR TLSQUERY DIAG'
 EQPTO    DC    C'M12A ERROR TLSQUERY PREPROCESS TIMEOUT'
 EQDTO    DC    C'M12A ERROR TLSQUERY COMPLETE TIMEOUT'
