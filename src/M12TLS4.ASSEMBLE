@@ -1,6 +1,9 @@
 M12TLS4  CSECT
          USING M12TLS4,12
          LR    12,15
+         LA    11,4095(12)
+         LA    11,1(11)
+         USING M12TLS4+4096,11
          ST    14,RETADDR
          WRTERM MSTART,L'MSTART
 *
