@@ -279,7 +279,7 @@ SENDOK   DS    0H
 * Complete DATAdelivered transaction with VMCF RECEIVE.
          MVC   VMCFPL(40),SLOT7
          XC    VMCFPL(2),VMCFPL
-         MVC   VMCFPL+2(2),=X'0004'
+         MVC   VMCFPL+2(2),=X'0005'
          LA    3,RECVBUF
          ST    3,VMCFPL+16
          LA    1,VMCFPL
