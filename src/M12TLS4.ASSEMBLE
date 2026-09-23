@@ -247,8 +247,7 @@ SENDOK   DS    0H
          MVC   VMCFPL+2(2),=X'0002'
          MVC   VMCFPL+4(4),=X'00000004'
          MVC   VMCFPL+8(8),=CL8'TCPIP'
-         LA    3,RECVBUF
-         ST    3,VMCFPL+24
+         MVC   VMCFPL+20(4),=F'1'
          MVC   VMCFPL+28(4),=F'1024'
          MVC   VMCFPL+36(2),CONN
          MVI   VMCFPL+38,X'71'
@@ -266,7 +265,27 @@ SENDOK   DS    0H
          BAL   14,DUMP40
          CLI   SLOT6+39,X'00'
          BNE   RECVRC
-* RECEIVEtcp returns application data in VADB.
+* Successful RECEIVEtcp is followed by DATAdelivered X'0C'.
+         XC    VMCFECB,VMCFECB
+         BAL   14,WAITNXT
+         LTR   15,15
+         BNZ   DATATO
+         MVC   SLOT7(40),VMCFBUF
+         WRTERM MDATA,L'MDATA
+         LA    2,SLOT7
+         BAL   14,DUMP40
+         CLI   SLOT7+38,X'0C'
+         BNE   BADNOTE
+* Complete DATAdelivered transaction with VMCF RECEIVE.
+         MVC   VMCFPL(40),SLOT7
+         XC    VMCFPL(2),VMCFPL
+         MVC   VMCFPL+2(2),=X'0004'
+         LA    3,RECVBUF
+         ST    3,VMCFPL+16
+         LA    1,VMCFPL
+         DC    X'83',X'12',XL2'0068'
+         LTR   2,2
+         BNZ   DATADG
          WRTERM MHEX,L'MHEX
          LA    2,RECVBUF
          BAL   14,DUMP80
@@ -497,7 +516,7 @@ MCIR     DC    C'M12C OPEN CIR'
 MNOTE1   DC    C'M12C OPEN NOTIFICATION'
 MOPENQ   DC    C'M12C OPEN NOTICE NOT SEEN; CONTINUING'
 MNOTE2   DC    C'M12C UNUSED'
-PASSMSG  DC    C'M12D TLS HTTP RECEIVE PROVEN'
+PASSMSG  DC    C'M12D TLS HTTP DATA DELIVERED'
 MTLSS    DC    C'M12C TLSSCLIENT SENT'
 MTLSR    DC    C'M12C TLSSCLIENT RESPONSE'
 MHSN     DC    C'M12C READYFORHANDSHAKE'
