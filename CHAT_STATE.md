@@ -502,3 +502,48 @@ TLSQuery; do not introduce another unbounded wait.
 - Next milestone: validate SecureHSCompleteDetail and prove that
   received application bytes are decrypted HTTP before routing HTTPS
   Git smart-HTTP through the bounded pack/object pipeline.
+
+
+## M12D checkpoint — 2026-09-23 chat rollover
+- Continue independently on host/GitHub until actual z/VM/CMS action is
+  required. Then give exact Mac transfer commands followed by the
+  smallest exact CMS command batch.
+- Current source is src/M12TLS4.ASSEMBLE. GitHub main commit
+  9ec2a249985596711c26710b942a9c27df125a49 added bounded repeated
+  RECEIVEtcp testing for decrypted HTTP.
+- Target-proven sequence before that commit:
+  OPENtcp X'6E' RC 00; OPEN notice X'0B'; TLSSCLIENTtcp X'83' RC 00;
+  READYforHANDSHAKE X'25'; SECUREhandshakeCOMPLETE X'24';
+  SecureHSCompleteDetail received from VADB and equals 00000000;
+  SENDtcp X'76' RC 00 for the 75-byte HTTP request; RECEIVEtcp X'71'
+  RC 00; DATAdelivered X'0C'; VMCF RECEIVE function X'0005' succeeds.
+- First delivered data was 9 bytes:
+  16030300040E000000. It is a TLS handshake record, not decrypted HTTP.
+  Therefore HTTPS application receive is NOT yet proven.
+- X'25' is READYforHANDSHAKE. X'24' is SECUREhandshakeCOMPLETE.
+  Do not regress to the earlier incorrect interpretation.
+- X'24' notification VADB/LENB contains the four-byte
+  SecureHSCompleteDetail. The target detail was 00000000.
+- DATAdelivered data is collected with VMCF RECEIVE X'0005'; X'0004'
+  is not the RECEIVE function.
+- Latest target action was only ASSEMBLE of commit 9ec2a249... and it
+  failed at source line 416:
+      XC    RECVBUF(1024),RECVBUF
+  with IFO224 LENGTH ERROR. IBM XC SS-format length is limited to 256
+  bytes. No LOAD/GENMOD/run occurred after this assembly failure.
+- NEXT HOST-SIDE ACTION: fix the 1024-byte RECVBUF clear using legal
+  <=256-byte operations (or MVI + overlapping MVC), check every source
+  line <=71 columns and every assembler symbol <=8 characters, commit
+  to GitHub, then give Mac upload and CMS ASSEMBLE/LOAD/GENMOD/run.
+- The purpose of the repeated-receive diagnostic is to distinguish a
+  residual TLS handshake record from subsequent decrypted HTTP. It
+  should only claim success when received bytes actually begin with
+  ASCII HTTP (X'48545450'); otherwise inspect up to the bounded number
+  of chunks and fail clearly.
+- Important assembler hygiene: CMS assembler symbols <=8 chars;
+  fixed-card source lines <=71 chars unless intentionally continued;
+  MVC/XC explicit lengths cannot exceed 256.
+- Recent commits:
+  4c095778a8a5248bd10821a7a66c3989ec75127a receive/validate X'24'
+  detail; 058c79c2cbd087eb10c305e21ecec90cee798cd6 fixed 9-char symbol;
+  9ec2a249985596711c26710b942a9c27df125a49 repeated receive diagnostic.
