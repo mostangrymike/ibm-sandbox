@@ -180,7 +180,9 @@ M12TLS4  CSECT
          LA    2,SLOT4
          BAL   14,DUMP40
          BAL   14,REJ4
+         STCK  STARTTOD
 * SENDtcp ASCII HTTP/1.0 request through secure connection.
+SENDTRY  DS    0H
          BAL   14,CLEAR
          XC    VMCFPL(40),VMCFPL
          MVC   VMCFPL+2(2),=X'0002'
@@ -207,7 +209,17 @@ M12TLS4  CSECT
          LA    2,SLOT5
          BAL   14,DUMP40
          CLI   SLOT5+39,X'00'
+         BE    SENDOK
+         CLI   SLOT5+39,X'A1'
          BNE   SENDRC
+* X'A1' is SSLhandshakeINprogress.  Bound retry after completion.
+         STCK  NOWTOD
+         L     5,NOWTOD
+         S     5,STARTTOD
+         C     5,=F'10'
+         BL    SENDTRY
+         B     SENDRC
+SENDOK   DS    0H
 * RECEIVEtcp advertises bounded 1024-byte receive buffer.
          BAL   14,CLEAR
          XC    VMCFPL(40),VMCFPL
