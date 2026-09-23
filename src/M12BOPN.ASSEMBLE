@@ -110,7 +110,7 @@ M12BOPN  CSECT
          BAL   14,DUMP40
          CLI   SLOT1+39,X'00'
          BNE   OPRET
-         MVC   CONN(2),OPENRPL
+         MVC   CONN(2),SLOT1+36
          WRTERM MCIR,L'MCIR
          LA    2,OPENRPL
          BAL   14,DUMPOPEN
@@ -230,6 +230,8 @@ OPDIAG   WRTERM EOPD,L'EOPD
 OPTO     WRTERM EOPT,L'EOPT
          B     FAIL
 OPRET    WRTERM EOPR,L'EOPR
+         LA    2,OPENRPL
+         BAL   14,DUMPOPEN
          B     FAIL
 NTO      WRTERM ENTO,L'ENTO
 FAIL     LA    15,8
