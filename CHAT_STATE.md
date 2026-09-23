@@ -481,3 +481,21 @@ AUTHORIZEs TCPIP, and uses bounded polling for BEGINtcpIPservice rather than an
 unbounded WAITECB. M12ATLS contains the fuller TLSQuery sequence. Use the
 existing bounded diagnostic path to localize VMCF completion before resuming
 TLSQuery; do not introduce another unbounded wait.
+
+## M12C target proof — 2026-09-23
+- Direct VMCF OPENtcp to GitHub IPv4 140.82.114.3:443 succeeds.
+- OPENtcp CALLCODE X'6E' returned connection X'03E8', RC X'00'.
+- OPEN notification on this z/VM 6.3 RSU is CALLCODE X'0B'.
+- SSL pool VMSSL startup parameters belong in SYSTEM DTCPARMS under
+  the SSL* stanza; :parms. PROTOCOL TLSV1_2 enabled TLS 1.2.
+- SSLADMIN QUERY STATUS DETAILS then showed TLSV1_2 enabled on all
+  five SSL servers and SHA-256 cipher suites included.
+- M12TLS3 target-proved TLSSCLIENTtcp preprocessing: CALLCODE X'83',
+  connection X'03E8', return X'00'.
+- The asynchronous TLS notification on this target is CALLCODE X'25',
+  connection X'03E8', return X'00'. This is the proven handshake
+  completion path for the current z/VM 6.3 RSU.
+- M12TLS3 printed M12C TLS ASYNC REQUEST PROVEN and returned RC 0.
+- Next milestone: prove encrypted SENDtcp/RECEIVEtcp over that secure
+  connection, then route HTTPS Git smart-HTTP through the existing
+  bounded pack/object pipeline.
