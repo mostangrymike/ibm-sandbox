@@ -121,6 +121,7 @@ M12TLS2  CSECT
          CLI   SLOTN+38,X'1E'
          BNE   PNGNOTE
          BAL   14,REJPNG
+         BNZ   PNGNOTE
 *
 * TLSQuery: SEND/RECV, CALLCODE 128. Query record is 8 blank
 * label bytes plus 50 blank keyring bytes, as documented for VM.
@@ -241,7 +242,7 @@ REJPNG   ST    14,WORKRET
          MVC   VMCFPL+2(2),=X'000B'
          LA    1,VMCFPL
          DC    X'83',X'12',XL2'0068'
-         ST    2,REJRC
+         LTR   2,2
          L     14,WORKRET
          BR    14
 *
@@ -385,7 +386,6 @@ WORKRET  DS    F
 WAITRET  DS    F
 DUMPRET  DS    F
 SAVERC   DS    F
-REJRC    DS    F
 MCPU     DC    C'M12A BASE CPU SELECTED'
 MENAB    DC    C'M12A INTERRUPTS ENABLED'
 MSTART   DC    C'M12A START'
