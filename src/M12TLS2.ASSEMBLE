@@ -215,7 +215,9 @@ WAITNLP  CLC   VMCFBUF(40),SLOT2
          STCK  NOWTOD
          L     5,NOWTOD
          S     5,STARTTOD
-         C     5,=F'30'
+* Allow TCPIP to return its own QueryTLS result, including
+* SSLnotRESPONDING, instead of preempting the stack at 30 seconds.
+         C     5,=F'75'
          BL    WAITNLP
          LA    15,8
          L     14,WAITRET
