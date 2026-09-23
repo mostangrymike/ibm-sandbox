@@ -100,17 +100,17 @@ M12TLS2  CSECT
          BNE   QBADHDR
 *
 * Slot 2 is the preprocessing response.  Slot 3 is the
-* QUERYtlsCOMPLETE notification (CALLCODE X'23', decimal 35).
+* QUERYtlsCOMPLETE notification (z/VM 6.3 CALLCODE X'21', decimal 33).
 *
          CLI   SLOT2+39,X'00'
          BNE   QPRE
-         BAL   14,CLEARECB
-         BAL   14,WAITEVT
+         XC    VMCFECB,VMCFECB
+         BAL   14,WAITNEXT
          LTR   15,15
          BNZ   QDONETO
          MVC   SLOT3(40),VMCFBUF
          WRTERM MQDONE,L'MQDONE
-         CLI   SLOT3+38,X'23'
+         CLI   SLOT3+38,X'21'
          BNE   QBADNOTE
          BAL   14,REJNOTE
          CLI   SLOT3+39,X'00'
