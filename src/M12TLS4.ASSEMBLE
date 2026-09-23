@@ -247,7 +247,8 @@ SENDOK   DS    0H
          MVC   VMCFPL+2(2),=X'0002'
          MVC   VMCFPL+4(4),=X'00000004'
          MVC   VMCFPL+8(8),=CL8'TCPIP'
-         MVC   VMCFPL+20(4),=F'1'
+         LA    3,RECVBUF
+         ST    3,VMCFPL+24
          MVC   VMCFPL+28(4),=F'1024'
          MVC   VMCFPL+36(2),CONN
          MVI   VMCFPL+38,X'71'
@@ -265,26 +266,7 @@ SENDOK   DS    0H
          BAL   14,DUMP40
          CLI   SLOT6+39,X'00'
          BNE   RECVRC
-* Wait for DATAdelivered, then VMCF RECEIVE into RECVBUF.
-         XC    VMCFECB,VMCFECB
-         BAL   14,WAITNXT
-         LTR   15,15
-         BNZ   DATATO
-         MVC   SLOT7(40),VMCFBUF
-         WRTERM MDATA,L'MDATA
-         LA    2,SLOT7
-         BAL   14,DUMP40
-         CLI   SLOT7+38,X'0C'
-         BNE   BADNOTE
-         MVC   VMCFPL(40),SLOT7
-         XC    VMCFPL(2),VMCFPL
-         MVC   VMCFPL+2(2),=X'0004'
-         LA    3,RECVBUF
-         ST    3,VMCFPL+16
-         LA    1,VMCFPL
-         DC    X'83',X'12',XL2'0068'
-         LTR   2,2
-         BNZ   DATADG
+* RECEIVEtcp returns application data in VADB.
          WRTERM MHEX,L'MHEX
          LA    2,RECVBUF
          BAL   14,DUMP80
