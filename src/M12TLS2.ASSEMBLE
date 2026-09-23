@@ -123,12 +123,13 @@ M12TLS2  CSECT
          BAL   14,REJPNG
          BNZ   PNGNOTE
 *
-* TLSQuery: SEND/RECV, CALLCODE 128. Query record is 8 blank
-* label bytes plus 50 blank keyring bytes, as documented for VM.
+* TLSQuery: SEND/RECV, CALLCODE 128.  Use a deliberately unknown
+* nonblank label to force SSL-server label verification. Keyring blank.
 * IBM requires CIBB=UNSPECIFIEDconnection (-48, X'FFD0').
 *
 TLSQRY   BAL   14,CLEARECB
          MVC   QUERY(58),=CL58' '
+         MVC   QUERY(8),=CL8'M12NONE'
          XC    VMCFPL(40),VMCFPL
          MVC   VMCFPL+2(2),=X'0003'
          MVC   VMCFPL+4(4),=X'00000004'
