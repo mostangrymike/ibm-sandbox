@@ -260,7 +260,10 @@ SENDOK   DS    0H
          XC    RECCNT,RECCNT
 * RECEIVEtcp advertises bounded 1024-byte receive buffer.
 RECVTRY  BAL   14,CLEAR
-         XC    RECVBUF(1024),RECVBUF
+         XC    RECVBUF(256),RECVBUF
+         XC    RECVBUF+256(256),RECVBUF+256
+         XC    RECVBUF+512(256),RECVBUF+512
+         XC    RECVBUF+768(256),RECVBUF+768
          XC    VMCFPL(40),VMCFPL
          MVC   VMCFPL+2(2),=X'0002'
          MVC   VMCFPL+4(4),=X'00000004'
