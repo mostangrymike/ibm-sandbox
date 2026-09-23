@@ -124,11 +124,12 @@ M12TLS2  CSECT
          BNZ   PNGNOTE
 *
 * TLSQuery: SEND/RECV, CALLCODE 128.  Use a deliberately unknown
-* blank label asks whether the SSL server itself is available.
+* Explicit label drives the documented asynchronous verification.
 * IBM requires CIBB=UNSPECIFIEDconnection (-48, X'FFD0').
 *
 TLSQRY   BAL   14,CLEARECB
          MVC   QUERY(58),=CL58' '
+         MVC   QUERY(8),=CL8'M12NONE'
          XC    VMCFPL(40),VMCFPL
          MVC   VMCFPL+2(2),=X'0003'
          MVC   VMCFPL+4(4),=X'00000004'
@@ -178,7 +179,7 @@ TLSQRY   BAL   14,CLEARECB
          CLI   SLOT3+38,X'23'
          BNE   QBADNOTE
          BAL   14,REJNOTE
-         CLI   SLOT3+39,X'00'
+         CLI   SLOT3+39,X'01'
          BNE   QRESULT
          WRTERM PASSMSG,PASSLEN
          B     CLEANOK
@@ -402,7 +403,7 @@ MPINGN   DC    C'M12A PING NOTIFICATION'
 MQSENT   DC    C'M12A TLSQUERY SENT'
 MQPRE    DC    C'M12A TLSQUERY PREPROCESS RESPONSE'
 MQDONE   DC    C'M12A TLSQUERY COMPLETE'
-PASSMSG  DC    C'M12A TLSQUERY SSL SERVICE AVAILABLE'
+PASSMSG  DC    C'M12A TLSQUERY ASYNC PATH PROVEN'
 PASSLEN  EQU   *-PASSMSG
 EHND     DC    C'M12A ERROR HNDEXT'
 EAUTH    DC    C'M12A ERROR VMCF AUTHORIZE'
