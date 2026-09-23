@@ -143,6 +143,22 @@ WAITOK   SR    15,15
          L     14,WAITRET
          BR    14
 *
+* Preserve VMCFBUF after preprocess.  Completion may already have
+* replaced it before this wait begins.
+*
+WAITNXT  ST    14,WAITRET
+         STCK  STARTTOD
+WAITNLP  CLC   VMCFBUF(40),SLOT2
+         BNE   WAITOK
+         STCK  NOWTOD
+         L     5,NOWTOD
+         S     5,STARTTOD
+         C     5,=F'5'
+         BL    WAITNLP
+         LA    15,8
+         L     14,WAITRET
+         BR    14
+*
 * A QUERYtlsCOMPLETE notification is a SEND.  IBM requires
 * completion with VMCF REJECT using the interrupt header data.
 *
