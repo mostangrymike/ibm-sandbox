@@ -163,7 +163,7 @@ TLSQRY   BAL   14,CLEARECB
          BNE   QBADHDR
 *
 * Slot 2 is the preprocessing response.  Slot 3 is the
-* QUERYtlsCOMPLETE notification observed on this z/VM 6.3 TCP/IP as X'23'.
+* Target sends QUERYtlsCOMPLETE as X'23'.
 *
          CLI   SLOT2+39,X'00'
          BNE   QPRE
