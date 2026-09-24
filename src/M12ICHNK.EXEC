@@ -29,6 +29,7 @@ do forever
  i=i+1
  drop b.
 end
+'TYPE M12CMETA DATA A'
 'EXEC GIT12CHK FINAL'
 if rc\=0 then do
  say 'M12I: FINAL failed RC' rc
