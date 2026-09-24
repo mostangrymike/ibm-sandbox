@@ -547,3 +547,42 @@ TLSQuery; do not introduce another unbounded wait.
   4c095778a8a5248bd10821a7a66c3989ec75127a receive/validate X'24'
   detail; 058c79c2cbd087eb10c305e21ecec90cee798cd6 fixed 9-char symbol;
   9ec2a249985596711c26710b942a9c27df125a49 repeated receive diagnostic.
+
+
+## 2026-09-24 current checkpoint — EC2 TLS bridge
+
+Native z/VM System SSL investigation reached a definitive certificate-validation
+blocker. SSL server trace reported `DTCSSL022E Handshake failed rc: 8 reason:
+Certificate validation error` and `DTCSSL505W Local client requested use of
+CERTNOCHECK; Request ignored`. Current GitHub presents a Sectigo ECC chain
+(github.com -> CA DV E36 -> Root E46). The target is z/VM 6.3 service level
+1302. Import of the E46 root with GSKKYMAN failed status `0x03353083` because
+ICSF services are unavailable; `CP QUERY VIRTUAL CRYPTO` reports no AP Crypto
+Domains. Preserve M12TLS4 for research, but native System SSL is no longer on
+the practical transport critical path.
+
+The practical HTTPS architecture now uses stunnel on the existing EC2 Debian
+host. stunnel 5.74 listens only on tap0 `192.168.200.1:8443` in client mode and
+connects to `github.com:443` with CA-chain verification, hostname checking,
+SNI, and TLS >= 1.2. EC2-local plaintext through that listener returned GitHub
+HTTP/1.1 200 OK.
+
+CMS-to-GitHub bridge proof is target-proven. `M11BRAW 192.168.200.1 8443`
+initialized REXX/SOCKETS, confirmed SO_ASCII OFF, connected, sent all 56 raw
+request bytes, received 176 bytes in bounded receives, and saw prefix
+`485454502F312E3120333031204D6F76` = `HTTP/1.1 301 Mov`. The 301 is expected
+because the preserved M11B diagnostic sends `Host: example.com`; valid HTTP
+returning to CMS proves CMS -> TAP -> stunnel -> verified TLS -> GitHub -> CMS.
+
+`src/M11BRAW.EXEC` was fixed to accept dotted numeric IPv4 destinations; latest
+fix commit before this documentation update is
+`fdcf997b60f6c95fec6322002b72e7da35c19f89`. A separate
+`src/M12PRXY.EXEC` was added in commit
+`197c61577dced36226f4f303ed2ee113bef066fb` with `Host: github.com`, preserving
+the target-proven M11B core.
+
+NEXT ACTION: transfer/run `M12PRXY 192.168.200.1 8443`. After that gate passes,
+move directly to a real GitHub smart-HTTP request through the bridge and feed
+the bounded response into GIT11HTP -> GIT10UP/GIT10BF/GITPBUF -> M9 PACK/object
+pipeline. Do not resume crypto-level archaeology unless explicitly revisiting
+the native System SSL research path.
