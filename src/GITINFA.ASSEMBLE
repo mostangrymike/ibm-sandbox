@@ -57,9 +57,21 @@ GITINFA  CSECT
          BNE   BADLZ
          CLI   REPOUT+258,X'61'
          BNE   BADLZ
+         LA    2,DYNTEST
+         L     3,DYNLEN
+         LA    4,DYNOUT
+         L     5,DYNOCAP
+         BAL   14,INFLATE
+         LTR   15,15
+         BNZ   BADDYN
+         C     6,DYNOEXP
+         BNE   BADDYN
+         CLC   DYNOUT(16),DYNPFX
+         BNE   BADDYN
          LINEWRT DATA=(OKMSG,OKLEN)
          LINEWRT DATA=(FIXMSG,FIXLEN)
          LINEWRT DATA=(LZMSG,LZLEN)
+         LINEWRT DATA=(DYNMSG,DYNLENM)
          SR    15,15
          B     RETURN
 BADHIST  LINEWRT DATA=(HMSG,HMSGLEN)
@@ -69,6 +81,9 @@ BADFIX   LINEWRT DATA=(FMSG,FMSGLEN)
          LA    15,8
          B     RETURN
 BADLZ    LINEWRT DATA=(LMSG,LMSGLEN)
+         LA    15,8
+         B     RETURN
+BADDYN   LINEWRT DATA=(DMSG,DMSGLEN)
          LA    15,8
 RETURN   L     14,RETADDR
          BR    14
@@ -95,8 +110,22 @@ INFLATE  ST    14,INFRET
          LTR   15,15
          BNZ   INFERR
          C     5,=F'1'
+         BE    IFFIX
+         C     5,=F'2'
          BNE   INFERR
-IFLOOP   BAL   14,FIXSYM
+         BAL   14,DYNTREE
+         LTR   15,15
+         BNZ   INFERR
+         LA    11,1
+         B     IFLOOP
+IFFIX    SR    11,11
+IFLOOP   LTR   11,11
+         BNZ   IFDYSYM
+         BAL   14,FIXSYM
+         B     IFGOT
+IFDYSYM  LA    2,1
+         BAL   14,HUFFSYM
+IFGOT
          LTR   15,15
          BNZ   INFERR
          C     5,=F'256'
@@ -110,7 +139,13 @@ IFLOOP   BAL   14,FIXSYM
          LTR   15,15
          BNZ   INFERR
          ST    5,RUNLEN
+         LTR   11,11
+         BNZ   IFDYDST
          BAL   14,DISTSYM
+         B     IFGOTD
+IFDYDST  LA    2,2
+         BAL   14,HUFFSYM
+IFGOTD
          LTR   15,15
          BNZ   INFERR
          C     5,=F'29'
@@ -222,6 +257,274 @@ DSREV    SLL   5,1
          BR    14
 DSERR    LA    15,8
          L     14,SYMRET
+         BR    14
+*
+* DYNTREE builds RFC1951 dynamic code-length, literal, and distance
+* canonical tables. HUFFSYM uses count/symbol tables like puff.c.
+*
+DYNTREE  ST    14,DYNRET
+         XC    CLLENS(19),CLLENS
+         LA    2,5
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   DYNERR
+         A     5,=F'257'
+         ST    5,NLIT
+         C     5,=F'286'
+         BH    DYNERR
+         LA    2,5
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   DYNERR
+         A     5,=F'1'
+         ST    5,NDIST
+         C     5,=F'30'
+         BH    DYNERR
+         LA    2,4
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   DYNERR
+         A     5,=F'4'
+         ST    5,NCODE
+         SR    6,6
+DYCLLP   C     6,NCODE
+         BNL   DYCLDN
+         LR    7,6
+         SLL   7,1
+         LH    8,CLORD(7)
+         LA    2,3
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   DYNERR
+         LA    7,CLLENS
+         AR    7,8
+         STC   5,0(7)
+         LA    6,1(6)
+         B     DYCLLP
+DYCLDN   LA    2,CLLENS
+         LA    3,19
+         LA    4,CLCOUNT
+         LA    5,CLSYMS
+         BAL   14,HUFFBLD
+         LTR   15,15
+         BNZ   DYNERR
+         L     6,NLIT
+         A     6,NDIST
+         ST    6,NTOTAL
+         SR    6,6
+DYLENLP  C     6,NTOTAL
+         BNL   DYLENDN
+         LA    2,0
+         BAL   14,HUFFSYM
+         LTR   15,15
+         BNZ   DYNERR
+         C     5,=F'15'
+         BH    DYREPT
+         LA    7,ALLLENS
+         AR    7,6
+         STC   5,0(7)
+         LA    6,1(6)
+         B     DYLENLP
+DYREPT   C     5,=F'16'
+         BNE   DYREP17
+         LTR   6,6
+         BZ    DYNERR
+         LR    7,6
+         BCTR  7,0
+         LA    8,ALLLENS
+         AR    8,7
+         XR    9,9
+         IC    9,0(8)
+         LA    2,2
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   DYNERR
+         A     5,=F'3'
+         B     DYFILL
+DYREP17  C     5,=F'17'
+         BNE   DYREP18
+         SR    9,9
+         LA    2,3
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   DYNERR
+         A     5,=F'3'
+         B     DYFILL
+DYREP18  C     5,=F'18'
+         BNE   DYNERR
+         SR    9,9
+         LA    2,7
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   DYNERR
+         A     5,=F'11'
+DYFILL   LR    7,6
+         AR    7,5
+         C     7,NTOTAL
+         BH    DYNERR
+DYFLLP   LA    8,ALLLENS
+         AR    8,6
+         STC   9,0(8)
+         LA    6,1(6)
+         BCT   5,DYFLLP
+         B     DYLENLP
+DYLENDN  CLI   ALLLENS+256,X'00'
+         BE    DYNERR
+         LA    2,ALLLENS
+         L     3,NLIT
+         LA    4,LLCOUNT
+         LA    5,LLSYMS
+         BAL   14,HUFFBLD
+         LTR   15,15
+         BNZ   DYNERR
+         LA    2,ALLLENS
+         L     6,NLIT
+         AR    2,6
+         L     3,NDIST
+         LA    4,DDCOUNT
+         LA    5,DDSYMS
+         BAL   14,HUFFBLD
+         LTR   15,15
+         BNZ   DYNERR
+         SR    15,15
+         L     14,DYNRET
+         BR    14
+DYNERR   LA    15,8
+         L     14,DYNRET
+         BR    14
+*
+* HUFFBLD: R2 lengths, R3 count, R4 count[0..15], R5 symbols.
+* Reject oversubscribed codes. Incomplete sets remain decodable.
+*
+HUFFBLD  ST    14,BLDRET
+         ST    4,HBCPTR
+         ST    5,HBSPTR
+         XC    0(64,4),0(4)
+         SR    6,6
+HBCLP    CR    6,3
+         BNL   HBCDN
+         XR    7,7
+         IC    7,0(2,6)
+         C     7,=F'15'
+         BH    HBDERR
+         SLL   7,2
+         L     8,0(4,7)
+         LA    8,1(8)
+         ST    8,0(4,7)
+         LA    6,1(6)
+         B     HBCLP
+HBCDN    LA    6,1
+         LA    7,1
+HBLEFT   SLL   7,1
+         LR    8,6
+         SLL   8,2
+         S     7,0(4,8)
+         LTR   7,7
+         BM    HBDERR
+         LA    6,1(6)
+         C     6,=F'15'
+         BNH   HBLEFT
+         XC    HBOFF(64),HBOFF
+         SR    6,6
+         SR    7,7
+HBOFLP   LA    6,1(6)
+         C     6,=F'15'
+         BH    HBSORT
+         LR    8,6
+         BCTR  8,0
+         SLL   8,2
+         L     9,HBOFF(8)
+         L     10,HBCPTR
+         LR    8,6
+         SLL   8,2
+         A     9,0(10,8)
+         ST    9,HBOFF(8)
+         B     HBOFLP
+HBSORT   SR    6,6
+HBSLP    CR    6,3
+         BNL   HBDONE
+         XR    7,7
+         IC    7,0(2,6)
+         LTR   7,7
+         BZ    HBSNXT
+         LR    8,7
+         BCTR  8,0
+         SLL   8,2
+         L     9,HBOFF(8)
+         L     10,HBSPTR
+         LR    11,9
+         SLL   11,1
+         STH   6,0(10,11)
+         LA    9,1(9)
+         ST    9,HBOFF(8)
+HBSNXT   LA    6,1(6)
+         B     HBSLP
+HBDONE   SR    15,15
+         L     14,BLDRET
+         BR    14
+HBDERR   LA    15,8
+         L     14,BLDRET
+         BR    14
+*
+* HUFFSYM: R2 selects CL=0, LL=1, DD=2. Returns symbol in R5.
+*
+HUFFSYM  ST    14,HUFRET
+         C     2,=F'0'
+         BNE   HSLL
+         LA    3,CLCOUNT
+         LA    4,CLSYMS
+         B     HSINIT
+HSLL     C     2,=F'1'
+         BNE   HSDD
+         LA    3,LLCOUNT
+         LA    4,LLSYMS
+         B     HSINIT
+HSDD     LA    3,DDCOUNT
+         LA    4,DDSYMS
+HSINIT   ST    3,HCPTR
+         ST    4,HSPTR
+         XC    HCODE(4),HCODE
+         XC    HFIRST(4),HFIRST
+         XC    HINDEX(4),HINDEX
+         LA    6,1
+HSLOOP   LA    2,1
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   HSERR
+         L     7,HCODE
+         OR    7,5
+         ST    7,HCODE
+         L     3,HCPTR
+         LR    8,6
+         SLL   8,2
+         L     9,0(3,8)
+         L     10,HFIRST
+         LR    11,7
+         SR    11,10
+         CR    11,9
+         BL    HSFOUND
+         L     8,HINDEX
+         AR    8,9
+         ST    8,HINDEX
+         AR    10,9
+         SLL   10,1
+         ST    10,HFIRST
+         SLL   7,1
+         ST    7,HCODE
+         LA    6,1(6)
+         C     6,=F'15'
+         BNH   HSLOOP
+HSERR    LA    15,8
+         L     14,HUFRET
+         BR    14
+HSFOUND  L     8,HINDEX
+         AR    8,11
+         SLL   8,1
+         L     4,HSPTR
+         LH    5,0(4,8)
+         N     5,=X'0000FFFF'
+         SR    15,15
+         L     14,HUFRET
          BR    14
 *
 * GETLEN/GETDIST implement RFC1951 base and extra-bit tables.
@@ -354,17 +657,26 @@ FIXMSG   DC    C'GITINFA: FIXED HUFFMAN ABC DECODE PASSED'
 FIXLEN   EQU   *-FIXMSG
 LZMSG    DC    C'GITINFA: FIXED HUFFMAN LZ77 DECODE PASSED'
 LZLEN    EQU   *-LZMSG
+DYNMSG   DC    C'GITINFA: DYNAMIC HUFFMAN DECODE PASSED'
+DYNLENM  EQU   *-DYNMSG
 HMSG     DC    C'GITINFA: 32K WINDOW SELFTEST FAILED'
 HMSGLEN  EQU   *-HMSG
 FMSG     DC    C'GITINFA: FIXED HUFFMAN ABC DECODE FAILED'
 FMSGLEN  EQU   *-FMSG
 LMSG     DC    C'GITINFA: FIXED HUFFMAN LZ77 DECODE FAILED'
 LMSGLEN  EQU   *-LMSG
+DMSG     DC    C'GITINFA: DYNAMIC HUFFMAN DECODE FAILED'
+DMSGLEN  EQU   *-DMSG
          DS    0F
 ABCFIX   DC    X'4B4C4A0600'
 ABCDATA  DC    X'616263'
 * zlib raw DEFLATE for 259 ASCII a bytes, fixed strategy fixture.
 REPTEST  DC    X'4B1C05000000'
+DYNTEST  DC    X'05C08100000000009036FF530000000000000000'
+DYNLEN   DC    F'20'
+DYNOEXP  DC    F'0'
+DYNOCAP  DC    F'16'
+DYNPFX   DC    16X'00'
 PATTERN  DC    32CL8'GITINFL!'
 LENBASE  DC    F'3',F'4',F'5',F'6',F'7',F'8',F'9',F'10'
          DC    F'11',F'13',F'15',F'17',F'19',F'23',F'27',F'31'
@@ -390,6 +702,9 @@ TABRET   DS    F
 PUTRET   DS    F
 COPYRET  DS    F
 SUBRET   DS    F
+DYNRET   DS    F
+BLDRET   DS    F
+HUFRET   DS    F
 INPTR    DS    F
 INLEN    DS    F
 OUTPTR   DS    F
@@ -402,8 +717,32 @@ DISTVAL  DS    F
 TABBASE  DS    F
 SYMLEN   DS    F
 SYMCODE  DS    F
+NLIT     DS    F
+NDIST    DS    F
+NCODE    DS    F
+NTOTAL   DS    F
+HBCPTR   DS    F
+HBSPTR   DS    F
+HCPTR    DS    F
+HSPTR    DS    F
+HCODE    DS    F
+HFIRST   DS    F
+HINDEX   DS    F
+HBOFF    DS    16F
+CLCOUNT  DS    16F
+LLCOUNT  DS    16F
+DDCOUNT  DS    16F
+CLSYMS   DS    19H
+LLSYMS   DS    286H
+DDSYMS   DS    30H
+CLLENS   DS    19C
+ALLLENS  DS    316C
+CLORD    DC    H'16',H'17',H'18',H'0',H'8',H'7',H'9'
+         DC    H'6',H'10',H'5',H'11',H'4',H'12',H'3'
+         DC    H'13',H'2',H'14',H'1',H'15'
 ABCOUT   DS    16C
 REPOUT   DS    300C
+DYNOUT   DS    16C
          DS    0D
 HIST     DS    32768C
          END   GITINFA
