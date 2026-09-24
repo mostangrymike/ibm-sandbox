@@ -45,7 +45,7 @@ say 'M12K TEST 3: verify live PACK checksum'
 'EXEC GITPSHA VERIFY'
 if rc\=0 then exit rc
 say 'M12K TEST 4: walk live PACK'
-'EXEC GITP9PWK WALK'
+'EXEC GITP9PWK WALK QUIET'
 if rc\=0 then exit rc
 say 'M12K LIVE GITHUB PACK PIPELINE PASSED'
 exit 0
