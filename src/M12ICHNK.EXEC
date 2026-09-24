@@ -12,11 +12,11 @@ drop b.
 i=1
 do forever
  'EXECIO 1 DISKR M11BODY DATA A' i '(STEM B. FINIS'
- if rc\=0 then do
-  if rc=2 then leave
+ if rc\=0 & rc\=2 then do
   say 'M12I: input read failed record' i 'RC' rc
   exit 8
  end
+ if b.0=0 then leave
  if b.0\=1 then exit 8
  h=strip(b.1)
  if h='' | length(h)//2\=0 then exit 8
