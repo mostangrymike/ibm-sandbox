@@ -1,0 +1,90 @@
+/* M12 Git smart-HTTP discovery through EC2 TLS bridge. */
+parse upper arg host port
+if host='' then host='192.168.200.1'
+if port='' then port=8443
+path='/MOSTANGRYMIKE/IBM-SANDBOX.GIT/INFO/REFS'
+path=path||'?SERVICE=GIT-UPLOAD-PACK'
+say 'M12G TEST 1: initialize REXX/SOCKETS'
+r=Socket('Initialize','M12GDISC')
+say r
+parse var r rc rest
+if rc\=0 then exit 8
+if verify(host,'0123456789.')=0 then ip=host
+else do
+ r=Socket('GetHostByName',host)
+ say r
+ parse var r rc addrs
+ if rc\=0 then call fail
+ ip=word(addrs,1)
+ if ip='' then call fail
+end
+say 'M12G TEST 2: create raw-byte TCP socket'
+r=Socket('Socket')
+say r
+parse var r rc s
+if rc\=0 then call fail
+r=Socket('GetSockOpt',s,'SOL_SOCKET','SO_ASCII')
+say r
+parse var r rc opt
+if rc\=0 | translate(opt)\='OFF' then call closefail
+say 'M12G TEST 3: connect' ip port
+r=Socket('Connect',s,'AF_INET' port ip)
+say r
+parse var r rc rest
+if rc\=0 then call closefail
+req='GET '||path||' HTTP/1.1'||d2c(13)||d2c(10)
+req=req||'Host: github.com'||d2c(13)||d2c(10)
+req=req||'Accept: application/x-git-upload-pack-advertisement'
+req=req||d2c(13)||d2c(10)
+req=req||'Connection: close'||d2c(13)||d2c(10)||d2c(13)||d2c(10)
+raw=''
+do i=1 to length(req)
+ raw=raw||d2c(c2d(substr(req,i,1)))
+end
+/* req is EBCDIC; translate exact request text to ASCII wire bytes. */
+raw=x2c('474554202F6D6F7374616E6772796D696B652F69626D2D73616E64626F78'||
+'2E6769742F696E666F2F726566733F736572766963653D6769742D75706C'||
+'6F61642D7061636B20485454502F312E310D0A486F73743A206769746875'||
+'622E636F6D0D0A4163636570743A206170706C69636174696F6E2F782D67'||
+'69742D75706C6F61642D7061636B2D6164766572746973656D656E740D0A'||
+'436F6E6E656374696F6E3A20636C6F73650D0A0D0A')
+say 'M12G TEST 4: send smart-HTTP discovery request'
+r=Socket('Send',s,raw)
+say r
+parse var r rc sent
+if rc\=0 | sent\=length(raw) then call closefail
+say 'M12G TEST 5: bounded receive and HTTP framing'
+'EXEC GIT11HTP INIT FILE'
+if rc\=0 then call closefail
+total=0
+prefix=''
+do forever
+ r=Socket('Recv',s,256)
+ parse var r rc got data
+ if rc\=0 then call closefail
+ if got=0 then leave
+ if got>256 | length(data)\=got then call closefail
+ if length(prefix)<16 then prefix=prefix||data
+ total=total+got
+ if total>1048576 then call closefail
+ 'EXEC GIT11HTP FEED' c2x(data)
+ if rc\=0 then call closefail
+end
+'EXEC GIT11HTP FINAL'
+if rc\=0 then call closefail
+say 'RECEIVED BYTES' total
+say 'WIRE PREFIX' c2x(left(prefix,16))
+if c2x(left(prefix,12))\='485454502F312E3120323030' then call closefail
+r=Socket('Close',s)
+say r
+call term
+say 'M12 GIT DISCOVERY THROUGH TLS BRIDGE PASSED'
+exit 0
+closefail:
+ call Socket 'Close',s
+fail:
+ call term
+ exit 8
+term:
+ r=Socket('Terminate')
+ return
