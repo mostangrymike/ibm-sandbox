@@ -2,12 +2,14 @@ GITINFA  CSECT
          USING GITINFA,12
          LR    12,15
          ST    14,RETADDR
+         LR    11,0
+         USING EPLIST,11
 *
 * M13N stage 1: prove native CMS MODULE calling convention and
 * bounded 32 KiB history work area before moving DEFLATE hot loops.
 *
-         L     2,0(1)
-         L     3,4(1)
+         L     2,EPLARGBG
+         L     3,EPLARGND
          SR    3,2
          C     3,=F'4'
          BL    BADARG
