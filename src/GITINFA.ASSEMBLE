@@ -141,14 +141,17 @@ INFERR   LA    15,8
 * Canonical codes are compared after bit reversal.
 *
 FIXSYM   ST    14,SYMRET
-         SR    6,6
-         SR    7,7
+         XC    SYMLEN(4),SYMLEN
+         XC    SYMCODE(4),SYMCODE
 FXLOOP   LA    2,1
          BAL   14,GETBITS
          LTR   15,15
          BNZ   FXERR
+         L     7,SYMCODE
          SLL   7,1
          OR    7,5
+         ST    7,SYMCODE
+         L     6,SYMLEN
          C     6,=F'6'
          BL    FXNEXT
          C     6,=F'6'
@@ -188,6 +191,7 @@ FX9      C     6,=F'8'
          A     5,=F'144'
          B     FXOK
 FXNEXT   LA    6,1(6)
+         ST    6,SYMLEN
          C     6,=F'9'
          BL    FXLOOP
 FXERR    LA    15,8
@@ -292,7 +296,8 @@ COPYRUN  ST    14,COPYRET
          CR    6,7
          BH    COPYERR
          L     9,RUNLEN
-COPYLP   L     7,OUTLEN
+COPYLP   L     6,DISTVAL
+         L     7,OUTLEN
          SR    7,6
          N     7,=F'32767'
          LA    8,HIST
@@ -395,6 +400,8 @@ COUNT    DS    F
 RUNLEN   DS    F
 DISTVAL  DS    F
 TABBASE  DS    F
+SYMLEN   DS    F
+SYMCODE  DS    F
 ABCOUT   DS    16C
 REPOUT   DS    300C
          DS    0D
