@@ -27,7 +27,16 @@ do entry=1 to objects
   size=size+(b//128)*(2**shift)
   shift=shift+7; more=b>=128
  end
- if quiet then say 'PACK ENTRY START' entry 'POS' entrypos 'TYPE' type 'SIZE' size
+ if quiet then do
+  if type=1 then qtype='COMMIT'
+  else if type=2 then qtype='TREE'
+  else if type=3 then qtype='BLOB'
+  else if type=4 then qtype='TAG'
+  else if type=6 then qtype='OFS'
+  else if type=7 then qtype='REF'
+  else qtype='UNKNOWN'
+  say 'PACK ENTRY START' entry 'POS' entrypos 'TYPE' qtype
+ end
  if type>=1 & type<=4 then do
   if type=1 then otype='COMMIT'
   else if type=2 then otype='TREE'
