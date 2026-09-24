@@ -1,0 +1,86 @@
+/* M12J live Git upload-pack POST through EC2 TLS bridge. */
+parse upper arg host port
+if host='' then host='192.168.200.1'
+if port='' then port=8443
+oid='C6E42C8EFC3BFC1C7331BEA300FFE94765861033'
+want='want '||translate(oid,'abcdef','ABCDEF')
+/* Exact ASCII pkt-lines: want <oid> side-band-64k ofs-delta, flush, done. */
+whex='3030336377616e74206336653432633865666333626663316337333331626561'
+whex=whex||'333030666665393437363538363130333320736964652d62616e642d36346b'
+whex=whex||'206f66732d64656c74610a3030303030303039646f6e650a'
+clen=length(whex)%2
+say 'M12J TEST 1: initialize REXX/SOCKETS'
+r=Socket('Initialize','M12JPOST')
+say r
+parse var r rc rest
+if rc\=0 then exit 8
+if verify(host,'0123456789.')=0 then ip=host
+else do
+ r=Socket('GetHostByName',host)
+ parse var r rc addrs
+ if rc\=0 then call fail
+ ip=word(addrs,1)
+end
+r=Socket('Socket')
+say r
+parse var r rc s
+if rc\=0 then call fail
+r=Socket('GetSockOpt',s,'SOL_SOCKET','SO_ASCII')
+say r
+parse var r rc opt
+if rc\=0 | translate(opt)\='OFF' then call closefail
+say 'M12J TEST 2: connect' ip port
+r=Socket('Connect',s,'AF_INET' port ip)
+say r
+parse var r rc rest
+if rc\=0 then call closefail
+h='504F5354202F6D6F7374616E6772796D696B652F69626D2D73616E64626F78'
+h=h||'2E6769742F6769742D75706C6F61642D7061636B20485454502F312E310D0A'
+h=h||'486F73743A206769746875622E636F6D0D0A'
+h=h||'436F6E74656E742D547970653A206170706C69636174696F6E2F782D676974'
+h=h||'2D75706C6F61642D7061636B2D726571756573740D0A'
+h=h||'4163636570743A206170706C69636174696F6E2F782D6769742D75706C6F61'
+h=h||'642D7061636B2D726573756C740D0A'
+h=h||'436F6E74656E742D4C656E6774683A2037310D0A'
+h=h||'436F6E6E656374696F6E3A20636C6F73650D0A0D0A'
+raw=x2c(h||whex)
+say 'M12J TEST 3: send live upload-pack POST bytes' length(raw)
+r=Socket('Send',s,raw)
+say r
+parse var r rc sent
+if rc\=0 | sent\=length(raw) then call closefail
+say 'M12J TEST 4: bounded capture HTTP response'
+'EXEC GIT11HTP INIT FILE'
+if rc\=0 then call closefail
+total=0
+prefix=''
+do forever
+ r=Socket('Recv',s,256)
+ parse var r rc got data
+ if rc\=0 then call closefail
+ if got=0 then leave
+ if got>256 | length(data)\=got then call closefail
+ if length(prefix)<16 then prefix=prefix||data
+ total=total+got
+ if total>8388608 then call closefail
+ 'EXEC GIT11HTP FEED' c2x(data)
+ if rc\=0 then call closefail
+end
+'EXEC GIT11HTP FINAL'
+if rc\=0 then call closefail
+say 'RECEIVED BYTES' total
+say 'WIRE PREFIX' c2x(left(prefix,16))
+if c2x(left(prefix,12))\='485454502F312E3120323030' then call closefail
+r=Socket('Close',s)
+say r
+call term
+say 'M12J LIVE GIT UPLOAD-PACK POST CAPTURE PASSED'
+exit 0
+closefail:
+ call Socket 'Close',s
+fail:
+ call term
+ exit 8
+term:
+ r=Socket('Terminate')
+ return
