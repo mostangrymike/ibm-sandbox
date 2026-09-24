@@ -1,7 +1,7 @@
-/* M13N stage 2 native bit-reader regression. */
+/* M13N native DEFLATE core regression. */
 address command
-say 'M13N TEST 1: native window and LSB-first bit reader'
+say 'M13N: native window, bits, fixed Huffman, and LZ77'
 'GITINFA'
 if rc \= 0 then exit rc
-say 'M13N NATIVE BIT READER FOUNDATION PASSED'
+say 'M13N NATIVE FIXED DEFLATE CORE PASSED'
 exit 0
