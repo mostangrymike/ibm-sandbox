@@ -1,0 +1,27 @@
+/* M12H validate live Git smart-HTTP advertisement body. */
+address command
+say 'M12H TEST 1: read bounded discovery body'
+'STATE M11BODY DATA A'
+if rc\=0 then exit 8
+drop b.
+'EXECIO 1 DISKR M11BODY DATA A 1 (STEM B. FINIS'
+if rc\=0 | b.0\=1 then exit 8
+hex=translate(strip(b.1))
+if length(hex)<8 | length(hex)//2\=0 then exit 8
+if verify(hex,'0123456789ABCDEF')\=0 then exit 8
+if length(hex)>128 then exit 8
+/* GIT11HTP stores each bounded body piece as one record. */
+say 'FIRST BODY BYTES' left(hex,64)
+if left(hex,8)\='30303145' then do
+ say 'M12H: unexpected first pkt-line length'
+ exit 8
+end
+svc=x2c(substr(hex,9))
+/* Convert only the known ASCII service prefix to a hex comparison. */
+want='2320736572766963653D6769742D75706C6F61642D7061636B0A'
+if left(substr(hex,9),length(want))\=translate(want) then do
+ say 'M12H: missing git-upload-pack service announcement'
+ exit 8
+end
+say 'M12H GIT UPLOAD-PACK ADVERTISEMENT PREFIX PASSED'
+exit 0
