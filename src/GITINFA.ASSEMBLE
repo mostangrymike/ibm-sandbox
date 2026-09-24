@@ -1,15 +1,17 @@
 GITINFA  CSECT
          USING GITINFA,12
          LR    12,15
+         LA    13,DATAORG
+         USING DATAORG,13
          ST    14,RETADDR
 *
 * M13N native DEFLATE core regression.
 * Exercise window, bit reader, fixed Huffman, and LZ77 in one run.
 *
-         MVC   HIST(256),PATTERN
-         CLC   HIST(256),PATTERN
+         L     4,=A(HIST)\n         MVC   0(256,4),PATTERN
+         CLC   0(256,4),PATTERN
          BNE   BADHIST
-         LA    4,HIST
+         L     4,=A(HIST)
          LA    4,4095(4)
          LA    4,1(4)
          LA    4,4095(4)
@@ -35,38 +37,38 @@ GITINFA  CSECT
 *
          LA    2,ABCFIX
          LA    3,5
-         LA    4,ABCOUT
+         L     4,=A(ABCOUT)
          LA    5,16
          BAL   14,INFLATE
          LTR   15,15
          BNZ   BADFIX
          C     6,=F'3'
          BNE   BADFIX
-         CLC   ABCOUT(3),ABCDATA
+         L     4,=A(ABCOUT)\n         CLC   0(3,4),ABCDATA
          BNE   BADFIX
          LA    2,REPTEST
          LA    3,6
-         LA    4,REPOUT
+         L     4,=A(REPOUT)
          LA    5,300
          BAL   14,INFLATE
          LTR   15,15
          BNZ   BADLZ
          C     6,=F'259'
          BNE   BADLZ
-         CLI   REPOUT,X'61'
+         L     4,=A(REPOUT)\n         CLI   0(4),X'61'
          BNE   BADLZ
-         CLI   REPOUT+258,X'61'
+         CLI   258(4),X'61'
          BNE   BADLZ
          LA    2,DYNTEST
          L     3,DYNLEN
-         LA    4,DYNOUT
+         L     4,=A(DYNOUT)
          L     5,DYNOCAP
          BAL   14,INFLATE
          LTR   15,15
          BNZ   BADDYN
          C     6,DYNOEXP
          BNE   BADDYN
-         CLC   DYNOUT(16),DYNPFX
+         L     4,=A(DYNOUT)\n         CLC   0(16,4),DYNPFX
          BNE   BADDYN
          LINEWRT DATA=(OKMSG,OKLEN)
          LINEWRT DATA=(FIXMSG,FIXLEN)
@@ -125,7 +127,7 @@ IFLOOP   LTR   11,11
          B     IFGOT
 IFDYSYM  LA    2,1
          BAL   14,HUFFSYM
-IFGOT
+IFGOT    DS    0H
          LTR   15,15
          BNZ   INFERR
          C     5,=F'256'
@@ -145,7 +147,7 @@ IFGOT
          B     IFGOTD
 IFDYDST  LA    2,2
          BAL   14,HUFFSYM
-IFGOTD
+IFGOTD   DS    0H
          LTR   15,15
          BNZ   INFERR
          C     5,=F'29'
@@ -577,7 +579,7 @@ PUTBYTE  ST    14,PUTRET
          STC   2,0(7)
          LR    8,6
          N     8,=F'32767'
-         LA    7,HIST
+         L     7,=A(HIST)
          AR    7,8
          STC   2,0(7)
          LA    6,1(6)
@@ -603,7 +605,7 @@ COPYLP   L     6,DISTVAL
          L     7,OUTLEN
          SR    7,6
          N     7,=F'32767'
-         LA    8,HIST
+         L     8,=A(HIST)
          AR    8,7
          XR    2,2
          IC    2,0(8)
@@ -651,6 +653,7 @@ GBERR    LA    15,8
          L     14,SUBRET
          BR    14
          LTORG
+DATAORG  DS    0D
 OKMSG    DC    C'GITINFA: NATIVE 32K WINDOW SELFTEST PASSED'
 OKLEN    EQU   *-OKMSG
 FIXMSG   DC    C'GITINFA: FIXED HUFFMAN ABC DECODE PASSED'
