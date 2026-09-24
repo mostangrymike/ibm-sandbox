@@ -12,16 +12,25 @@ if verify(hex,'0123456789ABCDEF')\=0 then exit 8
 if length(hex)>128 then exit 8
 /* GIT11HTP stores each bounded body piece as one record. */
 say 'FIRST BODY BYTES' left(hex,64)
-if left(hex,8)\='30303145' then do
- say 'M12H: unexpected first pkt-line length'
+/* GitHub HTTP/1.1 currently uses chunked transfer coding here. */
+crlf='0D0A'
+p=pos(crlf,hex)
+if p=0 | p>17 then do
+ say 'M12H: missing bounded HTTP chunk-size line'
  exit 8
 end
-svc=x2c(substr(hex,9))
-/* Convert only the known ASCII service prefix to a hex comparison. */
+chunk=left(hex,p-1)
+if chunk='' | verify(chunk,'0123456789ABCDEF')\=0 then exit 8
+body=substr(hex,p+4)
+if left(body,8)\='30303165' then do
+ say 'M12H: unexpected first Git pkt-line length'
+ exit 8
+end
 want='2320736572766963653D6769742D75706C6F61642D7061636B0A'
-if left(substr(hex,9),length(want))\=translate(want) then do
+if left(substr(body,9),length(want))\=translate(want) then do
  say 'M12H: missing git-upload-pack service announcement'
  exit 8
 end
+say 'HTTP CHUNK SIZE' chunk
 say 'M12H GIT UPLOAD-PACK ADVERTISEMENT PREFIX PASSED'
 exit 0
