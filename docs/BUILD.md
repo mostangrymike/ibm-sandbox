@@ -71,8 +71,11 @@ bytes, received 176 bytes, saw wire prefix
 bounded binary-safe socket gate. This proves CMS -> TAP -> stunnel -> verified
 TLS -> GitHub -> CMS.
 
-`M12PRXY EXEC` is the isolated follow-up probe using `Host: github.com`.
-Keep the already-proven M11BRAW core intact.
+`M12PRXY EXEC` is the isolated `Host: github.com` probe. Live Git smart-HTTP
+is now proven through `M12GDISC`, `GIT12CHK`, `M12JPOST`, and `M12KPACK`.
+The captured live PACK is 340,027 bytes with 1,808 objects and verified SHA-1
+`8C92E274ECA84B797F8925A6082915DD6CCDE196`. Keep the already-proven M11BRAW
+core intact.
 
 ## Native System SSL
 
