@@ -28,6 +28,7 @@ do forever
   exit rc
  end
  i=i+1
+ if i//500=1 then say 'M12K REPLAY RECORD' i-1
  drop b.
 end
 say 'M12K REPLAY DONE RECORDS' i-1
