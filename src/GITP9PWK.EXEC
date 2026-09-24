@@ -1,6 +1,7 @@
 /* M9P consolidated bounded PACK walker, isolated from M9K. */
 parse upper arg command extra
-if command \= 'WALK' | extra \= '' then exit 4
+if command \= 'WALK' | (extra \= '' & extra \= 'QUIET') then exit 4
+quiet=(extra='QUIET')
 address command
 call readhex 0,12
 if result='ERROR' then exit 8
@@ -40,8 +41,10 @@ do entry=1 to objects
   parse pull oid
   'EXEC GIT9CTX SAVE' entrypos oid outlen otype
   if rc\=0 then exit rc
-  say 'ENTRY' entry 'POSITION' entrypos 'TYPE' otype 'SIZE' size
-  say 'OBJECT OID' oid
+  if \quiet then do
+   say 'ENTRY' entry 'POSITION' entrypos 'TYPE' otype 'SIZE' size
+   say 'OBJECT OID' oid
+  end
   /* SAVE once; context includes the resolved object type. */
   pos=pos+used
  end
@@ -72,10 +75,12 @@ do entry=1 to objects
   'EXEC GITBOID' otype outlen
   if rc\=0 then exit rc
   parse pull oid
-  say 'ENTRY' entry 'POSITION' entrypos 'TYPE REF SIZE' size
-  say 'BASE OID' wantoid
-  say 'OBJECT BYTES' outlen
-  say 'OBJECT OID' oid
+  if \quiet then do
+   say 'ENTRY' entry 'POSITION' entrypos 'TYPE REF SIZE' size
+   say 'BASE OID' wantoid
+   say 'OBJECT BYTES' outlen
+   say 'OBJECT OID' oid
+  end
   'EXEC GIT9CTX SAVE' entrypos oid outlen otype
   if rc\=0 then exit rc
   pos=pos+used
@@ -118,10 +123,12 @@ do entry=1 to objects
   'EXEC GITBOID' otype outlen
   if rc\=0 then exit rc
   parse pull oid
-  say 'ENTRY' entry 'POSITION' entrypos 'TYPE OFS SIZE' size
-  say 'BASE POSITION' want
-  say 'OBJECT BYTES' outlen
-  say 'OBJECT OID' oid
+  if \quiet then do
+   say 'ENTRY' entry 'POSITION' entrypos 'TYPE OFS SIZE' size
+   say 'BASE POSITION' want
+   say 'OBJECT BYTES' outlen
+   say 'OBJECT OID' oid
+  end
   'EXEC GIT9CTX SAVE' entrypos oid outlen otype
   if rc\=0 then exit rc
   pos=pos+used
