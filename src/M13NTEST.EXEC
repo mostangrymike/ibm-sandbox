@@ -1,7 +1,10 @@
-/* M13N stage 1 native inflater foundation regression. */
+/* M13N stage 2 native bit-reader regression. */
 address command
 say 'M13N TEST 1: native module and bounded 32K history window'
-'GITINFA SELF'
+'GITINFA'
 if rc \= 0 then exit rc
-say 'M13N NATIVE INFLATER FOUNDATION PASSED'
+say 'M13N TEST 2: native LSB-first DEFLATE bit reader'
+'GITINFA BITTEST'
+if rc \= 0 then exit rc
+say 'M13N NATIVE BIT READER FOUNDATION PASSED'
 exit 0
