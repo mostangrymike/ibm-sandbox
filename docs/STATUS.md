@@ -1,68 +1,132 @@
 # CMS Git project status
 
+Updated: 2026-09-24
+
 ## Goal
 
-Build a native Git client for CMS/z/VM 6.3 Evaluation Edition without purchasing additional compilers. Preserve Git logical object/protocol compatibility while allowing CMS-native physical storage.
-
-## Proven on target
-
-- Assembler XF is present and functional; native MODULE build and REXX invocation are proven.
-- SHA-1 is implemented natively and passes empty, `abc`, multi-block, arbitrary-binary, and padding-boundary vectors.
-- Exact Git blob object encoding is implemented: ASCII `blob <size>\0` plus binary payload.
-- CMS text canonicalization is target-proven: trailing record blanks are padding, leading blanks are significant, records are joined with ASCII LF, and no final LF is added automatically.
-- `GIT INIT`, `HASH-OBJECT`, `WRITE-OBJECT`, `VERIFY-OBJECT`, and `CAT-OBJECT` operate through the public CMS interface.
-- `GITSTRM` provides bounded streaming SHA-1 input through the CMS program stack and is target-proven across multi-block and boundary vectors.
-- Exact one-entry Git tree bytes are target-proven. Mode `100644`, name `README`, and blob `F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F` produce tree `2030C0B68CCC4116B0CB9990EF04B53EA30140C8`.
-- Exact deterministic Git commit bytes are target-proven. The regression commit pointing at that tree produces `54BACE2202BB0C96980CDD0AAE9A752E6188D666`.
-- CMS-native TREE and COMMIT storage round-trips preserve their Git object IDs.
-- Public `GIT VERIFY-OBJECT` and `GIT CAT-OBJECT` are target-proven for BLOB, TREE, and COMMIT.
-- Public `GIT WRITE-TREE` supports multiple entries and exact Git ordering. Reverse input `README`, `BIGFILE` produces independently known tree `E11636C5C257E21ADBBE98AE3EBB677E81AF94EB`.
-- Argument parsing preserves case-sensitive Git data while normalizing only command verbs, CMS file identifiers, modes, and OIDs where appropriate. Mixed-case tree entry `ReadMe` produces independently known tree `B9E7816426B28421D7050FF4F501E7E796BC244A`.
-- Git's directory comparison rule is target-proven. Subtree `A/x` produces `C2421DE5E21D352FCC0CA2F81FD2D06D7B68FD72`; reverse input file `A` and directory `A` sorts correctly and produces `16202BB74533B0AA9E941E3C1D22ACCA53A2B72B`.
-- `GIT COMMIT-TREE` retains the deterministic one-argument interoperability form and supports proof-level explicit parent(s), author, committer, timestamp, timezone, and message options.
-- A one-parent mixed-case metadata commit is target-proven at `1E99ED02563737B793C60359F94BA587F6C1B8BD`.
-- Multiple-parent commit serialization and parent order are target-proven. The two-parent merge regression produces independently known commit `C72FFDE0A46ED667E494842150FA4011C99BC9A0`.
-- The CMS object database writes `OID`, `TYPE`, `SIZE`, then bounded DATA records of at most 128 hex characters while retaining reads of the original three-record layout.
-- A 303-byte canonical CMS text blob is target-proven through public WRITE/VERIFY. It produces `F96567C0F557CCE820219AE6483F2171A106810B` and is physically stored in five DATA records.
-- Object writes inspect an existing first-eight-character CMS filename and reject a different stored full OID instead of silently overwriting it.
-
-## Current baseline
-
-M3E streaming/multi-block SHA-1 is complete and hardened.
-
-M4 trees and commits is complete. Blob -> ordered/nested tree -> initial, parented, and merge commit construction is proven end-to-end through the public CMS command interface with exact Git-compatible object bytes and independently known SHA-1 object IDs.
-
-The physical object layout supports bounded DATA records with explicit byte size and backward-compatible reads. It still uses the first eight OID hex digits as the CMS filename; collisions are detected rather than overwritten, but a scalable collision-resolution/catalog scheme remains future work.
-
-`COMMIT-TREE`'s underscore-for-space option encoding is a proof-level interface, not final porcelain syntax. A later command-input layer should provide natural quoted and multiline commit messages without changing the proven object serializer.
+Build a native Git client for CMS/z/VM 6.3 Evaluation Edition with Git logical
+object/protocol compatibility and CMS-native physical storage. The practical
+GitHub transport may use the EC2 host's TLS layer; Git protocol, HTTP framing,
+PACK processing, objects, and refs remain owned by CMS.
 
 ## Milestone status
 
-- M0 Native CMS toolchain / command interface: DONE
-- M1 SHA-1 primitives: DONE
-- M2A Fixed Git blob encoding: DONE
-- M2B Dynamic binary Git blob encoding: DONE
-- M2C CMS text to Git blob prototype: DONE
-- M3A Repository initialization: DONE
-- M3B CMS-native object writing: DONE
-- M3C Object retrieval / verification: DONE
-- M3D CMS text canonicalization policy: DONE
-- M3E Streaming / multi-block CMS blobs: DONE + HARDENED
-- M4 Trees and commits: DONE
-- M5 Refs and branches: IN PROGRESS
-- M6 Packfiles: NOT STARTED
-- M7 TCP/IP: NOT STARTED
-- M8 TLS: NOT STARTED
-- M9 Smart HTTP / GitHub: NOT STARTED
+- M0 native CMS toolchain / command interface: DONE
+- M1 SHA-1: DONE
+- M2 object encoding: DONE
+- M3 CMS object database: DONE
+- M4 trees and commits: DONE
+- M5 refs / HEAD: DONE
+- M6 protocol and delta handling through M6N: DONE
+- M7 compression through M7I: DONE
+- M8 complete PACK ordinary/OFS/REF through M8C: DONE
+- M9 bounded/scalable PACK through M9P: DONE
+- M10 bounded upload-pack transport / real Git fixture: DONE
+- M11 native CMS TCP + bounded binary-safe HTTP: DONE
+- M12 practical HTTPS transport: EC2 TLS bridge PROVEN; Git smart-HTTP
+  integration is next. Native z/VM System SSL remains experimental.
 
-## Next M5 work
+All completed milestones above are target-proven.
 
-Implement CMS-native refs without changing Git logical ref semantics. Start with symbolic `HEAD`, `refs/heads/<name>`, exact 40-hex commit targets, branch creation/listing, and ref resolution. Validate that branch refs can point only at existing COMMIT objects. Then add safe ref updates and checkout/HEAD switching semantics before using refs as the parent source for higher-level commits.
+## M9/M10 transport core
 
-The expected-missing-file probe currently emits a CMS `DMSSTT002E` diagnostic even though the write succeeds. This is cosmetic but should be replaced with a quiet existence mechanism once the appropriate documented CMS interface is selected; do not weaken collision detection merely to suppress the message.
+M9P is the consolidated bounded PACK walker. GIT9CTX uses disk-backed
+`G9CDATA DATA A`, `G9CIDX DATA A`, and `G9CMETA DATA A`; the old
+per-position filename scheme is gone. Ordinary objects, OFS_DELTA, REF_DELTA,
+non-immediate bases, chained deltas, streaming DEFLATE/zlib, bounded object
+storage, and the relevant stress gates are target-proven.
 
-## Planned architecture
+GIT10BF is a bounded pkt-line/side-band state machine. Channel 1 streams into
+GITPBUF, channel 2 is discarded incrementally, and channel 3 fails in a
+controlled way. M10E passed a maximum `ffff` pkt-line with a 65530-byte
+channel-2 payload delivered in 31-byte fragments.
 
-- REXX: command parsing, repository orchestration, configuration, refs/branches.
-- Assembler: byte-oriented operations, hashes, CRC, compression, pack processing, binary I/O, native network/TLS adapters as required.
-- Native CMS/TCP-IP/System SSL interfaces; do not implement TLS ourselves.
+The real Git 2.47.3 M10D upload-pack fixture remains the interoperability gate:
+
+- PACK SHA1 `00C20177E759DC5FFD06EA42D0A1D1E1A9F53E7B`
+- COMMIT `59D72104FBF18B76536A3A99776C7F7930C27CD8`
+- TREE `747ABC3C651FC0DD12A37E5B5C47E0D02CD0DC4E`
+- BLOB `F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F`
+- PACK v2, 3 objects, data end 180
+
+## M11 native networking / HTTP
+
+M11A proved native CMS REXX/SOCKETS TCP. M11B proved SO_ASCII OFF and bounded
+binary-safe raw send/receive. M11C proved bounded HTTP header framing across a
+fragmented CRLFCRLF boundary while preserving binary body bytes. M11D routed
+the HTTP body directly through GIT10UP/GIT10BF/GITPBUF and reproduced the real
+M10D PACK and object IDs exactly.
+
+Current routed network:
+
+- EC2 ens5: `172.31.14.90/20`
+- EC2 tap0: `192.168.200.1/24`
+- z/VM OSA1: `192.168.200.2/24`
+- gateway: `192.168.200.1`
+- DNS: `8.8.8.8`
+
+Native z/VM TN3270 over this path is also proven.
+
+## M12 native System SSL findings
+
+The documented z/VM 6.3 Dynamic SSL client architecture was implemented far
+enough to prove VMCF OPENtcp and TLSSCLIENTtcp processing. Target behavior
+established these important callcodes: OPENtcp X'6E', open notification X'0B',
+TLSSCLIENTtcp X'83', READYforHANDSHAKE X'25',
+SECUREhandshakeCOMPLETE X'24', SENDtcp X'76', RECEIVEtcp X'71',
+DATAdelivered X'0C', and VMCF RECEIVE function X'0005'.
+
+A clean SSL server trace established the actual blocker:
+
+    DTCSSL022E Handshake failed rc: 8 reason: Certificate validation error
+
+It also reported:
+
+    DTCSSL505W Local client requested use of CERTNOCHECK; Request ignored
+
+Therefore `ValidatePeerCert=No_Check` does not bypass GitHub server
+certificate validation.
+
+The target is z/VM 6.3 service level 1302 (2013-era). Current GitHub presents a
+Sectigo ECC chain: github.com -> Sectigo Public Server Authentication CA DV E36
+-> Sectigo Public Server Authentication Root E46. Importing the E46 root with
+GSKKYMAN failed with status `0x03353083`, "ICSF services are not available";
+`CP QUERY VIRTUAL CRYPTO` reported no AP Crypto Domains. Further native crypto
+archaeology is not on the critical path.
+
+## Practical HTTPS transport — PROVEN
+
+EC2 Debian trixie has stunnel 5.74 with modern OpenSSL. A dedicated client-mode
+listener is bound only to `192.168.200.1:8443` and connects to
+`github.com:443` with CA-chain validation, hostname validation, SNI, and
+TLS >= 1.2.
+
+The EC2-local plaintext HTTP test through the listener returned GitHub
+`HTTP/1.1 200 OK`.
+
+CMS then ran M11BRAW against `192.168.200.1 8443`:
+
+- REXX/SOCKETS initialized successfully.
+- SO_ASCII was OFF.
+- TCP connect succeeded.
+- all 56 exact request bytes were sent.
+- 176 bytes were received with bounded 256-byte RECV calls.
+- prefix was `HTTP/1.1 301 Mov...`.
+- final result: `M11B BINARY-SAFE BOUNDED SOCKET TEST PASSED`.
+
+The 301 is expected from that diagnostic because its immutable proof request
+uses `Host: example.com`. The important result is that valid decrypted HTTP
+returned to CMS through the verified TLS bridge.
+
+A separate `M12PRXY EXEC` was added for the correct `Host: github.com`
+probe rather than modifying the target-proven M11B core.
+
+## Next action
+
+Target-prove `M12PRXY 192.168.200.1 8443`. Then build the isolated real GitHub
+smart-HTTP integration gate: CMS sends the correct Git smart-HTTP request
+through the stunnel endpoint, bounded HTTP response bytes feed GIT11HTP, and
+the existing M10/M9 pipeline handles pkt-lines, PACK data, objects, and refs.
+
+Preserve M12TLS4 as native-System-SSL research. Do not spend the next milestone
+trying to make the 2013 System SSL stack validate GitHub's modern ECC chain.
