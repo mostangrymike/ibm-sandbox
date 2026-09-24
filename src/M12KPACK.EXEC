@@ -3,8 +3,10 @@ address command
 say 'M12K TEST 1: initialize upload-pack and chunk decoder'
 'EXEC GIT10UP INIT'
 if rc\=0 then exit rc
+say 'M12K INIT GIT10UP DONE'
 'EXEC GIT12CHK INIT GIT'
 if rc\=0 then exit rc
+say 'M12K INIT GIT12CHK DONE'
 say 'M12K REPLAY START'
 'STATE M11BODY DATA A'
 if rc\=0 then exit 8
