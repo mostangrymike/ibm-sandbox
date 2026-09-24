@@ -8,7 +8,7 @@ say r
 parse var r rc rest
 if rc\=0 then exit 8
 say 'M11B TEST 2: resolve IPv4 host' host
-if datatype(host,'W')=1 then ip=host
+if verify(host,'0123456789.')=0 then ip=host
 else do
  r=Socket('GetHostByName',host)
  say r
