@@ -4,7 +4,8 @@ GITINFA  CSECT
          ST    14,RETADDR
 *
 * M13N native DEFLATE foundation.
-* No CMS argument dependency yet: run bounded-window and bit-reader tests.
+* No CMS argument dependency yet.
+* Run bounded-window and bit-reader tests.
 *
          MVC   HIST(256),PATTERN
          CLC   HIST(256),PATTERN
