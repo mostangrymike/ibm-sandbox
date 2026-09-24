@@ -600,3 +600,27 @@ correct `Host: github.com` header.
 NEXT ACTION: build an isolated Git smart-HTTP discovery/fetch integration gate
 through `192.168.200.1:8443`, preserving M11BRAW/M12PRXY. Feed bounded HTTP
 response bytes through GIT11HTP and the existing M10/M9 transport/PACK pipeline.
+
+
+## M12 practical GitHub smart-HTTP closure — 2026-09-24
+- EC2 stunnel practical HTTPS path is target proven end-to-end for real Git.
+- M12GDISC fetched the real ibm-sandbox upload-pack advertisement through the
+  bridge. GitHub HTTP/1.1 uses chunked transfer encoding on this path.
+- GIT12CHK is the bounded HTTP chunk decoder; live advertisement replay passed.
+- M12JPOST live upload-pack request required pkt-line length 004a and total HTTP
+  Content-Length 87 (74-byte want pkt-line + 4-byte flush + 9-byte done).
+- Corrected POST returned 348959 HTTP bytes.
+- M12KPACK decoded the response through GIT12CHK -> GIT10UP -> GIT10BF ->
+  GITPBUF. Final PACK length is 340027 bytes and GITPSHA verified SHA1
+  8C92E274ECA84B797F8925A6082915DD6CCDE196.
+- PACK v2 contains 1808 objects. GITP9PWK successfully reconstructed >200 live
+  objects before the verbose diagnostic was stopped, including ordinary
+  COMMIT/TREE/BLOB and chained OFS_DELTA objects with computed Git OIDs.
+- Full 1808-object walk is not a useful M12 gate: current bounded REXX/CMS
+  implementation is too slow. The prior interrupted run consumed ~415 seconds
+  virtual CPU and a subsequent quiet run confirmed 1808 objects.
+- M12 transport is therefore closed/proven. Do not rerun network POST merely to
+  benchmark local processing; M11BODY/GITPBUF capture is the benchmark while
+  present on target.
+- NEXT: M13 PACK/object performance. Preserve bounded storage semantics. Focus
+  first on GIT9CTX linear index lookup and repeated EXECIO/file open-close work.
