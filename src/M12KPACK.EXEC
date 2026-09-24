@@ -5,6 +5,7 @@ say 'M12K TEST 1: initialize upload-pack and chunk decoder'
 if rc\=0 then exit rc
 'EXEC GIT12CHK INIT GIT'
 if rc\=0 then exit rc
+say 'M12K REPLAY START'
 'STATE M11BODY DATA A'
 if rc\=0 then exit 8
 drop b.
@@ -27,6 +28,7 @@ do forever
  i=i+1
  drop b.
 end
+say 'M12K REPLAY DONE RECORDS' i-1
 'EXEC GIT12CHK FINAL'
 if rc\=0 then do
  say 'M12K: chunk FINAL failed RC' rc
