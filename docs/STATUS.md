@@ -23,8 +23,9 @@ PACK processing, objects, and refs remain owned by CMS.
 - M9 bounded/scalable PACK through M9P: DONE
 - M10 bounded upload-pack transport / real Git fixture: DONE
 - M11 native CMS TCP + bounded binary-safe HTTP: DONE
-- M12 practical HTTPS transport: EC2 TLS bridge PROVEN; Git smart-HTTP
-  integration is next. Native z/VM System SSL remains experimental.
+- M12 practical HTTPS transport: EC2 TLS bridge and live GitHub smart-HTTP
+  discovery/upload-pack transport PROVEN. Native z/VM System SSL remains experimental.
+- M13 live-pack scalability/performance: NEXT.
 
 All completed milestones above are target-proven.
 
@@ -121,12 +122,41 @@ returned to CMS through the verified TLS bridge.
 A separate `M12PRXY EXEC` was added for the correct `Host: github.com`
 probe rather than modifying the target-proven M11B core.
 
+## Live GitHub smart-HTTP proof — 2026-09-24
+
+CMS successfully performed real GitHub smart-HTTP discovery through the TLS
+bridge. GitHub's HTTP/1.1 response used chunked transfer encoding, so
+`GIT12CHK EXEC` was added as a bounded chunk decoder. Its FILE-mode replay
+decoded the live advertisement correctly.
+
+A live upload-pack POST was then accepted by GitHub. Two request-framing bugs
+were found and corrected from target evidence: the want pkt-line length is
+`004a`, and the complete HTTP entity length is 87 bytes (74-byte want pkt-line
++ 4-byte flush + 9-byte done pkt-line). With those fixes GitHub returned
+348,959 HTTP bytes.
+
+The captured response passed the complete transport integrity path:
+
+- bounded HTTP chunk decoding completed;
+- upload-pack and side-band framing reached PACK state cleanly;
+- `GITPBUF` finalized a 340,027-byte PACK;
+- `GITPSHA VERIFY` accepted PACK SHA1
+  `8C92E274ECA84B797F8925A6082915DD6CCDE196`;
+- PACK v2 header reports 1,808 objects;
+- `GITP9PWK` successfully reconstructed more than 200 live GitHub objects,
+  including ordinary COMMIT/TREE/BLOB objects and substantial chained
+  OFS_DELTA traffic, with object OIDs computed successfully.
+
+A complete 1,808-object REXX/CMS walk was deliberately stopped because it is
+too slow for a practical acceptance gate. The transport is not the bottleneck:
+the complete PACK checksum already proves byte-for-byte integrity. The next
+engineering problem is PACK/object materialization performance, especially
+heavy EXECIO disk traffic and linear context lookup in `GIT9CTX`.
+
 ## Next action
 
-Target-prove `M12PRXY 192.168.200.1 8443`. Then build the isolated real GitHub
-smart-HTTP integration gate: CMS sends the correct Git smart-HTTP request
-through the stunnel endpoint, bounded HTTP response bytes feed GIT11HTP, and
-the existing M10/M9 pipeline handles pkt-lines, PACK data, objects, and refs.
-
-Preserve M12TLS4 as native-System-SSL research. Do not spend the next milestone
-trying to make the 2013 System SSL stack validate GitHub's modern ECC chain.
+M13: optimize the bounded live PACK walker/context path without weakening the
+bounded-storage guarantees. Preserve the proven M12 capture and checksum as the
+large real-world benchmark. First target the linear G9CIDX lookup and excessive
+per-object EXECIO/file open-close traffic; do not rerun the GitHub network POST
+merely to benchmark local PACK processing.
