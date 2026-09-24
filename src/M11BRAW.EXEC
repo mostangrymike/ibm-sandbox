@@ -8,12 +8,15 @@ say r
 parse var r rc rest
 if rc\=0 then exit 8
 say 'M11B TEST 2: resolve IPv4 host' host
-r=Socket('GetHostByName',host)
-say r
-parse var r rc addrs
-if rc\=0 then call fail
-ip=word(addrs,1)
-if ip='' then call fail
+if datatype(host,'W')=1 then ip=host
+else do
+ r=Socket('GetHostByName',host)
+ say r
+ parse var r rc addrs
+ if rc\=0 then call fail
+ ip=word(addrs,1)
+ if ip='' then call fail
+end
 say 'IPV4 ADDRESS' ip
 say 'M11B TEST 3: create raw-byte TCP socket'
 r=Socket('Socket')
