@@ -1,0 +1,99 @@
+/* M12I bounded HTTP/1.1 chunk decoder. */
+parse upper arg cmd hex mode extra
+address command
+if cmd='INIT' then do
+ route=hex
+ if route='' then route='FILE'
+ if route\='FILE' & route\='GIT' then exit 4
+ call putmeta 'SIZE','',0,route
+ if result='ERROR' then exit 8
+ if route='FILE' then 'ERASE M12BODY DATA A'
+ exit 0
+end
+if cmd='FEED' then do
+ if mode\='' | extra\='' | hex='' | length(hex)//2\=0 then exit 4
+ hex=translate(hex)
+ if verify(hex,'0123456789ABCDEF')\=0 then exit 4
+ call getmeta
+ if result='ERROR' then exit 8
+ work=hex
+ do while work\=''
+  if state='SIZE' then do
+   b=left(work,2)
+   work=substr(work,3)
+   line=line||b
+   if length(line)>32 then exit 8
+   if right(line,4)='0D0A' then do
+    hs=left(line,length(line)-4)
+    if hs='' | verify(hs,'0123456789ABCDEF')\=0 then exit 8
+    need=x2d(hs)
+    line=''
+    if need=0 then state='DONE'
+    else state='DATA'
+   end
+  end
+  else if state='DATA' then do
+   avail=length(work)%2
+   take=need
+   if take>avail then take=avail
+   piece=left(work,take*2)
+   work=substr(work,take*2+1)
+   call body piece
+   if result='ERROR' then exit 8
+   need=need-take
+   if need=0 then state='CRLF'
+  end
+  else if state='CRLF' then do
+   b=left(work,2)
+   work=substr(work,3)
+   line=line||b
+   if length(line)=4 then do
+    if line\='0D0A' then exit 8
+    line=''
+    state='SIZE'
+   end
+  end
+  else if state='DONE' then work=''
+  else exit 8
+ end
+ call putmeta state,line,need,route
+ if result='ERROR' then exit 8
+ exit 0
+end
+if cmd='FINAL' then do
+ call getmeta
+ if result='ERROR' then exit 8
+ if state\='DONE' then exit 8
+ exit 0
+end
+exit 4
+body:
+ parse arg h
+ if h='' then return 'OK'
+ if route='GIT' then do
+  'EXEC GIT10UP FEED' h
+  if rc\=0 then return 'ERROR'
+ end
+ else do
+  q.1=h
+  q.0=1
+  'EXECIO 1 DISKW M12BODY DATA A 0 (STEM Q. FINIS'
+  if rc\=0 then return 'ERROR'
+ end
+ return 'OK'
+getmeta:
+ drop m.
+ 'EXECIO 1 DISKR M12CMETA DATA A 1 (STEM M. FINIS'
+ if rc\=0 | m.0\=1 then return 'ERROR'
+ parse var m.1 tag state line need route extra
+ if tag\='META' | extra\='' then return 'ERROR'
+ if line='-' then line=''
+ return 'OK'
+putmeta:
+ parse arg s,l,n,r
+ if l='' then l='-'
+ m.1='META' s l n r
+ m.0=1
+ 'EXECIO 1 DISKW M12CMETA DATA A 1 (STEM M. FINIS'
+ if rc\=0 then return 'ERROR'
+ return 'OK'
