@@ -20,8 +20,10 @@ Current practical HTTPS architecture:
 - stunnel listener: `192.168.200.1:8443`, bound only to the TAP interface.
 - stunnel establishes verified modern TLS to `github.com:443`, including CA
   chain validation, hostname checking, and SNI.
-- The CMS -> EC2 stunnel -> GitHub path is target-proven with M11BRAW; CMS
-  received a valid HTTP response through the bridge.
+- The CMS -> EC2 stunnel -> GitHub path is target-proven through live Git
+  smart-HTTP discovery and upload-pack. A 340,027-byte live PACK containing
+  1,808 objects was received and its PACK SHA-1 verified on CMS. The next work
+  is optimizing the bounded object walker for practical large-pack performance.
 
 Native z/VM System SSL work is preserved as an experimental/research path.
 Current GitHub uses an ECC Sectigo certificate chain that the old z/VM 6.3
