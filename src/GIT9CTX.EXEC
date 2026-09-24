@@ -5,7 +5,7 @@ if cmd='INIT' then do
  'ERASE G9CIDX DATA A'
  'ERASE G9CDATA DATA A'
  'ERASE G9CMETA DATA A'
- r.1='NEXT 1'; r.0=1
+ r.1='NEXT 1 0'; r.0=1
  'EXECIO 1 DISKW G9CMETA DATA A 1 (STEM R. FINIS'
  exit rc
 end
@@ -15,8 +15,9 @@ if cmd='SAVE' then do
  drop r.
  'EXECIO 1 DISKR G9CMETA DATA A 1 (STEM R. FINIS'
  if rc\=0 | r.0\=1 then exit 8
- parse var r.1 word start
+ parse var r.1 word start idxrec
  if word\='NEXT' | datatype(start,'W')\=1 then exit 8
+ if datatype(idxrec,'W')\=1 then idxrec=0
  off=0; nrec=0
  do while off<n
   take=n-off
@@ -33,12 +34,33 @@ if cmd='SAVE' then do
  r.1=key oid n otype start nrec; r.0=1
  'EXECIO 1 DISKW G9CIDX DATA A 0 (STEM R. FINIS'
  if rc\=0 then exit 8
- r.1='NEXT' start+nrec; r.0=1
+ r.1='NEXT' start+nrec idxrec+1; r.0=1
  'EXECIO 1 DISKW G9CMETA DATA A 1 (STEM R. FINIS'
  exit rc
 end
 if cmd='LOADPOS' | cmd='LOADOID' then do
  rec=1; found=0
+ if cmd='LOADPOS' then do
+  drop z.
+  'EXECIO 1 DISKR G9CMETA DATA A 1 (STEM Z. FINIS'
+  if rc=0 & z.0=1 then do
+   parse var z.1 ztag znext zcount
+   if ztag='NEXT' & datatype(zcount,'W')=1 & zcount>0 then do
+    rec=zcount
+    do while rec>0 & \found
+     drop r.
+     'EXECIO 1 DISKR G9CIDX DATA A' rec '(STEM R. FINIS'
+     if rc\=0 | r.0\=1 then leave
+     parse var r.1 p o sz typ first count
+     if p=key then found=1
+     else if p<key then leave
+     else rec=rec-1
+    end
+   end
+  end
+  if found then rec=0
+  else rec=1
+ end
  do while \found
   drop r.
   'EXECIO 1 DISKR G9CIDX DATA A' rec '(STEM R. FINIS'
