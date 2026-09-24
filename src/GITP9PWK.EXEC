@@ -27,6 +27,7 @@ do entry=1 to objects
   size=size+(b//128)*(2**shift)
   shift=shift+7; more=b>=128
  end
+ if quiet then say 'PACK ENTRY START' entry 'POS' entrypos 'TYPE' type 'SIZE' size
  if type>=1 & type<=4 then do
   if type=1 then otype='COMMIT'
   else if type=2 then otype='TREE'
@@ -135,6 +136,7 @@ do entry=1 to objects
   pos=pos+used
  end
  else exit 8
+ if quiet then say 'PACK ENTRY DONE' entry 'NEXT' pos
 end
 say 'PACK VERSION' version
 say 'PACK OBJECTS' objects
