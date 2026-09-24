@@ -7,12 +7,6 @@ GITINFA  CSECT
 * 32 KiB history work area before moving DEFLATE hot loops.
 * Stage 1 accepts any invocation; argument parsing is not needed yet.
 *
-         LA    2,4
-         LA    3,4
-         C     3,=F'4'
-         BL    BADARG
-         CLC   0(4,2),=C'SELF'
-         BNE   BADARG
          MVC   HIST(256),PATTERN
          CLC   HIST(256),PATTERN
          BNE   BADHIST
@@ -38,9 +32,6 @@ GITINFA  CSECT
          LINEWRT DATA=(OKMSG,OKLEN)
          SR    15,15
          B     RETURN
-BADARG   LINEWRT DATA=(USAGE,USAGELEN)
-         LA    15,4
-         B     RETURN
 BADHIST  LINEWRT DATA=(HMSG,HMSGLEN)
          LA    15,8
 RETURN   L     14,RETADDR
@@ -48,8 +39,6 @@ RETURN   L     14,RETADDR
          LTORG
 OKMSG    DC    C'GITINFA: NATIVE 32K WINDOW SELFTEST PASSED'
 OKLEN    EQU   *-OKMSG
-USAGE    DC    C'Usage: GITINFA SELF'
-USAGELEN EQU   *-USAGE
 HMSG     DC    C'GITINFA: 32K WINDOW SELFTEST FAILED'
 HMSGLEN  EQU   *-HMSG
 RETADDR  DS    F
