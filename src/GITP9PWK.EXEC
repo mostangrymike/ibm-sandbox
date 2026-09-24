@@ -42,16 +42,22 @@ do entry=1 to objects
   else if type=2 then otype='TREE'
   else if type=3 then otype='BLOB'
   else otype='TAG'
+   if quiet then say 'PACK STAGE INFLATE START' entry
   'EXEC GITPZBUF TOOBUF' pos
   if rc\=0 then exit rc
   parse pull used
   parse pull outlen
+   if quiet then say 'PACK STAGE INFLATE DONE' entry 'BYTES' outlen
   if outlen\=size then exit 8
+   if quiet then say 'PACK STAGE OID START' entry
   'EXEC GITBOID' otype outlen
   if rc\=0 then exit rc
   parse pull oid
+   if quiet then say 'PACK STAGE OID DONE' entry
+   if quiet then say 'PACK STAGE SAVE START' entry
   'EXEC GIT9CTX SAVE' entrypos oid outlen otype
   if rc\=0 then exit rc
+   if quiet then say 'PACK STAGE SAVE DONE' entry
   if \quiet then do
    say 'ENTRY' entry 'POSITION' entrypos 'TYPE' otype 'SIZE' size
    say 'OBJECT OID' oid
