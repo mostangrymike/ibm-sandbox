@@ -33,8 +33,14 @@ if rc\=0 then do
  exit rc
 end
 say 'M12K TEST 2: finalize live upload-pack response'
+'TYPE G10CMT DATA A'
+'TYPE G10META DATA A'
+'TYPE GITPMETA PACK A'
 'EXEC GIT10UP FINAL'
-if rc\=0 then exit rc
+if rc\=0 then do
+ say 'M12K: upload-pack FINAL failed RC' rc
+ exit rc
+end
 say 'M12K TEST 3: verify live PACK checksum'
 'EXEC GITPSHA VERIFY'
 if rc\=0 then exit rc
