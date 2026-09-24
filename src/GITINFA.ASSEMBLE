@@ -8,7 +8,8 @@ GITINFA  CSECT
 * M13N native DEFLATE core regression.
 * Exercise window, bit reader, fixed Huffman, and LZ77 in one run.
 *
-         L     4,=A(HIST)\n         MVC   0(256,4),PATTERN
+         L     4,=A(HIST)
+         MVC   0(256,4),PATTERN
          CLC   0(256,4),PATTERN
          BNE   BADHIST
          L     4,=A(HIST)
@@ -44,7 +45,8 @@ GITINFA  CSECT
          BNZ   BADFIX
          C     6,=F'3'
          BNE   BADFIX
-         L     4,=A(ABCOUT)\n         CLC   0(3,4),ABCDATA
+         L     4,=A(ABCOUT)
+         CLC   0(3,4),ABCDATA
          BNE   BADFIX
          LA    2,REPTEST
          LA    3,6
@@ -55,7 +57,8 @@ GITINFA  CSECT
          BNZ   BADLZ
          C     6,=F'259'
          BNE   BADLZ
-         L     4,=A(REPOUT)\n         CLI   0(4),X'61'
+         L     4,=A(REPOUT)
+         CLI   0(4),X'61'
          BNE   BADLZ
          CLI   258(4),X'61'
          BNE   BADLZ
@@ -68,7 +71,8 @@ GITINFA  CSECT
          BNZ   BADDYN
          C     6,DYNOEXP
          BNE   BADDYN
-         L     4,=A(DYNOUT)\n         CLC   0(16,4),DYNPFX
+         L     4,=A(DYNOUT)
+         CLC   0(16,4),DYNPFX
          BNE   BADDYN
          LINEWRT DATA=(OKMSG,OKLEN)
          LINEWRT DATA=(FIXMSG,FIXLEN)
