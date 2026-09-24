@@ -3,9 +3,8 @@ GITINFA  CSECT
          LR    12,15
          ST    14,RETADDR
 *
-* M13N stage 1: prove native CMS MODULE loading and bounded
-* 32 KiB history work area before moving DEFLATE hot loops.
-* Stage 1 accepts any invocation; argument parsing is not needed yet.
+* M13N native DEFLATE foundation.
+* No CMS argument dependency yet: run bounded-window and bit-reader tests.
 *
          MVC   HIST(256),PATTERN
          CLC   HIST(256),PATTERN
@@ -29,19 +28,90 @@ GITINFA  CSECT
          MVC   0(256,4),PATTERN
          CLC   0(256,4),PATTERN
          BNE   BADHIST
+*
+* Bit reader test stream is 4B 4C 4A 06 00, the proven fixed-Huffman
+* raw DEFLATE stream for abc.  DEFLATE consumes bits least-significant
+* bit first.  First bit must be BFINAL=1; next two bits BTYPE=1.
+*
+         LA    2,BITDATA
+         ST    2,INPTR
+         LA    2,5
+         ST    2,INLEN
+         XC    BITPOS(4),BITPOS
+         LA    2,1
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   BADBITS
+         C     5,=F'1'
+         BNE   BADBITS
+         LA    2,2
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   BADBITS
+         C     5,=F'1'
+         BNE   BADBITS
          LINEWRT DATA=(OKMSG,OKLEN)
+         LINEWRT DATA=(BITMSG,BITLEN)
          SR    15,15
          B     RETURN
 BADHIST  LINEWRT DATA=(HMSG,HMSGLEN)
          LA    15,8
+         B     RETURN
+BADBITS  LINEWRT DATA=(BMSG,BMSGLEN)
+         LA    15,8
 RETURN   L     14,RETADDR
+         BR    14
+*
+* GETBITS - read R2 bits LSB-first from INPTR/INLEN.
+* Returns unsigned value in R5 and RC 0 in R15, or RC 8 if truncated.
+* R2 must be 1..16 for the native inflater.
+*
+GETBITS  ST    14,SUBRET
+         ST    2,COUNT
+         SR    5,5
+         SR    6,6
+GBLOOP   L     7,BITPOS
+         LR    8,7
+         SRL   8,3
+         C     8,INLEN
+         BNL   GBERR
+         L     9,INPTR
+         AR    9,8
+         XR    10,10
+         IC    10,0(9)
+         N     7,=F'7'
+         SRL   10,0(7)
+         N     10,=F'1'
+         SLL   10,0(6)
+         OR    5,10
+         L     7,BITPOS
+         LA    7,1(7)
+         ST    7,BITPOS
+         LA    6,1(6)
+         C     6,COUNT
+         BL    GBLOOP
+         SR    15,15
+         L     14,SUBRET
+         BR    14
+GBERR    LA    15,8
+         L     14,SUBRET
          BR    14
          LTORG
 OKMSG    DC    C'GITINFA: NATIVE 32K WINDOW SELFTEST PASSED'
 OKLEN    EQU   *-OKMSG
+BITMSG   DC    C'GITINFA: NATIVE LSB BIT READER SELFTEST PASSED'
+BITLEN   EQU   *-BITMSG
 HMSG     DC    C'GITINFA: 32K WINDOW SELFTEST FAILED'
 HMSGLEN  EQU   *-HMSG
+BMSG     DC    C'GITINFA: NATIVE BIT READER SELFTEST FAILED'
+BMSGLEN  EQU   *-BMSG
 RETADDR  DS    F
+SUBRET   DS    F
+INPTR    DS    F
+INLEN    DS    F
+BITPOS   DS    F
+COUNT    DS    F
+BITDATA  DC    X'4B4C4A0600'
 PATTERN  DC    32CL8'GITINFL!'
          DS    0D
 HIST     DS    32768C
