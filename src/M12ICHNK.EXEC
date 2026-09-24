@@ -1,0 +1,33 @@
+/* M12I replay captured GitHub chunked body through decoder. */
+address command
+say 'M12I TEST 1: initialize bounded chunk decoder'
+'EXEC GIT12CHK INIT FILE'
+if rc\=0 then exit rc
+'STATE M11BODY DATA A'
+if rc\=0 then exit 8
+drop b.
+i=1
+do forever
+ 'EXECIO 1 DISKR M11BODY DATA A' i '(STEM B. FINIS'
+ if rc\=0 then leave
+ if b.0\=1 then exit 8
+ h=strip(b.1)
+ if h='' | length(h)//2\=0 then exit 8
+ if length(h)>128 then exit 8
+ 'EXEC GIT12CHK FEED' h
+ if rc\=0 then exit rc
+ i=i+1
+ drop b.
+end
+'EXEC GIT12CHK FINAL'
+if rc\=0 then exit rc
+say 'M12I TEST 2: validate decoded Git advertisement'
+drop d.
+'EXECIO 1 DISKR M12BODY DATA A 1 (STEM D. FINIS'
+if rc\=0 | d.0\=1 then exit 8
+h=translate(strip(d.1))
+want='303031652320736572766963653D6769742D75706C6F61642D7061636B0A'
+if left(h,length(want))\=want then exit 8
+say 'DECODED PREFIX' left(h,64)
+say 'M12I BOUNDED HTTP CHUNK DECODER TEST PASSED'
+exit 0
