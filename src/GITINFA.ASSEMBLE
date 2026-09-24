@@ -3,9 +3,8 @@ GITINFA  CSECT
          LR    12,15
          ST    14,RETADDR
 *
-* M13N native DEFLATE foundation.
-* No CMS argument dependency yet.
-* Run bounded-window and bit-reader tests.
+* M13N native DEFLATE core regression.
+* Exercise window, bit reader, fixed Huffman, and LZ77 in one run.
 *
          MVC   HIST(256),PATTERN
          CLC   HIST(256),PATTERN
@@ -30,42 +29,291 @@ GITINFA  CSECT
          CLC   0(256,4),PATTERN
          BNE   BADHIST
 *
-* Bit reader test stream is 4B 4C 4A 06 00, the proven fixed-Huffman
-* raw DEFLATE stream for abc.  DEFLATE consumes bits least-significant
-* bit first.  First bit must be BFINAL=1; next two bits BTYPE=1.
+* Decode complete fixed-Huffman streams in native code.
+* ABCFIX expands to abc using literals.
+* REPTEST expands to 259 a bytes and forces length/distance copying.
 *
-         LA    2,BITDATA
-         ST    2,INPTR
-         LA    2,5
-         ST    2,INLEN
-         XC    BITPOS(4),BITPOS
-         LA    2,1
-         BAL   14,GETBITS
+         LA    2,ABCFIX
+         LA    3,5
+         LA    4,ABCOUT
+         LA    5,16
+         BAL   14,INFLATE
          LTR   15,15
-         BNZ   BADBITS
-         C     5,=F'1'
-         BNE   BADBITS
-         LA    2,2
-         BAL   14,GETBITS
+         BNZ   BADFIX
+         C     6,=F'3'
+         BNE   BADFIX
+         CLC   ABCOUT(3),ABCDATA
+         BNE   BADFIX
+         LA    2,REPTEST
+         LA    3,6
+         LA    4,REPOUT
+         LA    5,300
+         BAL   14,INFLATE
          LTR   15,15
-         BNZ   BADBITS
-         C     5,=F'1'
-         BNE   BADBITS
+         BNZ   BADLZ
+         C     6,=F'259'
+         BNE   BADLZ
+         CLI   REPOUT,X'61'
+         BNE   BADLZ
+         CLI   REPOUT+258,X'61'
+         BNE   BADLZ
          LINEWRT DATA=(OKMSG,OKLEN)
-         LINEWRT DATA=(BITMSG,BITLEN)
+         LINEWRT DATA=(FIXMSG,FIXLEN)
+         LINEWRT DATA=(LZMSG,LZLEN)
          SR    15,15
          B     RETURN
 BADHIST  LINEWRT DATA=(HMSG,HMSGLEN)
          LA    15,8
          B     RETURN
-BADBITS  LINEWRT DATA=(BMSG,BMSGLEN)
+BADFIX   LINEWRT DATA=(FMSG,FMSGLEN)
+         LA    15,8
+         B     RETURN
+BADLZ    LINEWRT DATA=(LMSG,LMSGLEN)
          LA    15,8
 RETURN   L     14,RETADDR
          BR    14
 *
-* GETBITS - read R2 bits LSB-first from INPTR/INLEN.
-* Returns unsigned value in R5 and RC 0 in R15, or RC 8 if truncated.
-* R2 must be 1..16 for the native inflater.
+* INFLATE - fixed-Huffman raw DEFLATE for native-core regression.
+* R2=input, R3=input bytes, R4=output, R5=output capacity.
+* Returns R6=output bytes and R15=0.  Stage 3 rejects non-fixed blocks.
+*
+INFLATE  ST    14,INFRET
+         ST    2,INPTR
+         ST    3,INLEN
+         ST    4,OUTPTR
+         ST    5,OUTCAP
+         XC    BITPOS(4),BITPOS
+         XC    OUTLEN(4),OUTLEN
+         LA    2,1
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   INFERR
+         C     5,=F'1'
+         BNE   INFERR
+         LA    2,2
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   INFERR
+         C     5,=F'1'
+         BNE   INFERR
+IFLOOP   BAL   14,FIXSYM
+         LTR   15,15
+         BNZ   INFERR
+         C     5,=F'256'
+         BE    INFDONE
+         C     5,=F'256'
+         BL    INFLIT
+         C     5,=F'285'
+         BH    INFERR
+         LR    2,5
+         BAL   14,GETLEN
+         LTR   15,15
+         BNZ   INFERR
+         ST    5,RUNLEN
+         BAL   14,DISTSYM
+         LTR   15,15
+         BNZ   INFERR
+         C     5,=F'29'
+         BH    INFERR
+         LR    2,5
+         BAL   14,GETDIST
+         LTR   15,15
+         BNZ   INFERR
+         ST    5,DISTVAL
+         BAL   14,COPYRUN
+         LTR   15,15
+         BNZ   INFERR
+         B     IFLOOP
+INFLIT   LR    2,5
+         BAL   14,PUTBYTE
+         LTR   15,15
+         BNZ   INFERR
+         B     IFLOOP
+INFDONE  L     6,OUTLEN
+         SR    15,15
+         L     14,INFRET
+         BR    14
+INFERR   LA    15,8
+         L     14,INFRET
+         BR    14
+*
+* FIXSYM decodes RFC1951 fixed literal/length symbols.
+* Canonical codes are compared after bit reversal.
+*
+FIXSYM   ST    14,SYMRET
+         SR    6,6
+         SR    7,7
+         LA    8,1
+FXLOOP   LA    2,1
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   FXERR
+         LTR   5,5
+         BZ    FXZERO
+         OR    7,8
+FXZERO   C     6,=F'6'
+         BL    FXNEXT
+         C     6,=F'6'
+         BNE   FX8
+         C     7,=F'0'
+         BL    FXNEXT
+         C     7,=F'23'
+         BH    FXNEXT
+         LR    5,7
+         A     5,=F'256'
+         B     FXOK
+FX8      C     6,=F'7'
+         BNE   FX9
+         C     7,=F'48'
+         BL    FX8B
+         C     7,=F'191'
+         BH    FX8B
+         LR    5,7
+         S     5,=F'48'
+         B     FXOK
+FX8B     C     7,=F'192'
+         BL    FXNEXT
+         C     7,=F'199'
+         BH    FXNEXT
+         LR    5,7
+         S     5,=F'192'
+         A     5,=F'280'
+         B     FXOK
+FX9      C     6,=F'8'
+         BNE   FXERR
+         C     7,=F'400'
+         BL    FXERR
+         C     7,=F'511'
+         BH    FXERR
+         LR    5,7
+         S     5,=F'400'
+         A     5,=F'144'
+         B     FXOK
+FXNEXT   SLL   8,1
+         LA    6,1(6)
+         C     6,=F'9'
+         BL    FXLOOP
+FXERR    LA    15,8
+         L     14,SYMRET
+         BR    14
+FXOK     SR    15,15
+         L     14,SYMRET
+         BR    14
+*
+* DISTSYM: fixed distance tree has 5-bit codes, bit-reversed on wire.
+*
+DISTSYM ST    14,SYMRET
+         LA    2,5
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   DSERR
+         LR    6,5
+         SR    5,5
+         LA    7,5
+DSREV    SLL   5,1
+         LR    8,6
+         N     8,=F'1'
+         OR    5,8
+         SRL   6,1
+         BCT   7,DSREV
+         SR    15,15
+         L     14,SYMRET
+         BR    14
+DSERR    LA    15,8
+         L     14,SYMRET
+         BR    14
+*
+* GETLEN/GETDIST implement RFC1951 base and extra-bit tables.
+*
+GETLEN   ST    14,TABRET
+         S     2,=F'257'
+         C     2,=F'28'
+         BH    TABERR
+         SLL   2,2
+         L     5,LENBASE(2)
+         L     6,LENEXT(2)
+         LTR   6,6
+         BZ    TABOK
+         ST    5,TABBASE
+         LR    2,6
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   TABERR
+         A     5,TABBASE
+TABOK    SR    15,15
+         L     14,TABRET
+         BR    14
+GETDIST  ST    14,TABRET
+         C     2,=F'29'
+         BH    TABERR
+         SLL   2,2
+         L     5,DSTBASE(2)
+         L     6,DSTEXT(2)
+         LTR   6,6
+         BZ    TABOK
+         ST    5,TABBASE
+         LR    2,6
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   TABERR
+         A     5,TABBASE
+         B     TABOK
+TABERR   LA    15,8
+         L     14,TABRET
+         BR    14
+*
+* PUTBYTE writes output and mirrors it into the 32 KiB circular window.
+*
+PUTBYTE  ST    14,PUTRET
+         L     6,OUTLEN
+         C     6,OUTCAP
+         BNL   PUTERR
+         L     7,OUTPTR
+         AR    7,6
+         STC   2,0(7)
+         LR    8,6
+         N     8,=F'32767'
+         LA    7,HIST
+         AR    7,8
+         STC   2,0(7)
+         LA    6,1(6)
+         ST    6,OUTLEN
+         SR    15,15
+         L     14,PUTRET
+         BR    14
+PUTERR   LA    15,8
+         L     14,PUTRET
+         BR    14
+*
+* COPYRUN copies from circular history and permits overlap.
+*
+COPYRUN  ST    14,COPYRET
+         L     6,DISTVAL
+         L     7,OUTLEN
+         C     6,=F'1'
+         BL    COPYERR
+         CR    6,7
+         BH    COPYERR
+         L     9,RUNLEN
+COPYLP   L     7,OUTLEN
+         SR    7,6
+         N     7,=F'32767'
+         LA    8,HIST
+         AR    8,7
+         XR    2,2
+         IC    2,0(8)
+         BAL   14,PUTBYTE
+         LTR   15,15
+         BNZ   COPYERR
+         BCT   9,COPYLP
+         SR    15,15
+         L     14,COPYRET
+         BR    14
+COPYERR  LA    15,8
+         L     14,COPYRET
+         BR    14
+*
+* GETBITS reads R2 bits LSB-first.  Value is returned in R5.
 *
 GETBITS  ST    14,SUBRET
          ST    2,COUNT
@@ -100,20 +348,58 @@ GBERR    LA    15,8
          LTORG
 OKMSG    DC    C'GITINFA: NATIVE 32K WINDOW SELFTEST PASSED'
 OKLEN    EQU   *-OKMSG
-BITMSG   DC    C'GITINFA: NATIVE LSB BIT READER SELFTEST PASSED'
-BITLEN   EQU   *-BITMSG
+FIXMSG   DC    C'GITINFA: FIXED HUFFMAN ABC DECODE PASSED'
+FIXLEN   EQU   *-FIXMSG
+LZMSG    DC    C'GITINFA: FIXED HUFFMAN LZ77 DECODE PASSED'
+LZLEN    EQU   *-LZMSG
 HMSG     DC    C'GITINFA: 32K WINDOW SELFTEST FAILED'
 HMSGLEN  EQU   *-HMSG
-BMSG     DC    C'GITINFA: NATIVE BIT READER SELFTEST FAILED'
-BMSGLEN  EQU   *-BMSG
+FMSG     DC    C'GITINFA: FIXED HUFFMAN ABC DECODE FAILED'
+FMSGLEN  EQU   *-FMSG
+LMSG     DC    C'GITINFA: FIXED HUFFMAN LZ77 DECODE FAILED'
+LMSGLEN  EQU   *-LMSG
+         DS    0F
+ABCFIX   DC    X'4B4C4A0600'
+ABCDATA  DC    X'616263'
+* zlib raw DEFLATE for 259 ASCII a bytes, fixed strategy fixture.
+REPTEST  DC    X'4B1C05000000'
+PATTERN  DC    32CL8'GITINFL!'
+LENBASE  DC    F'3',F'4',F'5',F'6',F'7',F'8',F'9',F'10'
+         DC    F'11',F'13',F'15',F'17',F'19',F'23',F'27',F'31'
+         DC    F'35',F'43',F'51',F'59',F'67',F'83',F'99',F'115'
+         DC    F'131',F'163',F'195',F'227',F'258'
+LENEXT   DC    F'0',F'0',F'0',F'0',F'0',F'0',F'0',F'0'
+         DC    F'1',F'1',F'1',F'1',F'2',F'2',F'2',F'2'
+         DC    F'3',F'3',F'3',F'3',F'4',F'4',F'4',F'4'
+         DC    F'5',F'5',F'5',F'5',F'0'
+DSTBASE  DC    F'1',F'2',F'3',F'4',F'5',F'7',F'9',F'13'
+         DC    F'17',F'25',F'33',F'49',F'65',F'97',F'129',F'193'
+         DC    F'257',F'385',F'513',F'769',F'1025',F'1537'
+         DC    F'2049',F'3073',F'4097',F'6145',F'8193'
+         DC    F'12289',F'16385',F'24577'
+DSTEXT   DC    F'0',F'0',F'0',F'0',F'1',F'1',F'2',F'2'
+         DC    F'3',F'3',F'4',F'4',F'5',F'5',F'6',F'6'
+         DC    F'7',F'7',F'8',F'8',F'9',F'9',F'10',F'10'
+         DC    F'11',F'11',F'12',F'12',F'13',F'13'
 RETADDR  DS    F
+INFRET   DS    F
+SYMRET   DS    F
+TABRET   DS    F
+PUTRET   DS    F
+COPYRET  DS    F
 SUBRET   DS    F
 INPTR    DS    F
 INLEN    DS    F
+OUTPTR   DS    F
+OUTCAP   DS    F
+OUTLEN   DS    F
 BITPOS   DS    F
 COUNT    DS    F
-BITDATA  DC    X'4B4C4A0600'
-PATTERN  DC    32CL8'GITINFL!'
+RUNLEN   DS    F
+DISTVAL  DS    F
+TABBASE  DS    F
+ABCOUT   DS    16C
+REPOUT   DS    300C
          DS    0D
 HIST     DS    32768C
          END   GITINFA
