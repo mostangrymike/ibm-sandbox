@@ -1,0 +1,18 @@
+/* M13L benchmark an already prepared PACK without replay. */
+address command
+'STATE GITPBUF PACK A'
+if rc\=0 then do
+ say 'M13WALK: GITPBUF PACK A not found'
+ exit 8
+end
+'STATE GITPMETA PACK A'
+if rc\=0 then do
+ say 'M13WALK: GITPMETA PACK A not found'
+ exit 8
+end
+say 'M13 WALK TEST 1: verify prepared PACK checksum'
+'EXEC GITPSHA VERIFY'
+if rc\=0 then exit rc
+say 'M13 WALK TEST 2: walk prepared PACK'
+'EXEC GITP9PWK WALK QUIET'
+exit rc
