@@ -16,8 +16,24 @@ GITINFA  CSECT
          MVC   HIST(256),PATTERN
          CLC   HIST(256),PATTERN
          BNE   BADHIST
-         MVC   HIST+32512(256),PATTERN
-         CLC   HIST+32512(256),PATTERN
+         LA    4,HIST
+         LA    4,4095(4)
+         LA    4,1(4)
+         LA    4,4095(4)
+         LA    4,1(4)
+         LA    4,4095(4)
+         LA    4,1(4)
+         LA    4,4095(4)
+         LA    4,1(4)
+         LA    4,4095(4)
+         LA    4,1(4)
+         LA    4,4095(4)
+         LA    4,1(4)
+         LA    4,4095(4)
+         LA    4,1(4)
+         LA    4,3840(4)
+         MVC   0(256,4),PATTERN
+         CLC   0(256,4),PATTERN
          BNE   BADHIST
          LINEWRT DATA=(OKMSG,OKLEN)
          SR    15,15
