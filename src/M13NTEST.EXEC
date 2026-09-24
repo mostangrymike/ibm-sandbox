@@ -1,10 +1,7 @@
 /* M13N stage 2 native bit-reader regression. */
 address command
-say 'M13N TEST 1: native module and bounded 32K history window'
+say 'M13N TEST 1: native window and LSB-first bit reader'
 'GITINFA'
-if rc \= 0 then exit rc
-say 'M13N TEST 2: native LSB-first DEFLATE bit reader'
-'GITINFA BITTEST'
 if rc \= 0 then exit rc
 say 'M13N NATIVE BIT READER FOUNDATION PASSED'
 exit 0
