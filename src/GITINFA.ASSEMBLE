@@ -436,20 +436,19 @@ HBLEFT   SLL   7,1
          C     6,=F'15'
          BNH   HBLEFT
          XC    HBOFF(64),HBOFF
-         SR    6,6
+         LA    6,1
          SR    7,7
-HBOFLP   LA    6,1(6)
-         C     6,=F'15'
+HBOFLP   C     6,=F'15'
          BH    HBSORT
          LR    8,6
          BCTR  8,0
          SLL   8,2
-         L     9,HBOFF(8)
+         ST    7,HBOFF(8)
          L     10,HBCPTR
          LR    8,6
          SLL   8,2
-         A     9,0(10,8)
-         ST    9,HBOFF(8)
+         A     7,0(10,8)
+         LA    6,1(6)
          B     HBOFLP
 HBSORT   SR    6,6
 HBSLP    CR    6,3
