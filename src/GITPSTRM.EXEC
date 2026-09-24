@@ -10,8 +10,6 @@ outlen = 0
 cacheoff = -1
 cachedata = ''
 outpend = ''
-histoff = -1
-histdata = ''
 drop pm.
 'EXECIO 1 DISKR GITPMETA PACK A 1 (STEM PM. FINIS'
 if rc \= 0 | pm.0 \= 1 then exit 8
@@ -339,17 +337,8 @@ histbyte:
       if length(h) \= 2 then return 'ERROR'
       return h
    end
-   block = (offset % 64) * 64
-   if block \= histoff then do
-      want = committed - block
-      if want > 64 then want = 64
-      if want < 1 then return 'ERROR'
-      'EXEC GITOBUF LIVE' block want
-      if rc \= 0 | queued() < 1 then return 'ERROR'
-      parse pull histdata
-      histoff = block
-   end
-   within = offset - histoff
-   h = substr(histdata,within*2+1,2)
+   'EXEC GITOBUF LIVE' offset 1
+   if rc \= 0 | queued() < 1 then return 'ERROR'
+   parse pull h
    if length(h) \= 2 then return 'ERROR'
    return h
