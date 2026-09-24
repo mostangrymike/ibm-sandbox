@@ -12,7 +12,6 @@ cachedata = ''
 outpend = ''
 histoff = -1
 histdata = ''
-histmeta = ''
 drop pm.
 'EXECIO 1 DISKR GITPMETA PACK A 1 (STEM PM. FINIS'
 if rc \= 0 | pm.0 \= 1 then exit 8
@@ -345,19 +344,9 @@ histbyte:
       want = committed - block
       if want > 64 then want = 64
       if want < 1 then return 'ERROR'
-      'EXECIO 1 DISKR GITOMETA DATA A 1 (STEM HM. FINIS'
-      if rc \= 0 | hm.0 \= 1 then return 'ERROR'
-      parse var hm.1 htag hsize htail hfinal hextra
-      if htag \= 'META' | datatype(hsize,'W') \= 1 then return 'ERROR'
-      if htail = '-' then htail = ''
-      diskbytes = hsize - length(htail) % 2
-      if block < diskbytes then do
-         rec = block % 64 + 1
-         'EXECIO 1 DISKR GITOBUF DATA A' rec '(STEM HR. FINIS'
-         if rc \= 0 | hr.0 \= 1 then return 'ERROR'
-         histdata = strip(hr.1)
-      end
-      else histdata = htail
+      'EXEC GITOBUF LIVE' block want
+      if rc \= 0 | queued() < 1 then return 'ERROR'
+      parse pull histdata
       histoff = block
    end
    within = offset - histoff
