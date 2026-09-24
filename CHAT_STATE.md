@@ -586,3 +586,17 @@ move directly to a real GitHub smart-HTTP request through the bridge and feed
 the bounded response into GIT11HTP -> GIT10UP/GIT10BF/GITPBUF -> M9 PACK/object
 pipeline. Do not resume crypto-level archaeology unless explicitly revisiting
 the native System SSL research path.
+
+
+## 2026-09-24 M12PRXY target proof
+
+`M12PRXY 192.168.200.1 8443` is TARGET PROVEN. CMS REXX/SOCKETS initialized,
+SO_ASCII was OFF, connect to the EC2 TAP listener succeeded, all 55 exact request
+bytes were sent, and bounded 256-byte receives returned 582167 bytes. Wire prefix
+`485454502F312E3120323030204F4B0D` is `HTTP/1.1 200 OK\r`. Final target message:
+`M12 PROXY PATH TEST PASSED`. This closes the generic HTTPS bridge gate with the
+correct `Host: github.com` header.
+
+NEXT ACTION: build an isolated Git smart-HTTP discovery/fetch integration gate
+through `192.168.200.1:8443`, preserving M11BRAW/M12PRXY. Feed bounded HTTP
+response bytes through GIT11HTP and the existing M10/M9 transport/PACK pipeline.
