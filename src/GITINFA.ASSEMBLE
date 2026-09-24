@@ -292,8 +292,9 @@ DYNTREE  ST    14,DYNRET
          BNZ   DYNERR
          A     5,=F'4'
          ST    5,NCODE
-         SR    6,6
-DYCLLP   C     6,NCODE
+         XC    DYIDX(4),DYIDX
+DYCLLP   L     6,DYIDX
+         C     6,NCODE
          BNL   DYCLDN
          LR    7,6
          SLL   7,1
@@ -306,6 +307,7 @@ DYCLLP   C     6,NCODE
          AR    7,8
          STC   5,0(7)
          LA    6,1(6)
+         ST    6,DYIDX
          B     DYCLLP
 DYCLDN   LA    2,CLLENS
          LA    3,19
@@ -317,8 +319,9 @@ DYCLDN   LA    2,CLLENS
          L     6,NLIT
          A     6,NDIST
          ST    6,NTOTAL
-         SR    6,6
-DYLENLP  C     6,NTOTAL
+         XC    DYIDX(4),DYIDX
+DYLENLP  L     6,DYIDX
+         C     6,NTOTAL
          BNL   DYLENDN
          LA    2,0
          BAL   14,HUFFSYM
@@ -330,6 +333,7 @@ DYLENLP  C     6,NTOTAL
          AR    7,6
          STC   5,0(7)
          LA    6,1(6)
+         ST    6,DYIDX
          B     DYLENLP
 DYREPT   C     5,=F'16'
          BNE   DYREP17
@@ -372,6 +376,7 @@ DYFLLP   LA    8,ALLLENS
          AR    8,6
          STC   9,0(8)
          LA    6,1(6)
+         ST    6,DYIDX
          BCT   5,DYFLLP
          B     DYLENLP
 DYLENDN  CLI   ALLLENS+256,X'00'
@@ -405,7 +410,7 @@ DYNERR   LA    15,8
 HUFFBLD  ST    14,BLDRET
          ST    4,HBCPTR
          ST    5,HBSPTR
-         XC    0(64,4),0(4)
+         MVC   0(64,4),ZERO64
          SR    6,6
 HBCLP    CR    6,3
          BNL   HBCDN
@@ -731,6 +736,7 @@ NLIT     DS    F
 NDIST    DS    F
 NCODE    DS    F
 NTOTAL   DS    F
+DYIDX    DS    F
 HBCPTR   DS    F
 HBSPTR   DS    F
 HCPTR    DS    F
@@ -747,6 +753,7 @@ LLSYMS   DS    286H
 DDSYMS   DS    30H
 CLLENS   DS    19C
 ALLLENS  DS    316C
+ZERO64   DC    64X'00'
 CLORD    DC    H'16',H'17',H'18',H'0',H'8',H'7',H'9'
          DC    H'6',H'10',H'5',H'11',H'4',H'12',H'3'
          DC    H'13',H'2',H'14',H'1',H'15'
