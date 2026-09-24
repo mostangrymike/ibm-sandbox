@@ -2,25 +2,38 @@
 address command
 say 'M12I TEST 1: initialize bounded chunk decoder'
 'EXEC GIT12CHK INIT FILE'
-if rc\=0 then exit rc
+if rc\=0 then do
+ say 'M12I: INIT failed RC' rc
+ exit rc
+end
 'STATE M11BODY DATA A'
 if rc\=0 then exit 8
 drop b.
 i=1
 do forever
  'EXECIO 1 DISKR M11BODY DATA A' i '(STEM B. FINIS'
- if rc\=0 then leave
+ if rc\=0 then do
+  if rc=2 then leave
+  say 'M12I: input read failed record' i 'RC' rc
+  exit 8
+ end
  if b.0\=1 then exit 8
  h=strip(b.1)
  if h='' | length(h)//2\=0 then exit 8
  if length(h)>128 then exit 8
  'EXEC GIT12CHK FEED' h
- if rc\=0 then exit rc
+ if rc\=0 then do
+  say 'M12I: decoder failed record' i 'RC' rc
+  exit rc
+ end
  i=i+1
  drop b.
 end
 'EXEC GIT12CHK FINAL'
-if rc\=0 then exit rc
+if rc\=0 then do
+ say 'M12I: FINAL failed RC' rc
+ exit rc
+end
 say 'M12I TEST 2: validate decoded Git advertisement'
 drop d.
 'EXECIO 1 DISKR M12BODY DATA A 1 (STEM D. FINIS'
