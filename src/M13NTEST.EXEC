@@ -1,0 +1,7 @@
+/* M13N stage 1 native inflater foundation regression. */
+address command
+say 'M13N TEST 1: native module and bounded 32K history window'
+'GITINFA SELF'
+if rc \= 0 then exit rc
+say 'M13N NATIVE INFLATER FOUNDATION PASSED'
+exit 0
