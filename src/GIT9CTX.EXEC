@@ -21,20 +21,15 @@ if cmd='SAVE' then do
  off=0; nrec=0
  do while off<n
   take=n-off
-  if take>512 then take=512
+  if take>64 then take=64
   'EXEC GITOBUF READSTACK' off take
   if rc\=0 then exit 8
   parse pull h
-  drop r.
-  batch=(take+63)%64
-  r.0=batch
-  do j=1 to batch
-   r.j=substr(h,(j-1)*128+1,128)
-  end
-  'EXECIO' batch 'DISKW G9CDATA DATA A 0 (STEM R. FINIS'
+  r.1=h; r.0=1
+  'EXECIO 1 DISKW G9CDATA DATA A 0 (STEM R. FINIS'
   if rc\=0 then exit 8
   off=off+take
-  nrec=nrec+batch
+  nrec=nrec+1
  end
  r.1=key oid n otype start nrec; r.0=1
  'EXECIO 1 DISKW G9CIDX DATA A 0 (STEM R. FINIS'
@@ -76,17 +71,13 @@ if cmd='LOADPOS' | cmd='LOADOID' then do
  end
  if \found then exit 8
  'ERASE GITBASE DATA A'
- done=0
- do while done<count
-  batch=count-done
-  if batch>8 then batch=8
+ do i=0 to count-1
   drop q.
-  src=first+done
-  'EXECIO' batch 'DISKR G9CDATA DATA A' src '(STEM Q. FINIS'
-  if rc\=0 | q.0\=batch then exit 8
-  'EXECIO' batch 'DISKW GITBASE DATA A 0 (STEM Q. FINIS'
+  src=first+i
+  'EXECIO 1 DISKR G9CDATA DATA A' src '(STEM Q. FINIS'
+  if rc\=0 | q.0\=1 then exit 8
+  'EXECIO 1 DISKW GITBASE DATA A 0 (STEM Q. FINIS'
   if rc\=0 then exit 8
-  done=done+batch
  end
  m.1='META' sz '- 1'; m.0=1
  'EXECIO 1 DISKW GITBMETA DATA A 1 (STEM M. FINIS'
