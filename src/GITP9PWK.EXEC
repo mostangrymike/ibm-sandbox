@@ -13,6 +13,7 @@ pos=12
 'EXEC GIT9CTX INIT'
 if rc\=0 then exit rc
 do entry=1 to objects
+ if quiet & (entry=1 | entry//100=0) then say 'PACK WALK' entry 'OF' objects
  entrypos=pos
  call readbyte pos
  if result='ERROR' then exit 8
