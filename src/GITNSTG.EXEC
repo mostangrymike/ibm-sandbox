@@ -16,6 +16,8 @@ parse var m.1 tag total tail final extra
 if tag \= 'META' | extra \= '' | final \= 1 |,
  datatype(total,'W') \= 1 then exit 8
 if offset >= total then exit 8
+if length(tail) >= 128 | length(tail)//2 \= 0 |,
+ verify(tail,'0123456789ABCDEF-') \= 0 then exit 8
 avail = total - offset
 if avail > limit then avail = limit
 'ERASE GITNSTG DATA A'
