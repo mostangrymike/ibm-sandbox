@@ -1,64 +1,65 @@
-/* GCCCMS feasibility gate: binary CMS stream and PACK header. */
-/* Compile with GCCCMS; supply a real binary PACK stream as argv[1]. */
+/* GCCCMS C89 feasibility probe: CMS hex-record PACK capture. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-static unsigned long be32(const unsigned char *p)
-{
-    return ((unsigned long)p[0]<<24) | ((unsigned long)p[1]<<16)
-         | ((unsigned long)p[2]<<8) | (unsigned long)p[3];
+static int nib(int c) {
+    if(c>='0' && c<='9') return c-'0';
+    if(c>='A' && c<='F') return c-'A'+10;
+    if(c>='a' && c<='f') return c-'a'+10;
+    return -1;
 }
-
-int main(int argc, char **argv)
-{
-    FILE *fp;
+static unsigned long be32(const unsigned char *p) {
+    return ((unsigned long)p[0]<<24)|((unsigned long)p[1]<<16)
+         |((unsigned long)p[2]<<8)|(unsigned long)p[3];
+}
+int main(int argc,char **argv) {
+    FILE *f;
+    char line[1024];
     unsigned char hdr[12];
-    unsigned char buf[8192];
-    size_t n;
-    unsigned long total = 0;
-    clock_t start, end;
-    if (argc != 2) {
-        puts("Usage: GITCPROB binary-pack-filename");
+    unsigned long count=0, records=0;
+    unsigned long x=0;
+    int i,hi,lo;
+    clock_t start,end;
+    if(argc!=2) {
+        puts("Usage: GITCPROB cms-hex-record-file");
         return 4;
     }
-    fp = fopen(argv[1], "rb");
-    if (!fp) {
-        perror("GITCPROB fopen");
+    f=fopen(argv[1],"r");
+    if(!f) { perror("GITCPROB"); return 8; }
+    start=clock();
+    while(fgets(line,sizeof line,f)) {
+        ++records;
+        for(i=0;line[i];) {
+            if(line[i]==' ' || line[i]=='\n' || line[i]=='\\r') {
+                ++i; continue;
+            }
+            hi=nib((unsigned char)line[i++]);
+            if(hi<0 || !line[i]) {
+                puts("FAIL invalid hex"); fclose(f); return 8;
+            }
+            lo=nib((unsigned char)line[i++]);
+            if(lo<0) { puts("FAIL invalid hex"); fclose(f); return 8; }
+            x=(unsigned long)((hi<<4)|lo);
+            if(count<12) hdr[count]=(unsigned char)x;
+            ++count;
+        }
+    }
+    if(ferror(f)) { puts("FAIL read"); fclose(f); return 8; }
+    end=clock();
+    fclose(f);
+    if(count<12 || memcmp(hdr,"PACK",4)!=0) {
+        puts("FAIL PACK signature (check ASCII/EBCDIC)");
         return 8;
     }
-    start = clock();
-    n = fread(hdr, 1, sizeof hdr, fp);
-    if (n != sizeof hdr || memcmp(hdr, "PACK", 4) != 0) {
-        puts("FAIL: binary stream header unavailable or translated");
-        fclose(fp);
-        return 8;
+    printf("VERSION %lu OBJECTS %lu BYTES %lu RECORDS %lu\n",
+        be32(hdr+4),be32(hdr+8),count,records);
+    printf("CPU TICKS %lu CLOCKS_PER_SEC %lu\n",
+        (unsigned long)(end-start),(unsigned long)CLOCKS_PER_SEC);
+    if(be32(hdr+4)!=2 || be32(hdr+8)!=1808 ||
+       count!=340027UL) {
+        puts("FAIL capture metadata mismatch"); return 8;
     }
-    printf("PACK VERSION %lu OBJECTS %lu\n",
-           be32(hdr+4), be32(hdr+8));
-    if (be32(hdr+4) != 2 || be32(hdr+8) != 1808) {
-        puts("FAIL: unexpected capture; refusing throughput result");
-        fclose(fp);
-        return 8;
-    }
-    total = (unsigned long)n;
-    while ((n = fread(buf, 1, sizeof buf, fp)) != 0)
-        total += (unsigned long)n;
-    if (ferror(fp)) {
-        puts("FAIL: stream read error");
-        fclose(fp);
-        return 8;
-    }
-    end = clock();
-    fclose(fp);
-    printf("BINARY BYTES %lu CPU TICKS %lu CLOCKS_PER_SEC %lu\n",
-           total, (unsigned long)(end-start),
-           (unsigned long)CLOCKS_PER_SEC);
-    if (total != 340027UL) {
-        puts("FAIL: capture byte count changed or record framing exposed");
-        return 8;
-    }
-    puts("PASS: binary stream and PACK header");
+    puts("PASS CMS hex-record PACK read");
     return 0;
 }
