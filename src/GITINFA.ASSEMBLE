@@ -76,10 +76,36 @@ GITINFA  CSECT
          L     4,=A(DYNOUT)
          CLC   0(16,4),DYNPFX
          BNE   BADPFX
+         LA    2,STTEST
+         LA    3,8
+         L     4,=A(ABCOUT)
+         LA    5,16
+         BAL   14,INFLATE
+         LTR   15,15
+         BNZ   BADSTORE
+         C     6,=F'3'
+         BNE   BADSTORE
+         L     4,=A(ABCOUT)
+         CLC   0(3,4),ABCDATA
+         BNE   BADSTORE
+         LA    2,MBTEST
+         LA    3,13
+         L     4,=A(ABCOUT)
+         LA    5,16
+         BAL   14,INFLATE
+         LTR   15,15
+         BNZ   BADMULT
+         C     6,=F'6'
+         BNE   BADMULT
+         L     4,=A(ABCOUT)
+         CLC   0(6,4),ABC6
+         BNE   BADMULT
          LINEWRT DATA=(OKMSG,OKLEN)
          LINEWRT DATA=(FIXMSG,FIXLEN)
          LINEWRT DATA=(LZMSG,LZLEN)
          LINEWRT DATA=(DYNMSG,DYNLENM)
+         LINEWRT DATA=(STMSG,STMLEN)
+         LINEWRT DATA=(MBMSG,MBMLEN)
          SR    15,15
          B     RETURN
 BADHIST  LINEWRT DATA=(HMSG,HMSGLEN)
@@ -102,6 +128,12 @@ BADSIZE  LINEWRT DATA=(SMSG,SMSGLEN)
          B     RETURN
 BADPFX   LINEWRT DATA=(PMSG,PMSGLEN)
          LA    15,8
+         B     RETURN
+BADSTORE LINEWRT DATA=(STERR,STERLEN)
+         LA    15,8
+         B     RETURN
+BADMULT  LINEWRT DATA=(MBERR,MBERLEN)
+         LA    15,8
 RETURN   L     14,RETADDR
          BR    14
 *
@@ -116,16 +148,17 @@ INFLATE  ST    14,INFRET
          ST    5,OUTCAP
          XC    BITPOS(4),BITPOS
          XC    OUTLEN(4),OUTLEN
-         LA    2,1
+IFBLOCK  LA    2,1
          BAL   14,GETBITS
          LTR   15,15
          BNZ   INFERR
-         C     5,=F'1'
-         BNE   INFERR
+         ST    5,ISFINAL
          LA    2,2
          BAL   14,GETBITS
          LTR   15,15
          BNZ   INFERR
+         C     5,=F'0'
+         BE    IFSTORE
          C     5,=F'1'
          BE    IFFIX
          C     5,=F'2'
@@ -148,7 +181,7 @@ IFGOT    DS    0H
          LTR   15,15
          BNZ   INFERR
          C     5,=F'256'
-         BE    INFDONE
+         BE    IFEND
          C     5,=F'256'
          BL    INFLIT
          C     5,=F'285'
@@ -184,6 +217,45 @@ INFLIT   LR    2,5
          LTR   15,15
          BNZ   INFERR
          B     IFLOOP
+IFEND    L     7,ISFINAL
+         LTR   7,7
+         BZ    IFBLOCK
+         B     INFDONE
+*
+* Stored blocks start at the next byte boundary.
+* LEN and NLEN are little-endian and must complement.
+*
+IFSTORE  L     7,BITPOS
+         LA    7,7(7)
+         N     7,=X'FFFFFFF8'
+         ST    7,BITPOS
+         LA    2,16
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   INFERR
+         ST    5,STOLEN
+         LA    2,16
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   INFERR
+         X     5,STOLEN
+         C     5,=X'0000FFFF'
+         BNE   INFERR
+IFSTLP   L     7,STOLEN
+         LTR   7,7
+         BZ    IFEND
+         LA    2,8
+         BAL   14,GETBITS
+         LTR   15,15
+         BNZ   INFERR
+         LR    2,5
+         BAL   14,PUTBYTE
+         LTR   15,15
+         BNZ   INFERR
+         L     7,STOLEN
+         BCTR  7,0
+         ST    7,STOLEN
+         B     IFSTLP
 INFTERR  LA    15,12
          L     14,INFRET
          BR    14
@@ -716,9 +788,20 @@ SMSG     DC    C'GITINFA: DYNAMIC OUTPUT LENGTH MISMATCH'
 SMSGLEN  EQU   *-SMSG
 PMSG     DC    C'GITINFA: DYNAMIC OUTPUT PREFIX MISMATCH'
 PMSGLEN  EQU   *-PMSG
+STMSG    DC    C'GITINFA: STORED BLOCK DECODE PASSED'
+STMLEN   EQU   *-STMSG
+MBMSG    DC    C'GITINFA: MIXED MULTIBLOCK DECODE PASSED'
+MBMLEN   EQU   *-MBMSG
+STERR    DC    C'GITINFA: STORED BLOCK DECODE FAILED'
+STERLEN  EQU   *-STERR
+MBERR    DC    C'GITINFA: MIXED MULTIBLOCK DECODE FAILED'
+MBERLEN  EQU   *-MBERR
          DS    0F
 ABCFIX   DC    X'4B4C4A0600'
 ABCDATA  DC    X'616263'
+ABC6     DC    X'616263616263'
+STTEST   DC    X'010300FCFF616263'
+MBTEST   DC    X'000300FCFF6162634B4C4A0600'
 * zlib raw DEFLATE for 259 ASCII a bytes, fixed strategy fixture.
 REPTEST  DC    X'4B1C05000000'
 DYNTEST  DC    X'EDCA571180301445412B57016A628092D0792110'
@@ -763,6 +846,8 @@ OUTPTR   DS    F
 OUTCAP   DS    F
 OUTLEN   DS    F
 BITPOS   DS    F
+ISFINAL  DS    F
+STOLEN   DS    F
 COUNT    DS    F
 RUNLEN   DS    F
 DISTVAL  DS    F
