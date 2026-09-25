@@ -633,3 +633,11 @@ response bytes through GIT11HTP and the existing M10/M9 transport/PACK pipeline.
 - Source checkpoint: commit f47289d7c6ac82eba7cbba0cf5d06d944391ebaf. Two code bases (R12 initial 4K, R1 second 4K), local LTORG pools, and R13 DATAORG base are required to assemble the expanded module.
 - Current GITINFA is a standalone self-test MODULE, not yet a callable PACK inflater. GITPBUF READSTACK returns hexadecimal text and GITINFA consumes native binary bytes. The integration needs an explicit binary-safe bridge and bounded output contract; do not substitute an unbounded REXX hex string for a 340027-byte PACK.
 - NEXT: inspect M13M/M13N and bounded GITPBUF callers, design a native callable interface and an isolated CMS integration test on small real PACK/zlib objects. Retain target-proven REXX fallback and existing M13NTEST. Do not claim live PACK acceleration until it is tested on CMS.
+
+
+## M13 production native PACK milestone — 2026-09-25
+- CMS GITTEST ALL passed 27 PASSED, 0 FAILED after promotion.
+- Production GITP9PWK defaults WALK / WALK QUIET to native STRICT; WALK REXX / WALK QUIET REXX retains original implementation.
+- Consolidated GITTEST tests malformed streams, PACK headers, deltas, SHA1/trailer and boundary validation, production routing, and a Git-generated five-object PACK through both routes.
+- This does not establish performance or full traversal of captured 340027-byte / 1808-object live GitHub PACK.
+- NEXT: benchmark and validate native-default walker against already captured live PACK in GITPBUF if still available. Do not repeat network POST just to benchmark. Record progress, object count, time and failures; retain REXX fallback. Investigate GIT9CTX indexing and per-object CMS I/O if throughput inadequate.
