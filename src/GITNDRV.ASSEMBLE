@@ -74,15 +74,15 @@ INEND    C     15,=F'12'
          L     15,=V(GITNAPI)
          BALR  14,15
          LTR   15,15
-         BNZ   APIFAIL
+         BNZ   APIERR
          L     5,OUTLEN
          C     5,=F'65536'
-         BH    APIFAIL
+         BH    BADOUT
          L     5,USED
          C     5,INLEN
-         BH    APIFAIL
+         BH    BADUSED
          C     5,=F'6'
-         BL    APIFAIL
+         BL    BADUSED
 *
 * Convert output to 64-byte records and write via CMS FS.
 *
@@ -135,12 +135,26 @@ OUTDONE  FSCLOSE FSCB=OUTFSCB,ERROR=IOFAIL
          LINEWRT DATA=(OKMSG,OKLEN)
          SR    15,15
          B     EXIT
+APIERR   MVI   FAILSTG,C'A'
+         B     APIFAIL
+BADOUT   MVI   FAILSTG,C'O'
+         B     APIFAIL
+BADUSED  MVI   FAILSTG,C'U'
 APIFAIL  ST    15,APIRC
+         MVC   STGCHAR(1),FAILSTG
          MVC   DBGREC(80),DBGBASE
          LA    3,DBGREC+38
          LR    5,15
          BAL   10,DECIMAL
          LINEWRT DATA=(APIMSG,APILEN)
+         LINEWRT DATA=(DBGREC,DBGLEN)
+         L     5,OUTLEN
+         LA    3,DBGREC+38
+         BAL   10,DECIMAL
+         LINEWRT DATA=(DBGREC,DBGLEN)
+         L     5,USED
+         LA    3,DBGREC+38
+         BAL   10,DECIMAL
          LINEWRT DATA=(DBGREC,DBGLEN)
          LA    15,8
          B     EXIT
@@ -235,6 +249,7 @@ OUTLEN   DC    F'0'
 USED     DC    F'0'
 CURPOS   DC    F'0'
 APIRC    DC    F'0'
+FAILSTG  DC    C'?'
 DBGBASE  DC    CL80'GITNDRV IN:                            LEN/RC='
 DBGREC   DS    CL80
 DBGLEN   EQU   80
@@ -250,7 +265,8 @@ OUTFSCB  FSCB  'GITNOUT DATA A1',BUFFER=OUTREC,BSIZE=128,RECFM=F,FORM=E
 RESFSCB  FSCB  'GITNRES DATA A1',BUFFER=RESREC,BSIZE=128,RECFM=F,FORM=E
 OKMSG    DC    C'GITNDRV: NATIVE CMS DRIVER COMPLETE'
 OKLEN    EQU   *-OKMSG
-APIMSG   DC    C'GITNDRV: NATIVE API FAILED; CHECK APIRC'
+APIMSG   DC    C'GITNDRV: API/CHECK FAILED STAGE '
+STGCHAR  DC    C'?'
 APILEN   EQU   *-APIMSG
 ERRMSG   DC    C'GITNDRV: CMS FILE I/O OR HEX FAILED'
 ERRLEN   EQU   *-ERRMSG
