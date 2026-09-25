@@ -1,6 +1,6 @@
+/* M12K decode captured POST HTTP chunks into upload-pack parser. */
 parse upper arg mode extra
 if extra\='' | (mode\='' & mode\='REPLAY') then exit 4
-/* M12K decode captured POST HTTP chunks into upload-pack parser. */
 address command
 say 'M12K TEST 1: initialize upload-pack and chunk decoder'
 'EXEC GIT10UP INIT'
