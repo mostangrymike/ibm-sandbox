@@ -3,6 +3,8 @@
 parse upper arg selection extra
 if extra \= '' then exit 4
 if selection = '' then selection = 'ALL'
+/* LIVE is opt-in: never overwrite the existing captured PACK. */
+if selection = 'LIVE' then exit test_live()
 names='M13TDRV M13UFAIL M13VRECS M13WDYN',
       'M13XPACK M13YPACK M13ZPACK M13AAREF M13ABREF',
       'M13ACSHA M13ADTRN M13AEBDY',
@@ -753,4 +755,44 @@ if rc\=0 then return rc
 'EXEC GITP9PWK WALK QUIET'
 if rc\=0 then return rc
 say 'REALGIT GIT-GENERATED PACK BOTH ROUTES PASSED'
+return 0
+
+/* Opt-in full live PACK gate. Run BEFORE ALL, which replaces GITPBUF. */
+test_live:
+ procedure
+address command
+drop m.
+'EXECIO 1 DISKR GITPMETA PACK A 1 (STEM M. FINIS'
+if rc\=0 | m.0\=1 then do
+ say 'LIVE: no captured PACK metadata; no network fetch attempted'
+ return 8
+end
+parse var m.1 tag size tail final junk
+if tag\='META' | size\='340027' | final\='1' |,
+ junk\='' then do
+ say 'LIVE: expected finalized 340027-byte capture; found' m.1
+ return 8
+end
+'EXEC GITPBUF READSTACK 0 12'
+if rc\=0 | queued()<1 then return 8
+parse pull header
+if header\='5041434B0000000200000710' then do
+ say 'LIVE: captured PACK header/object count differs' header
+ return 8
+end
+'EXEC GITPBUF READSTACK 340007 20'
+if rc\=0 | queued()<1 then return 8
+parse pull trailer
+if trailer\='8C92E274ECA84B797F8925A6082915DD6CCDE196' then do
+ say 'LIVE: captured PACK SHA1 differs' trailer
+ return 8
+end
+say 'LIVE: original 1808-object capture recognized'
+start=time('E')
+'EXEC GITP9PWK WALK QUIET'
+walkrc=rc
+elapsed=time('E')-start
+say 'LIVE: native strict walker RC' walkrc 'ELAPSED SECONDS' elapsed
+if walkrc\=0 then return walkrc
+say 'LIVE: full 1808-object traversal passed'
 return 0
