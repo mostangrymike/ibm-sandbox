@@ -8,12 +8,16 @@ GITNCALL CSECT
          LA    1,PARAM
          L     15,=V(GITNAPI)
          BALR  14,15
+         MVI   ERRCHK,C'R'
          LTR   15,15
          BNZ   FAILED
+         MVI   ERRCHK,C'O'
          CLC   PARAM+16(4),=F'3'
          BNE   FAILED
+         MVI   ERRCHK,C'C'
          CLC   PARAM+20(4),=F'11'
          BNE   FAILED
+         MVI   ERRCHK,C'D'
          CLC   OUTPUT(3),ABC
          BNE   FAILED
 *
@@ -85,7 +89,8 @@ GITNCALL CSECT
          LINEWRT DATA=(OKMSG,OKLEN)
          SR    15,15
          B     EXIT
-FAILED   LINEWRT DATA=(ERRMSG,ERRLEN)
+FAILED   ST    15,ERRRC
+         LINEWRT DATA=(ERRMSG,ERRLEN)
          LA    15,8
 EXIT     L     14,RETCALL
          BR    14
@@ -106,6 +111,8 @@ ZERO8    DC    8X'00'
 OKMSG    DC    C'GITNCALL: EXTERNAL NATIVE API PASSED'
 OKLEN    EQU   *-OKMSG
 ERRMSG   DC    C'GITNCALL: EXTERNAL NATIVE API FAILED STAGE '
-ERRSTG   DC    C'?'
+ERRSTG   DC    C'? CHECK '
+ERRCHK   DC    C'?'
 ERRLEN   EQU   *-ERRMSG
+ERRRC    DS    F
          END   GITNCALL
