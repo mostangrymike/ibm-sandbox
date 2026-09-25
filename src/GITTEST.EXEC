@@ -5,7 +5,7 @@ if extra \= '' then exit 4
 if selection = '' then selection = 'ALL'
 names='M13TDRV M13UFAIL M13VRECS M13WDYN',
       'M13XPACK M13YPACK M13ZPACK M13AAREF M13ABREF',
-      'M13ACSHA M13ADTRN'
+      'M13ACSHA M13ADTRN M13AEBDY'
 if selection \= 'ALL' & wordpos(selection,names)=0 then do
  say 'Usage: GITTEST ALL or GITTEST testname'
  say 'Tests:' names
@@ -31,6 +31,7 @@ do i=1 to words(names)
   when test='M13ABREF' then test_rc=test_m13abref()
   when test='M13ACSHA' then test_rc=test_m13acsha()
   when test='M13ADTRN' then test_rc=test_m13adtrn()
+  when test='M13AEBDY' then test_rc=test_m13aebdy()
   otherwise test_rc=4
  end
  if test_rc=0 then do
@@ -493,4 +494,55 @@ if bad_rc \= 8 then do
  return 8
 end
 say 'M13AD TRUNCATED PACK FAIL-CLOSED PASSED'
+return 0
+
+test_m13aebdy:
+ procedure
+/* Correct SHA-1 over two objects but header claims only one. */
+/* Reuse known-good two-object pack, mutate count, then compute */
+/* a new checksum via GITSTRM before checking strict boundary. */
+address command
+head='5041434B0000000200000001'
+one='337801010300FCFF616263024D0127'
+two='337801010300FCFF78797A02D7016C'
+'ERASE GITHASH DATA A'
+h.1=head||one||two
+h.0=1
+'EXECIO 1 DISKW GITHASH DATA A 1 (STEM H. FINIS'
+if rc \= 0 then return rc
+'MAKEBUF'
+queue 'F'||right(d2x(length(h.1)%2),8,'0')
+'GITSTRM'
+hashrc=rc
+if hashrc \= 0 then do
+ 'DROPBUF'
+ return hashrc
+end
+parse pull sha
+'DROPBUF'
+if length(sha) \= 40 then return 8
+'EXEC GITPBUF INIT'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND' head
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND' one
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND' two
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND' sha
+if rc \= 0 then return rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then return rc
+'EXEC GITPSHA VERIFY'
+if rc \= 0 then do
+ say 'M13AE: fixture checksum invalid'
+ return 8
+end
+'EXEC GITPNWLK WALK QUIET NATIVE STRICT'
+bad_rc=rc
+if bad_rc \= 8 then do
+ say 'M13AE: wrong object boundary unexpected RC' bad_rc
+ return 8
+end
+say 'M13AE STRICT OBJECT COUNT/BOUNDARY PASSED'
 return 0
