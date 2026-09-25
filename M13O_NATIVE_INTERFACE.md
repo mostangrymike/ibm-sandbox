@@ -131,3 +131,27 @@ preallocated output buffer; it is not yet a streaming decoder.
 A 340027-byte, 1808-object PACK must not be loaded into one REXX
 string. Do not claim streaming/native PACK acceleration until a
 bounded native transport and its real-PACK gate pass.
+
+## M13P bounded staging implementation (awaiting CMS gate)
+
+GITNSTG STAGE offset max-bytes copies up to 65536 bytes from the
+finalized GITPBUF PACK A into GITNSTG DATA A as at most 64-byte
+hex records, then publishes GITNSMT DATA A metadata. It never
+materializes the full PACK in REXX. M13PSTG exercises boundary,
+short-tail and invalid-offset handling. GITNOUT COMMIT bytes
+preflights GITNOUT DATA A records (binary hex, at most 64 bytes
+per record), checks exact output length and extra records, then
+replaces GITOBUF via INIT/APPEND/FINAL. M13POUT checks malformed
+and truncated output preserve the previous object and that valid
+binary output is committed. These components are NOT wired into
+the PACK walker and have NOT yet passed the CMS gate.
+
+The remaining bridge must read GITNSTG records, convert hex to
+binary into a bounded native input buffer, invoke GITNAPI with
+its six-fullword parameter block, convert the output buffer back
+to bounded GITNOUT records, and report both consumed and decoded
+byte counts. Never silently truncate an input member at the
+65536-byte staging limit; a successful native decode must consume
+a complete zlib member, otherwise fall back to the existing REXX
+GITPZBUF implementation. Keep native routing opt-in until the
+bridge and real PACK regression pass.
