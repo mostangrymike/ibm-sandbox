@@ -1,0 +1,70 @@
+GITNCALL CSECT
+         EXTRN GITNAPI
+         USING GITNCALL,12
+         LR    12,15
+         ST    14,RETCALL
+         LA    13,SAVE
+         LA    1,PARAM
+         L     15,=V(GITNAPI)
+         BALR  14,15
+         LTR   15,15
+         BNZ   FAILED
+         CLC   PARAM+16(4),=F'3'
+         BNE   FAILED
+         CLC   PARAM+20(4),=F'11'
+         BNE   FAILED
+         CLC   OUTPUT(3),ABC
+         BNE   FAILED
+*
+* Repeat with a trailing PACK stream and reuse same buffer.
+*
+         LA    2,TRAIL
+         ST    2,PARAM
+         LA    2,14
+         ST    2,PARAM+4
+         LA    1,PARAM
+         L     15,=V(GITNAPI)
+         BALR  14,15
+         LTR   15,15
+         BNZ   FAILED
+         CLC   PARAM+16(4),=F'3'
+         BNE   FAILED
+         CLC   PARAM+20(4),=F'11'
+         BNE   FAILED
+         CLC   OUTPUT(3),ABC
+         BNE   FAILED
+*
+* Capacity failure must leave both output counts zero.
+*
+         LA    2,2
+         ST    2,PARAM+12
+         LA    1,PARAM
+         L     15,=V(GITNAPI)
+         BALR  14,15
+         LTR   15,15
+         BZ    FAILED
+         CLC   PARAM+16(8),ZERO8
+         BNE   FAILED
+         LINEWRT DATA=(OKMSG,OKLEN)
+         SR    15,15
+         B     EXIT
+FAILED   LINEWRT DATA=(ERRMSG,ERRLEN)
+         LA    15,8
+EXIT     L     14,RETCALL
+         BR    14
+         LTORG
+         DS    0F
+RETCALL  DS    F
+SAVE     DS    18F
+PARAM    DC    A(STREAM),F'11',A(OUTPUT),F'16'
+         DC    F'0',F'0'
+STREAM   DC    X'789C4B4C4A0600024D0127'
+TRAIL    DC    X'789C4B4C4A0600024D0127AABBCC'
+ABC      DC    C'abc'
+OUTPUT   DS    16C
+ZERO8    DC    8X'00'
+OKMSG    DC    C'GITNCALL: EXTERNAL NATIVE API PASSED'
+OKLEN    EQU   *-OKMSG
+ERRMSG   DC    C'GITNCALL: EXTERNAL NATIVE API FAILED'
+ERRLEN   EQU   *-ERRMSG
+         END   GITNCALL
