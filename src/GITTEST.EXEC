@@ -7,7 +7,8 @@ names='M13TDRV M13UFAIL M13VRECS M13WDYN',
       'M13XPACK M13YPACK M13ZPACK M13AAREF M13ABREF',
       'M13ACSHA M13ADTRN M13AEBDY',
       'BADMAG BADVER ZEROOBJ MANYOBJ EXTRABY SHORTZL',
-      'BADSIZE BADTYPE BADOFS BADPAY NOTRAIL'
+      'BADSIZE BADTYPE BADOFS BADPAY NOTRAIL',
+      'PRODNAT PRODREXX'
 if selection \= 'ALL' & wordpos(selection,names)=0 then do
  say 'Usage: GITTEST ALL or GITTEST testname'
  say 'Tests:' names
@@ -45,6 +46,8 @@ do i=1 to words(names)
   when test='BADOFS' then test_rc=test_packbad('BADOFS')
   when test='BADPAY' then test_rc=test_packbad('BADPAY')
   when test='NOTRAIL' then test_rc=test_packbad('NOTRAIL')
+  when test='PRODNAT' then test_rc=test_prod('NATIVE')
+  when test='PRODREXX' then test_rc=test_prod('REXX')
   otherwise test_rc=4
  end
  if test_rc=0 then do
@@ -674,3 +677,42 @@ do while off<=length(hex)
 end
 'EXEC GITPBUF FINAL'
 return rc
+
+/* Production entry-point routing gates with a real two-blob PACK. */
+test_prod:
+ procedure
+parse upper arg mode
+address command
+head='5041434B0000000200000002'
+one='337801010300FCFF616263024D0127'
+two='337801010300FCFF78797A02D7016C'
+sha='5F1C02695D4BC807AE4A5DD622AD1D28E7659429'
+'EXEC GITPBUF INIT'
+if rc\=0 then return rc
+'EXEC GITPBUF APPEND' head
+if rc\=0 then return rc
+'EXEC GITPBUF APPEND' one
+if rc\=0 then return rc
+'EXEC GITPBUF APPEND' two
+if rc\=0 then return rc
+'EXEC GITPBUF APPEND' sha
+if rc\=0 then return rc
+'EXEC GITPBUF FINAL'
+if rc\=0 then return rc
+if mode='NATIVE' then
+ 'EXEC GITP9PWK WALK QUIET NATIVE STRICT'
+else 'EXEC GITP9PWK WALK QUIET'
+walk_rc=rc
+if walk_rc\=0 then do
+ say 'PROD' mode 'walker failed RC' walk_rc
+ return 8
+end
+'EXEC GITOBUF READSTACK 0 3'
+if rc\=0 | queued()<1 then return 8
+parse pull h
+if h\='78797A' then do
+ say 'PROD' mode 'unexpected final object' h
+ return 8
+end
+say 'PROD' mode 'ENTRY-POINT ROUTING PASSED'
+return 0
