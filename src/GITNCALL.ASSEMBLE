@@ -4,6 +4,8 @@ GITNCALL CSECT
          LR    12,15
          ST    14,RETCALL
          LA    13,SAVE
+         MVI   ERRSTG,C'1'
+         MVI   ERRSTG,C'2'
          LA    1,PARAM
          L     15,=V(GITNAPI)
          BALR  14,15
@@ -22,6 +24,7 @@ GITNCALL CSECT
          ST    2,PARAM
          LA    2,14
          ST    2,PARAM+4
+         MVI   ERRSTG,C'3'
          LA    1,PARAM
          L     15,=V(GITNAPI)
          BALR  14,15
@@ -38,6 +41,7 @@ GITNCALL CSECT
 *
          LA    2,2
          ST    2,PARAM+12
+         MVI   ERRSTG,C'4'
          LA    1,PARAM
          L     15,=V(GITNAPI)
          BALR  14,15
@@ -54,6 +58,7 @@ GITNCALL CSECT
          ST    2,PARAM
          LA    2,11
          ST    2,PARAM+4
+         MVI   ERRSTG,C'5'
          LA    1,PARAM
          L     15,=V(GITNAPI)
          BALR  14,15
@@ -66,6 +71,7 @@ GITNCALL CSECT
 *
          LA    2,PAIR+11
          ST    2,PARAM
+         MVI   ERRSTG,C'6'
          LA    1,PARAM
          L     15,=V(GITNAPI)
          BALR  14,15
@@ -100,6 +106,7 @@ OUTPUT   DS    16C
 ZERO8    DC    8X'00'
 OKMSG    DC    C'GITNCALL: EXTERNAL NATIVE API PASSED'
 OKLEN    EQU   *-OKMSG
-ERRMSG   DC    C'GITNCALL: EXTERNAL NATIVE API FAILED'
+ERRMSG   DC    C'GITNCALL: EXTERNAL NATIVE API FAILED STAGE '
+ERRSTG   DC    C'?'
 ERRLEN   EQU   *-ERRMSG
          END   GITNCALL
