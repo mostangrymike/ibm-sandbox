@@ -361,6 +361,37 @@ APIDYLP  CLC   0(45,4),DYNLINE
          BZ    BADZLIB
          CLC   APITEST+16(8),ZERO8
          BNE   BADZLIB
+*
+* Reuse the same parameter block after errors. Confirm that a
+* later valid call overwrites stale state and handles trailing data.
+*
+         LA    2,ZTRAIL
+         ST    2,APITEST
+         LA    2,14
+         ST    2,APITEST+4
+         LA    2,APITEST
+         BAL   14,APICALL
+         LTR   15,15
+         BNZ   BADZLIB
+         CLC   APITEST+16(4),=F'3'
+         BNE   BADZLIB
+         CLC   APITEST+20(4),=F'11'
+         BNE   BADZLIB
+         L     4,=A(ABCOUT)
+         CLC   0(3,4),ABCDATA
+         BNE   BADZLIB
+         LA    2,ZPAIR+11
+         ST    2,APITEST
+         LA    2,11
+         ST    2,APITEST+4
+         LA    2,APITEST
+         BAL   14,APICALL
+         LTR   15,15
+         BNZ   BADZLIB
+         CLC   APITEST+16(4),=F'3'
+         BNE   BADZLIB
+         CLC   APITEST+20(4),=F'11'
+         BNE   BADZLIB
          LA    2,ZBADHDR
          LA    3,11
          L     4,=A(ABCOUT)
