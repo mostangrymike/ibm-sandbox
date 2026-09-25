@@ -391,6 +391,7 @@ INFDONE  L     6,OUTLEN
 INFERR   LA    15,8
          L     14,INFRET
          BR    14
+         LTORG
 *
 * FIXSYM decodes RFC1951 fixed literal/length symbols.
 * Canonical codes are compared after bit reversal.
@@ -455,6 +456,7 @@ FXERR    LA    15,8
 FXOK     SR    15,15
          L     14,SYMRET
          BR    14
+         LTORG
 *
 * DISTSYM: fixed distance tree has 5-bit codes, bit-reversed on wire.
 *
@@ -478,6 +480,7 @@ DSREV    SLL   5,1
 DSERR    LA    15,8
          L     14,SYMRET
          BR    14
+         LTORG
 *
 * DYNTREE builds RFC1951 dynamic code-length, literal, and distance
 * canonical tables. HUFFSYM uses count/symbol tables like puff.c.
@@ -624,6 +627,7 @@ DYLENDN  CLI   ALLLENS+256,X'00'
 DYNERR   LA    15,8
          L     14,DYNRET
          BR    14
+         LTORG
 *
 * HUFFBLD: R2 lengths, R3 count, R4 count[0..15], R5 symbols.
 * Reject oversubscribed codes. Incomplete sets remain decodable.
@@ -696,6 +700,7 @@ HBDONE   SR    15,15
 HBDERR   LA    15,8
          L     14,BLDRET
          BR    14
+         LTORG
 *
 * HUFFSYM: R2 selects CL=0, LL=1, DD=2. Returns symbol in R5.
 *
@@ -763,6 +768,7 @@ HSFOUND  L     8,HINDEX
          SR    15,15
          L     14,HUFRET
          BR    14
+         LTORG
 *
 * GETLEN/GETDIST implement RFC1951 base and extra-bit tables.
 *
@@ -802,6 +808,7 @@ GETDIST  ST    14,TABRET
 TABERR   LA    15,8
          L     14,TABRET
          BR    14
+         LTORG
 *
 * PUTBYTE writes output and mirrors it into the 32 KiB circular window.
 *
@@ -825,6 +832,7 @@ PUTBYTE  ST    14,PUTRET
 PUTERR   LA    15,8
          L     14,PUTRET
          BR    14
+         LTORG
 *
 * COPYRUN copies from circular history and permits overlap.
 *
@@ -854,6 +862,7 @@ COPYLP   L     6,DISTVAL
 COPYERR  LA    15,8
          L     14,COPYRET
          BR    14
+         LTORG
 *
 * GETBITS reads R2 bits LSB-first.  Value is returned in R5.
 *
