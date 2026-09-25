@@ -123,9 +123,11 @@ INFLATE  ST    14,INFRET
          LTR   15,15
          BNZ   INFERR
          LA    11,1
+         ST    11,INFMODE
          B     IFLOOP
-IFFIX    SR    11,11
-IFLOOP   LTR   11,11
+IFFIX    XC    INFMODE(4),INFMODE
+IFLOOP   L     11,INFMODE
+         LTR   11,11
          BNZ   IFDYSYM
          BAL   14,FIXSYM
          B     IFGOT
@@ -145,6 +147,7 @@ IFGOT    DS    0H
          LTR   15,15
          BNZ   INFERR
          ST    5,RUNLEN
+         L     11,INFMODE
          LTR   11,11
          BNZ   IFDYDST
          BAL   14,DISTSYM
@@ -518,8 +521,11 @@ HSLOOP   LA    2,1
          L     10,HFIRST
          LR    11,7
          SR    11,10
+         LTR   11,11
+         BM    HSNEXT
          CR    11,9
          BL    HSFOUND
+HSNEXT   DS    0H
          L     8,HINDEX
          AR    8,9
          ST    8,HINDEX
@@ -746,6 +752,7 @@ NTOTAL   DS    F
 DYIDX    DS    F
 PREVLEN  DS    F
 HLEN     DS    F
+INFMODE  DS    F
 HBCPTR   DS    F
 HBSPTR   DS    F
 HCPTR    DS    F
