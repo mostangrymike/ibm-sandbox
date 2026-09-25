@@ -25,14 +25,22 @@ do while copied<want
  end
  recno=recno+r.0
 end
-/* Reject any additional output records before touching GITOBUF. */
-drop r.
-'EXECIO 1 DISKR GITNOUT DATA A' recno '(STEM R. FINIS'
-if rc=0 & r.0>0 then do
- say 'GITNOUT: extra output records'
- exit 8
+/* Zero-byte native output may have no CMS DATA file at all. */
+/* For nonempty output, reject trailing records before publication. */
+checkextra=1
+if want=0 then do
+ 'STATE GITNOUT DATA A'
+ if rc\=0 then checkextra=0
 end
-if rc\=0 & rc\=2 then exit 8
+if checkextra then do
+ drop r.
+ 'EXECIO 1 DISKR GITNOUT DATA A' recno '(STEM R. FINIS'
+ if rc=0 & r.0>0 then do
+  say 'GITNOUT: extra output records'
+  exit 8
+ end
+ if rc\=0 & rc\=2 then exit 8
+end
 /* Preflight complete. Publish in 16-record batches. */
 'ERASE GITOBUF DATA A'
 i=1
