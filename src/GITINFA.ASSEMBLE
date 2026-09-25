@@ -296,13 +296,14 @@ DYNTREE  ST    14,DYNRET
 DYCLLP   L     6,DYIDX
          C     6,NCODE
          BNL   DYCLDN
-         LR    7,6
-         SLL   7,1
-         LH    8,CLORD(7)
          LA    2,3
          BAL   14,GETBITS
          LTR   15,15
          BNZ   DYNERR
+         L     6,DYIDX
+         LR    7,6
+         SLL   7,1
+         LH    8,CLORD(7)
          LA    7,CLLENS
          AR    7,8
          STC   5,0(7)
@@ -327,6 +328,7 @@ DYLENLP  L     6,DYIDX
          BAL   14,HUFFSYM
          LTR   15,15
          BNZ   DYNERR
+         L     6,DYIDX
          C     5,=F'15'
          BH    DYREPT
          LA    7,ALLLENS
@@ -345,11 +347,13 @@ DYREPT   C     5,=F'16'
          AR    8,7
          XR    9,9
          IC    9,0(8)
+         ST    9,PREVLEN
          LA    2,2
          BAL   14,GETBITS
          LTR   15,15
          BNZ   DYNERR
          A     5,=F'3'
+         L     9,PREVLEN
          B     DYFILL
 DYREP17  C     5,=F'17'
          BNE   DYREP18
@@ -368,7 +372,8 @@ DYREP18  C     5,=F'18'
          LTR   15,15
          BNZ   DYNERR
          A     5,=F'11'
-DYFILL   LR    7,6
+DYFILL   L     6,DYIDX
+         LR    7,6
          AR    7,5
          C     7,NTOTAL
          BH    DYNERR
@@ -497,6 +502,7 @@ HSINIT   ST    3,HCPTR
          XC    HFIRST(4),HFIRST
          XC    HINDEX(4),HINDEX
          LA    6,1
+         ST    6,HLEN
 HSLOOP   LA    2,1
          BAL   14,GETBITS
          LTR   15,15
@@ -505,6 +511,7 @@ HSLOOP   LA    2,1
          OR    7,5
          ST    7,HCODE
          L     3,HCPTR
+         L     6,HLEN
          LR    8,6
          SLL   8,2
          L     9,0(3,8)
@@ -522,6 +529,7 @@ HSLOOP   LA    2,1
          SLL   7,1
          ST    7,HCODE
          LA    6,1(6)
+         ST    6,HLEN
          C     6,=F'15'
          BNH   HSLOOP
 HSERR    LA    15,8
@@ -736,6 +744,8 @@ NDIST    DS    F
 NCODE    DS    F
 NTOTAL   DS    F
 DYIDX    DS    F
+PREVLEN  DS    F
+HLEN     DS    F
 HBCPTR   DS    F
 HBSPTR   DS    F
 HCPTR    DS    F
