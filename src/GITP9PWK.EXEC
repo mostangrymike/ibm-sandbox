@@ -4,6 +4,10 @@ if command\='WALK' then exit 4
 /* Accept WALK, WALK QUIET, WALK REXX, WALK QUIET REXX, */
 /* WALK NATIVE [STRICT], and WALK QUIET NATIVE [STRICT]. */
 if extra='NATIVE' | extra='REXX' then do
+ if mode='STRICT' & trailing='' then do
+  trailing='STRICT'
+  mode=''
+ end
  if mode\='' then exit 4
  mode=extra
  extra=''
