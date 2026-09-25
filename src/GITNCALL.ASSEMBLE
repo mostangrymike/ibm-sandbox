@@ -45,6 +45,38 @@ GITNCALL CSECT
          BZ    FAILED
          CLC   PARAM+16(8),ZERO8
          BNE   FAILED
+*
+* Bad Adler checksum must reject and clear result counts.
+*
+         LA    2,16
+         ST    2,PARAM+12
+         LA    2,BADSUM
+         ST    2,PARAM
+         LA    2,11
+         ST    2,PARAM+4
+         LA    1,PARAM
+         L     15,=V(GITNAPI)
+         BALR  14,15
+         LTR   15,15
+         BZ    FAILED
+         CLC   PARAM+16(8),ZERO8
+         BNE   FAILED
+*
+* Recover after error with second member of adjacent zlib pair.
+*
+         LA    2,PAIR+11
+         ST    2,PARAM
+         LA    1,PARAM
+         L     15,=V(GITNAPI)
+         BALR  14,15
+         LTR   15,15
+         BNZ   FAILED
+         CLC   PARAM+16(4),=F'3'
+         BNE   FAILED
+         CLC   PARAM+20(4),=F'11'
+         BNE   FAILED
+         CLC   OUTPUT(3),ABC
+         BNE   FAILED
          LINEWRT DATA=(OKMSG,OKLEN)
          SR    15,15
          B     EXIT
@@ -60,6 +92,9 @@ PARAM    DC    A(STREAM),F'11',A(OUTPUT),F'16'
          DC    F'0',F'0'
 STREAM   DC    X'789C4B4C4A0600024D0127'
 TRAIL    DC    X'789C4B4C4A0600024D0127AABBCC'
+BADSUM   DC    X'789C4B4C4A0600024D0126'
+PAIR     DC    X'789C4B4C4A0600024D0127'
+         DC    X'789C4B4C4A0600024D0127'
 ABC      DC    C'abc'
 OUTPUT   DS    16C
 ZERO8    DC    8X'00'
