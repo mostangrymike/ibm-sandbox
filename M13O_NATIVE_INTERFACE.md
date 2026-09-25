@@ -188,3 +188,11 @@ Default and explicit REXX dispatcher paths are target-proven for the
 synthetic 11-byte zlib member and three-byte ASCII abc output.
 This does not prove a native bridge, and production routing remains
 unchanged pending native assembler/file I/O integration and PACK tests.
+
+## M13Q extended negative gate, 2026-09-25 09:38:55
+
+The expanded M13QDISP regression passed on CMS. It verifies
+that an invalid dispatch mode is rejected without replacing the
+previously decoded three-byte output. M13P staging/output and
+M13Q guarded REXX dispatch are target-proven; native file-to-binary
+assembler bridging and production integration remain pending.
