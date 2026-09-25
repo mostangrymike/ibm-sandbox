@@ -9,6 +9,7 @@ end
 if extra \= '' & extra \= 'QUIET' then exit 4
 if mode \= '' & mode \= 'NATIVE' then exit 4
 quiet=(extra='QUIET')
+address command
 if mode = 'NATIVE' then do
  'STATE GITNDRV MODULE A'
  if rc \= 0 then do
@@ -16,13 +17,21 @@ if mode = 'NATIVE' then do
   exit 12
  end
 end
-address command
 call readhex 0,12
-if result='ERROR' then exit 8
+if result='ERROR' then do
+ say 'GITPNWLK: no readable finalized PACK in GITPBUF'
+ exit 8
+end
 hdr=result
-if substr(hdr,1,8)\='5041434B' then exit 8
+if substr(hdr,1,8)\='5041434B' then do
+ say 'GITPNWLK: GITPBUF does not contain a PACK header'
+ exit 8
+end
 version=x2d(substr(hdr,9,8)); objects=x2d(substr(hdr,17,8))
-if version\=2 then exit 8
+if version\=2 then do
+ say 'GITPNWLK: unsupported PACK version' version
+ exit 8
+end
 pos=12
 'EXEC GIT9CTX INIT'
 if rc\=0 then exit rc
