@@ -1,7 +1,7 @@
 GITINFA  CSECT
          USING GITINFA,12
          LR    12,15
-         LA    13,DATAORG
+         L     13,=A(DATAORG)
          USING DATAORG,13
          ST    14,RETADDR
 *
@@ -171,6 +171,7 @@ BADZLIB  LINEWRT DATA=(ZERR,ZERLEN)
          LA    15,8
 RETURN   L     14,RETADDR
          BR    14
+         LTORG
 *
 * ZINFLATE - bounded zlib wrapper with CMF/FLG and Adler32.
 * R2=input, R3=bytes, R4=output, R5=capacity.
@@ -259,6 +260,7 @@ ZADCMP   SLL   8,16
 ZFAIL    LA    15,8
          L     14,ZRET
          BR    14
+         LTORG
 *
 * INFLATE - raw DEFLATE core for native regression.
 * R2=input, R3=input bytes, R4=output, R5=output capacity.
