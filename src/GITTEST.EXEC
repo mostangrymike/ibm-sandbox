@@ -598,7 +598,7 @@ select
  end
  when which='BADOFS' then do
   /* OFS_DELTA at offset 12 references a nonexistent prior base. */
-  payload='5041434B0000000200000001'||
+  payload='5041434B0000000200000001'||,
     '660C7801010600F9FF03049003016402DB0100'
  end
  when which='BADPAY' then do
