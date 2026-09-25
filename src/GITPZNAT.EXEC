@@ -1,5 +1,5 @@
 /* M13Q guarded PACK inflation dispatch; native is never implicit. */
-/* TOOBUF zlib-offset [REXX|NATIVE]. Native requires GITNBRG. */
+/* TOOBUF zlib-offset [REXX|NATIVE]. Native requires GITNDRV. */
 /* Native bridge must queue consumed bytes then decoded bytes. */
 parse upper arg command offset mode extra
 if command \= 'TOOBUF' | extra \= '' |,
@@ -15,13 +15,11 @@ if mode = 'REXX' then do
  exit rc
 end
 /* Explicit native mode is fail-closed; never report a false decode. */
-'STATE GITNBRG MODULE A'
+'STATE GITNDRV MODULE A'
 if rc \= 0 then do
  say 'GITPZNAT: native bridge unavailable; use REXX'
  exit 12
 end
-/* Native bridge protocol: it must stage, decode and commit atomically.
-   Its REXX wrapper must reject incomplete member/capacity failures.
-   The bridge is deliberately not enabled in the PACK walker yet. */
+/* GITNBRG stages bounded input and validates the driver result. */
 'EXEC GITNBRG TOOBUF' offset
 exit rc
