@@ -24,10 +24,12 @@ INLOOP   FSREAD FSCB=INFSCB,FORM=E,ERROR=INEND
          LR    4,8
          BCTR  4,0
          LA    7,INREC
-TRIM     CLI   0(4,7),C' '
+         AR    7,4
+TRIM     CLI   0(7),C' '
          BNE   TRIMEND
          LTR   4,4
          BZ    IOFAIL
+         BCTR  7,0
          BCT   4,TRIM
          B     IOFAIL
 TRIMEND  LA    4,1(4)
