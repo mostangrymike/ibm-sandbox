@@ -187,6 +187,7 @@ ZINFLATE ST    14,ZRET
          SLL   7,8
          OR    7,8
          LR    8,7
+         SR    6,6
          D     6,=F'31'
          LTR   7,7
          BNZ   ZFAIL
