@@ -1,0 +1,43 @@
+/* M13S bounded native driver wrapper; fail closed until module exists. */
+/* TOOBUF offset stages at most 65536 compressed bytes. */
+/* GITNDRV MODULE must read GITNSTG DATA A, write GITNOUT DATA A */
+/* and GITNRES DATA A: RESULT rc used decoded. */
+parse upper arg command offset extra
+if command \= 'TOOBUF' | extra \= '' |,
+ datatype(offset,'W') \= 1 | offset < 0 then exit 4
+address command
+'STATE GITNDRV MODULE A'
+if rc \= 0 then do
+ say 'GITNBRG: GITNDRV MODULE is not installed'
+ exit 12
+end
+'EXEC GITNSTG STAGE' offset 65536
+if rc \= 0 | queued() < 2 then exit 8
+parse pull staged
+parse pull records
+if staged < 6 | staged > 65536 | records < 1 then exit 8
+/* Invalidate previous driver output so stale results cannot pass. */
+'ERASE GITNRES DATA A'
+'ERASE GITNOUT DATA A'
+'GITNDRV'
+if rc \= 0 then do
+ say 'GITNBRG: native driver returned' rc
+ exit 8
+end
+drop m.
+'EXECIO 1 DISKR GITNRES DATA A 1 (STEM M. FINIS'
+if rc \= 0 | m.0 \= 1 then exit 8
+parse var m.1 tag status used decoded extra
+if tag \= 'RESULT' | extra \= '' |,
+ datatype(status,'W') \= 1 | status \= 0 |,
+ datatype(used,'W') \= 1 | datatype(decoded,'W') \= 1 then exit 8
+if used < 6 | used > staged | decoded < 0 | decoded > 65536 then exit 8
+/* The driver has completed a zlib member; validate output before */
+/* publishing it into the shared object buffer. */
+'EXEC GITNOUT COMMIT' decoded
+if rc \= 0 | queued() < 1 then exit 8
+parse pull committed
+if committed \= decoded then exit 8
+queue used
+queue decoded
+exit 0
