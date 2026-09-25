@@ -305,6 +305,62 @@ APIDYLP  CLC   0(45,4),DYNLINE
          BNE   BADZLIB
          LA    4,45(4)
          BCT   9,APIDYLP
+*
+* Parameter-list failure matrix. Counts must remain zero for
+* invalid pointers, zero/negative sizes and corrupt streams.
+*
+         LA    2,ZTEST
+         ST    2,APITEST
+         LA    2,11
+         ST    2,APITEST+4
+         L     2,=A(ABCOUT)
+         ST    2,APITEST+8
+         LA    2,16
+         ST    2,APITEST+12
+         XC    APITEST(4),APITEST
+         LA    2,APITEST
+         BAL   14,APICALL
+         C     15,=F'4'
+         BNE   BADZLIB
+         CLC   APITEST+16(8),ZERO8
+         BNE   BADZLIB
+         LA    2,ZTEST
+         ST    2,APITEST
+         XC    APITEST+4(4),APITEST+4
+         LA    2,APITEST
+         BAL   14,APICALL
+         C     15,=F'4'
+         BNE   BADZLIB
+         CLC   APITEST+16(8),ZERO8
+         BNE   BADZLIB
+         LA    2,11
+         ST    2,APITEST+4
+         XC    APITEST+8(4),APITEST+8
+         LA    2,APITEST
+         BAL   14,APICALL
+         C     15,=F'4'
+         BNE   BADZLIB
+         CLC   APITEST+16(8),ZERO8
+         BNE   BADZLIB
+         L     2,=A(ABCOUT)
+         ST    2,APITEST+8
+         XC    APITEST+12(4),APITEST+12
+         LA    2,APITEST
+         BAL   14,APICALL
+         C     15,=F'4'
+         BNE   BADZLIB
+         CLC   APITEST+16(8),ZERO8
+         BNE   BADZLIB
+         LA    2,16
+         ST    2,APITEST+12
+         LA    2,ZBADSUM
+         ST    2,APITEST
+         LA    2,APITEST
+         BAL   14,APICALL
+         LTR   15,15
+         BZ    BADZLIB
+         CLC   APITEST+16(8),ZERO8
+         BNE   BADZLIB
          LA    2,ZBADHDR
          LA    3,11
          L     4,=A(ABCOUT)
