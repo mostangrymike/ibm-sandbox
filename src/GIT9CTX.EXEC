@@ -19,24 +19,34 @@ if cmd='SAVE' then do
  if word\='NEXT' | datatype(start,'W')\=1 then exit 8
  if datatype(idxrec,'W')\=1 then idxrec=0
  off=0; nrec=0
- /* Batch up to 16 records per CMS data-file write. */
+ /* Copy validated object records directly in bounded 16-record batches. */
+ /* Avoid one nested REXX EXEC per 64-byte record during SAVE. */
+ drop om.
+ 'EXECIO 1 DISKR GITOMETA DATA A 1 (STEM OM. FINIS'
+ if rc\=0 | om.0\=1 then exit 8
+ parse var om.1 otag osize otail ofinal oextra
+ if otag\='META' | osize\=n | otail\='-' |,
+  ofinal\='1' | oextra\='' then exit 8
  do while off<n
+  first=off%64+1
+  batch=(n-off+63)%64
+  if batch>16 then batch=16
   drop r.
-  r.0=0
-  do while off<n & r.0<16
-   take=n-off
-   if take>64 then take=64
-   'EXEC GITOBUF READSTACK' off take
-   if rc\=0 then exit 8
-   parse pull h
-   r.0=r.0+1
-   idx=r.0
-   r.idx=h
-   off=off+take
+  'EXECIO' batch 'DISKR GITOBUF DATA A' first,
+   '(STEM R. FINIS'
+  if rc\=0 | r.0\=batch then exit 8
+  do j=1 to batch
+   h=strip(r.j)
+   expected=n-off-(j-1)*64
+   if expected>64 then expected=64
+   if length(h)\=expected*2 |,
+    verify(h,'0123456789ABCDEF')\=0 then exit 8
+   r.j=h
   end
-  'EXECIO' r.0 'DISKW G9CDATA DATA A 0 (STEM R. FINIS'
+  'EXECIO' batch 'DISKW G9CDATA DATA A 0 (STEM R. FINIS'
   if rc\=0 then exit 8
-  nrec=nrec+r.0
+  nrec=nrec+batch
+  off=off+batch*64
  end
  r.1=key oid n otype start nrec; r.0=1
  'EXECIO 1 DISKW G9CIDX DATA A 0 (STEM R. FINIS'
