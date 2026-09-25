@@ -1,5 +1,5 @@
-/* Consolidated CMS native Git regression runner. */
-/* Existing individual test EXECs must already be installed. */
+/* Single-file CMS native Git regression suite: nine inline tests. */
+/* Requires production GITNDRV MODULE and production helper EXECs. */
 parse upper arg selection extra
 if extra \= '' then exit 4
 if selection = '' then selection = 'ALL'
@@ -17,8 +17,19 @@ do i=1 to words(names)
  test=word(names,i)
  if selection \= 'ALL' & selection \= test then iterate
  say '=== GITTEST START' test '==='
- 'EXEC' test
- test_rc=rc
+ test_rc=0
+ select
+  when test='M13TDRV' then test_rc=test_m13tdrv()
+  when test='M13UFAIL' then test_rc=test_m13ufail()
+  when test='M13VRECS' then test_rc=test_m13vrecs()
+  when test='M13WDYN' then test_rc=test_m13wdyn()
+  when test='M13XPACK' then test_rc=test_m13xpack()
+  when test='M13YPACK' then test_rc=test_m13ypack()
+  when test='M13ZPACK' then test_rc=test_m13zpack()
+  when test='M13AAREF' then test_rc=test_m13aaref()
+  when test='M13ABREF' then test_rc=test_m13abref()
+  otherwise test_rc=4
+ end
  if test_rc=0 then do
   passed=passed+1
   say '=== GITTEST PASS' test '==='
@@ -32,3 +43,368 @@ do i=1 to words(names)
 end
 say 'GITTEST SUMMARY:' passed 'PASSED,' failed 'FAILED'
 exit 0
+
+test_m13tdrv:
+ procedure
+/* M13T real CMS file I/O + native zlib end-to-end gate. */
+/* Requires GITNDRV MODULE built together with GITINFA. */
+address command
+'STATE GITNDRV MODULE A'
+if rc \= 0 then do
+ say 'M13T: GITNDRV MODULE missing'
+ return 12
+end
+'EXEC GITPBUF INIT'
+if rc \= 0 then return rc
+/* Two adjacent zlib members: abc, then abc. Only first is used. */
+'EXEC GITPBUF APPEND 789C4B4C4A0600024D0127'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 789C4B4C4A0600024D0127'
+if rc \= 0 then return rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then return rc
+'EXEC GITPZNAT TOOBUF 0 NATIVE'
+if rc \= 0 then return rc
+if queued() < 2 then return 8
+parse pull used
+parse pull decoded
+if used \= 11 | decoded \= 3 then do
+ say 'M13T: wrong native counts' used decoded
+ return 8
+end
+'EXEC GITOBUF READSTACK 0 3'
+if rc \= 0 | queued() < 1 then return 8
+parse pull h
+if h \= '616263' then do
+ say 'M13T: wrong decoded bytes' h
+ return 8
+end
+/* Verify the exact consumed count advances to the second member. */
+'EXEC GITPZNAT TOOBUF' used 'NATIVE'
+if rc \= 0 | queued() < 2 then return 8
+parse pull used2
+parse pull decoded2
+if used2 \= 11 | decoded2 \= 3 then return 8
+'EXEC GITOBUF READSTACK 0 3'
+if rc \= 0 | queued() < 1 then return 8
+parse pull h
+if h \= '616263' then return 8
+say 'M13T NATIVE CMS FILE BRIDGE PASSED'
+return 0
+
+
+test_m13ufail:
+ procedure
+/* M13U negative native bridge gate: corrupt Adler must fail closed. */
+/* Prior committed GITOBUF must survive a failed native decode. */
+address command
+'STATE GITNDRV MODULE A'
+if rc \= 0 then return 12
+'EXEC GITPBUF INIT'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 789C4B4C4A0600024D0127'
+if rc \= 0 then return rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then return rc
+'EXEC GITPZNAT TOOBUF 0 NATIVE'
+if rc \= 0 | queued() < 2 then return 8
+parse pull used
+parse pull decoded
+if used \= 11 | decoded \= 3 then return 8
+'EXEC GITOBUF READSTACK 0 3'
+if rc \= 0 | queued() < 1 then return 8
+parse pull h
+if h \= '616263' then return 8
+/* Same DEFLATE payload with an intentionally wrong Adler32. */
+'EXEC GITPBUF INIT'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 789C4B4C4A0600024D0128'
+if rc \= 0 then return rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then return rc
+'EXEC GITPZNAT TOOBUF 0 NATIVE'
+if rc = 0 then do
+ say 'M13U: corrupt Adler unexpectedly accepted'
+ return 8
+end
+if queued() \= 0 then do
+ say 'M13U: failed decode queued a result'
+ return 8
+end
+'EXEC GITOBUF READSTACK 0 3'
+if rc \= 0 | queued() < 1 then return 8
+parse pull h
+if h \= '616263' then do
+ say 'M13U: failed native decode changed prior output' h
+ return 8
+end
+say 'M13U CORRUPT ADLER FAIL-CLOSED PASSED'
+return 0
+
+
+test_m13vrecs:
+ procedure
+/* M13V: native multi-record input and output, stored DEFLATE. */
+/* 130 ASCII A bytes force 3 output records and 3 input records. */
+address command
+n = 130
+plain = copies('41',n)
+/* Adler32 of n copies of byte 65: s1=1+65*n; */
+/* s2=n+65*n*(n+1)/2, both modulo 65521. */
+s1 = (1 + 65*n) // 65521
+s2 = (n + 65*n*(n+1)%2) // 65521
+adler = d2x(s2,4)||d2x(s1,4)
+/* zlib 78 01, final stored block 01, LEN=0082, NLEN=FF7D. */
+stream = '78010182007DFF'||plain||adler
+if length(stream)%2 \= 141 then do
+ say 'M13V: internal fixture length mismatch'
+ return 8
+end
+'EXEC GITPBUF INIT'
+if rc \= 0 then return rc
+do p = 1 to length(stream) by 128
+ 'EXEC GITPBUF APPEND' substr(stream,p,128)
+ if rc \= 0 then return rc
+end
+'EXEC GITPBUF FINAL'
+if rc \= 0 then return rc
+'EXEC GITPZNAT TOOBUF 0 NATIVE'
+if rc \= 0 | queued() < 2 then return 8
+parse pull used
+parse pull decoded
+if used \= 141 | decoded \= n then do
+ say 'M13V: incorrect native counts' used decoded
+ return 8
+end
+/* Read in bounded chunks: a 260-character hex stack line can */
+/* exceed the CMS/REXX external data-queue record limit. */
+do offset = 0 to 128 by 64
+ take = 64
+ if offset + take > n then take = n - offset
+ 'EXEC GITOBUF READSTACK' offset take
+ if rc \= 0 | queued() < 1 then return 8
+ parse pull got
+ want = substr(plain,offset*2+1,take*2)
+ if got \= want then do
+  say 'M13V: output mismatch at chunk offset' offset
+  say 'M13V: expected chars' length(want) 'actual chars' length(got)
+  do i = 1 to length(want) by 2
+   if substr(got,i,2) \= substr(want,i,2) then do
+    say 'M13V: first mismatch byte' offset+(i+1)%2,
+        'expected' substr(want,i,2) 'got' substr(got,i,2)
+    leave
+   end
+  end
+  return 8
+ end
+end
+say 'M13V NATIVE MULTI-RECORD STORED DEFLATE PASSED'
+return 0
+
+
+test_m13wdyn:
+ procedure
+/* M13W: target native dynamic-Huffman 5400-byte output. */
+/* Fixture already exercised inside GITINFA regression. */
+address command
+stream = '78DAEDCA571180301445412B57016A628092D0792110',
+ || '9A7AB0C1CCF9DE759DD79AFB7A5495EC5C14ECD2',
+ || '90E7B8C90E9FB47F3C95CFADC6DA428E4C2693C9',
+ || '6432994C2693C96432994C2693FF9F5F412D92B2'
+line = '54686520717569636B2062726F776E20666F78206A756D70',
+ || '73206F76657220746865206C617A7920646F672E20'
+if length(stream) \= 164 | length(line) \= 90 then return 8
+'EXEC GITPBUF INIT'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND' substr(stream,1,128)
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND' substr(stream,129)
+if rc \= 0 then return rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then return rc
+'EXEC GITPZNAT TOOBUF 0 NATIVE'
+if rc \= 0 | queued() < 2 then return 8
+parse pull used
+parse pull decoded
+if used \= 82 | decoded \= 5400 then do
+ say 'M13W: wrong dynamic native counts' used decoded
+ return 8
+end
+/* 120 repetitions of the 45-byte sentence; read in */
+/* 45-byte chunks to stay within CMS stack record limits. */
+do i = 0 to 119
+ 'EXEC GITOBUF READSTACK' i*45 45
+ if rc \= 0 | queued() < 1 then return 8
+ parse pull got
+ if got \= line then do
+  say 'M13W: output mismatch at repetition' i
+  say 'M13W: expected' line
+  say 'M13W: got' got
+  return 8
+ end
+end
+say 'M13W NATIVE DYNAMIC HUFFMAN 5400-BYTE PASSED'
+return 0
+
+
+test_m13xpack:
+ procedure
+/* M13X: stage a minimal one-blob PACK and test native walker. */
+/* PACK v2, one BLOB of 3 bytes, zlib('abc'), 20-byte trailer. */
+/* Walker currently does not validate the trailing PACK checksum. */
+address command
+'EXEC GITPBUF INIT'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 5041434B000000020000000133789C4B4C4A0600024D0127'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 0000000000000000000000000000000000000000'
+if rc \= 0 then return rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then return rc
+'EXEC GITPNWLK WALK QUIET NATIVE'
+if rc \= 0 then do
+ say 'M13X: native PACK walker failed'
+ return rc
+end
+'EXEC GITOBUF READSTACK 0 3'
+if rc \= 0 | queued() < 1 then return 8
+parse pull h
+if h \= '616263' then do
+ say 'M13X: wrong blob content' h
+ return 8
+end
+say 'M13X NATIVE SINGLE-BLOB PACK WALK PASSED'
+return 0
+
+
+test_m13ypack:
+ procedure
+/* M13Y: two adjacent blob objects through native PACK walker. */
+/* Each blob is 'abc', encoded as 33 + 11-byte zlib member. */
+address command
+'EXEC GITPBUF INIT'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 5041434B000000020000000233789C4B4C4A0600024D0127'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 33789C4B4C4A0600024D0127'
+if rc \= 0 then return rc
+/* Placeholder trailer: isolated walker does not check PACK SHA-1. */
+'EXEC GITPBUF APPEND 0000000000000000000000000000000000000000'
+if rc \= 0 then return rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then return rc
+'EXEC GITPNWLK WALK QUIET NATIVE'
+if rc \= 0 then do
+ say 'M13Y: native two-object PACK walk failed'
+ return rc
+end
+'EXEC GITOBUF READSTACK 0 3'
+if rc \= 0 | queued() < 1 then return 8
+parse pull h
+if h \= '616263' then do
+ say 'M13Y: wrong final blob content' h
+ return 8
+end
+say 'M13Y NATIVE TWO-OBJECT PACK WALK PASSED'
+return 0
+
+
+test_m13zpack:
+ procedure
+/* M13Z: native PACK walker with an OFS_DELTA object. */
+/* Base blob abc at offset 12; delta appends d -> abcd. */
+/* Second entry starts at offset 24; OFS distance is 12. */
+address command
+'EXEC GITPBUF INIT'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 5041434B000000020000000233789C4B4C4A0600024D0127'
+if rc \= 0 then return rc
+/* OFS_DELTA size 6, distance 12, zlib stored block. */
+/* Delta: base 3, result 4, copy 3, insert d. */
+'EXEC GITPBUF APPEND 660C7801010600F9FF03049003016402DB0100'
+if rc \= 0 then return rc
+/* Placeholder trailer; this isolated walker does not check SHA-1. */
+'EXEC GITPBUF APPEND 0000000000000000000000000000000000000000'
+if rc \= 0 then return rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then return rc
+'EXEC GITPNWLK WALK QUIET NATIVE'
+if rc \= 0 then do
+ say 'M13Z: native OFS delta PACK walk failed'
+ return rc
+end
+'EXEC GITOBUF READSTACK 0 4'
+if rc \= 0 | queued() < 1 then return 8
+parse pull h
+if h \= '61626364' then do
+ say 'M13Z: reconstructed delta content mismatch' h
+ return 8
+end
+say 'M13Z NATIVE OFS DELTA PACK WALK PASSED'
+return 0
+
+
+test_m13aaref:
+ procedure
+/* M13AA: native PACK walker with REF_DELTA base by object ID. */
+/* Git blob SHA-1 for abc is f2ba8f84ab5c1bce84a7b441cb1959cfc7093b7f. */
+address command
+'EXEC GITPBUF INIT'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 5041434B000000020000000233789C4B4C4A0600024D0127'
+if rc \= 0 then return rc
+/* REF_DELTA type 7, six-byte delta, base object ID. */
+'EXEC GITPBUF APPEND 76F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 7801010600F9FF03049003016402DB0100'
+if rc \= 0 then return rc
+/* Placeholder PACK trailer; isolated walker does not verify SHA-1. */
+'EXEC GITPBUF APPEND 0000000000000000000000000000000000000000'
+if rc \= 0 then return rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then return rc
+'EXEC GITPNWLK WALK QUIET NATIVE'
+if rc \= 0 then do
+ say 'M13AA: native REF delta PACK walk failed'
+ return rc
+end
+'EXEC GITOBUF READSTACK 0 4'
+if rc \= 0 | queued() < 1 then return 8
+parse pull h
+if h \= '61626364' then do
+ say 'M13AA: reconstructed REF delta mismatch' h
+ return 8
+end
+say 'M13AA NATIVE REF DELTA PACK WALK PASSED'
+return 0
+
+
+test_m13abref:
+ procedure
+/* M13AB: unresolved REF_DELTA must fail closed. */
+/* First object abc; second references nonexistent all-zero OID. */
+address command
+'EXEC GITPBUF INIT'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 5041434B000000020000000233789C4B4C4A0600024D0127'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 760000000000000000000000000000000000000000'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 7801010600F9FF03049003016402DB0100'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 0000000000000000000000000000000000000000'
+if rc \= 0 then return rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then return rc
+'EXEC GITPNWLK WALK QUIET NATIVE'
+if rc = 0 then do
+ say 'M13AB: ERROR unresolved REF was accepted'
+ return 8
+end
+if rc \= 8 then do
+ say 'M13AB: unexpected failure RC' rc
+ return 8
+end
+say 'M13AB UNRESOLVED NATIVE REF FAIL-CLOSED PASSED'
+return 0
+
