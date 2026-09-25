@@ -35,6 +35,17 @@ if rc \= 0 | queued() < 1 then exit 8
 parse pull got
 if got \= plain then do
  say 'M13V: multi-record output mismatch'
+ say 'M13V: expected chars' length(plain) 'actual chars' length(got)
+ do i = 1 to length(plain) by 2
+  if substr(got,i,2) \= substr(plain,i,2) then do
+   say 'M13V: first mismatch byte' (i+1)%2,
+       'expected' substr(plain,i,2) 'got' substr(got,i,2)
+   leave
+  end
+ end
+ say 'M13V: first 16 bytes' substr(got,1,32)
+ say 'M13V: around 64-byte boundary' substr(got,121,32)
+ say 'M13V: around 128-byte boundary' substr(got,249,12)
  exit 8
 end
 say 'M13V NATIVE MULTI-RECORD STORED DEFLATE PASSED'
