@@ -207,3 +207,11 @@ three-byte decoded output, exact 11-byte compressed consumption,
 binary-to-EBCDIC-hex conversion, and invalid-digit rejection.
 The remaining task is CMS file I/O for staged input/output records;
 production PACK walking still uses GITPZBUF.
+
+## M13S missing-driver CMS gate, 2026-09-25 09:53:13
+
+M13SFAIL passed on CMS. Explicit NATIVE dispatch reported
+`GITPZNAT: native bridge unavailable; use REXX`; the regression
+confirmed that failure did not replace the existing decoded object.
+This establishes fail-closed behavior with GITNDRV MODULE absent.
+It does not establish driver CMS file I/O or native PACK integration.
