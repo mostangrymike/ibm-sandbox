@@ -1,0 +1,46 @@
+/* M13P native output commit and rejection regression. */
+address command
+'EXEC GITOBUF INIT'
+if rc \= 0 then exit rc
+'EXEC GITOBUF APPEND 616263'
+if rc \= 0 then exit rc
+'EXEC GITOBUF FINAL'
+if rc \= 0 then exit rc
+/* Malformed staging must preserve the existing object. */
+r.1 = '6162GG'
+r.0 = 1
+'EXECIO 1 DISKW GITNOUT DATA A 1 (STEM R. FINIS'
+if rc \= 0 then exit 8
+'EXEC GITNOUT COMMIT 3'
+if rc = 0 then exit 8
+call checkold
+if result \= 'OK' then exit 8
+/* Short staging must likewise preserve the old object. */
+r.1 = '6162'
+'EXECIO 1 DISKW GITNOUT DATA A 1 (STEM R. FINIS'
+if rc \= 0 then exit 8
+'EXEC GITNOUT COMMIT 3'
+if rc = 0 then exit 8
+call checkold
+if result \= 'OK' then exit 8
+/* Exact binary data can replace the object. */
+r.1 = '000102'
+'EXECIO 1 DISKW GITNOUT DATA A 1 (STEM R. FINIS'
+if rc \= 0 then exit 8
+'EXEC GITNOUT COMMIT 3'
+if rc \= 0 | queued() < 1 then exit 8
+parse pull got
+if got \= 3 then exit 8
+'EXEC GITOBUF READSTACK 0 3'
+if rc \= 0 | queued() < 1 then exit 8
+parse pull got
+if got \= '000102' then exit 8
+say 'M13P NATIVE OUTPUT COMMIT PASSED'
+exit 0
+
+checkold:
+ 'EXEC GITOBUF READSTACK 0 3'
+ if rc \= 0 | queued() < 1 then return 'ERROR'
+ parse pull got
+ if got \= '616263' then return 'ERROR'
+ return 'OK'
