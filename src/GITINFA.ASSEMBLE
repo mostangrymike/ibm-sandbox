@@ -105,12 +105,25 @@ DYNVLP   CLC   0(45,4),DYNLINE
          L     4,=A(ABCOUT)
          CLC   0(6,4),ABC6
          BNE   BADMULT
+         LA    2,ZTEST
+         LA    3,11
+         L     4,=A(ABCOUT)
+         LA    5,16
+         BAL   14,ZINFLATE
+         LTR   15,15
+         BNZ   BADZLIB
+         C     6,=F'3'
+         BNE   BADZLIB
+         L     4,=A(ABCOUT)
+         CLC   0(3,4),ABCDATA
+         BNE   BADZLIB
          LINEWRT DATA=(OKMSG,OKLEN)
          LINEWRT DATA=(FIXMSG,FIXLEN)
          LINEWRT DATA=(LZMSG,LZLEN)
          LINEWRT DATA=(DYNMSG,DYNLENM)
          LINEWRT DATA=(STMSG,STMLEN)
          LINEWRT DATA=(MBMSG,MBMLEN)
+         LINEWRT DATA=(ZMSG,ZMLEN)
          SR    15,15
          B     RETURN
 BADHIST  LINEWRT DATA=(HMSG,HMSGLEN)
@@ -139,10 +152,100 @@ BADSTORE LINEWRT DATA=(STERR,STERLEN)
          B     RETURN
 BADMULT  LINEWRT DATA=(MBERR,MBERLEN)
          LA    15,8
+         B     RETURN
+BADZLIB  LINEWRT DATA=(ZERR,ZERLEN)
+         LA    15,8
 RETURN   L     14,RETADDR
          BR    14
 *
-* INFLATE - fixed-Huffman raw DEFLATE for native-core regression.
+* ZINFLATE - bounded zlib wrapper with CMF/FLG and Adler32.
+* R2=input, R3=bytes, R4=output, R5=capacity.
+* No preset dictionaries. Checksum computed over decoded bytes.
+*
+ZINFLATE ST    14,ZRET
+         C     3,=F'6'
+         BL    ZFAIL
+         ST    2,ZPTR
+         ST    3,ZSIZE
+         ST    4,ZOUT
+         XR    7,7
+         IC    7,0(2)
+         LR    8,7
+         N     8,=F'15'
+         C     8,=F'8'
+         BNE   ZFAIL
+         SRL   7,4
+         C     7,=F'7'
+         BH    ZFAIL
+         XR    8,8
+         IC    8,1(2)
+         LR    9,8
+         N     9,=F'32'
+         BNZ   ZFAIL
+         SLL   7,4
+         LA    7,8(7)
+         SLL   7,8
+         OR    7,8
+         LR    8,7
+         D     6,=F'31'
+         LTR   7,7
+         BNZ   ZFAIL
+         L     2,ZPTR
+         LA    2,2(2)
+         L     3,ZSIZE
+         S     3,=F'6'
+         BAL   14,INFLATE
+         LTR   15,15
+         BNZ   ZFAIL
+         ST    6,ZLEN
+         LA    7,1
+         SR    8,8
+         L     4,ZOUT
+         SR    9,9
+ZADLOOP  C     9,ZLEN
+         BNL   ZADCMP
+         XR    10,10
+         IC    10,0(4,9)
+         AR    7,10
+         C     7,=F'65521'
+         BL    ZADSUM
+         S     7,=F'65521'
+ZADSUM   AR    8,7
+         C     8,=F'65521'
+         BL    ZADNEXT
+         S     8,=F'65521'
+ZADNEXT  LA    9,1(9)
+         B     ZADLOOP
+ZADCMP   SLL   8,16
+         OR    8,7
+         L     2,ZPTR
+         A     2,ZSIZE
+         SH    2,=H'4'
+         XR    9,9
+         IC    9,0(2)
+         SLL   9,8
+         XR    10,10
+         IC    10,1(2)
+         OR    9,10
+         SLL   9,8
+         XR    10,10
+         IC    10,2(2)
+         OR    9,10
+         SLL   9,8
+         XR    10,10
+         IC    10,3(2)
+         OR    9,10
+         CR    8,9
+         BNE   ZFAIL
+         L     6,ZLEN
+         SR    15,15
+         L     14,ZRET
+         BR    14
+ZFAIL    LA    15,8
+         L     14,ZRET
+         BR    14
+*
+* INFLATE - raw DEFLATE core for native regression.
 * R2=input, R3=input bytes, R4=output, R5=output capacity.
 * Returns R6=output bytes and R15=0.  Stage 3 rejects non-fixed blocks.
 *
@@ -801,10 +904,15 @@ STERR    DC    C'GITINFA: STORED BLOCK DECODE FAILED'
 STERLEN  EQU   *-STERR
 MBERR    DC    C'GITINFA: MIXED MULTIBLOCK DECODE FAILED'
 MBERLEN  EQU   *-MBERR
+ZMSG     DC    C'GITINFA: ZLIB HEADER AND ADLER32 PASSED'
+ZMLEN    EQU   *-ZMSG
+ZERR     DC    C'GITINFA: ZLIB HEADER OR ADLER32 FAILED'
+ZERLEN   EQU   *-ZERR
          DS    0F
 ABCFIX   DC    X'4B4C4A0600'
 ABCDATA  DC    X'616263'
 ABC6     DC    X'616263616263'
+ZTEST    DC    X'789C4B4C4A0600024D0127'
 STTEST   DC    X'010300FCFF616263'
 MBTEST   DC    X'000300FCFF6162634B4C4A0600'
 * zlib raw DEFLATE for 259 ASCII a bytes, fixed strategy fixture.
@@ -837,6 +945,11 @@ DSTEXT   DC    F'0',F'0',F'0',F'0',F'1',F'1',F'2',F'2'
          DC    F'3',F'3',F'4',F'4',F'5',F'5',F'6',F'6'
          DC    F'7',F'7',F'8',F'8',F'9',F'9',F'10',F'10'
          DC    F'11',F'11',F'12',F'12',F'13',F'13'
+ZRET     DS    F
+ZPTR     DS    F
+ZSIZE    DS    F
+ZOUT     DS    F
+ZLEN     DS    F
 RETADDR  DS    F
 INFRET   DS    F
 SYMRET   DS    F
