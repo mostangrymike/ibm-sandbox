@@ -1,0 +1,45 @@
+/* M13U negative native bridge gate: corrupt Adler must fail closed. */
+/* Prior committed GITOBUF must survive a failed native decode. */
+address command
+'STATE GITNDRV MODULE A'
+if rc \= 0 then exit 12
+'EXEC GITPBUF INIT'
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND 789C4B4C4A0600024D0127'
+if rc \= 0 then exit rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then exit rc
+'EXEC GITPZNAT TOOBUF 0 NATIVE'
+if rc \= 0 | queued() < 2 then exit 8
+parse pull used
+parse pull decoded
+if used \= 11 | decoded \= 3 then exit 8
+'EXEC GITOBUF READSTACK 0 3'
+if rc \= 0 | queued() < 1 then exit 8
+parse pull h
+if h \= '616263' then exit 8
+/* Same DEFLATE payload with an intentionally wrong Adler32. */
+'EXEC GITPBUF INIT'
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND 789C4B4C4A0600024D0128'
+if rc \= 0 then exit rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then exit rc
+'EXEC GITPZNAT TOOBUF 0 NATIVE'
+if rc = 0 then do
+ say 'M13U: corrupt Adler unexpectedly accepted'
+ exit 8
+end
+if queued() \= 0 then do
+ say 'M13U: failed decode queued a result'
+ exit 8
+end
+'EXEC GITOBUF READSTACK 0 3'
+if rc \= 0 | queued() < 1 then exit 8
+parse pull h
+if h \= '616263' then do
+ say 'M13U: failed native decode changed prior output' h
+ exit 8
+end
+say 'M13U CORRUPT ADLER FAIL-CLOSED PASSED'
+exit 0
