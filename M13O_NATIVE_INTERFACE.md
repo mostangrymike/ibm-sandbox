@@ -231,3 +231,13 @@ the module, validates the result and commits output through GITNOUT.
 CMS. Keep production PACK walking on REXX until this target gate and
 multi-record/native PACK regressions pass. A driver failure must not
 be treated as a successful native decode.
+
+## M13T clean assembly and link, 2026-09-25 10:30:55
+
+User confirmed GITNDRV assembled on CMS Assembler XF with no
+statements flagged, followed by successful `LOAD GITNDRV GITINFA`
+and `GENMOD GITNDRV`. This verifies syntax and linkage only;
+the FS-macro runtime path is not yet target-proven.
+`src/M13TDRV.EXEC` is the next gate: stage adjacent synthetic
+zlib members, execute explicit NATIVE twice at successive offsets,
+verify exact 11-byte consumption and three-byte decoded `616263`.
