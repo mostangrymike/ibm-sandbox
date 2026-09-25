@@ -117,6 +117,20 @@ DYNVLP   CLC   0(45,4),DYNLINE
          L     4,=A(ABCOUT)
          CLC   0(3,4),ABCDATA
          BNE   BADZLIB
+         LA    2,ZBADHDR
+         LA    3,11
+         L     4,=A(ABCOUT)
+         LA    5,16
+         BAL   14,ZINFLATE
+         LTR   15,15
+         BZ    BADZLIB
+         LA    2,ZBADSUM
+         LA    3,11
+         L     4,=A(ABCOUT)
+         LA    5,16
+         BAL   14,ZINFLATE
+         LTR   15,15
+         BZ    BADZLIB
          LINEWRT DATA=(OKMSG,OKLEN)
          LINEWRT DATA=(FIXMSG,FIXLEN)
          LINEWRT DATA=(LZMSG,LZLEN)
@@ -914,6 +928,8 @@ ABCFIX   DC    X'4B4C4A0600'
 ABCDATA  DC    X'616263'
 ABC6     DC    X'616263616263'
 ZTEST    DC    X'789C4B4C4A0600024D0127'
+ZBADHDR  DC    X'789D4B4C4A0600024D0127'
+ZBADSUM  DC    X'789C4B4C4A0600024D0126'
 STTEST   DC    X'010300FCFF616263'
 MBTEST   DC    X'000300FCFF6162634B4C4A0600'
 * zlib raw DEFLATE for 259 ASCII a bytes, fixed strategy fixture.
