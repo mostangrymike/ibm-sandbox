@@ -649,11 +649,14 @@ parse arg hex
 address command
 'ERASE GITHASH DATA A'
 off=1
+recno=1
 do while off<=length(hex)
  r.1=substr(hex,off,128)
  r.0=1
- 'EXECIO 1 DISKW GITHASH DATA A 0 (STEM R. FINIS'
+ 'EXECIO 1 DISKW GITHASH DATA A' recno,
+  '(STEM R. FINIS'
  if rc\=0 then return ''
+ recno=recno+1
  off=off+128
 end
 'MAKEBUF'
