@@ -1,4 +1,4 @@
-/* Single-file CMS native Git regression suite: nine inline tests. */
+/* Single-file CMS native Git regression suite. */
 /* Requires production GITNDRV MODULE and production helper EXECs. */
 parse upper arg selection extra
 if extra \= '' then exit 4
@@ -8,7 +8,7 @@ names='M13TDRV M13UFAIL M13VRECS M13WDYN',
       'M13ACSHA M13ADTRN M13AEBDY',
       'BADMAG BADVER ZEROOBJ MANYOBJ EXTRABY SHORTZL',
       'BADSIZE BADTYPE BADOFS BADPAY NOTRAIL',
-      'PRODNAT PRODREXX REALGIT'
+      'PRODNAT PRODREXX PRODDEF REALGIT'
 if selection \= 'ALL' & wordpos(selection,names)=0 then do
  say 'Usage: GITTEST ALL or GITTEST testname'
  say 'Tests:' names
@@ -48,6 +48,7 @@ do i=1 to words(names)
   when test='NOTRAIL' then test_rc=test_packbad('NOTRAIL')
   when test='PRODNAT' then test_rc=test_prod('NATIVE')
   when test='PRODREXX' then test_rc=test_prod('REXX')
+  when test='PRODDEF' then test_rc=test_prod('DEFAULT')
   when test='REALGIT' then test_rc=test_realgit()
   otherwise test_rc=4
  end
@@ -702,6 +703,8 @@ if rc\=0 then return rc
 if rc\=0 then return rc
 if mode='NATIVE' then
  'EXEC GITP9PWK WALK QUIET NATIVE STRICT'
+else if mode='REXX' then
+ 'EXEC GITP9PWK WALK QUIET REXX'
 else 'EXEC GITP9PWK WALK QUIET'
 walk_rc=rc
 if walk_rc\=0 then do
@@ -744,6 +747,8 @@ if rc\=0 then return rc
 'EXEC GITPSHA VERIFY'
 if rc\=0 then return rc
 'EXEC GITP9PWK WALK QUIET NATIVE STRICT'
+if rc\=0 then return rc
+'EXEC GITP9PWK WALK QUIET REXX'
 if rc\=0 then return rc
 'EXEC GITP9PWK WALK QUIET'
 if rc\=0 then return rc
