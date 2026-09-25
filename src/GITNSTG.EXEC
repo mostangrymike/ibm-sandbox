@@ -26,26 +26,43 @@ if avail > limit then avail = limit
 'ERASE GITNSMT DATA A'
 nrec = 0
 copied = 0
-/* Batch bounded staging writes to avoid one file open per record. */
+/* Read 16 contiguous PACK records per call instead of invoking */
+/* GITPBUF once per 64-byte staging record. Bound RAM to 1024 bytes. */
 do while copied < avail
+ sourceoff = offset + copied
+ first = sourceoff % 64 + 1
+ within = sourceoff // 64
+ take = avail - copied
+ if take > 1024-within then take = 1024-within
+ last = (sourceoff + take - 1) % 64 + 1
+ batch = last - first + 1
+ drop in.
+ 'EXECIO' batch 'DISKR GITPBUF PACK A' first,
+  '(STEM IN. FINIS'
+ if rc \= 0 | in.0 \= batch then exit 8
+ joined = ''
+ do i = 1 to batch
+  h = strip(in.i)
+  if h = '' | length(h) > 128 | length(h)//2 \= 0 |,
+   verify(h,'0123456789ABCDEF') \= 0 then exit 8
+  if i < batch & length(h) \= 128 then exit 8
+  joined = joined || h
+ end
+ if length(joined) < (within+take)*2 then exit 8
+ joined = substr(joined,within*2+1,take*2)
  drop r.
  r.0 = 0
- do while copied < avail & r.0 < 16
-  take = avail - copied
-  if take > 64 then take = 64
-  'EXEC GITPBUF READSTACK' offset+copied take
-  if rc \= 0 | queued() < 1 then exit 8
-  parse pull h
-  if length(h) \= take*2 |,
-   verify(h,'0123456789ABCDEF') \= 0 then exit 8
+ j = 1
+ do while j <= length(joined)
   r.0 = r.0 + 1
   idx = r.0
-  r.idx = h
-  copied = copied + take
+  r.idx = substr(joined,j,128)
+  j = j + 128
  end
  'EXECIO' r.0 'DISKW GITNSTG DATA A 0 (STEM R. FINIS'
  if rc \= 0 then exit 8
  nrec = nrec + r.0
+ copied = copied + take
 end
 m.1 = 'META' offset copied nrec
 m.0 = 1
