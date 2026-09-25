@@ -5,7 +5,9 @@ if extra \= '' then exit 4
 if selection = '' then selection = 'ALL'
 names='M13TDRV M13UFAIL M13VRECS M13WDYN',
       'M13XPACK M13YPACK M13ZPACK M13AAREF M13ABREF',
-      'M13ACSHA M13ADTRN M13AEBDY'
+      'M13ACSHA M13ADTRN M13AEBDY',
+      'BADMAG BADVER ZEROOBJ MANYOBJ EXTRABY SHORTZL',
+      'BADSIZE BADTYPE BADOFS BADPAY NOTRAIL'
 if selection \= 'ALL' & wordpos(selection,names)=0 then do
  say 'Usage: GITTEST ALL or GITTEST testname'
  say 'Tests:' names
@@ -32,6 +34,17 @@ do i=1 to words(names)
   when test='M13ACSHA' then test_rc=test_m13acsha()
   when test='M13ADTRN' then test_rc=test_m13adtrn()
   when test='M13AEBDY' then test_rc=test_m13aebdy()
+  when test='BADMAG' then test_rc=test_packbad('BADMAG')
+  when test='BADVER' then test_rc=test_packbad('BADVER')
+  when test='ZEROOBJ' then test_rc=test_packbad('ZEROOBJ')
+  when test='MANYOBJ' then test_rc=test_packbad('MANYOBJ')
+  when test='EXTRABY' then test_rc=test_packbad('EXTRABY')
+  when test='SHORTZL' then test_rc=test_packbad('SHORTZL')
+  when test='BADSIZE' then test_rc=test_packbad('BADSIZE')
+  when test='BADTYPE' then test_rc=test_packbad('BADTYPE')
+  when test='BADOFS' then test_rc=test_packbad('BADOFS')
+  when test='BADPAY' then test_rc=test_packbad('BADPAY')
+  when test='NOTRAIL' then test_rc=test_packbad('NOTRAIL')
   otherwise test_rc=4
  end
  if test_rc=0 then do
@@ -546,3 +559,128 @@ if bad_rc \= 8 then do
 end
 say 'M13AE STRICT OBJECT COUNT/BOUNDARY PASSED'
 return 0
+
+/* Additional strict and malformed PACK regression matrix. */
+/* All fixture creation and assertions remain inside GITTEST. */
+test_packbad:
+ procedure
+parse upper arg which
+address command
+head='5041434B0000000200000002'
+one='337801010300FCFF616263024D0127'
+two='337801010300FCFF78797A02D7016C'
+payload=head||one||two
+strict=1
+precheck=1
+select
+ when which='BADMAG' then do
+  payload='50414358'||substr(payload,9)
+  strict=0
+ end
+ when which='BADVER' then do
+  payload='5041434B00000003'||substr(payload,17)
+  strict=0
+ end
+ when which='ZEROOBJ' then
+  payload=left(payload,16)||'00000000'||substr(payload,25)
+ when which='MANYOBJ' then
+  payload=left(payload,16)||'00000003'||substr(payload,25)
+ when which='EXTRABY' then payload=payload||'00'
+ when which='SHORTZL' then
+  payload=left(payload,length(payload)-2)
+ when which='BADSIZE' then do
+  /* Header says blob size four; actual inflated bytes are three. */
+  payload=head||'34'||substr(one,3)||two
+ end
+ when which='BADTYPE' then do
+  /* Type five is reserved, so reject before inflation. */
+  payload=head||'53'||substr(one,3)||two
+ end
+ when which='BADOFS' then do
+  /* OFS_DELTA at offset 12 references a nonexistent prior base. */
+  payload='5041434B0000000200000001'||
+    '660C7801010600F9FF03049003016402DB0100'
+ end
+ when which='BADPAY' then do
+  /* Preserve original valid digest while modifying payload. */
+  payload=head||'337801010300FCFF616263024D0128'||two
+  precheck=0
+ end
+ when which='NOTRAIL' then do
+  /* No trailer; verifier must fail before object processing. */
+  payload=head||one||two
+  precheck=0
+ end
+ otherwise return 4
+end
+if which='BADPAY' then
+ sha='5F1C02695D4BC807AE4A5DD622AD1D28E7659429'
+else if which='NOTRAIL' then sha=''
+else do
+ sha=packhash(payload)
+ if length(sha)\=40 then do
+  say which 'fixture hash creation failed'
+  return 8
+ end
+end
+stage_rc=packstage(payload||sha)
+if stage_rc\=0 then return stage_rc
+if precheck then do
+ 'EXEC GITPSHA VERIFY'
+ if rc\=0 then do
+  say which 'fixture SHA-1 failed'
+  return 8
+ end
+end
+if strict then 'EXEC GITPNWLK WALK QUIET NATIVE STRICT'
+else 'EXEC GITPNWLK WALK QUIET NATIVE'
+walk_rc=rc
+if walk_rc\=8 then do
+ say which 'expected RC 8; got' walk_rc
+ return 8
+end
+say which 'PACK REJECTION PASSED'
+return 0
+
+/* Hash a bounded hex fixture using the existing CMS SHA-1. */
+packhash:
+ procedure
+parse arg hex
+address command
+'ERASE GITHASH DATA A'
+off=1
+do while off<=length(hex)
+ r.1=substr(hex,off,128)
+ r.0=1
+ 'EXECIO 1 DISKW GITHASH DATA A 0 (STEM R. FINIS'
+ if rc\=0 then return ''
+ off=off+128
+end
+'MAKEBUF'
+queue 'F'||right(d2x(length(hex)%2),8,'0')
+'GITSTRM'
+hash_rc=rc
+if hash_rc\=0 then do
+ 'DROPBUF'
+ return ''
+end
+parse pull digest
+'DROPBUF'
+return translate(digest)
+
+/* Stage a hex PACK in <=64-byte APPEND calls. */
+packstage:
+ procedure
+parse arg hex
+address command
+'EXEC GITPBUF INIT'
+if rc\=0 then return rc
+off=1
+do while off<=length(hex)
+ chunk=substr(hex,off,128)
+ 'EXEC GITPBUF APPEND' chunk
+ if rc\=0 then return rc
+ off=off+128
+end
+'EXEC GITPBUF FINAL'
+return rc
