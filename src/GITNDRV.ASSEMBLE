@@ -15,7 +15,8 @@ GITNDRV  CSECT
 * This is a first target assembly gate, NOT production enabled.
 *
          FSOPEN FSCB=INFSCB,OPENTYP=READ,FORM=E,ERROR=IOFAIL
-INLOOP   FSREAD FSCB=INFSCB,FORM=E,ERROR=INEND
+INLOOP   MVC   INREC(128),BLANKS
+         FSREAD FSCB=INFSCB,FORM=E,ERROR=INEND
          LA    4,127
 * Fixed buffer: trim trailing blanks to find hex record length.
          LA    7,INREC
