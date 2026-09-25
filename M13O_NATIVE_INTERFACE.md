@@ -277,3 +277,11 @@ bytes across three output records. `src/M13WDYN.EXEC` is next:
 it uses the existing 82-byte dynamic-Huffman fixture from GITINFA
 and checks all 5400 decoded bytes in 120 bounded 45-byte reads.
 Production PACK walker is still REXX until target validation.
+
+
+## M13 production native PACK milestone — 2026-09-25
+- CMS GITTEST ALL passed 27 PASSED, 0 FAILED after promotion.
+- Production GITP9PWK defaults WALK / WALK QUIET to native STRICT; WALK REXX / WALK QUIET REXX retains original implementation.
+- Consolidated GITTEST tests malformed streams, PACK headers, deltas, SHA1/trailer and boundary validation, production routing, and a Git-generated five-object PACK through both routes.
+- This does not establish performance or full traversal of captured 340027-byte / 1808-object live GitHub PACK.
+- NEXT: benchmark and validate native-default walker against already captured live PACK in GITPBUF if still available. Do not repeat network POST just to benchmark. Record progress, object count, time and failures; retain REXX fallback. Investigate GIT9CTX indexing and per-object CMS I/O if throughput inadequate.
