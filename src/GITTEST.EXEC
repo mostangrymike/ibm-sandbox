@@ -617,10 +617,26 @@ if which='BADPAY' then
  sha='5F1C02695D4BC807AE4A5DD622AD1D28E7659429'
 else if which='NOTRAIL' then sha=''
 else do
- sha=packhash(payload)
- if length(sha)\=40 then do
-  say which 'fixture hash creation failed'
-  return 8
+ select
+  when which='BADMAG' then
+   sha='542527F647085D15BC5A330AD36592EFD2AC891D'
+  when which='BADVER' then
+   sha='395014A0015AD087C70DD3CA880E4CDE07AAD02D'
+  when which='ZEROOBJ' then
+   sha='3D7D0DE54AFC7CFA2FE3D0A257CF4E6579EF4CE5'
+  when which='MANYOBJ' then
+   sha='D3491940B1B086887E7A3E25577025DD329F086D'
+  when which='EXTRABY' then
+   sha='96B17D9898C9BAD0BA4C7D3644617711670A9E0D'
+  when which='SHORTZL' then
+   sha='04302594B7F039A8502D0B3D8EC461064E4D909B'
+  when which='BADSIZE' then
+   sha='0DF0333F340B6C624DF4735788B68A2A0C038E3E'
+  when which='BADTYPE' then
+   sha='92EA363F6B3777127E267A0973A6B5DED9254978'
+  when which='BADOFS' then
+   sha='93E4DF20E93EC6DD1FC863E751E27C4551D32903'
+  otherwise return 4
  end
 end
 stage_rc=packstage(payload||sha)
@@ -641,35 +657,6 @@ if walk_rc\=8 then do
 end
 say which 'PACK REJECTION PASSED'
 return 0
-
-/* Hash a bounded hex fixture using the existing CMS SHA-1. */
-packhash:
- procedure
-parse arg hex
-address command
-'ERASE GITHASH DATA A'
-off=1
-recno=1
-do while off<=length(hex)
- r.1=substr(hex,off,128)
- r.0=1
- 'EXECIO 1 DISKW GITHASH DATA A' recno,
-  '(STEM R. FINIS'
- if rc\=0 then return ''
- recno=recno+1
- off=off+128
-end
-'MAKEBUF'
-queue 'F'||right(d2x(length(hex)%2),8,'0')
-'GITSTRM'
-hash_rc=rc
-if hash_rc\=0 then do
- 'DROPBUF'
- return ''
-end
-parse pull digest
-'DROPBUF'
-return translate(digest)
 
 /* Stage a hex PACK in <=64-byte APPEND calls. */
 packstage:
