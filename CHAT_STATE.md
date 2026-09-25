@@ -624,3 +624,12 @@ response bytes through GIT11HTP and the existing M10/M9 transport/PACK pipeline.
   present on target.
 - NEXT: M13 PACK/object performance. Preserve bounded storage semantics. Focus
   first on GIT9CTX linear index lookup and repeated EXECIO/file open-close work.
+
+
+## M13N native DEFLATE checkpoint — 2026-09-25
+- Target z/VM Assembler XF assembled src/GITINFA.ASSEMBLE without flagged statements; LOAD, GENMOD and M13NTEST all succeeded at 08:35:53.
+- Native 32 KiB history, fixed Huffman literals and LZ77, dynamic Huffman with full 5400-byte output comparison, stored blocks, mixed multiblock, zlib CMF/FLG and Adler-32, and malformed-stream tests all passed.
+- Malformed tests reject truncated DEFLATE, insufficient output capacity, invalid stored LEN/NLEN, and reserved BTYPE. zlib negative tests reject invalid FCHECK and checksum.
+- Source checkpoint: commit f47289d7c6ac82eba7cbba0cf5d06d944391ebaf. Two code bases (R12 initial 4K, R1 second 4K), local LTORG pools, and R13 DATAORG base are required to assemble the expanded module.
+- Current GITINFA is a standalone self-test MODULE, not yet a callable PACK inflater. GITPBUF READSTACK returns hexadecimal text and GITINFA consumes native binary bytes. The integration needs an explicit binary-safe bridge and bounded output contract; do not substitute an unbounded REXX hex string for a 340027-byte PACK.
+- NEXT: inspect M13M/M13N and bounded GITPBUF callers, design a native callable interface and an isolated CMS integration test on small real PACK/zlib objects. Retain target-proven REXX fallback and existing M13NTEST. Do not claim live PACK acceleration until it is tested on CMS.
