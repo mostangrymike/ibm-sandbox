@@ -267,3 +267,13 @@ stored block containing 130 `A` bytes, requiring multiple staged
 input and output records; verifies 141 consumed, 130 decoded, and
 all output bytes. Production PACK remains on REXX until larger
 and real PACK native tests pass.
+
+## M13V passed; M13W dynamic gate, 2026-09-25 10:52:06
+
+User confirmed `M13VRECS` passed after comparing output in
+bounded 64/64/2-byte reads. The native file bridge successfully
+staged a 141-byte stored zlib stream and committed 130 decoded
+bytes across three output records. `src/M13WDYN.EXEC` is next:
+it uses the existing 82-byte dynamic-Huffman fixture from GITINFA
+and checks all 5400 decoded bytes in 120 bounded 45-byte reads.
+Production PACK walker is still REXX until target validation.
