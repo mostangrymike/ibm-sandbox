@@ -18,6 +18,17 @@ drop r.
 'EXECIO 1 DISKR GITNSTG DATA A 1 (STEM R. FINIS'
 if rc \= 0 | r.0 \= 1 then exit 8
 if strip(r.1) \= '0C0D0E0F000102030405060708090A0B' then exit 8
+/* Multi-record staging preserves every 64-byte boundary. */
+'EXEC GITNSTG STAGE 0 80'
+if rc \= 0 | queued() < 2 then exit 8
+parse pull bytes
+parse pull records
+if bytes \= 80 | records \= 2 then exit 8
+drop r.
+'EXECIO 2 DISKR GITNSTG DATA A 1 (STEM R. FINIS'
+if rc \= 0 | r.0 \= 2 then exit 8
+if strip(r.1) \= copies(part,8) then exit 8
+if strip(r.2) \= part then exit 8
 'EXEC GITNSTG STAGE 76 16'
 if rc \= 0 | queued() < 2 then exit 8
 parse pull bytes
