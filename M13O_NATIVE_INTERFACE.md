@@ -164,3 +164,19 @@ The original M13PSTG and M13POUT target regressions passed at
 metadata-tail handling and a mistaken test expectation. These
 results establish the bounded REXX staging adapters, not the
 assembler transport or native PACK routing.
+
+## M13P expanded gate and M13Q guarded dispatcher
+
+M13PSTG expanded 80-byte two-record staging regression passed on CMS
+at 09:33:33 2026-09-25, following fixes to the finalized metadata
+tail sentinel and test's expected 64-byte first record. M13POUT
+previously passed on CMS at 09:26:52. Both adapters are target-proven.
+
+M13Q adds GITPZNAT TOOBUF offset [REXX|NATIVE] as an isolated
+explicit dispatcher; default REXX forwards to proven GITPZBUF.
+NATIVE requires a GITNBRG MODULE and its wrapper, neither of which
+is implemented. M13QDISP verifies a synthetic 11-byte zlib member
+expands to binary abc and consumes exactly 11 bytes via default
+and explicit REXX dispatch. M13QDISP is not yet CMS-tested.
+No production PACK walker route is changed. Do not enable native
+routing until the assembler bridge and real PACK regression pass.
