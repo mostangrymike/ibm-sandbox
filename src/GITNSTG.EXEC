@@ -1,0 +1,46 @@
+/* M13P native adapter staging: bounded zlib input records. */
+/* STAGE offset limit copies at most limit bytes into GITNSTG DATA A. */
+/* Records are binary hex, at most 64 bytes each. No full PACK string. */
+parse upper arg command offset limit extra
+if command \= 'STAGE' | extra \= '' |,
+ datatype(offset,'W') \= 1 | datatype(limit,'W') \= 1 then do
+ say 'Usage: GITNSTG STAGE byte-offset max-bytes'
+ exit 4
+end
+if offset < 0 | limit < 6 | limit > 65536 then exit 4
+address command
+drop m.
+'EXECIO 1 DISKR GITPMETA PACK A 1 (STEM M. FINIS'
+if rc \= 0 | m.0 \= 1 then exit 8
+parse var m.1 tag total tail final extra
+if tag \= 'META' | extra \= '' | final \= 1 |,
+ datatype(total,'W') \= 1 then exit 8
+if offset >= total then exit 8
+avail = total - offset
+if avail > limit then avail = limit
+'ERASE GITNSTG DATA A'
+'ERASE GITNSMT DATA A'
+nrec = 0
+copied = 0
+do while copied < avail
+ take = avail - copied
+ if take > 64 then take = 64
+ 'EXEC GITPBUF READSTACK' offset+copied take
+ if rc \= 0 | queued() < 1 then exit 8
+ parse pull h
+ if length(h) \= take*2 |,
+ verify(h,'0123456789ABCDEF') \= 0 then exit 8
+ nrec = nrec + 1
+ r.1 = h
+ r.0 = 1
+ 'EXECIO 1 DISKW GITNSTG DATA A 0 (STEM R. FINIS'
+ if rc \= 0 then exit 8
+ copied = copied + take
+end
+m.1 = 'META' offset copied nrec
+m.0 = 1
+'EXECIO 1 DISKW GITNSMT DATA A 1 (STEM M. FINIS'
+if rc \= 0 then exit 8
+queue copied
+queue nrec
+exit 0
