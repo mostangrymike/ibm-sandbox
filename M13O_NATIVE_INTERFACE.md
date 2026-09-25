@@ -81,3 +81,11 @@ code bases and DATAORG base, and dispatches to APICALL. This external
 entry has **not yet passed target assembly or a separate caller test**.
 It is nonreentrant. It is not yet a CMS REXX command, nor connected
 to GITPBUF/GITOBUF; retain the REXX PACK path.
+
+## External entry XF assembler correction
+
+First target assembly flagged BASR as undefined at the new GITNAPI
+entry. Commit 40fc0479 replaces it with BALR 12,0 and fixes the
+external entry's restore path: restore R0-R12 and R14 from the caller
+save area without overwriting R15, which carries the API status.
+This correction requires CMS target assembly and runtime validation.
