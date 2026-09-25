@@ -453,9 +453,10 @@ if rc \= 0 then return rc
 'EXEC GITPBUF FINAL'
 if rc \= 0 then return rc
 'EXEC GITPNWLK WALK QUIET NATIVE STRICT'
-if rc \= 8 then do
+strict_rc=rc
+if strict_rc = 8 then do
  say 'M13AC VALID/CORRUPT PACK SHA-1 STRICT PASSED'
  return 0
 end
-say 'M13AC: corrupt PACK trailer unexpected RC' rc
+say 'M13AC: corrupt PACK trailer unexpected RC' strict_rc
 return 8
