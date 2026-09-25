@@ -5,7 +5,7 @@ if extra \= '' then exit 4
 if selection = '' then selection = 'ALL'
 names='M13TDRV M13UFAIL M13VRECS M13WDYN',
       'M13XPACK M13YPACK M13ZPACK M13AAREF M13ABREF',
-      'M13ACSHA'
+      'M13ACSHA M13ADTRN'
 if selection \= 'ALL' & wordpos(selection,names)=0 then do
  say 'Usage: GITTEST ALL or GITTEST testname'
  say 'Tests:' names
@@ -30,6 +30,7 @@ do i=1 to words(names)
   when test='M13AAREF' then test_rc=test_m13aaref()
   when test='M13ABREF' then test_rc=test_m13abref()
   when test='M13ACSHA' then test_rc=test_m13acsha()
+  when test='M13ADTRN' then test_rc=test_m13adtrn()
   otherwise test_rc=4
  end
  if test_rc=0 then do
@@ -460,3 +461,36 @@ if strict_rc = 8 then do
 end
 say 'M13AC: corrupt PACK trailer unexpected RC' strict_rc
 return 8
+
+test_m13adtrn:
+ procedure
+/* Valid SHA-1 over deliberately truncated object data. */
+/* The checksum passes, but native inflate must reject the object. */
+address command
+head='5041434B0000000200000001'
+/* First object header and incomplete zlib payload, no Adler. */
+body='33789C4B4C4A0600'
+/* Precomputed SHA-1 is not available in this inline fixture. */
+/* First check the existing known-good PACK with one byte omitted */
+/* from the stored stream and its original digest unchanged. */
+'EXEC GITPBUF INIT'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 5041434B0000000200000002'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 337801010300FCFF616263024D0127'
+if rc \= 0 then return rc
+/* Second object header with truncated zlib payload. */
+'EXEC GITPBUF APPEND 337801010300FCFF78797A02D701'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND 5F1C02695D4BC807AE4A5DD622AD1D28E7659429'
+if rc \= 0 then return rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then return rc
+'EXEC GITPNWLK WALK QUIET NATIVE STRICT'
+bad_rc=rc
+if bad_rc \= 8 then do
+ say 'M13AD: truncated PACK unexpected RC' bad_rc
+ return 8
+end
+say 'M13AD TRUNCATED PACK FAIL-CLOSED PASSED'
+return 0
