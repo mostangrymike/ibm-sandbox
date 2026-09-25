@@ -1,7 +1,7 @@
 /* M13N native DEFLATE core regression. */
 address command
-say 'M13N: native window, bits, fixed Huffman, and LZ77'
+say 'M13N: window, fixed/dynamic Huffman, stored and mixed blocks'
 'GITINFA'
 if rc \= 0 then exit rc
-say 'M13N NATIVE FIXED DEFLATE CORE PASSED'
+say 'M13N NATIVE DEFLATE CORE PASSED'
 exit 0
