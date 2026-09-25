@@ -1,6 +1,7 @@
 /* M13X opt-in native PACK walker; REXX default. */
 parse upper arg command extra mode trailing
-if command \= 'WALK' | trailing \= '' then exit 4
+if command \= 'WALK' then exit 4
+if trailing \= '' & trailing \= 'STRICT' then exit 4
 /* Explicit NATIVE mode only; existing WALK and WALK QUIET stay REXX. */
 if extra = 'NATIVE' & mode = '' then do
  mode = 'NATIVE'
@@ -8,6 +9,7 @@ if extra = 'NATIVE' & mode = '' then do
 end
 if extra \= '' & extra \= 'QUIET' then exit 4
 if mode \= '' & mode \= 'NATIVE' then exit 4
+strict=(trailing='STRICT')
 quiet=(extra='QUIET')
 address command
 if mode = 'NATIVE' then do
@@ -31,6 +33,19 @@ version=x2d(substr(hdr,9,8)); objects=x2d(substr(hdr,17,8))
 if version\=2 then do
  say 'GITPNWLK: unsupported PACK version' version
  exit 8
+end
+if strict then do
+ 'EXEC GITPSHA VERIFY'
+ if rc \= 0 then do
+  say 'GITPNWLK: PACK integrity verification failed'
+  exit 8
+ end
+ drop sm.
+ 'EXECIO 1 DISKR GITPMETA PACK A 1 (STEM SM. FINIS'
+ if rc \= 0 | sm.0 \= 1 then exit 8
+ parse var sm.1 smtag smsize smtail smfinal smextra
+ if smtag \= 'META' | datatype(smsize,'W') \= 1 then exit 8
+ expectedend=smsize-20
 end
 pos=12
 'EXEC GIT9CTX INIT'
@@ -178,6 +193,10 @@ do entry=1 to objects
  end
  else exit 8
  if quiet then say 'PACK ENTRY DONE' entry 'NEXT' pos
+end
+if strict & pos \= expectedend then do
+ say 'GITPNWLK: object boundary/trailer mismatch' pos expectedend
+ exit 8
 end
 say 'PACK VERSION' version
 say 'PACK OBJECTS' objects
