@@ -134,6 +134,34 @@ DYNVLP   CLC   0(45,4),DYNLINE
          BAL   14,ZINFLATE
          LTR   15,15
          BZ    BADZLIB
+         LA    2,ABCFIX
+         LA    3,2
+         L     4,=A(ABCOUT)
+         LA    5,16
+         BAL   14,INFLATE
+         LTR   15,15
+         BZ    BADNEG
+         LA    2,ABCFIX
+         LA    3,5
+         L     4,=A(ABCOUT)
+         LA    5,2
+         BAL   14,INFLATE
+         LTR   15,15
+         BZ    BADNEG
+         LA    2,STBAD
+         LA    3,8
+         L     4,=A(ABCOUT)
+         LA    5,16
+         BAL   14,INFLATE
+         LTR   15,15
+         BZ    BADNEG
+         LA    2,RSVTEST
+         LA    3,1
+         L     4,=A(ABCOUT)
+         LA    5,16
+         BAL   14,INFLATE
+         LTR   15,15
+         BZ    BADNEG
          LINEWRT DATA=(OKMSG,OKLEN)
          LINEWRT DATA=(FIXMSG,FIXLEN)
          LINEWRT DATA=(LZMSG,LZLEN)
@@ -141,6 +169,7 @@ DYNVLP   CLC   0(45,4),DYNLINE
          LINEWRT DATA=(STMSG,STMLEN)
          LINEWRT DATA=(MBMSG,MBMLEN)
          LINEWRT DATA=(ZMSG,ZMLEN)
+         LINEWRT DATA=(NEGMSG,NEGLEN)
          SR    15,15
          B     RETURN
 BADHIST  LINEWRT DATA=(HMSG,HMSGLEN)
@@ -172,6 +201,9 @@ BADMULT  LINEWRT DATA=(MBERR,MBERLEN)
          B     RETURN
 BADZLIB  LINEWRT DATA=(ZERR,ZERLEN)
          LA    15,8
+BADNEG   LINEWRT DATA=(NEGERR,NERLEN)
+         LA    15,8
+         B     RETURN
 RETURN   L     14,RETADDR
          BR    14
          LTORG
@@ -937,6 +969,10 @@ ZMSG     DC    C'GITINFA: ZLIB HEADER AND ADLER32 PASSED'
 ZMLEN    EQU   *-ZMSG
 ZERR     DC    C'GITINFA: ZLIB HEADER OR ADLER32 FAILED'
 ZERLEN   EQU   *-ZERR
+NEGMSG   DC    C'GITINFA: MALFORMED STREAM TESTS PASSED'
+NEGLEN   EQU   *-NEGMSG
+NEGERR   DC    C'GITINFA: MALFORMED STREAM TESTS FAILED'
+NERLEN   EQU   *-NEGERR
          DS    0F
 ABCFIX   DC    X'4B4C4A0600'
 ABCDATA  DC    X'616263'
@@ -945,6 +981,8 @@ ZTEST    DC    X'789C4B4C4A0600024D0127'
 ZBADHDR  DC    X'789D4B4C4A0600024D0127'
 ZBADSUM  DC    X'789C4B4C4A0600024D0126'
 STTEST   DC    X'010300FCFF616263'
+STBAD    DC    X'010300FDFF616263'
+RSVTEST  DC    X'07'
 MBTEST   DC    X'000300FCFF6162634B4C4A0600'
 * zlib raw DEFLATE for 259 ASCII a bytes, fixed strategy fixture.
 REPTEST  DC    X'4B1C05000000'
