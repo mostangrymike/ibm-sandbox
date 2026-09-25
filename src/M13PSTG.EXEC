@@ -1,0 +1,33 @@
+/* M13P bounded staging regression, uses a synthetic PACK buffer. */
+address command
+'EXEC GITPBUF INIT'
+if rc \= 0 then exit rc
+part = '000102030405060708090A0B0C0D0E0F'
+do i = 1 to 5
+ 'EXEC GITPBUF APPEND' part
+ if rc \= 0 then exit rc
+end
+'EXEC GITPBUF FINAL'
+if rc \= 0 then exit rc
+'EXEC GITNSTG STAGE 60 16'
+if rc \= 0 | queued() < 2 then exit 8
+parse pull bytes
+parse pull records
+if bytes \= 16 | records \= 1 then exit 8
+drop r.
+'EXECIO 1 DISKR GITNSTG DATA A 1 (STEM R. FINIS'
+if rc \= 0 | r.0 \= 1 then exit 8
+if strip(r.1) \= '0C0D0E0F000102030405060708090A0B' then exit 8
+'EXEC GITNSTG STAGE 76 16'
+if rc \= 0 | queued() < 2 then exit 8
+parse pull bytes
+parse pull records
+if bytes \= 4 | records \= 1 then exit 8
+drop r.
+'EXECIO 1 DISKR GITNSTG DATA A 1 (STEM R. FINIS'
+if rc \= 0 | r.0 \= 1 then exit 8
+if strip(r.1) \= '0C0D0E0F' then exit 8
+'EXEC GITNSTG STAGE 80 16'
+if rc = 0 then exit 8
+say 'M13P BOUNDED NATIVE STAGING PASSED'
+exit 0
