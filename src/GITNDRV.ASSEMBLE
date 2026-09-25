@@ -26,10 +26,11 @@ INLOOP   FSREAD FSCB=INFSCB,FORM=E,ERROR=INEND
          BCTR  4,0
 TRIM     CLI   INREC(4),C' '
          BNE   TRIMEND
+         LTR   4,4
+         BZ    IOFAIL
          BCT   4,TRIM
          B     IOFAIL
 TRIMEND  LA    4,1(4)
-         TM    INREC+127,X'00'
          LR    5,4
          N     5,=F'1'
          BNZ   IOFAIL
@@ -221,7 +222,7 @@ USED     DC    F'0'
 CURPOS   DC    F'0'
 HEXDIG   DC    C'0123456789ABCDEF'
 BLANKS   DC    CL128' '
-BLANKMVC MVC   0(1,7),0(7)
+BLANKMVC MVC   0(1,7),BLANKS
 DECBUF   DS    CL10
 INREC    DS    CL128
 OUTREC   DS    CL128
