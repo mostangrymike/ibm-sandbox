@@ -30,23 +30,27 @@ if used \= 141 | decoded \= n then do
  say 'M13V: incorrect native counts' used decoded
  exit 8
 end
-'EXEC GITOBUF READSTACK 0' n
-if rc \= 0 | queued() < 1 then exit 8
-parse pull got
-if got \= plain then do
- say 'M13V: multi-record output mismatch'
- say 'M13V: expected chars' length(plain) 'actual chars' length(got)
- do i = 1 to length(plain) by 2
-  if substr(got,i,2) \= substr(plain,i,2) then do
-   say 'M13V: first mismatch byte' (i+1)%2,
-       'expected' substr(plain,i,2) 'got' substr(got,i,2)
-   leave
+/* Read in bounded chunks: a 260-character hex stack line can */
+/* exceed the CMS/REXX external data-queue record limit. */
+do offset = 0 to 128 by 64
+ take = 64
+ if offset + take > n then take = n - offset
+ 'EXEC GITOBUF READSTACK' offset take
+ if rc \= 0 | queued() < 1 then exit 8
+ parse pull got
+ want = substr(plain,offset*2+1,take*2)
+ if got \= want then do
+  say 'M13V: output mismatch at chunk offset' offset
+  say 'M13V: expected chars' length(want) 'actual chars' length(got)
+  do i = 1 to length(want) by 2
+   if substr(got,i,2) \= substr(want,i,2) then do
+    say 'M13V: first mismatch byte' offset+(i+1)%2,
+        'expected' substr(want,i,2) 'got' substr(got,i,2)
+    leave
+   end
   end
+  exit 8
  end
- say 'M13V: first 16 bytes' substr(got,1,32)
- say 'M13V: around 64-byte boundary' substr(got,121,32)
- say 'M13V: around 128-byte boundary' substr(got,249,12)
- exit 8
 end
 say 'M13V NATIVE MULTI-RECORD STORED DEFLATE PASSED'
 exit 0
