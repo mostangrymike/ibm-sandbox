@@ -53,3 +53,20 @@ These source changes require the next CMS assembler/runtime gate.
 
 External CMS command/stack I/O and bounded PACK input/output record
 transport remain unimplemented; the existing REXX path is unchanged.
+
+## 08:54:54 CMS gate and next batch
+
+CMS confirmed the APICALL parameter-list implementation and 5400-byte
+adapter regression. The next code batch expands negative tests for
+null input/output pointers, zero input/output lengths, corrupt Adler-32,
+zeroed result fields on every failure, and recovery by reusing the same
+parameter block for valid trailing-data and adjacent-stream calls.
+
+APICALL is currently an **internal** assembler subroutine with static
+DATAORG state; it is not reentrant and has no external CMS entry point.
+Do not route production PACK traffic through it until a callable CMS
+module and bounded transport exist. The next implementation should
+introduce an external entry with standard CMS register preservation,
+plus a separate caller regression, then connect GITPBUF/GITOBUF
+64-byte records without whole-PACK REXX strings. Retain the current
+GITPZBUF/GITPSTRM fallback throughout.
