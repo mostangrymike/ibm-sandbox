@@ -25,3 +25,13 @@ Next: implement a separate callable CMS adapter and isolated
 small-PACK fixture, preserving the standalone GITINFA test.
 Then opt in at GITPZBUF with fallback. Do not claim live
 PACK acceleration until tested on CMS.
+
+## 2026-09-25 larger regression batch
+
+Target confirmed the consumed-byte and trailing-data gate at 08:48:48.
+Next source batch adds adjacent 11-byte zlib streams, truncated body and
+trailer, insufficient output capacity, bad checksum with trailing data,
+and a 5400-byte dynamic-Huffman zlib fixture with exact full-output,
+82-byte consumed-length, and capacity checks. These additions are
+committed but not yet target-proven. They exercise the stream boundary
+and bounded decoding contract before exposing a callable adapter.
