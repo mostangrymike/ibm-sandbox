@@ -1,31 +1,50 @@
-/* M13P validate and commit bounded native hex output to GITOBUF. */
-/* GITNOUT DATA A holds at most 64 decoded bytes per record. */
-parse upper arg command length extra
+/* M13P transactional native output adapter. */
+/* Validate every bounded hex record before replacing GITOBUF. */
+parse upper arg command want extra
 if command \= 'COMMIT' | extra \= '' |,
- datatype(length,'W') \= 1 | length < 0 then do
- say 'Usage: GITNOUT COMMIT output-bytes'
+ datatype(want,'W') \= 1 | want < 0 | want > 65536 then do
+ say 'Usage: GITNOUT COMMIT output-bytes-0-to-65536'
  exit 4
 end
 address command
-'EXEC GITOBUF INIT'
-if rc \= 0 then exit 8
+/* Preflight: reject short, oversized, malformed and extra records. */
 copied = 0
 recno = 1
-do while copied < length
- drop r.
- 'EXECIO 1 DISKR GITNOUT DATA A' recno '(STEM R. FINIS'
- if rc \= 0 | r.0 \= 1 then exit 8
- h = strip(r.1)
- if h = '' | length(h) > 128 | length(h)//2 \= 0 |,
- verify(h,'0123456789ABCDEF') \= 0 then exit 8
- take = length(h)%2
- if copied + take > length then exit 8
- 'EXEC GITOBUF APPEND' h
- if rc \= 0 then exit 8
+do while copied < want
+ call readrec recno
+ if result = 'ERROR' then exit 8
+ take = length(result)%2
+ if copied + take > want then exit 8
  copied = copied + take
  recno = recno + 1
+end
+/* Require exact length, including zero-length output. */
+drop r.
+'EXECIO 1 DISKR GITNOUT DATA A' recno '(STEM R. FINIS'
+if rc = 0 & r.0 > 0 then do
+ say 'GITNOUT: extra output records'
+ exit 8
+end
+/* Only now replace the prior reconstructed object. */
+'EXEC GITOBUF INIT'
+if rc \= 0 then exit 8
+do i = 1 to recno - 1
+ call readrec i
+ if result = 'ERROR' then exit 8
+ 'EXEC GITOBUF APPEND' result
+ if rc \= 0 then exit 8
 end
 'EXEC GITOBUF FINAL'
 if rc \= 0 then exit 8
 queue copied
 exit 0
+
+readrec: procedure
+ parse arg n
+ drop r.
+ 'EXECIO 1 DISKR GITNOUT DATA A' n '(STEM R. FINIS'
+ if rc \= 0 | r.0 \= 1 then return 'ERROR'
+ h = strip(r.1)
+ if h = '' | length(h) > 128 | length(h)//2 \= 0 |,
+    verify(h,'0123456789ABCDEF') \= 0 then return 'ERROR'
+ return h
