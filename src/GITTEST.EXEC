@@ -1,0 +1,34 @@
+/* Consolidated CMS native Git regression runner. */
+/* Existing individual test EXECs must already be installed. */
+parse upper arg selection extra
+if extra \= '' then exit 4
+if selection = '' then selection = 'ALL'
+names='M13TDRV M13UFAIL M13VRECS M13WDYN',
+      'M13XPACK M13YPACK M13ZPACK M13AAREF M13ABREF'
+if selection \= 'ALL' & wordpos(selection,names)=0 then do
+ say 'Usage: GITTEST ALL or GITTEST testname'
+ say 'Tests:' names
+ exit 4
+end
+address command
+passed=0
+failed=0
+do i=1 to words(names)
+ test=word(names,i)
+ if selection \= 'ALL' & selection \= test then iterate
+ say '=== GITTEST START' test '==='
+ 'EXEC' test
+ test_rc=rc
+ if test_rc=0 then do
+  passed=passed+1
+  say '=== GITTEST PASS' test '==='
+ end
+ else do
+  failed=failed+1
+  say '=== GITTEST FAIL' test 'RC' test_rc '==='
+  say 'GITTEST SUMMARY:' passed 'PASSED,' failed 'FAILED'
+  exit test_rc
+ end
+end
+say 'GITTEST SUMMARY:' passed 'PASSED,' failed 'FAILED'
+exit 0
