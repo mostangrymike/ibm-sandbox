@@ -75,6 +75,9 @@ INEND    C     15,=F'12'
          BALR  14,15
          LTR   15,15
          BNZ   APIERR
+* GITNAPI writes results into PARAM+16 and PARAM+20.
+         MVC   OUTLEN(4),PARAM+16
+         MVC   USED(4),PARAM+20
          L     5,OUTLEN
          C     5,=F'65536'
          BH    BADOUT
