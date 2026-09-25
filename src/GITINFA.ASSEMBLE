@@ -128,6 +128,20 @@ DYNVLP   CLC   0(45,4),DYNLINE
          L     4,=A(ABCOUT)
          CLC   0(3,4),ABCDATA
          BNE   BADZLIB
+         LA    2,ZTRAIL
+         LA    3,14
+         L     4,=A(ABCOUT)
+         LA    5,16
+         BAL   14,ZINFLATE
+         LTR   15,15
+         BNZ   BADZLIB
+         C     6,=F'3'
+         BNE   BADZLIB
+         C     7,=F'11'
+         BNE   BADZLIB
+         L     4,=A(ABCOUT)
+         CLC   0(3,4),ABCDATA
+         BNE   BADZLIB
          LA    2,ZBADHDR
          LA    3,11
          L     4,=A(ABCOUT)
@@ -281,9 +295,12 @@ ZADNEXT  LA    9,1(9)
          B     ZADLOOP
 ZADCMP   SLL   8,16
          OR    8,7
+         L     2,ZUSED
+         C     2,ZSIZE
+         BH    ZFAIL
          L     2,ZPTR
-         A     2,ZSIZE
-         SH    2,=H'4'
+         A     2,BITUSED
+         LA    2,2(2)
          XR    9,9
          IC    9,0(2)
          SLL   9,8
@@ -995,6 +1012,7 @@ ABCFIX   DC    X'4B4C4A0600'
 ABCDATA  DC    X'616263'
 ABC6     DC    X'616263616263'
 ZTEST    DC    X'789C4B4C4A0600024D0127'
+ZTRAIL   DC    X'789C4B4C4A0600024D0127AABBCC'
 ZBADHDR  DC    X'789D4B4C4A0600024D0127'
 ZBADSUM  DC    X'789C4B4C4A0600024D0126'
 STTEST   DC    X'010300FCFF616263'
