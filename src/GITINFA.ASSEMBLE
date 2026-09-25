@@ -142,6 +142,67 @@ DYNVLP   CLC   0(45,4),DYNLINE
          L     4,=A(ABCOUT)
          CLC   0(3,4),ABCDATA
          BNE   BADZLIB
+*
+* PACK boundary gate: two adjacent zlib streams. The first call
+* must stop at its own Adler32; the second starts at byte 11.
+*
+         LA    2,ZPAIR
+         LA    3,22
+         L     4,=A(ABCOUT)
+         LA    5,16
+         BAL   14,ZINFLATE
+         LTR   15,15
+         BNZ   BADZLIB
+         C     6,=F'3'
+         BNE   BADZLIB
+         C     7,=F'11'
+         BNE   BADZLIB
+         LA    2,ZPAIR+11
+         LA    3,11
+         L     4,=A(ABCOUT)
+         LA    5,16
+         BAL   14,ZINFLATE
+         LTR   15,15
+         BNZ   BADZLIB
+         C     6,=F'3'
+         BNE   BADZLIB
+         C     7,=F'11'
+         BNE   BADZLIB
+         L     4,=A(ABCOUT)
+         CLC   0(3,4),ABCDATA
+         BNE   BADZLIB
+*
+* Bounded zlib failure cases: truncated header/trailer, too-small
+* output, and corrupt checksum with trailing PACK data.
+*
+         LA    2,ZTEST
+         LA    3,5
+         L     4,=A(ABCOUT)
+         LA    5,16
+         BAL   14,ZINFLATE
+         LTR   15,15
+         BZ    BADZLIB
+         LA    2,ZTEST
+         LA    3,10
+         L     4,=A(ABCOUT)
+         LA    5,16
+         BAL   14,ZINFLATE
+         LTR   15,15
+         BZ    BADZLIB
+         LA    2,ZTEST
+         LA    3,11
+         L     4,=A(ABCOUT)
+         LA    5,2
+         BAL   14,ZINFLATE
+         LTR   15,15
+         BZ    BADZLIB
+         LA    2,ZBADTL
+         LA    3,14
+         L     4,=A(ABCOUT)
+         LA    5,16
+         BAL   14,ZINFLATE
+         LTR   15,15
+         BZ    BADZLIB
          LA    2,ZBADHDR
          LA    3,11
          L     4,=A(ABCOUT)
@@ -233,7 +294,8 @@ RETURN   L     14,RETADDR
 *
 * ZINFLATE - bounded zlib wrapper with CMF/FLG and Adler32.
 * R2=input, R3=bytes, R4=output, R5=capacity.
-* No preset dictionaries. Checksum computed over decoded bytes.
+* No preset dictionaries. R7=total consumed bytes on success.
+* Checksum computed over decoded bytes, not trailing PACK data.
 *
 ZINFLATE ST    14,ZRET
          C     3,=F'6'
@@ -329,7 +391,7 @@ ZFAIL    LA    15,8
 *
 * INFLATE - raw DEFLATE core for native regression.
 * R2=input, R3=input bytes, R4=output, R5=output capacity.
-* Returns R6=output bytes and R15=0.  Stage 3 rejects non-fixed blocks.
+* Success: R6=output bytes, R7=compressed bytes, R15=0.
 *
 INFLATE  ST    14,INFRET
          ST    2,INPTR
@@ -1013,6 +1075,8 @@ ABCDATA  DC    X'616263'
 ABC6     DC    X'616263616263'
 ZTEST    DC    X'789C4B4C4A0600024D0127'
 ZTRAIL   DC    X'789C4B4C4A0600024D0127AABBCC'
+ZPAIR    DC    X'789C4B4C4A0600024D0127789C4B4C4A0600024D0127'
+ZBADTL   DC    X'789C4B4C4A0600024D0126AABBCC'
 ZBADHDR  DC    X'789D4B4C4A0600024D0127'
 ZBADSUM  DC    X'789C4B4C4A0600024D0126'
 STTEST   DC    X'010300FCFF616263'
