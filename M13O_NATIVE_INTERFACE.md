@@ -196,3 +196,14 @@ that an invalid dispatch mode is rejected without replacing the
 previously decoded three-byte output. M13P staging/output and
 M13Q guarded REXX dispatch are target-proven; native file-to-binary
 assembler bridging and production integration remain pending.
+
+## M13R native hex/ABI CMS gate, 2026-09-25 09:43:44
+
+GITNHEX assembled under Assembler XF without flagged statements,
+linked with GITINFA, generated a CMS module and printed
+`GITNHEX: HEX/BINARY NATIVE ABI PASSED`. The test covers
+EBCDIC hex-to-binary conversion, external GITNAPI invocation,
+three-byte decoded output, exact 11-byte compressed consumption,
+binary-to-EBCDIC-hex conversion, and invalid-digit rejection.
+The remaining task is CMS file I/O for staged input/output records;
+production PACK walking still uses GITPZBUF.
