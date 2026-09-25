@@ -30,7 +30,8 @@ if cmd='SAVE' then do
    if rc\=0 then exit 8
    parse pull h
    r.0=r.0+1
-   r.r.0=h
+   idx=r.0
+   r.idx=h
    off=off+take
   end
   'EXECIO' r.0 'DISKW G9CDATA DATA A 0 (STEM R. FINIS'
