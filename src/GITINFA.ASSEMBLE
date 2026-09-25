@@ -203,6 +203,34 @@ DYNVLP   CLC   0(45,4),DYNLINE
          BAL   14,ZINFLATE
          LTR   15,15
          BZ    BADZLIB
+*
+* Dynamic Huffman zlib gate: 5400 bytes, 76-byte DEFLATE body.
+* Verify complete output and total 82-byte stream consumption.
+*
+         LA    2,ZDYTEST
+         LA    3,82
+         L     4,=A(DYNOUT)
+         L     5,DYNOCAP
+         BAL   14,ZINFLATE
+         LTR   15,15
+         BNZ   BADZLIB
+         C     6,DYNOEXP
+         BNE   BADZLIB
+         C     7,=F'82'
+         BNE   BADZLIB
+         L     4,=A(DYNOUT)
+         LA    9,120
+ZDYNVLP  CLC   0(45,4),DYNLINE
+         BNE   BADZLIB
+         LA    4,45(4)
+         BCT   9,ZDYNVLP
+         LA    2,ZDYTEST
+         LA    3,82
+         L     4,=A(DYNOUT)
+         LA    5,100
+         BAL   14,ZINFLATE
+         LTR   15,15
+         BZ    BADZLIB
          LA    2,ZBADHDR
          LA    3,11
          L     4,=A(ABCOUT)
@@ -1077,6 +1105,10 @@ ZTEST    DC    X'789C4B4C4A0600024D0127'
 ZTRAIL   DC    X'789C4B4C4A0600024D0127AABBCC'
 ZPAIR    DC    X'789C4B4C4A0600024D0127789C4B4C4A0600024D0127'
 ZBADTL   DC    X'789C4B4C4A0600024D0126AABBCC'
+ZDYTEST  DC    X'78DAEDCA571180301445412B57016A628092D0792110'
+         DC    X'9A7AB0C1CCF9DE759DD79AFB7A5495EC5C14ECD2'
+         DC    X'90E7B8C90E9FB47F3C95CFADC6DA428E4C2693C9'
+         DC    X'6432994C2693C96432994C2693FF9F5F412D92B2'
 ZBADHDR  DC    X'789D4B4C4A0600024D0127'
 ZBADSUM  DC    X'789C4B4C4A0600024D0126'
 STTEST   DC    X'010300FCFF616263'
