@@ -1,0 +1,31 @@
+/* M13P validate and commit bounded native hex output to GITOBUF. */
+/* GITNOUT DATA A holds at most 64 decoded bytes per record. */
+parse upper arg command length extra
+if command \= 'COMMIT' | extra \= '' |,
+ datatype(length,'W') \= 1 | length < 0 then do
+ say 'Usage: GITNOUT COMMIT output-bytes'
+ exit 4
+end
+address command
+'EXEC GITOBUF INIT'
+if rc \= 0 then exit 8
+copied = 0
+recno = 1
+do while copied < length
+ drop r.
+ 'EXECIO 1 DISKR GITNOUT DATA A' recno '(STEM R. FINIS'
+ if rc \= 0 | r.0 \= 1 then exit 8
+ h = strip(r.1)
+ if h = '' | length(h) > 128 | length(h)//2 \= 0 |,
+ verify(h,'0123456789ABCDEF') \= 0 then exit 8
+ take = length(h)%2
+ if copied + take > length then exit 8
+ 'EXEC GITOBUF APPEND' h
+ if rc \= 0 then exit 8
+ copied = copied + take
+ recno = recno + 1
+end
+'EXEC GITOBUF FINAL'
+if rc \= 0 then exit 8
+queue copied
+exit 0
