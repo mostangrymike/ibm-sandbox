@@ -215,3 +215,19 @@ M13SFAIL passed on CMS. Explicit NATIVE dispatch reported
 confirmed that failure did not replace the existing decoded object.
 This establishes fail-closed behavior with GITNDRV MODULE absent.
 It does not establish driver CMS file I/O or native PACK integration.
+
+## M13T CMS FS-macro driver (first target assembly gate)
+
+`src/GITNDRV.ASSEMBLE` now implements the bounded file bridge:
+read `GITNSTG DATA A1` variable hex records using FSOPEN/FSREAD,
+validate/convert to at most 65536 compressed bytes, call the external
+`GITNAPI` six-fullword interface, convert decoded bytes into fixed
+128-character `GITNOUT DATA A1` records, and write a fixed result
+record `RESULT 0 used decoded` to `GITNRES DATA A1` using FSWRITE.
+The REXX `GITNBRG` adapter stages, invalidates stale results, invokes
+the module, validates the result and commits output through GITNOUT.
+
+**Unverified**: the new driver has not been assembled or executed on
+CMS. Keep production PACK walking on REXX until this target gate and
+multi-record/native PACK regressions pass. A driver failure must not
+be treated as a successful native decode.
