@@ -100,3 +100,34 @@ failure with zeroed result counts. This separate assembler CSECT is
 intended to link with GITINFA TEXT, not to replace GITINFA's built-in
 selftest. Both the external caller and its linkage remain untested on
 CMS; assemble both and validate the load/link sequence on target.
+
+## 09:18:58 CMS external linkage gate PASSED
+
+CMS Assembler XF assembled GITNCALL without flagged statements;
+LOAD GITNCALL GITINFA and GENMOD GITNCALL succeeded. Executing
+GITNCALL printed GITNCALL: EXTERNAL NATIVE API PASSED. All five
+independent caller cases passed: valid abc, trailing PACK bytes,
+insufficient output capacity, corrupted Adler checksum, and recovery
+with the second of two adjacent zlib members. The first external
+caller data comparison initially used EBCDIC C'abc'; commit e19cc16
+corrected the expected binary bytes to X'616263'. External API
+is now target-proven; PACK transport remains unimplemented.
+
+## Native PACK integration boundary
+
+The existing GITP9PWK WALK invokes GITPZBUF TOOBUF at each zlib
+offset for ordinary, OFS_DELTA and REF_DELTA entries. Its contract
+is two queued decimal lines: consumed zlib bytes and output bytes.
+GITPBUF READSTACK exposes finalized PACK bytes as hex, up to 64
+bytes per record; GITOBUF INIT/APPEND/FINAL accepts the same bounded
+hex record size. Preserve these interfaces, avoid assembling an
+entire PACK in REXX, and do not enable native routing by default.
+
+The next native transport must provide bounded binary conversion,
+respect available PACK input length and the output capacity, and
+commit GITOBUF only after a successful decode. GITNAPI currently
+requires its complete zlib member in addressable memory and a
+preallocated output buffer; it is not yet a streaming decoder.
+A 340027-byte, 1808-object PACK must not be loaded into one REXX
+string. Do not claim streaming/native PACK acceleration until a
+bounded native transport and its real-PACK gate pass.
