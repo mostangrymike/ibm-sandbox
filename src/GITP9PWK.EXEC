@@ -1,18 +1,24 @@
-/* M9P consolidated bounded PACK walker, isolated from M9K. */
+/* Production PACK walker: native STRICT by default; REXX explicit. */
 parse upper arg command extra mode trailing
-/* Opt-in native path delegates to the independently tested walker. */
-if mode='NATIVE' then do
- if trailing\='' & trailing\='STRICT' then exit 4
- if extra\='' & extra\='QUIET' then exit 4
- if command\='WALK' then exit 4
+if command\='WALK' then exit 4
+/* Accept WALK, WALK QUIET, WALK REXX, WALK QUIET REXX, */
+/* WALK NATIVE [STRICT], and WALK QUIET NATIVE [STRICT]. */
+if extra='NATIVE' | extra='REXX' then do
+ if mode\='' then exit 4
+ mode=extra
+ extra=''
+end
+if extra\='' & extra\='QUIET' then exit 4
+if mode\='' & mode\='NATIVE' & mode\='REXX' then exit 4
+if trailing\='' & trailing\='STRICT' then exit 4
+if mode='REXX' & trailing\='' then exit 4
+if mode\='REXX' then do
  address command
  if extra='QUIET' then
-  'EXEC GITPNWLK WALK QUIET NATIVE' trailing
- else 'EXEC GITPNWLK WALK NATIVE' trailing
+  'EXEC GITPNWLK WALK QUIET NATIVE STRICT'
+ else 'EXEC GITPNWLK WALK NATIVE STRICT'
  exit rc
 end
-if mode\='' | trailing\='' then exit 4
-if command \= 'WALK' | (extra \= '' & extra \= 'QUIET') then exit 4
 quiet=(extra='QUIET')
 address command
 call readhex 0,12
