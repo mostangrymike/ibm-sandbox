@@ -231,6 +231,38 @@ ZDYNVLP  CLC   0(45,4),DYNLINE
          BAL   14,ZINFLATE
          LTR   15,15
          BZ    BADZLIB
+*
+* Native callable parameter-list contract, using the same
+* bounded binary interface a CMS adapter will invoke.
+*
+         LA    2,ZPAIR
+         ST    2,APITEST
+         LA    2,22
+         ST    2,APITEST+4
+         L     2,=A(ABCOUT)
+         ST    2,APITEST+8
+         LA    2,16
+         ST    2,APITEST+12
+         XC    APITEST+16(8),APITEST+16
+         LA    2,APITEST
+         BAL   14,APICALL
+         LTR   15,15
+         BNZ   BADZLIB
+         CLC   APITEST+16(4),=F'3'
+         BNE   BADZLIB
+         CLC   APITEST+20(4),=F'11'
+         BNE   BADZLIB
+         L     4,=A(ABCOUT)
+         CLC   0(3,4),ABCDATA
+         BNE   BADZLIB
+         LA    2,2
+         ST    2,APITEST+12
+         LA    2,APITEST
+         BAL   14,APICALL
+         LTR   15,15
+         BZ    BADZLIB
+         CLC   APITEST+16(8),ZERO8
+         BNE   BADZLIB
          LA    2,ZBADHDR
          LA    3,11
          L     4,=A(ABCOUT)
@@ -318,6 +350,43 @@ BADNEG   LINEWRT DATA=(NEGERR,NERLEN)
          B     RETURN
 RETURN   L     14,RETADDR
          BR    14
+         LTORG
+*
+*
+* APICALL: internal bounded binary ABI for the CMS adapter.
+* R2 -> six fullwords: input ptr, input bytes, output ptr,
+* output capacity, decoded bytes, consumed zlib bytes.
+* R15=0 success, 4 invalid arguments, 8 decode failure.
+* On failure both output counts remain zero.
+*
+APICALL  ST    14,APIRET
+         ST    2,APIPTR
+         LTR   2,2
+         BZ    APIBAD
+         LR    11,2
+         XC    16(8,11),16(11)
+         L     2,0(11)
+         L     3,4(11)
+         L     4,8(11)
+         L     5,12(11)
+         LTR   2,2
+         BZ    APIBAD
+         LTR   4,4
+         BZ    APIBAD
+         LTR   3,3
+         BNP   APIBAD
+         LTR   5,5
+         BNP   APIBAD
+         BAL   14,ZINFLATE
+         LTR   15,15
+         BNZ   APIEXIT
+         L     11,APIPTR
+         ST    6,16(11)
+         ST    7,20(11)
+APIEXIT  L     14,APIRET
+         BR    14
+APIBAD   LA    15,4
+         B     APIEXIT
          LTORG
 *
 * ZINFLATE - bounded zlib wrapper with CMF/FLG and Adler32.
@@ -1145,6 +1214,10 @@ DSTEXT   DC    F'0',F'0',F'0',F'0',F'1',F'1',F'2',F'2'
          DC    F'3',F'3',F'4',F'4',F'5',F'5',F'6',F'6'
          DC    F'7',F'7',F'8',F'8',F'9',F'9',F'10',F'10'
          DC    F'11',F'11',F'12',F'12',F'13',F'13'
+APIRET   DS    F
+APIPTR   DS    F
+APITEST  DS    6F
+ZERO8    DC    8X'00'
 ZRET     DS    F
 ZPTR     DS    F
 ZSIZE    DS    F
