@@ -1,0 +1,41 @@
+/* M13W: target native dynamic-Huffman 5400-byte output. */
+/* Fixture already exercised inside GITINFA regression. */
+address command
+stream = '78DAEDCA571180301445412B57016A628092D0792110',
+ || '9A7AB0C1CCF9DE759DD79AFB7A5495EC5C14ECD2',
+ || '90E7B8C90E9FB47F3C95CFADC6DA428E4C2693C9',
+ || '6432994C2693C96432994C2693FF9F5F412D92B2'
+line = '54686520717569636B2062726F776E20666F78206A756D70',
+ || '73206F76657220746865206C617A7920646F672E20'
+if length(stream) \= 164 | length(line) \= 90 then exit 8
+'EXEC GITPBUF INIT'
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' substr(stream,1,128)
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND' substr(stream,129)
+if rc \= 0 then exit rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then exit rc
+'EXEC GITPZNAT TOOBUF 0 NATIVE'
+if rc \= 0 | queued() < 2 then exit 8
+parse pull used
+parse pull decoded
+if used \= 82 | decoded \= 5400 then do
+ say 'M13W: wrong dynamic native counts' used decoded
+ exit 8
+end
+/* 120 repetitions of the 45-byte sentence; read in */
+/* 45-byte chunks to stay within CMS stack record limits. */
+do i = 0 to 119
+ 'EXEC GITOBUF READSTACK' i*45 45
+ if rc \= 0 | queued() < 1 then exit 8
+ parse pull got
+ if got \= line then do
+  say 'M13W: output mismatch at repetition' i
+  say 'M13W: expected' line
+  say 'M13W: got' got
+  exit 8
+ end
+end
+say 'M13W NATIVE DYNAMIC HUFFMAN 5400-BYTE PASSED'
+exit 0
