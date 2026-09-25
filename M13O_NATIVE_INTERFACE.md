@@ -35,3 +35,21 @@ and a 5400-byte dynamic-Huffman zlib fixture with exact full-output,
 82-byte consumed-length, and capacity checks. These additions are
 committed but not yet target-proven. They exercise the stream boundary
 and bounded decoding contract before exposing a callable adapter.
+
+## Bounded binary adapter checkpoint
+
+An internal APICALL entry now accepts R2 pointing to six fullwords:
+input address, available input bytes, output address, output capacity,
+output byte count and consumed zlib byte count. R15=0 on success,
+4 on invalid arguments and nonzero on decode failure. Both output
+counts are reset before decoding, so a failed call does not publish
+stale lengths. This is an internal callable subroutine, not yet an
+externally callable CMS MODULE or REXX command.
+
+Standalone regressions now exercise the adapter with two adjacent
+zlib streams, insufficient output capacity, a null parameter-list
+pointer, truncated zlib input and a full 5400-byte dynamic stream.
+These source changes require the next CMS assembler/runtime gate.
+
+External CMS command/stack I/O and bounded PACK input/output record
+transport remain unimplemented; the existing REXX path is unchanged.
