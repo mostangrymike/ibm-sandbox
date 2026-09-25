@@ -180,3 +180,11 @@ expands to binary abc and consumes exactly 11 bytes via default
 and explicit REXX dispatch. M13QDISP is not yet CMS-tested.
 No production PACK walker route is changed. Do not enable native
 routing until the assembler bridge and real PACK regression pass.
+
+## M13Q CMS gate, 2026-09-25 09:37:56
+
+M13QDISP returned `M13Q GUARDED REXX DISPATCH PASSED` on CMS.
+Default and explicit REXX dispatcher paths are target-proven for the
+synthetic 11-byte zlib member and three-byte ASCII abc output.
+This does not prove a native bridge, and production routing remains
+unchanged pending native assembler/file I/O integration and PACK tests.
