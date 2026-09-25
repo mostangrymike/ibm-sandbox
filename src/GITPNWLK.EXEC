@@ -1,6 +1,8 @@
 /* M13X opt-in native PACK walker; REXX default. */
-parse upper arg command extra mode trailing
+parse upper arg command extra mode trailing limitarg
 if command \= 'WALK' then exit 4
+/* Optional fifth argument: bounded diagnostic prefix, never full proof. */
+if limitarg\='' & (datatype(limitarg,'W')\=1 | limitarg<1) then exit 4
 if trailing \= '' & trailing \= 'STRICT' then exit 4
 /* Explicit NATIVE mode only; existing WALK and WALK QUIET stay REXX. */
 if extra = 'NATIVE' & mode = '' then do
@@ -47,10 +49,15 @@ if strict then do
  if smtag \= 'META' | datatype(smsize,'W') \= 1 then exit 8
  expectedend=smsize-20
 end
+walkcount=objects
+if limitarg\='' then do
+ if limitarg>objects then exit 4
+ walkcount=limitarg
+end
 pos=12
 'EXEC GIT9CTX INIT'
 if rc\=0 then exit rc
-do entry=1 to objects
+do entry=1 to walkcount
  if quiet & (entry=1 | entry//5=0) then say 'PACK WALK' entry 'OF' objects
  entrypos=pos
  call readbyte pos
@@ -194,10 +201,11 @@ do entry=1 to objects
  else exit 8
  if quiet then say 'PACK ENTRY DONE' entry 'NEXT' pos
 end
-if strict & pos \= expectedend then do
+if strict & walkcount=objects & pos \= expectedend then do
  say 'GITPNWLK: object boundary/trailer mismatch' pos expectedend
  exit 8
 end
+if walkcount<objects then say 'PACK PREFIX ONLY' walkcount 'OF' objects
 say 'PACK VERSION' version
 say 'PACK OBJECTS' objects
 say 'PACK DATA END' pos
