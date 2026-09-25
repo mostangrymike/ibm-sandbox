@@ -1,5 +1,4 @@
-/* M13P transactional native output adapter. */
-/* Validate every bounded hex record before replacing GITOBUF. */
+/* Transactional native output: preflight then bounded bulk publish. */
 parse upper arg command want extra
 if command \= 'COMMIT' | extra \= '' |,
  datatype(want,'W') \= 1 | want < 0 | want > 65536 then do
@@ -7,44 +6,56 @@ if command \= 'COMMIT' | extra \= '' |,
  exit 4
 end
 address command
-/* Preflight: reject short, oversized, malformed and extra records. */
-copied = 0
-recno = 1
-do while copied < want
- call readrec recno
- if result = 'ERROR' then exit 8
- take = length(result)%2
- if copied + take > want then exit 8
- copied = copied + take
- recno = recno + 1
+/* Read in batches; reject malformed, short, oversized or extra data. */
+copied=0
+recno=1
+do while copied<want
+ batch=(want-copied+63)%64
+ if batch>16 then batch=16
+ drop r.
+ 'EXECIO' batch 'DISKR GITNOUT DATA A' recno,
+  '(STEM R. FINIS'
+ if rc\=0 | r.0<1 | r.0>batch then exit 8
+ do i=1 to r.0
+  h=strip(r.i)
+  if h='' | length(h)>128 | length(h)//2\=0 |,
+   verify(h,'0123456789ABCDEF')\=0 then exit 8
+  copied=copied+length(h)%2
+  if copied>want then exit 8
+ end
+ recno=recno+r.0
 end
-/* Require exact length, including zero-length output. */
+/* Reject any additional output records before touching GITOBUF. */
 drop r.
 'EXECIO 1 DISKR GITNOUT DATA A' recno '(STEM R. FINIS'
-if rc = 0 & r.0 > 0 then do
+if rc=0 & r.0>0 then do
  say 'GITNOUT: extra output records'
  exit 8
 end
-/* Only now replace the prior reconstructed object. */
-'EXEC GITOBUF INIT'
-if rc \= 0 then exit 8
-do i = 1 to recno - 1
- call readrec i
- if result = 'ERROR' then exit 8
- 'EXEC GITOBUF APPEND' result
- if rc \= 0 then exit 8
+if rc\=0 & rc\=2 then exit 8
+/* Preflight complete. Publish in 16-record batches. */
+'ERASE GITOBUF DATA A'
+i=1
+do while i<recno
+ batch=recno-i
+ if batch>16 then batch=16
+ drop r.
+ 'EXECIO' batch 'DISKR GITNOUT DATA A' i,
+  '(STEM R. FINIS'
+ if rc\=0 | r.0\=batch then exit 8
+ do j=1 to batch
+  h=strip(r.j)
+  if h='' | length(h)>128 | length(h)//2\=0 |,
+   verify(h,'0123456789ABCDEF')\=0 then exit 8
+  r.j=h
+ end
+ 'EXECIO' batch 'DISKW GITOBUF DATA A 0 (STEM R. FINIS'
+ if rc\=0 then exit 8
+ i=i+batch
 end
-'EXEC GITOBUF FINAL'
-if rc \= 0 then exit 8
+m.1='META' want '-' 1
+m.0=1
+'EXECIO 1 DISKW GITOMETA DATA A 1 (STEM M. FINIS'
+if rc\=0 then exit 8
 queue copied
 exit 0
-
-readrec: procedure
- parse arg n
- drop r.
- 'EXECIO 1 DISKR GITNOUT DATA A' n '(STEM R. FINIS'
- if rc \= 0 | r.0 \= 1 then return 'ERROR'
- h = strip(r.1)
- if h = '' | length(h) > 128 | length(h)//2 \= 0 |,
-    verify(h,'0123456789ABCDEF') \= 0 then return 'ERROR'
- return h
