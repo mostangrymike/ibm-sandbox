@@ -256,3 +256,14 @@ Next target gate: `src/M13UFAIL.EXEC` intentionally corrupts the
 Adler32 trailer and verifies the native bridge fails without
 replacing the previously committed object buffer. Keep production
 PACK walking on REXX until negative and larger native tests pass.
+
+## M13U passed and M13V next, 2026-09-25 10:48:04
+
+User confirmed `M13UFAIL` passed: native decoding of valid `abc`
+completed, a stream with deliberately corrupt Adler32 returned
+`GITNAPI` status 8, and previously committed GITOBUF content was
+preserved. Next test `src/M13VRECS.EXEC` builds a 141-byte zlib
+stored block containing 130 `A` bytes, requiring multiple staged
+input and output records; verifies 141 consumed, 130 decoded, and
+all output bytes. Production PACK remains on REXX until larger
+and real PACK native tests pass.
