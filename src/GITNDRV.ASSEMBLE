@@ -148,10 +148,14 @@ APIFAIL  ST    15,APIRC
          BAL   10,DECIMAL
          LINEWRT DATA=(APIMSG,APILEN)
          LINEWRT DATA=(DBGREC,DBGLEN)
+         MVC   DBGREC(80),DBGBASE
+         MVC   DBGREC+8(4),=C'OUT='
          L     5,OUTLEN
          LA    3,DBGREC+38
          BAL   10,DECIMAL
          LINEWRT DATA=(DBGREC,DBGLEN)
+         MVC   DBGREC(80),DBGBASE
+         MVC   DBGREC+8(5),=C'USED='
          L     5,USED
          LA    3,DBGREC+38
          BAL   10,DECIMAL
