@@ -89,3 +89,14 @@ entry. Commit 40fc0479 replaces it with BALR 12,0 and fixes the
 external entry's restore path: restore R0-R12 and R14 from the caller
 save area without overwriting R15, which carries the API status.
 This correction requires CMS target assembly and runtime validation.
+
+## Separate external-caller regression
+
+Commit fa7f3af adds src/GITNCALL.ASSEMBLE. It declares EXTRN GITNAPI,
+loads its V-type address, and calls it with the public six-fullword
+parameter list in R1. It verifies an 11-byte abc zlib stream, the
+same stream with trailing PACK bytes, and an insufficient-capacity
+failure with zeroed result counts. This separate assembler CSECT is
+intended to link with GITINFA TEXT, not to replace GITINFA's built-in
+selftest. Both the external caller and its linkage remain untested on
+CMS; assemble both and validate the load/link sequence on target.
