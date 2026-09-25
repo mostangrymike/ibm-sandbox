@@ -4,7 +4,8 @@ parse upper arg selection extra
 if extra \= '' then exit 4
 if selection = '' then selection = 'ALL'
 names='M13TDRV M13UFAIL M13VRECS M13WDYN',
-      'M13XPACK M13YPACK M13ZPACK M13AAREF M13ABREF'
+      'M13XPACK M13YPACK M13ZPACK M13AAREF M13ABREF',
+      'M13ACSHA'
 if selection \= 'ALL' & wordpos(selection,names)=0 then do
  say 'Usage: GITTEST ALL or GITTEST testname'
  say 'Tests:' names
@@ -28,6 +29,7 @@ do i=1 to words(names)
   when test='M13ZPACK' then test_rc=test_m13zpack()
   when test='M13AAREF' then test_rc=test_m13aaref()
   when test='M13ABREF' then test_rc=test_m13abref()
+  when test='M13ACSHA' then test_rc=test_m13acsha()
   otherwise test_rc=4
  end
  if test_rc=0 then do
@@ -408,3 +410,52 @@ end
 say 'M13AB UNRESOLVED NATIVE REF FAIL-CLOSED PASSED'
 return 0
 
+
+test_m13acsha:
+ procedure
+/* Valid real PACK SHA-1, then corrupt trailer rejection. */
+address command
+head='5041434B0000000200000002'
+one='337801010300FCFF616263024D0127'
+two='337801010300FCFF78797A02D7016C'
+sha='5F1C02695D4BC807AE4A5DD622AD1D28E7659429'
+'EXEC GITPBUF INIT'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND' head
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND' one
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND' two
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND' sha
+if rc \= 0 then return rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then return rc
+'EXEC GITPNWLK WALK QUIET NATIVE STRICT'
+if rc \= 0 then return rc
+'EXEC GITOBUF READSTACK 0 3'
+if rc \= 0 | queued()<1 then return 8
+parse pull h
+if h \= '78797A' then return 8
+say 'M13AC: valid SHA-1 and exact PACK boundary accepted'
+/* Change only the final digest byte; same valid object streams. */
+badsha=left(sha,38)||'28'
+'EXEC GITPBUF INIT'
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND' head
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND' one
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND' two
+if rc \= 0 then return rc
+'EXEC GITPBUF APPEND' badsha
+if rc \= 0 then return rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then return rc
+'EXEC GITPNWLK WALK QUIET NATIVE STRICT'
+if rc \= 8 then do
+ say 'M13AC VALID/CORRUPT PACK SHA-1 STRICT PASSED'
+ return 0
+end
+say 'M13AC: corrupt PACK trailer unexpected RC' rc
+return 8
