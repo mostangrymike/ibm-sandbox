@@ -123,6 +123,8 @@ DYNVLP   CLC   0(45,4),DYNLINE
          BNZ   BADZLIB
          C     6,=F'3'
          BNE   BADZLIB
+         C     7,=F'11'
+         BNE   BADZLIB
          L     4,=A(ABCOUT)
          CLC   0(3,4),ABCDATA
          BNE   BADZLIB
@@ -256,6 +258,9 @@ ZINFLATE ST    14,ZRET
          LTR   15,15
          BNZ   ZFAIL
          ST    6,ZLEN
+         L     7,BITUSED
+         LA    7,6(7)
+         ST    7,ZUSED
          LA    7,1
          SR    8,8
          L     4,ZOUT
@@ -296,6 +301,7 @@ ZADCMP   SLL   8,16
          CR    8,9
          BNE   ZFAIL
          L     6,ZLEN
+         L     7,ZUSED
          SR    15,15
          L     14,ZRET
          BR    14
@@ -1030,6 +1036,7 @@ ZPTR     DS    F
 ZSIZE    DS    F
 ZOUT     DS    F
 ZLEN     DS    F
+ZUSED    DS    F
 RETADDR  DS    F
 INFRET   DS    F
 SYMRET   DS    F
