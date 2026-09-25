@@ -194,10 +194,11 @@ BXEND    BR    10
 * DECIMAL: R5 unsigned integer, R3 destination. R3
 * advances past final digit; R10 is link.
 *
-DECIMAL  LA    7,10
+DECIMAL  LA    4,10
          LA    8,DECBUF+9
 DECLOOP  SR    6,6
-         DR    6,7
+         LR    7,5
+         DR    6,4
          LA    6,240(6)
          STC   6,0(8)
          BCTR  8,0
