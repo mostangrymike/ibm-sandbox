@@ -241,3 +241,18 @@ the FS-macro runtime path is not yet target-proven.
 `src/M13TDRV.EXEC` is the next gate: stage adjacent synthetic
 zlib members, execute explicit NATIVE twice at successive offsets,
 verify exact 11-byte consumption and three-byte decoded `616263`.
+
+## M13T runtime passed, 2026-09-25 10:46:35
+
+User confirmed clean XF assembly, LOAD/GENMOD, and successful
+`M13TDRV` execution. The native bridge decoded both adjacent
+11-byte zlib members, reporting 3 output bytes for each and
+preserving the correct consumed-byte boundary. This verifies
+bounded native file staging, GITNAPI, hex output, and GITOBUF
+commit for the synthetic case. The result-count bug was fixed by
+copying PARAM+16 and PARAM+20 into OUTLEN and USED.
+
+Next target gate: `src/M13UFAIL.EXEC` intentionally corrupts the
+Adler32 trailer and verifies the native bridge fails without
+replacing the previously committed object buffer. Keep production
+PACK walking on REXX until negative and larger native tests pass.
