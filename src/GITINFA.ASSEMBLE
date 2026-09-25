@@ -1,6 +1,9 @@
 GITINFA  CSECT
          USING GITINFA,12
          LR    12,15
+         LA    1,4095(12)
+         LA    1,1(1)
+         USING GITINFA+4096,1
          L     13,=A(DATAORG)
          USING DATAORG,13
          ST    14,RETADDR
