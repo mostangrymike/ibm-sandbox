@@ -4,7 +4,8 @@ parse upper arg selection extra
 if extra \= '' then exit 4
 if selection = '' then selection = 'ALL'
 /* LIVE is opt-in: never overwrite the existing captured PACK. */
-if selection = 'LIVE' then exit test_live()
+if selection = 'LIVE' then exit test_live(0)
+if selection = 'LIVE20' then exit test_live(20)
 names='M13TDRV M13UFAIL M13VRECS M13WDYN',
       'M13XPACK M13YPACK M13ZPACK M13AAREF M13ABREF',
       'M13ACSHA M13ADTRN M13AEBDY',
@@ -760,6 +761,7 @@ return 0
 /* Opt-in full live PACK gate. Run BEFORE ALL, which replaces GITPBUF. */
 test_live:
  procedure
+parse arg limit
 address command
 drop m.
 'EXECIO 1 DISKR GITPMETA PACK A 1 (STEM M. FINIS'
@@ -789,10 +791,12 @@ if trailer\='8C92E274ECA84B797F8925A6082915DD6CCDE196' then do
 end
 say 'LIVE: original 1808-object capture recognized'
 start=time('E')
-'EXEC GITP9PWK WALK QUIET'
+if limit=20 then 'EXEC GITPNWLK WALK QUIET NATIVE STRICT 20'
+else 'EXEC GITP9PWK WALK QUIET'
 walkrc=rc
 elapsed=time('E')-start
 say 'LIVE: native strict walker RC' walkrc 'ELAPSED SECONDS' elapsed
 if walkrc\=0 then return walkrc
-say 'LIVE: full 1808-object traversal passed'
+if limit=20 then say 'LIVE: 20-object prefix passed; not full traversal'
+else say 'LIVE: full 1808-object traversal passed'
 return 0
