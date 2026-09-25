@@ -366,6 +366,7 @@ DYREP17  C     5,=F'17'
          LTR   15,15
          BNZ   DYNERR
          A     5,=F'3'
+         SR    9,9
          B     DYFILL
 DYREP18  C     5,=F'18'
          BNE   DYNERR
@@ -375,6 +376,7 @@ DYREP18  C     5,=F'18'
          LTR   15,15
          BNZ   DYNERR
          A     5,=F'11'
+         SR    9,9
 DYFILL   L     6,DYIDX
          LR    7,6
          AR    7,5
