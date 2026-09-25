@@ -465,14 +465,9 @@ return 8
 test_m13adtrn:
  procedure
 /* Valid SHA-1 over deliberately truncated object data. */
-/* The checksum passes, but native inflate must reject the object. */
+/* Checksum passes; native inflate must reject missing Adler byte. */
 address command
-head='5041434B0000000200000001'
-/* First object header and incomplete zlib payload, no Adler. */
-body='33789C4B4C4A0600'
-/* Precomputed SHA-1 is not available in this inline fixture. */
-/* First check the existing known-good PACK with one byte omitted */
-/* from the stored stream and its original digest unchanged. */
+/* SHA-1 covers both object records, second missing final Adler byte. */
 'EXEC GITPBUF INIT'
 if rc \= 0 then return rc
 'EXEC GITPBUF APPEND 5041434B0000000200000002'
@@ -482,10 +477,15 @@ if rc \= 0 then return rc
 /* Second object header with truncated zlib payload. */
 'EXEC GITPBUF APPEND 337801010300FCFF78797A02D701'
 if rc \= 0 then return rc
-'EXEC GITPBUF APPEND 5F1C02695D4BC807AE4A5DD622AD1D28E7659429'
+'EXEC GITPBUF APPEND 04302594B7F039A8502D0B3D8EC461064E4D909B'
 if rc \= 0 then return rc
 'EXEC GITPBUF FINAL'
 if rc \= 0 then return rc
+'EXEC GITPSHA VERIFY'
+if rc \= 0 then do
+ say 'M13AD: fixture checksum invalid'
+ return 8
+end
 'EXEC GITPNWLK WALK QUIET NATIVE STRICT'
 bad_rc=rc
 if bad_rc \= 8 then do
