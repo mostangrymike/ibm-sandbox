@@ -26,20 +26,26 @@ if avail > limit then avail = limit
 'ERASE GITNSMT DATA A'
 nrec = 0
 copied = 0
+/* Batch bounded staging writes to avoid one file open per record. */
 do while copied < avail
- take = avail - copied
- if take > 64 then take = 64
- 'EXEC GITPBUF READSTACK' offset+copied take
- if rc \= 0 | queued() < 1 then exit 8
- parse pull h
- if length(h) \= take*2 |,
- verify(h,'0123456789ABCDEF') \= 0 then exit 8
- nrec = nrec + 1
- r.1 = h
- r.0 = 1
- 'EXECIO 1 DISKW GITNSTG DATA A 0 (STEM R. FINIS'
+ drop r.
+ r.0 = 0
+ do while copied < avail & r.0 < 16
+  take = avail - copied
+  if take > 64 then take = 64
+  'EXEC GITPBUF READSTACK' offset+copied take
+  if rc \= 0 | queued() < 1 then exit 8
+  parse pull h
+  if length(h) \= take*2 |,
+   verify(h,'0123456789ABCDEF') \= 0 then exit 8
+  r.0 = r.0 + 1
+  idx = r.0
+  r.idx = h
+  copied = copied + take
+ end
+ 'EXECIO' r.0 'DISKW GITNSTG DATA A 0 (STEM R. FINIS'
  if rc \= 0 then exit 8
- copied = copied + take
+ nrec = nrec + r.0
 end
 m.1 = 'META' offset copied nrec
 m.0 = 1
