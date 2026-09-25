@@ -31,3 +31,33 @@ service level cannot currently validate/import with the installed crypto
 facilities, so it is no longer the practical blocker for GitHub transport.
 
 See `docs/BUILD.md`, `docs/STATUS.md`, and `CHAT_STATE.md`.
+
+## Performance redesign: native PACK engine
+
+The REXX-per-object pipeline is a correctness reference, not the intended
+production architecture. On the captured 1,808-object PACK, a 20-object
+prefix took 230.13 seconds initially and 64.44 seconds after bounded I/O
+optimizations. Do not extrapolate a full-run time from the prefix: object
+sizes and delta costs vary. A 90-minute interactive terminal test is not an
+acceptable production workflow.
+
+Target architecture (incremental gates):
+
+1. Keep the existing strict walker and 27-case GITTEST suite as a regression
+   oracle. Preserve the captured PACK; ALL overwrites the active buffer.
+2. Remove remaining per-record REXX dispatch while retaining bounded file
+   access. GIT9CTX SAVE now reads 16 object records per EXECIO directly.
+3. Implement a native PACK engine with one CMS entry point: sequential
+   buffered PACK input, header and varint decoding, GITNAPI inflation,
+   binary object hashing, delta application, and a position/OID index.
+   Reuse GITINFA; do not reimplement the inflater. Keep REXX for orchestration.
+4. Native gates in order: regular-object fixture; 20-object prefix; delta
+   fixture with OFS and REF; 100-object prefix; 500-object prefix; full
+   1,808-object PACK with checksum and final boundary verification.
+5. Use CPU time and elapsed time for every gate. A sub-five-second 20-object
+   run is an engineering target, not an established capability.
+
+Fail closed on malformed headers, short reads, invalid delta bases, wrong
+object hashes, missing trailers and out-of-range offsets. No unbounded REXX
+strings or repeated network capture. Do not claim native-engine parity until
+its implementation and target-side tests demonstrate it.
