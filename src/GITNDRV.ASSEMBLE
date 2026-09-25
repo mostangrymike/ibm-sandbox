@@ -1,0 +1,244 @@
+GITNDRV  CSECT
+         EXTRN GITNAPI
+         USING GITNDRV,12
+         LR    12,15
+         ST    14,RETCALL
+         LA    13,SAVE
+         XC    INLEN,INLEN
+         XC    OUTLEN,OUTLEN
+         XC    USED,USED
+*
+* M13T: CMS FS macro driver. Input: GITNSTG DATA A1,
+* 1-1024 uppercase hex records of up to 128 characters.
+* Output: GITNOUT DATA A1 (128-char fixed records) and
+* GITNRES DATA A1 ("RESULT 0 used decoded").
+* This is a first target assembly gate, NOT production enabled.
+*
+         FSOPEN 'GITNSTG DATA A1',FSCB=INFSCB,                X
+               OPENTYP=READ,FORM=E,ERROR=IOFAIL
+INLOOP   FSREAD FSCB=INFSCB,FORM=E,ERROR=INEND
+         LR    8,0
+         LTR   8,8
+         BNP   IOFAIL
+         CH    8,=H'128'
+         BH    IOFAIL
+         LR    4,8
+         BCTR  4,0
+TRIM     CLI   INREC(4),C' '
+         BNE   TRIMEND
+         BCT   4,TRIM
+         B     IOFAIL
+TRIMEND  LA    4,1(4)
+         TM    INREC+127,X'00'
+         LR    5,4
+         N     5,=F'1'
+         BNZ   IOFAIL
+         L     5,INLEN
+         LR    6,4
+         SRL   6,1
+         AR    5,6
+         C     5,=F'65536'
+         BH    IOFAIL
+         LA    2,INREC
+         L     3,=A(INBIN)
+         A     3,INLEN
+         BAL   10,HEXBIN
+         LTR   15,15
+         BNZ   IOFAIL
+         ST    5,INLEN
+         B     INLOOP
+INEND    C     15,=F'12'
+         BNE   IOFAIL
+         FSCLOSE FSCB=INFSCB,ERROR=IOFAIL
+         C     INLEN,=F'6'
+         BL    IOFAIL
+         L     2,=A(INBIN)
+         ST    2,PARAM
+         L     2,INLEN
+         ST    2,PARAM+4
+         L     2,=A(OUTBIN)
+         ST    2,PARAM+8
+         L     2,=F'65536'
+         ST    2,PARAM+12
+         LA    1,PARAM
+         L     15,=V(GITNAPI)
+         BALR  14,15
+         LTR   15,15
+         BNZ   APIFAIL
+         L     5,OUTLEN
+         C     5,=F'65536'
+         BH    APIFAIL
+         L     5,USED
+         C     5,INLEN
+         BH    APIFAIL
+         C     5,=F'6'
+         BL    APIFAIL
+*
+* Convert output to 64-byte records and write via CMS FS.
+*
+         FSOPEN 'GITNOUT DATA A1',FSCB=OUTFSCB,             X
+               OPENTYP=REPLACE,FORM=E,ERROR=IOFAIL
+         XC    CURPOS,CURPOS
+OUTLOOP  L     5,OUTLEN
+         S     5,CURPOS
+         LTR   5,5
+         BZ    OUTDONE
+         C     5,=F'64'
+         BNH   OUTTAKE
+         LA    5,64
+OUTTAKE  L     2,=A(OUTBIN)
+         A     2,CURPOS
+         LA    3,OUTREC
+         LR    4,5
+         BAL   10,BINHEX
+         LR    6,5
+         SLL   6,1
+         LA    7,OUTREC
+         AR    7,6
+         LA    8,128
+         SR    8,6
+         LTR   8,8
+         BZ    OUTWRITE
+         BCTR  8,0
+         MVI   0(7),C' '
+         EX    8,BLANKMVC
+OUTWRITE FSWRITE FSCB=OUTFSCB,FORM=E,ERROR=IOFAIL
+         A     5,CURPOS
+         ST    5,CURPOS
+         B     OUTLOOP
+OUTDONE  FSCLOSE FSCB=OUTFSCB,ERROR=IOFAIL
+*
+* Result record with decimal counts. Only write after all output
+* records have been successfully closed.
+*
+         MVC   RESREC(128),BLANKS
+         MVC   RESREC(9),=C'RESULT 0 '
+         L     5,USED
+         LA    3,RESREC+9
+         BAL   10,DECIMAL
+         MVI   0(3),C' '
+         LA    3,1(3)
+         L     5,OUTLEN
+         BAL   10,DECIMAL
+         FSOPEN 'GITNRES DATA A1',FSCB=RESFSCB,             X
+               OPENTYP=REPLACE,FORM=E,ERROR=IOFAIL
+         FSWRITE FSCB=RESFSCB,FORM=E,ERROR=IOFAIL
+         FSCLOSE FSCB=RESFSCB,ERROR=IOFAIL
+         LINEWRT DATA=(OKMSG,OKLEN)
+         SR    15,15
+         B     EXIT
+APIFAIL  LINEWRT DATA=(APIMSG,APILEN)
+         LA    15,8
+         B     EXIT
+IOFAIL   LINEWRT DATA=(ERRMSG,ERRLEN)
+         LA    15,8
+EXIT     L     14,RETCALL
+         BR    14
+*
+* HEXBIN: R2 hex, R3 binary, R4 char count.
+* R10 is link; R6/R7 scratch, R15=4 invalid.
+*
+HEXBIN   SR    15,15
+         LR    9,4
+         SRL   9,1
+HBLOOP   SR    6,6
+         IC    6,0(2)
+         BAL   14,NIBBLE
+         LTR   15,15
+         BNZ   HBEND
+         SLL   6,4
+         LR    7,6
+         SR    6,6
+         IC    6,1(2)
+         BAL   14,NIBBLE
+         LTR   15,15
+         BNZ   HBEND
+         OR    6,7
+         STC   6,0(3)
+         LA    2,2(2)
+         LA    3,1(3)
+         BCT   9,HBLOOP
+HBEND    BR    10
+NIBBLE   SR    15,15
+         C     6,=F'240'
+         BL    NBALPHA
+         C     6,=F'249'
+         BH    NBALPHA
+         S     6,=F'240'
+         BR    14
+NBALPHA  C     6,=F'193'
+         BL    NBBAD
+         C     6,=F'198'
+         BH    NBBAD
+         S     6,=F'183'
+         BR    14
+NBBAD    LA    15,4
+         BR    14
+BINHEX   LTR   4,4
+         BZ    BXEND
+BXLOOP   SR    6,6
+         IC    6,0(2)
+         LR    7,6
+         SRL   6,4
+         IC    6,HEXDIG(6)
+         STC   6,0(3)
+         N     7,=F'15'
+         IC    7,HEXDIG(7)
+         STC   7,1(3)
+         LA    2,1(2)
+         LA    3,2(3)
+         BCT   4,BXLOOP
+BXEND    BR    10
+*
+* DECIMAL: R5 unsigned integer, R3 destination. R3
+* advances past final digit; R10 is link.
+*
+DECIMAL  LA    7,10
+         LA    8,DECBUF+9
+DECLOOP  SR    6,6
+         DR    6,7
+         LA    6,240(6)
+         STC   6,0(8)
+         BCTR  8,0
+         LR    5,7
+         LTR   5,5
+         BNZ   DECLOOP
+         LA    8,1(8)
+DECCOPY  MVC   0(1,3),0(8)
+         LA    3,1(3)
+         LA    8,1(8)
+         C     8,=A(DECBUF+10)
+         BL    DECCOPY
+         BR    10
+         LTORG
+         DS    0F
+RETCALL  DS    F
+SAVE     DS    18F
+PARAM    DS    6F
+INLEN    DC    F'0'
+OUTLEN   DC    F'0'
+USED     DC    F'0'
+CURPOS   DC    F'0'
+HEXDIG   DC    C'0123456789ABCDEF'
+BLANKS   DC    CL128' '
+BLANKMVC MVC   0(1,7),0(7)
+DECBUF   DS    CL10
+INREC    DS    CL128
+OUTREC   DS    CL128
+RESREC   DS    CL128
+INFSCB   FSCB  'GITNSTG DATA A1',BUFFER=INREC,BSIZE=128,     X
+               RECFM=V,FORM=E
+OUTFSCB  FSCB  'GITNOUT DATA A1',BUFFER=OUTREC,BSIZE=128,   X
+               RECFM=F,FORM=E
+RESFSCB  FSCB  'GITNRES DATA A1',BUFFER=RESREC,BSIZE=128,   X
+               RECFM=F,FORM=E
+OKMSG    DC    C'GITNDRV: NATIVE CMS DRIVER COMPLETE'
+OKLEN    EQU   *-OKMSG
+APIMSG   DC    C'GITNDRV: NATIVE API FAILED'
+APILEN   EQU   *-APIMSG
+ERRMSG   DC    C'GITNDRV: CMS FILE I/O OR HEX FAILED'
+ERRLEN   EQU   *-ERRMSG
+         DS    0F
+INBIN    DS    CL65536
+OUTBIN   DS    CL65536
+         END   GITNDRV
