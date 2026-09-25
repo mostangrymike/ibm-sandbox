@@ -70,3 +70,14 @@ introduce an external entry with standard CMS register preservation,
 plus a separate caller regression, then connect GITPBUF/GITOBUF
 64-byte records without whole-PACK REXX strings. Retain the current
 GITPZBUF/GITPSTRM fallback throughout.
+
+## External assembler entry checkpoint
+
+CMS confirmed the expanded internal APICALL failure/recovery batch at
+08:57:50. Source commit f7e6d044 introduces exported GITNAPI in the
+GITINFA CSECT. It accepts the six-fullword parameter list in R1,
+uses standard R13 save-area linkage, establishes the decoder's two
+code bases and DATAORG base, and dispatches to APICALL. This external
+entry has **not yet passed target assembly or a separate caller test**.
+It is nonreentrant. It is not yet a CMS REXX command, nor connected
+to GITPBUF/GITOBUF; retain the REXX PACK path.
