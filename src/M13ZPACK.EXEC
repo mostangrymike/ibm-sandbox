@@ -6,9 +6,9 @@ address command
 if rc \= 0 then exit rc
 'EXEC GITPBUF APPEND 5041434B000000020000000233789C4B4C4A0600024D0127'
 if rc \= 0 then exit rc
-/* OFS_DELTA size 7, distance 12, zlib stored block. */
+/* OFS_DELTA size 6, distance 12, zlib stored block. */
 /* Delta: base 3, result 4, copy 3, insert d. */
-'EXEC GITPBUF APPEND 670C7801010700F8FF03049003016402DB0100'
+'EXEC GITPBUF APPEND 660C7801010600F9FF03049003016402DB0100'
 if rc \= 0 then exit rc
 /* Placeholder trailer; this isolated walker does not check SHA-1. */
 'EXEC GITPBUF APPEND 0000000000000000000000000000000000000000'
