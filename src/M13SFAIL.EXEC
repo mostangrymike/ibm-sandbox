@@ -1,0 +1,27 @@
+/* M13S: native mode must fail closed while GITNDRV is absent. */
+address command
+'STATE GITNDRV MODULE A'
+if rc = 0 then do
+ say 'M13S: driver installed; absence test not applicable'
+ exit 0
+end
+'EXEC GITPBUF INIT'
+if rc \= 0 then exit rc
+'EXEC GITPBUF APPEND 789C4B4C4A0600024D0127'
+if rc \= 0 then exit rc
+'EXEC GITPBUF FINAL'
+if rc \= 0 then exit rc
+'EXEC GITPZNAT TOOBUF 0 REXX'
+if rc \= 0 | queued() < 2 then exit 8
+parse pull used
+parse pull decoded
+if used \= 11 | decoded \= 3 then exit 8
+'EXEC GITPZNAT TOOBUF 0 NATIVE'
+if rc = 0 then exit 8
+if queued() \= 0 then exit 8
+'EXEC GITOBUF READSTACK 0 3'
+if rc \= 0 | queued() < 1 then exit 8
+parse pull h
+if h \= '616263' then exit 8
+say 'M13S MISSING NATIVE DRIVER FAIL-CLOSED PASSED'
+exit 0
