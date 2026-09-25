@@ -48,7 +48,7 @@ int main(int argc,char **argv) {
     if(ferror(f)) { puts("FAIL read"); fclose(f); return 8; }
     end=clock();
     fclose(f);
-    if(count<12 || memcmp(hdr,"PACK",4)!=0) {
+    if(count<12 || hdr[0]!=0x50 || hdr[1]!=0x41 || hdr[2]!=0x43 || hdr[3]!=0x4b) {
         puts("FAIL PACK signature (check ASCII/EBCDIC)");
         return 8;
     }
