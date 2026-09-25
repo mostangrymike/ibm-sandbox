@@ -1,5 +1,17 @@
 /* M9P consolidated bounded PACK walker, isolated from M9K. */
-parse upper arg command extra
+parse upper arg command extra mode trailing
+/* Opt-in native path delegates to the independently tested walker. */
+if mode='NATIVE' then do
+ if trailing\='' & trailing\='STRICT' then exit 4
+ if extra\='' & extra\='QUIET' then exit 4
+ if command\='WALK' then exit 4
+ address command
+ if extra='QUIET' then
+  'EXEC GITPNWLK WALK QUIET NATIVE' trailing
+ else 'EXEC GITPNWLK WALK NATIVE' trailing
+ exit rc
+end
+if mode\='' | trailing\='' then exit 4
 if command \= 'WALK' | (extra \= '' & extra \= 'QUIET') then exit 4
 quiet=(extra='QUIET')
 address command
