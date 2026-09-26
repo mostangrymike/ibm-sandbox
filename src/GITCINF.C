@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-extern int gitnapi(unsigned long *);
+extern int gitcapi(unsigned long *);
 static unsigned char input[1024];
 static unsigned char output[1024];
 static unsigned long param[6];
@@ -53,7 +53,7 @@ int main(void) {
  param[2]=(unsigned long)output;
  param[3]=sizeof output;
  param[4]=param[5]=0;
- rc=gitnapi(param);
+ rc=gitcapi(param);
  printf("FIXTURE RC %d OUTPUT %lu USED %lu DATA %02X %02X %02X\n",
         rc,param[4],param[5],output[0],output[1],output[2]);
  if(rc!=0 || param[4]!=3UL || param[5]!=11UL ||
@@ -66,7 +66,7 @@ int main(void) {
  param[3]=sizeof output;
  param[4]=0;
  param[5]=0;
- rc=gitnapi(param);
+ rc=gitcapi(param);
  printf("GITNAPI RC %d OUTPUT %lu USED %lu\n",
         rc,param[4],param[5]);
  if(rc!=0) return 8;
