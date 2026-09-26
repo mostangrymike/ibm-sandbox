@@ -1,12 +1,17 @@
 GITCAPI  CSECT
          ENTRY GITCAPI
          EXTRN GITNAPI
-* GCCCMS passes R1 -> argument list; first word is API block.
-* R12 is volatile across this tail call; no return to adapter.
+* GCCCMS R1 points to argument list; first word is API block.
+* Preserve the C caller's R12 base across the assembler call.
+         LR    0,12
          BALR  12,0
          USING *,12
+         ST    0,SAV12
          L     1,0(1)
          L     15,=V(GITNAPI)
-         BR    15
+         BALR  14,15
+         L     12,SAV12
+         BR    14
          LTORG
+SAV12    DS    F
          END
