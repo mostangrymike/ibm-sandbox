@@ -150,5 +150,28 @@ the new tool to F. Once its module builds and runs normally,
 `R/W` or `R/O` and `COPYFILE` supports copying across accessed
 minidisks; a file is only writable on a disk accessed `R/W`.
 
+## Confirmed GCC F-disk access (2026-09-26)
+
+User's live `Q DISK` shows `GCCLIB` at VDEV `29D`, accessed as
+**F R/W**, 20 cylinders, 2,055 free 4K blocks, 38 files. Therefore
+`CMSCLNK EXEC` can be copied directly from A to F; no relink,
+reaccess, remount, or permission change is required. Do not claim
+installation is complete until `STATE CMSCLNK EXEC F` and the new
+CMSCLNK PLAIN build succeed on CMS. Existing GITCLNK EXEC A is
+rollback until that test. The only necessary F-disk installation
+commands after Mac upload are:
+
+```text
+COPYFILE CMSCLNK EXEC A CMSCLNK EXEC F
+STATE CMSCLNK EXEC F
+ERASE CMSCLNK EXEC A
+CMSCLNK GITCIDX PLAIN
+```
+
+Run `ERASE` only after confirming the preceding `COPYFILE` and
+`STATE` succeeded; never erase the original GITCLNK EXEC A at
+this checkpoint. Once the new compile succeeds, run the separate
+AUDIT/SBUILD/SCHECK/SGET gate in docs/NATIVE_INDEX.md.
+
 For historic compile fixture results, see `docs/STATUS.md`;
 for the native object-store next gate, see `docs/NATIVE_INDEX.md`.
