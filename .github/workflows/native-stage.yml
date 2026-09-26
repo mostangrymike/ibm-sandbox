@@ -4,13 +4,17 @@ on:
   push:
     paths:
       - 'src/GITCWALK.C'
+      - 'src/GITCIDX.C'
       - 'tests/native_stage_host.c'
+      - 'tests/native_index_host.c'
       - 'tests/run-native-stage-host.sh'
       - '.github/workflows/native-stage.yml'
   pull_request:
     paths:
       - 'src/GITCWALK.C'
+      - 'src/GITCIDX.C'
       - 'tests/native_stage_host.c'
+      - 'tests/native_index_host.c'
       - 'tests/run-native-stage-host.sh'
       - '.github/workflows/native-stage.yml'
 
@@ -19,5 +23,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Compile and test CMS staging format on host
+      - name: Compile and test CMS staging and OID index on host
         run: sh tests/run-native-stage-host.sh
