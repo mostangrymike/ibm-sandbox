@@ -98,6 +98,32 @@ static void sha_block(const unsigned char *p) {
  h[2]=(h[2]+c)&W32;h[3]=(h[3]+d)&W32;
  h[4]=(h[4]+e)&W32;
 }
+#define BX(a,b) (((a)|(b))&(~((a)&(b))))
+static void sha_opt_block(const unsigned char *p) {
+ unsigned long w[80],a,b,c,d,e,t,fun,k;
+ unsigned int i;
+ for(i=0;i<16;i++) {
+  w[i]=((unsigned long)p[i*4]<<24)|
+       ((unsigned long)p[i*4+1]<<16)|
+       ((unsigned long)p[i*4+2]<<8)|p[i*4+3];
+ }
+ for(i=16;i<80;i++)
+  w[i]=rol(BX(BX(w[i-3],w[i-8]),BX(w[i-14],w[i-16])),1);
+ a=h[0];b=h[1];c=h[2];d=h[3];e=h[4];
+ for(i=0;i<80;i++) {
+  if(i<20) {fun=(b&c)|((~b)&d);k=0x5a827999UL;}
+  else if(i<40) {fun=BX(BX(b,c),d);k=0x6ed9eba1UL;}
+  else if(i<60) {
+   fun=(b&c)|(b&d)|(c&d);k=0x8f1bbcdcUL;
+  } else {fun=BX(BX(b,c),d);k=0xca62c1d6UL;}
+  t=(rol(a,5)+fun+e+k+w[i])&W32;
+  e=d;d=c;c=rol(b,30);b=a;a=t;
+ }
+ h[0]=(h[0]+a)&W32;h[1]=(h[1]+b)&W32;
+ h[2]=(h[2]+c)&W32;h[3]=(h[3]+d)&W32;
+ h[4]=(h[4]+e)&W32;
+}
+static int use_opt_sha=0;
 static void pack_sha(const unsigned char *p,unsigned long len,
                      unsigned char digest[20]) {
  unsigned char tail[128];
@@ -106,15 +132,15 @@ static void pack_sha(const unsigned char *p,unsigned long len,
  h[0]=0x67452301UL;h[1]=0xefcdab89UL;
  h[2]=0x98badcfeUL;h[3]=0x10325476UL;
  h[4]=0xc3d2e1f0UL;
- for(i=0;i<full;i++) sha_block(p+i*64);
+ for(i=0;i<full;i++) (use_opt_sha?sha_opt_block:sha_block)(p+i*64);
  for(i=0;i<128;i++) tail[i]=0;
  for(i=0;i<rem;i++) tail[i]=p[full*64+i];
  tail[rem]=0x80;
  /* The captured PACK is well below 2^29 bytes. */
  for(i=0;i<8;i++) tail[(rem<56?56:120)+i]=
   (unsigned char)(i<4?0:(bits>>(8*(7-i))));
- sha_block(tail);
- if(rem>=56) sha_block(tail+64);
+ (use_opt_sha?sha_opt_block:sha_block)(tail);
+ if(rem>=56) (use_opt_sha?sha_opt_block:sha_block)(tail+64);
  for(i=0;i<5;i++) for(j=0;j<4;j++)
   digest[i*4+j]=(unsigned char)(h[i]>>(24-j*8));
 }
@@ -152,7 +178,7 @@ static int fast_oid(int type,const unsigned char *p,
    block[i]=part<(unsigned long)k?
             head[part]:p[part-(unsigned long)k];
   }
-  sha_block(block);
+  (use_opt_sha?sha_opt_block:sha_block)(block);
   done+=64;
  }
  rem=total-done;
@@ -166,8 +192,8 @@ static int fast_oid(int type,const unsigned char *p,
  bits=total*8;
  for(i=0;i<8;i++) tail[(rem<56?56:120)+i]=
   (unsigned char)(i<4?0:(bits>>(8*(7-i))));
- sha_block(tail);
- if(rem>=56) sha_block(tail+64);
+ (use_opt_sha?sha_opt_block:sha_block)(tail);
+ if(rem>=56) (use_opt_sha?sha_opt_block:sha_block)(tail+64);
  for(i=0;i<5;i++) for(j=0;j<4;j++)
   oid[i*4+j]=(unsigned char)(h[i]>>(24-j*8));
  return 1;
@@ -186,7 +212,7 @@ int main(int argc,char **argv) {
  unsigned long ofs_count=0,applied=0,rs=0;
  unsigned char *tmp;
  int baseidx=-1,doapply=0,dooid=0,profile=0,fastmode=0;
- int fastonly=0;
+ int fastonly=0,optmode=0;
  unsigned char reference[20];
  clock_t t0,hash_ticks=0,delta_ticks=0;
  unsigned long hash_bytes=0,delta_bytes=0;
@@ -199,7 +225,12 @@ int main(int argc,char **argv) {
   if(argc!=2) {
    puts("Usage: GITCWALK [20|100|ALL|BADSHA]");return 4;
   }
-  if(argv[1][0]=='F'&&argv[1][1]=='A'&&
+  if(argv[1][0]=='O'&&argv[1][1]=='P'&&
+     argv[1][2]=='T'&&argv[1][3]=='S'&&
+     argv[1][4]=='H'&&argv[1][5]=='A'&&
+     argv[1][6]==0) {
+   doapply=1;dooid=1;optmode=1;limit=PACKCAP;
+  } else if(argv[1][0]=='F'&&argv[1][1]=='A'&&
      argv[1][2]=='S'&&argv[1][3]=='T'&&
      argv[1][4]=='O'&&argv[1][5]=='N'&&
      argv[1][6]=='L'&&argv[1][7]=='Y'&&
@@ -407,6 +438,7 @@ int main(int argc,char **argv) {
    if(type==6) free(tmp);
    if(dooid) {
     if(profile) t0=clock();
+    if(optmode) use_opt_sha=1;
     if(fastonly) {
      if(!fast_oid(objtype[idx],objdata[idx],rs,objoid[idx])) {
       puts("FAIL FAST ONLY OID");return 8;
@@ -424,6 +456,7 @@ int main(int argc,char **argv) {
                           objoid[idx])) {
      puts("FAIL OBJECT OID");return 8;
     }
+    if(optmode) use_opt_sha=0;
     if(profile) {
      hash_ticks+=clock()-t0;
      hash_bytes+=rs;
@@ -450,6 +483,7 @@ int main(int argc,char **argv) {
  if(dooid) printf("OBJECT OIDS COMPUTED %lu\n",idx);
  if(fastmode) printf("FAST OIDS MATCH REFERENCE %lu\n",idx);
  if(fastonly) printf("FAST ONLY OIDS COMPUTED %lu\n",idx);
+ if(optmode) printf("OPT SHA OIDS COMPUTED %lu\n",idx);
  if(profile) {
   printf("PROFILE CLOCKS PER SEC %lu\n",
          (unsigned long)CLOCKS_PER_SEC);
