@@ -86,4 +86,69 @@ bypass attempts; server-certificate validation is mandatory on this path.
 
 ## GCCCMS native build checkpoint (2026-09-26)
 
-GITCLNK compiles GCCCMS C with GCCE NOASM PARM STD380, assembles generated source and GITCAPI/GITINFA using Assembler XF, and links with PDPCLIB. GITCAPI converts the GCCCMS argument-list convention into the direct parameter-block convention required by GITNAPI. With PACKIN defined for GITPBUF PACK A, GITCLNK GITCINF and GITCINF passed the abc fixture (3 bytes output, 11 consumed) and first live object (270 bytes output, 182 consumed, next object at offset 196). See docs/STATUS.md for the later 1,808-object native inflate-only result.
+The original `GITCLNK EXEC` proved the compiler/linker path through
+`GITCWALK` and `GITCIDX`. The canonical replacement is now the
+neutral `CMSCLNK EXEC` (7-character CMS name), intended to live on
+the existing GCCCMS F disk. The default `NAPI` mode retains the
+exact required GCCE, Assembler XF, GITCAPI/GITINFA and PDPCLIB
+linkage. Optional `PLAIN` builds C modules that do not call the
+native inflater (such as `GITCIDX`), without assembling those
+adapters. Both modes must be proven on actual CMS before retiring
+the previous A-disk copy of `GITCLNK`.
+
+## Installing the build EXEC on the GCC F disk
+
+GitHub `src/CMSCLNK.EXEC` is canonical. Upload through the
+existing *single* c3270 file-transfer session; the uploader places
+it on CMS A first. On the Mac from `ibm-sandbox/src`:
+
+```sh
+git pull
+./cms-upload.sh /Users/mikewommack/ibm-sandbox/src/CMSCLNK.EXEC
+```
+
+On CMS, **first** check whether the GCC F disk is read/write:
+
+```text
+QUERY DISK F
+```
+
+If it reports `R/W`, copy the new EXEC to F and confirm it exists:
+
+```text
+COPYFILE CMSCLNK EXEC A CMSCLNK EXEC F
+STATE CMSCLNK EXEC F
+```
+
+For an F disk reporting `R/O`, **do not attempt a destructive
+remount or modify GCC installation**. The A-disk copy is usable
+temporarily; installing on F requires authorized read/write access
+to that minidisk. Never assume the F disk can be written merely
+because GCC is installed there.
+
+Once the copy to F succeeds and is verified, remove **only the
+new A-disk copy** (`ERASE CMSCLNK EXEC A`) to ensure subsequent
+`CMSCLNK` commands resolve to F, leaving the proven
+`GITCLNK EXEC A` available until the new build is CMS-validated.
+The runtime build uses source and generated assembler on A; moving
+the tool itself to F does **not** move the Git-specific adapter
+sources from A or overwrite working modules.
+
+Usage once F is ready:
+
+```text
+CMSCLNK GITCWALK
+CMSCLNK GITCIDX PLAIN
+```
+
+The default `NAPI` mode uses the original target-proven sequence.
+`PLAIN` is new and needs one real CMS link test. Avoid needless
+rebuilding of the working `GITCWALK MODULE` while validating
+installation; begin with `CMSCLNK GITCIDX PLAIN` after copying
+the new tool to F. Once its module builds and runs normally,
+`GITCLNK EXEC A` can be retired. IBM's `QUERY DISK F` reports
+`R/W` or `R/O` and `COPYFILE` supports copying across accessed
+minidisks; a file is only writable on a disk accessed `R/W`.
+
+For historic compile fixture results, see `docs/STATUS.md`;
+for the native object-store next gate, see `docs/NATIVE_INDEX.md`.
