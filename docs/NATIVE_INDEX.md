@@ -193,6 +193,16 @@ Do not clear or overwrite target-proven `GITINDEX DATA A`
 during this experiment. Failure of the seek experiment leaves
 V1 CHECK/GET available.
 
+### Live F-disk result
+
+On 2026-09-26 the user's `Q DISK` showed GCCLIB VDEV 29D accessed
+as **F R/W**, with 2,055 free blocks. The neutral compiler may
+therefore be copied directly from its uploaded A copy into F.
+Copy and verify before erasing the temporary CMSCLNK EXEC A,
+and preserve the existing old GITCLNK EXEC A for rollback until
+the new CMSCLNK PLAIN build passes. The actual transfer, copy,
+compile and seek-index run remain CMS-validation pending.
+
 ### Compiler EXEC rename
 
 `GITCLNK` is the historical build utility used for the target-proven
