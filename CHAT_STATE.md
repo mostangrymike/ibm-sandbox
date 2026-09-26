@@ -906,3 +906,8 @@ GitHub issue #2 was retitled to native PACK object persistence and
 REF_DELTA support, remains open. Issue #5 remains open for durable
 stunnel startup. Do not pause for permission when repository work can
 proceed; stop for necessary CMS validation only.
+
+Source review caught an EBCDIC portability hazard in the new stage
+code: literal numeric byte 10 is not a portable C newline on CMS.
+Commit `f895939` replaces numeric delimiter constants with proper
+`'\\n'`/`'\\r'` character escapes before any CMS write/readback test.
