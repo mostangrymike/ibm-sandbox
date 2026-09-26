@@ -355,3 +355,30 @@ absolute-path GITCWALK.C. CMS: FILEDEF PACKIN DISK GITPBUF PACK A,
 GITCLNK GITCWALK, GITCWALK OPTSHA. Compare sample IDs and timings to
 original OID 20.70/20.83 seconds; run FASTOID for established parity if
 needed. Preserve prior target-proven modes and captured PACK.
+
+## 2026-09-26 OPTSHA result, OPTCHECK parity, issue review
+
+CMS `GITCWALK OPTSHA` passed PACK checksum, 1,808 inflations,
+1,117 OFS_DELTA applications, and 1,808 OID computations, with the
+four displayed sample OIDs unchanged and final offset 340,007.
+CPU/elapsed 19.29/19.42 seconds versus original OID 20.70/20.83;
+one-run elapsed improvement 1.41 seconds (~6.8%), not a repeated
+benchmark or full optimized/reference OID comparison.
+
+Commit `688244a` adds isolated `GITCWALK OPTCHECK`: computes optimized
+and original SHA-1 OIDs for each reconstructed object, compares all
+20 bytes per object, and fails immediately on mismatch. It prints
+`OPT OIDS MATCH REFERENCE 1808` only on full success. OPTCHECK has not
+yet been compiled or run on CMS. Test via Mac git pull, absolute-path
+cms-upload.sh GITCWALK.C; CMS FILEDEF PACKIN, GITCLNK GITCWALK,
+GITCWALK OPTCHECK. Its double-hash runtime is not a speed benchmark.
+
+GitHub open-issue review: closed #4 as not planned because direct legacy
+z/VM System SSL certificate-chain research is not on the practical
+Git-client critical path (working validated stunnel bridge exists).
+Closed #3 as not planned because interrupted long REXX-walker timing is
+superseded for current native PACK benchmarks by normal completed CMS
+runs. Kept #2 open: native PACK persistence/REF_DELTA and production
+readiness remain unfinished despite substantial speed improvements.
+Kept #5 open: automatic stunnel startup/reboot persistence is still
+unproven. Do not claim these remaining tasks completed.
