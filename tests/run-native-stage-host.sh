@@ -17,5 +17,13 @@ if [ "$actual" != "$expected" ]; then
  echo "Native Git OID:   $actual" >&2
  exit 1
 fi
+${CC:-cc} -x c -std=c89 -D_POSIX_C_SOURCE=200809L \
+    -O2 -Wall -Wextra -o "$tmp/native_index_host" \
+    "$root/tests/native_index_host.c"
+(
+ cd "$tmp"
+ ./native_index_host > index.log
+)
 cat "$tmp/host.log"
-echo "HOST STAGING AND GIT OID TEST PASSED"
+cat "$tmp/index.log"
+echo "HOST STAGING, INDEX AND GIT OID TEST PASSED"
