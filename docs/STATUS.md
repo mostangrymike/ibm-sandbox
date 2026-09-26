@@ -160,3 +160,7 @@ GCCCMS builds C modules using GCCE NOASM, IBM ASSEMBLE, PDPCLIB and GENMOD.\nA s
 ## 2026-09-26 first-object ABI and live inflate regression
 
 The combined `GITCLNK GITCINF` build completed with three clean Assembler XF assemblies. `GITCAPI` resolves GCCCMS's argument-list ABI versus `GITNAPI`'s direct parameter-block ABI. The known-good `abc` fixture returned `RC 0 OUTPUT 3 USED 11 DATA 61 62 63`. The live PACK first object at byte offset 14 returned `RC 0 OUTPUT 270 USED 182`, establishing the second-object offset at 196; CMS printed `PASS FIRST LIVE OBJECT INFLATE`. These results corroborate the newer 1,808-object `GITCWALK` inflate-only milestone above. Native PACK trailer verification, OFS/REF delta reconstruction, final object OIDs and persistence remain distinct unfinished acceptance gates.
+
+## First-object C/assembler regression (2026-09-26)
+
+CMS confirmed GITCLNK builds C, GITCAPI, and GITINFA cleanly. The GCCCMS adapter fixes the argument-list versus direct parameter-block ABI mismatch. GITCINF passed its abc fixture (RC 0, output 3, consumed 11, data 61 62 63) and the first live PACK object (RC 0, output 270, consumed 182, next object offset 196). These results complement the later 1,808-object GITCWALK inflate-only gate already recorded above. Native checksum verification, delta application, object IDs, and persistence remain unfinished.
