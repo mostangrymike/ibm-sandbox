@@ -186,6 +186,7 @@ int main(int argc,char **argv) {
  unsigned long ofs_count=0,applied=0,rs=0;
  unsigned char *tmp;
  int baseidx=-1,doapply=0,dooid=0,profile=0,fastmode=0;
+ int fastonly=0;
  unsigned char reference[20];
  clock_t t0,hash_ticks=0,delta_ticks=0;
  unsigned long hash_bytes=0,delta_bytes=0;
@@ -199,6 +200,12 @@ int main(int argc,char **argv) {
    puts("Usage: GITCWALK [20|100|ALL|BADSHA]");return 4;
   }
   if(argv[1][0]=='F'&&argv[1][1]=='A'&&
+     argv[1][2]=='S'&&argv[1][3]=='T'&&
+     argv[1][4]=='O'&&argv[1][5]=='N'&&
+     argv[1][6]=='L'&&argv[1][7]=='Y'&&
+     argv[1][8]==0) {
+   doapply=1;dooid=1;fastonly=1;limit=PACKCAP;
+  } else if(argv[1][0]=='F'&&argv[1][1]=='A'&&
      argv[1][2]=='S'&&argv[1][3]=='T'&&
      argv[1][4]=='O'&&argv[1][5]=='I'&&
      argv[1][6]=='D'&&argv[1][7]==0) {
@@ -400,7 +407,11 @@ int main(int argc,char **argv) {
    if(type==6) free(tmp);
    if(dooid) {
     if(profile) t0=clock();
-    if(fastmode) {
+    if(fastonly) {
+     if(!fast_oid(objtype[idx],objdata[idx],rs,objoid[idx])) {
+      puts("FAIL FAST ONLY OID");return 8;
+     }
+    } else if(fastmode) {
      if(!fast_oid(objtype[idx],objdata[idx],rs,objoid[idx])||
         !object_oid(objtype[idx],objdata[idx],rs,reference)) {
       puts("FAIL FAST OID");return 8;
@@ -438,6 +449,7 @@ int main(int argc,char **argv) {
  if(doapply) printf("OFS DELTAS APPLIED %lu\n",applied);
  if(dooid) printf("OBJECT OIDS COMPUTED %lu\n",idx);
  if(fastmode) printf("FAST OIDS MATCH REFERENCE %lu\n",idx);
+ if(fastonly) printf("FAST ONLY OIDS COMPUTED %lu\n",idx);
  if(profile) {
   printf("PROFILE CLOCKS PER SEC %lu\n",
          (unsigned long)CLOCKS_PER_SEC);
