@@ -22,7 +22,10 @@ int gitcapi(unsigned long *p) {
  inflateEnd(&z);
  return rc==Z_STREAM_END?0:8;
 }
-int main(void) {
+int main(int argc,char **argv) {
  char *args[2]={"GITCWALK","RPACK"};
+ if(argc==2&&strcmp(argv[1],"RAPPLY")==0)
+  args[1]="RAPPLY";
+ else if(argc!=1) return 4;
  return gitcwalk_entry(2,args);
 }
