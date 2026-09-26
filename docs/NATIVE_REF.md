@@ -4,8 +4,9 @@ The captured 340,027-byte real GitHub PACK contains 1,808 objects
 and 1,117 OFS_DELTA entries, but **no REF_DELTA entries**.
 Its existing CMS-proven staging/index/seek modes are retained.
 The separate native REF_DELTA implementation below is
-host-regression-proven; actual CMS compilation and execution of its
-new code are still pending.
+host-regression-proven; the first CMS compilation succeeded but
+its REF lookup exposed a shared EBCDIC Git-header defect, corrected
+in current source but not yet retested on CMS.
 
 ## Implemented scope
 
@@ -138,3 +139,29 @@ After this test, the next distinct functional milestone is
 persisted/external and forward REF_DELTA base resolution with
 restart/recovery tests; the real captured PACK cannot exercise
 those cases. Keep GitHub issue #2 open.
+
+## September 26 CMS failure and confirmed correction
+
+The user compiled the original REF implementation successfully
+with `CMSCLNK GITCWALK` (NAPI, no assembler flags), but the first
+real target REF fixture failed at OBJ 2. The raw PACK was valid:
+SHA-1 `9CD9B4CCFA5D5371C608230D3157F4766248355F`, 114 bytes,
+3 objects. The ordinary first blob `abc` was incorrectly reported
+as `5492DC378EC7097F3437B18BE17F4C58D0923A03` instead of
+Git's `F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F`.
+RPACK and RAPPLY each printed `UNRESOLVED REF BASE OBJ 2` (RC 8).
+The original RTEST passed its internal chain, but its resulting
+`0414AADE456A43A390C3A0E689DD2CDE0439DAA7` was also not the
+correct Git ABCDE OID.
+
+This is the confirmed EBCDIC canonical object-header bug, not an
+inflater or PACK SHA defect. Corrected GitHub source now builds the
+hash preimage using explicit ASCII bytes and checks known Git test
+vectors directly on CMS. GITCIDX was corrected too; earlier staged
+and indexed OIDs need rebuilding separately, not promotion. Host
+regressions passed; the corrected implementation is **awaiting CMS
+validation**. For current minimal Mac transfer, exact CMS retest,
+and safe separately named staging/index rebuild, use
+[Canonical Git OIDs on CMS](CANONICAL_OIDS.md). The older RPACK
+steps above are historical and do not by themselves establish a
+successful target result. No new live GitHub capture is needed.
