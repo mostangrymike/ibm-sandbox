@@ -771,3 +771,21 @@ passes, a separate fast-only benchmark can measure speed. Keep ALL,
 BADSHA, OFSAPPLY, OID, and PROFILE unchanged. Mac git pull and upload
 absolute-path GITCWALK.C; CMS FILEDEF PACKIN, GITCLNK GITCWALK,
 GITCWALK FASTOID. No network POST needed.
+
+## 2026-09-26 FASTOID parity target proof; FASTONLY benchmark pending
+
+CMS `GITCWALK FASTOID` passed native PACK SHA-1, inflated all 1,808
+objects, applied all 1,117 OFS_DELTA programs, and computed 1,808 OIDs.
+Its independent streaming SHA-1 output matched the original OID hash
+byte-for-byte for every object: `FAST OIDS MATCH REFERENCE 1808`.
+CPU/elapsed was 36.45/36.63 seconds, expected to include both hash
+paths and therefore not a streaming-only benchmark.
+
+Commit `9ffbbf3` adds isolated `GITCWALK FASTONLY` mode: same PACK
+integrity, reconstruction and sample OID output, but hashes each object
+only with the target-proven streaming implementation. FASTOID remains
+available as the byte-for-byte parity regression. FASTONLY is not yet
+compiled/tested on CMS. Next: Mac git pull and absolute-path upload
+GITCWALK.C; CMS FILEDEF PACKIN, GITCLNK GITCWALK, GITCWALK FASTONLY.
+Compare its CPU/elapsed to prior OID 20.70/20.83 seconds. No network
+POST needed. Independent Git/REXX sample-OID comparison still pending.
