@@ -33,7 +33,8 @@ https://www.ibm.com/docs/en/zvm/7.3.0?topic=commands-filedef).
 Commits `fa7052d`, `0806eb0`, and `04be7ee` add buffered
 32-byte hex output records, independent readback validation, a
 non-destructive negative gate, and progress/error diagnostics.
-This code is **not yet compiled or validated on CMS**.
+The updated code is now compiled and **CMS target-validated** for the
+captured 1,808-object PACK.
 
 `STAGE` computes the optimized OID for every reconstructed object
 and emits CMS **variable-length text records** to FILEDEF `OBJOUT`:
@@ -80,9 +81,8 @@ GITCWALK VERIFY
 GITCWALK BADSTG
 ```
 
-The explicitly specified output LRECL corrects the previous open
-error. Do not treat output as proven until `STAGE`, `VERIFY`, and
-`BADSTG` all pass on target. If `OBJOUT` still fails, capture the
+Explicit output LRECL 80 corrected the open error. All three
+commands passed on CMS with the captured real PACK. If `OBJOUT` still fails, capture the
 FILEDEF response, `QUERY FILEDEF`, and complete CMS error code.
 If writing stops partway through, `STAGE WRITE STOP OBJ n` identifies
 the object; treat any partial file as invalid.
@@ -131,3 +131,18 @@ against Git using both empty and nonempty synthetic bodies. Latest
 expanded run: https://github.com/mostangrymike/ibm-sandbox/actions/runs/36271873734 .
 This does not prove CMS variable-record output, CMS readback, or the
 real captured PACK's unique index count.
+
+## Target result: CMS staging and full readback
+
+On September 26, 2026, GITCLNK GITCWALK built cleanly. With
+RECFM V and LRECL 80, STAGE wrote all 1,808 reconstructed objects,
+including 1,117 OFS_DELTA results, in 24.89 s CPU / 25.32 s elapsed.
+Independent disk readback VERIFY recomputed all 1,808 OIDs and
+completed in 22.64 / 22.84 s. BADSTG rejected deliberately altered
+first-object content without writing it to disk. The full V1 index
+passed GITCIDX CHECK (1,808 unique OIDs), and both first and last
+GET calls returned correct metadata and independently verified OIDs.
+Staging and indexing are thus target-proven for this captured PACK;
+they are not a committed generation/recovery mechanism or native
+REF_DELTA resolution. New AUDIT and experimental direct-seek index
+tests are documented in [Native index](NATIVE_INDEX.md).
