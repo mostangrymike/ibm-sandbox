@@ -50,6 +50,9 @@ ${CC:-cc} -x c -std=c89 -O2 -Wall -Wextra \
  cd "$tmp"
  cp REFPACK.PACK 'dd:PACKIN'
  ./native_ref_pack_host > ref-positive.log
+ ./native_ref_pack_host RAPPLY > ref-apply.log
+ grep -q '^REF DELTAS APPLIED 2$' ref-apply.log
+ grep -q '^OFS DELTAS APPLIED 0$' ref-apply.log
  grep -q '^PASS 3 OBJECTS NEXT OFFSET ' ref-positive.log
  grep -q '^OFS DELTAS APPLIED 0$' ref-positive.log
  grep -q '^REF DELTAS APPLIED 2$' ref-positive.log
@@ -62,6 +65,12 @@ ${CC:-cc} -x c -std=c89 -O2 -Wall -Wextra \
   fi
   grep -q "^UNRESOLVED REF BASE OBJ $object$" ref-negative.log
  done
+ cp REFSIZE.PACK 'dd:PACKIN'
+ if ./native_ref_pack_host > ref-negative.log; then
+  echo 'Accepted invalid REF base-size declaration' >&2
+  exit 1
+ fi
+ grep -q '^FAIL NATIVE DELTA APPLY$' ref-negative.log
  cp REFSHA.PACK 'dd:PACKIN'
  if ./native_ref_pack_host > ref-negative.log; then
   echo 'Accepted corrupted PACK trailer' >&2
