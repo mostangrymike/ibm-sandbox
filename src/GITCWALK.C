@@ -212,7 +212,7 @@ int main(int argc,char **argv) {
  unsigned long ofs_count=0,applied=0,rs=0;
  unsigned char *tmp;
  int baseidx=-1,doapply=0,dooid=0,profile=0,fastmode=0;
- int fastonly=0,optmode=0;
+ int fastonly=0,optmode=0,optcheck=0;
  unsigned char reference[20];
  clock_t t0,hash_ticks=0,delta_ticks=0;
  unsigned long hash_bytes=0,delta_bytes=0;
@@ -226,6 +226,12 @@ int main(int argc,char **argv) {
    puts("Usage: GITCWALK [20|100|ALL|BADSHA]");return 4;
   }
   if(argv[1][0]=='O'&&argv[1][1]=='P'&&
+     argv[1][2]=='T'&&argv[1][3]=='C'&&
+     argv[1][4]=='H'&&argv[1][5]=='E'&&
+     argv[1][6]=='C'&&argv[1][7]=='K'&&
+     argv[1][8]==0) {
+   doapply=1;dooid=1;optcheck=1;limit=PACKCAP;
+  } else if(argv[1][0]=='O'&&argv[1][1]=='P'&&
      argv[1][2]=='T'&&argv[1][3]=='S'&&
      argv[1][4]=='H'&&argv[1][5]=='A'&&
      argv[1][6]==0) {
@@ -438,8 +444,20 @@ int main(int argc,char **argv) {
    if(type==6) free(tmp);
    if(dooid) {
     if(profile) t0=clock();
-    if(optmode) use_opt_sha=1;
-    if(fastonly) {
+    if(optmode||optcheck) use_opt_sha=1;
+    if(optcheck) {
+     if(!object_oid(objtype[idx],objdata[idx],rs,objoid[idx])) {
+      puts("FAIL OPT OID");return 8;
+     }
+     use_opt_sha=0;
+     if(!object_oid(objtype[idx],objdata[idx],rs,reference)) {
+      puts("FAIL REFERENCE OID");return 8;
+     }
+     for(i=0;i<20;i++) if(objoid[idx][i]!=reference[i]) {
+      printf("OPT OID MISMATCH OBJ %lu\n",idx+1);
+      return 8;
+     }
+    } else if(fastonly) {
      if(!fast_oid(objtype[idx],objdata[idx],rs,objoid[idx])) {
       puts("FAIL FAST ONLY OID");return 8;
      }
@@ -456,7 +474,7 @@ int main(int argc,char **argv) {
                           objoid[idx])) {
      puts("FAIL OBJECT OID");return 8;
     }
-    if(optmode) use_opt_sha=0;
+    if(optmode||optcheck) use_opt_sha=0;
     if(profile) {
      hash_ticks+=clock()-t0;
      hash_bytes+=rs;
@@ -484,6 +502,7 @@ int main(int argc,char **argv) {
  if(fastmode) printf("FAST OIDS MATCH REFERENCE %lu\n",idx);
  if(fastonly) printf("FAST ONLY OIDS COMPUTED %lu\n",idx);
  if(optmode) printf("OPT SHA OIDS COMPUTED %lu\n",idx);
+ if(optcheck) printf("OPT OIDS MATCH REFERENCE %lu\n",idx);
  if(profile) {
   printf("PROFILE CLOCKS PER SEC %lu\n",
          (unsigned long)CLOCKS_PER_SEC);
