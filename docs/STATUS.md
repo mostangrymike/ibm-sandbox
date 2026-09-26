@@ -26,7 +26,7 @@ PACK processing, objects, and refs remain owned by CMS.
 - M12 practical HTTPS transport: EC2 TLS bridge and live GitHub smart-HTTP
   discovery/upload-pack transport PROVEN. Native z/VM System SSL remains experimental.
 - M13 native C live-PACK walker: 1,808-object inflate gate PASSED; delta
-  resolution, object OIDs and native PACK SHA-1 verification remain.
+  resolution, object OIDs and native PACK SHA-1 verification DONE; delta resolution and object OIDs remain.
 
 All completed milestones above are target-proven.
 
@@ -183,15 +183,23 @@ rerun the network POST for local performance testing.
 
 The combined `GITCLNK GITCINF` build completed with three clean Assembler XF assemblies. `GITCAPI` resolves GCCCMS's argument-list ABI versus `GITNAPI`'s direct parameter-block ABI. The known-good `abc` fixture returned `RC 0 OUTPUT 3 USED 11 DATA 61 62 63`. The live PACK first object at byte offset 14 returned `RC 0 OUTPUT 270 USED 182`, establishing the second-object offset at 196; CMS printed `PASS FIRST LIVE OBJECT INFLATE`. These results corroborate the newer 1,808-object `GITCWALK` inflate-only milestone above. Native PACK trailer verification, OFS/REF delta reconstruction, final object OIDs and persistence remain distinct unfinished acceptance gates.
 
-## Native PACK checksum implementation (awaiting CMS test)
+## Native PACK checksum target proof — 2026-09-26
 
-`GITCWALK.C` now computes SHA-1 over the PACK bytes excluding the final
-20-byte trailer and compares the resulting digest to that trailer before
-inflating any objects. A mismatch returns RC 8 and prints both digests.
-The captured PACK's independently verified expected SHA-1 is
-`8C92E274ECA84B797F8925A6082915DD6CCDE196`. This code is committed
-but has **not yet passed a target-side GCCCMS build or regression**.
-The earlier 1,808-object inflation result remains proven independently.
-Next target gate: rebuild GITCWALK, verify the checksum output and complete
-1,808-object walk against the existing captured GITPBUF PACK A; then add a
-corrupted-trailer negative test before marking native checksum proven.
+GITCWALK.C now computes native SHA-1 over the PACK bytes excluding the final
+20-byte trailer and rejects a mismatched trailer before inflation. GCCCMS
+GITCLNK GITCWALK compiled successfully with three clean Assembler XF passes.
+The captured 340,027-byte PACK passed native checksum verification with SHA-1
+`8C92E274ECA84B797F8925A6082915DD6CCDE196`. GITCWALK ALL then inflated
+all 1,808 objects successfully and ended at offset 340,007, exactly 20 bytes
+before the trailer. CMS reported `Ready; T=3.33/3.38` (CPU/elapsed seconds).
+This is the checksum-plus-inflation gate; it does not imply delta application,
+base resolution, object OID calculation or persistence. The earlier 2.14-second
+inflation-only measurement remains a separate proven benchmark. A corrupted
+trailer negative test remains to be run for fail-closed regression coverage.
+
+## Next action
+
+Add an isolated negative checksum test without modifying the captured
+GITPBUF PACK A. Then implement native OFS_DELTA base resolution and delta
+application, followed by REF_DELTA, object OIDs and persistence. Preserve the
+REXX walker as the correctness reference and avoid another network POST.
