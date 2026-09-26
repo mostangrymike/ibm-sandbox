@@ -61,3 +61,7 @@ Fail closed on malformed headers, short reads, invalid delta bases, wrong
 object hashes, missing trailers and out-of-range offsets. No unbounded REXX
 strings or repeated network capture. Do not claim native-engine parity until
 its implementation and target-side tests demonstrate it.
+
+## GCCCMS native C checkpoint (2026-09-26)
+
+The working GCCCMS toolchain now builds C plus the existing assembler inflater. `GITCAPI` adapts GCCCMS's argument-list calling convention to `GITNAPI`; `GITCLNK` builds the combined CMS module. `GITCINF` passed both a known-good `abc` zlib fixture (3 output bytes, 11 compressed bytes) and the first live PACK object (270 output bytes, 182 compressed bytes, next object at offset 196). The later `GITCWALK` 1,808-object inflation timing and remaining correctness work are recorded in `docs/STATUS.md`. C is the main native-engine implementation path; retain assembler where the existing inflater or CMS interfaces warrant it, and preserve the REXX walker as the correctness reference.
