@@ -259,3 +259,15 @@ gates and reported `OFS DELTAS APPLIED 1117`, with final offset 340,007
 now target-proven. Native REF_DELTA support, independent reconstructed-object
 OID verification, and object persistence are not yet implemented. Continue
 using the unchanged captured PACK and preserve existing ALL/BADSHA gates.
+
+## Native reconstructed-object OID gate — awaiting CMS test
+
+Commit `3e77538` adds isolated `GITCWALK OID` mode. It retains and
+reconstructs ordinary/OFS_DELTA objects exactly as target-proven OFSAPPLY,
+then hashes Git's canonical `<type> <size>\\0` prefix and reconstructed
+bytes with the native SHA-1 implementation. It prints OIDs for the first
+three and last objects, and `OBJECT OIDS COMPUTED 1808` on success.
+The OID mode has not yet been compiled or run on CMS, and its output
+must be compared with an independent Git/REXX reference before claiming
+OID correctness. `ALL`, `BADSHA`, and `OFSAPPLY` remain separate gates.
+Native REF_DELTA resolution and CMS persistence remain future work.
