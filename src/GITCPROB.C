@@ -25,7 +25,14 @@ int main(int argc,char **argv) {
         puts("Usage: GITCPROB fn ft fm");
         return 4;
     }
-    {\n        char fileid[40];\n        if(strlen(argv[1])>8 || strlen(argv[2])>8 || strlen(argv[3])>2) {\n            puts("FAIL invalid CMS fileid"); return 4;\n        }\n        sprintf(fileid,"%s %s %s",argv[1],argv[2],argv[3]);\n        f=fopen(fileid,"r");\n    }
+    {
+        char fileid[40];
+        if(strlen(argv[1])>8 || strlen(argv[2])>8 || strlen(argv[3])>2) {
+            puts("FAIL invalid CMS fileid"); return 4;
+        }
+        sprintf(fileid,"%s %s %s",argv[1],argv[2],argv[3]);
+        f=fopen(fileid,"r");
+    }
     if(!f) { perror("GITCPROB"); return 8; }
     start=clock();
     while(fgets(line,sizeof line,f)) {
@@ -48,7 +55,8 @@ int main(int argc,char **argv) {
     if(ferror(f)) { puts("FAIL read"); fclose(f); return 8; }
     end=clock();
     fclose(f);
-    if(count<12 || hdr[0]!=0x50 || hdr[1]!=0x41 || hdr[2]!=0x43 || hdr[3]!=0x4b) {
+    if(count<12 || hdr[0]!=0x50 || hdr[1]!=0x41 ||
+       hdr[2]!=0x43 || hdr[3]!=0x4b) {
         puts("FAIL PACK signature (check ASCII/EBCDIC)");
         return 8;
     }
