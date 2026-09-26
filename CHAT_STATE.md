@@ -870,3 +870,39 @@ cms-upload.sh. CMS: `FILEDEF PACKIN DISK GITPBUF PACK A`,
 `GITCWALK STAGE`. Expected final `STAGED OBJECTS 1808`; inspect
 `LISTFILE GITSTAGE DATA A` and first/last records after success.
 Keep #2 open until persistence and REF_DELTA support are addressed.
+
+## 2026-09-26 STAGE open failure and next isolated CMS gate
+
+User's initial CMS `GITCWALK STAGE` successfully checked PACK SHA-1
+`8C92E274ECA84B797F8925A6082915DD6CCDE196`, inflated all
+1,808 objects, applied all 1,117 OFS_DELTA instructions, computed
+all 1,808 OIDs, and reached the expected final offset 340,007.
+Writing failed: `DMSSOP036E Open error code 4 on OBJOUT`,
+`STAGE WRITE FAIL`, CMS RC 8, CPU/elapsed 19.30/19.51 seconds.
+`LISTFILE GITSTAGE DATA A` confirmed no file exists. No staging
+persistence was demonstrated.
+
+IBM FILEDEF documentation confirms open error 4 on new output if both
+LRECL and BLKSIZE are unspecified. Initial FILEDEF lacked both.
+For the next test, compile FIRST and then define the output:
+`FILEDEF OBJOUT DISK GITSTAGE DATA A (RECFM V LRECL 80`.
+Reissue `FILEDEF PACKIN DISK GITPBUF PACK A` after compilation.
+Reference: https://www.ibm.com/docs/en/zvm/7.3.0?topic=commands-filedef
+
+Commits `fa7052d` (buffer hex into <=64-char body records),
+`0806eb0` (independent `VERIFY` and memory-only `BADSTG` gates),
+and `04be7ee` (stage progress every 256 objects and error position)
+are committed to main. Source is <=72 columns; CMS compile and the
+new write/readback modes have not yet been target-tested. Details
+and exact commands are in `docs/NATIVE_STAGE.md` (commit `faf7b05`).
+Next target test: git pull and transfer absolute-path GITCWALK.C,
+`GITCLNK GITCWALK`, FILEDEFs above, `GITCWALK STAGE`,
+`LISTFILE GITSTAGE DATA A`, `GITCWALK VERIFY`,
+`GITCWALK BADSTG`. Expected: `STAGED OBJECTS 1808`,
+`STAGE VERIFIED OBJECTS 1808`, and
+`PASS BADSTG: ALTERED BODY REJECTED`.
+
+GitHub issue #2 was retitled to native PACK object persistence and
+REF_DELTA support, remains open. Issue #5 remains open for durable
+stunnel startup. Do not pause for permission when repository work can
+proceed; stop for necessary CMS validation only.
