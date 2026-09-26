@@ -134,3 +134,23 @@ issue #2 remains open. The compiler wrapper has been renamed
 `CMSCLNK EXEC` and is intended for the writable GCC F disk;
 a command-labeled installation result was not present in the
 most recent posted CMS transcript.
+
+## Critical OID interoperability correction: Git ASCII vs CMS EBCDIC
+
+The first CMS backward-REF test exposed a shared native C hash defect:
+GCCCMS formatted the Git object header in EBCDIC, not the required
+ASCII. As a result, previous 1,808-object C hash parity, staging,
+readback and index checks established internal consistency but did
+not establish canonical Git OIDs. PACK checksum and object inflation
+remained correct. Inspected REXX GITBOID/GITOID already construct
+canonical headers explicitly in hexadecimal.
+
+GITCWALK and GITCIDX now construct explicit ASCII headers, and
+known Git blob-vector tests detect CMS character-set regressions.
+IDX2/SIDX2 index formats reject old incompatible indexes. Full
+host CI passes, but the fixed C code needs the next CMS run.
+Preserve existing GITSTAGE, GITINDEX and GITSEEK files; rebuild
+separately named GITFIX stage/index/seek files from the saved PACK
+after the corrected REF test succeeds. See docs/CANONICAL_OIDS.md
+for exact safe commands and source of the defect. Issue #2 remains
+open for target proof and broader native Git functionality.
