@@ -1,0 +1,12 @@
+GITCAPI  CSECT
+GITCAPI  AMODE 24
+GITCAPI  RMODE 24
+         ENTRY GITCAPI
+         EXTRN GITNAPI
+* GCCCMS R1 -> argument list; first word -> six-word API block.
+* Tail branch preserves the original C caller's R14 and R13.
+         L     1,0(1)
+         L     15,=V(GITNAPI)
+         BR    15
+         LTORG
+         END
