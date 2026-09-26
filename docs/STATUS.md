@@ -182,3 +182,16 @@ rerun the network POST for local performance testing.
 ## 2026-09-26 first-object ABI and live inflate regression
 
 The combined `GITCLNK GITCINF` build completed with three clean Assembler XF assemblies. `GITCAPI` resolves GCCCMS's argument-list ABI versus `GITNAPI`'s direct parameter-block ABI. The known-good `abc` fixture returned `RC 0 OUTPUT 3 USED 11 DATA 61 62 63`. The live PACK first object at byte offset 14 returned `RC 0 OUTPUT 270 USED 182`, establishing the second-object offset at 196; CMS printed `PASS FIRST LIVE OBJECT INFLATE`. These results corroborate the newer 1,808-object `GITCWALK` inflate-only milestone above. Native PACK trailer verification, OFS/REF delta reconstruction, final object OIDs and persistence remain distinct unfinished acceptance gates.
+
+## Native PACK checksum implementation (awaiting CMS test)
+
+`GITCWALK.C` now computes SHA-1 over the PACK bytes excluding the final
+20-byte trailer and compares the resulting digest to that trailer before
+inflating any objects. A mismatch returns RC 8 and prints both digests.
+The captured PACK's independently verified expected SHA-1 is
+`8C92E274ECA84B797F8925A6082915DD6CCDE196`. This code is committed
+but has **not yet passed a target-side GCCCMS build or regression**.
+The earlier 1,808-object inflation result remains proven independently.
+Next target gate: rebuild GITCWALK, verify the checksum output and complete
+1,808-object walk against the existing captured GITPBUF PACK A; then add a
+corrupted-trailer negative test before marking native checksum proven.
