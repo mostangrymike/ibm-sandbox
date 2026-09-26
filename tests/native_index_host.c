@@ -48,7 +48,7 @@ int main(void) {
  if(!f) return 18;
  if(fseek(f,0,SEEK_END)!=0) return 19;
  end=ftell(f);
- if(end<16||ftruncate(fileno(f),end-1)!=0) return 20;
+ if(end<16||ftruncate(fileno(f),end-2)!=0) return 20;
  if(fclose(f)!=0) return 21;
  if(idx_read()==0) return 22;
  if(idx_build()!=0) return 23;
