@@ -105,7 +105,7 @@ static int idx_build(void) {
  }
  out=fopen("dd:IDXOUT","w");
  if(!out) {perror("IDXOUT");return 8;}
- if(fprintf(out,"IDX1 1808 %lu\n",unique)<0) goto badout;
+ if(fprintf(out,"IDX2 1808 %lu\n",unique)<0) goto badout;
  for(j=0;j<unique;j++) {
   if(fputs("OID ",out)==EOF) goto badout;
   idx_print(out,idx_entries[j].oid);
@@ -114,7 +114,7 @@ static int idx_build(void) {
              idx_entries[j].size)<0) goto badout;
  }
  /* A missing trailer makes interrupted writes detectable. */
- if(fprintf(out,"END 1808 %lu\n",unique)<0) goto badout;
+ if(fprintf(out,"END2 1808 %lu\n",unique)<0) goto badout;
  if(fclose(out)!=0) {puts("INDEX CLOSE FAIL");return 8;}
  idx_unique=unique;
  printf("INDEX WRITTEN 1808 UNIQUE %lu\n",unique);
@@ -201,9 +201,32 @@ static int idx_find(const unsigned char *target) {
 static unsigned long ih[5];
 static unsigned char idx_hashbuf[65568];
 static unsigned char idx_body[65536];
-static const char *idx_types[5]={
- "","commit","tree","blob","tag"
+/* Git hashes canonical ASCII, never CMS-native EBCDIC text. */
+static const unsigned char idx_ascii[5][7]={
+ {0},
+ {0x63,0x6f,0x6d,0x6d,0x69,0x74,0},
+ {0x74,0x72,0x65,0x65,0,0,0},
+ {0x62,0x6c,0x6f,0x62,0,0,0},
+ {0x74,0x61,0x67,0,0,0,0}
 };
+static int idx_head(int type,unsigned long n,
+                    unsigned char *dst) {
+ unsigned char digits[12];
+ unsigned long rem=n;
+ int i=0,j=0;
+ if(type<1||type>4||n>IDXSIZE) return 0;
+ while(idx_ascii[type][i]) {
+  dst[i]=idx_ascii[type][i];i++;
+ }
+ dst[i++]=0x20;
+ do {
+  digits[j++]=(unsigned char)(0x30+rem%10);
+  rem/=10;
+ } while(rem);
+ while(j) dst[i++]=digits[--j];
+ dst[i++]=0;
+ return i;
+}
 static unsigned long idx_rol(unsigned long x,unsigned int n) {
  x&=IS32;
  return ((x<<n)|(x>>(32-n)))&IS32;
@@ -238,9 +261,8 @@ static int idx_hash(int type,const unsigned char *body,
  unsigned int i,j;
  int head;
  if(type<1||type>4||n>IDXSIZE) return 0;
- head=sprintf((char *)idx_hashbuf,"%s %lu",
-              idx_types[type],n);
- idx_hashbuf[head++]=0;
+ head=idx_head(type,n,idx_hashbuf);
+ if(!head) return 0;
  memcpy(idx_hashbuf+head,body,(size_t)n);
  total=(unsigned long)head+n;
  full=total/64;rem=total%64;bits=total*8;
@@ -258,6 +280,26 @@ static int idx_hash(int type,const unsigned char *body,
  for(i=0;i<5;i++) for(j=0;j<4;j++)
   digest[i*4+j]=(unsigned char)(ih[i]>>(24-j*8));
  return 1;
+}
+/* Portable on-target known Git vector; no stage required. */
+static int idx_self(void) {
+ static const unsigned char abc[3]={0x61,0x62,0x63};
+ static const unsigned char known[20]={
+  0xf2,0xba,0x8f,0x84,0xab,0x5c,0x1b,0xce,
+  0x84,0xa7,0xb4,0x41,0xcb,0x19,0x59,0xcf,
+  0xc7,0x09,0x3b,0x7f
+ };
+ static const unsigned char head3[7]={
+  0x62,0x6c,0x6f,0x62,0x20,0x33,0
+ };
+ unsigned char hdr[32],got[20];
+ if(idx_head(3,3,hdr)!=7||memcmp(hdr,head3,7)!=0)
+  return 8;
+ if(!idx_hash(3,abc,3,got)||memcmp(got,known,20)!=0) {
+  puts("INDEX CANONICAL ASCII HASH FAIL");return 8;
+ }
+ puts("INDEX CANONICAL ASCII ABC PASSED");
+ return 0;
 }
 /* GET confirms the selected staged object still hashes to its OID. */
 static int idx_get(const unsigned char *target) {
@@ -446,7 +488,7 @@ static int sidx_build(void) {
  }
  out=fopen("dd:FIDXOUT","w");
  if(!out) {perror("FIDXOUT");return 8;}
- if(fprintf(out,"SIDX1 1808 %lu\n",unique)<0) goto badout;
+ if(fprintf(out,"SIDX2 1808 %lu\n",unique)<0) goto badout;
  for(j=0;j<unique;j++) {
   if(fputs("OID ",out)==EOF) goto badout;
   idx_print(out,sidx[j].oid);
@@ -454,7 +496,7 @@ static int sidx_build(void) {
              sidx[j].number,sidx[j].type,
              sidx[j].size,sidx[j].offset)<0) goto badout;
  }
- if(fprintf(out,"SEND 1808 %lu\n",unique)<0) goto badout;
+ if(fprintf(out,"SEND2 1808 %lu\n",unique)<0) goto badout;
  if(fclose(out)!=0) {
   puts("SEEK INDEX CLOSE FAIL");return 8;
  }
@@ -581,6 +623,8 @@ bad:
 }
 int main(int argc,char **argv) {
  unsigned char query[20];
+ if(argc==2&&strcmp(argv[1],"SELF")==0)
+  return idx_self();
  if(argc==2&&strcmp(argv[1],"SBUILD")==0)
   return sidx_build();
  if(argc==2&&strcmp(argv[1],"SCHECK")==0) {
