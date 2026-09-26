@@ -1116,3 +1116,21 @@ Detailed exact Mac and CMS commands are in docs/NATIVE_INDEX.md
 and docs/BUILD.md. No new network PACK POST or restaging needed.
 Maintain all other project rules and maximize independent work;
 pause only for genuine CMS target validation.
+
+## 2026-09-26 F-disk status supplied by user
+
+Live CMS `Q DISK` result: GCCLIB virtual disk 29D is accessed as
+F **R/W**, with 20 cylinders, 4,096-byte blocks, 38 files,
+1,545 blocks used and **2,055 blocks free** (3,600 total).
+No ACL/minidisk remount or permission request is needed for
+neutral GCC compiler EXEC placement. After uploading canonical
+src/CMSCLNK.EXEC to A using the existing Mac c3270 uploader,
+run `COPYFILE CMSCLNK EXEC A CMSCLNK EXEC F`, verify with
+`STATE CMSCLNK EXEC F`, then `ERASE CMSCLNK EXEC A` only on
+successful copy/verification. Keep existing `GITCLNK EXEC A`
+rollback until `CMSCLNK GITCIDX PLAIN` builds on actual CMS.
+After compiling, independently run GITCIDX AUDIT and isolated
+SBUILD/SCHECK/SGET with existing GITSTAGE DATA A, GITINDEX DATA A
+and separate GITSEEK INDEX A. Existing index must not be overwritten.
+Target validation has not yet been reported; do not claim installation,
+PLAIN compiler execution, AUDIT or the seek experiment passed.
