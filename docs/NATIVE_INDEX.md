@@ -22,7 +22,10 @@ to `IDXOUT`. The final `END 1808 <unique>` trailer is a completeness
 marker: interrupted, truncated, unsorted, duplicated, or malformed
 index files cannot pass `GITCIDX CHECK`. Never use an index that
 has not passed `CHECK`. `FIND` validates the entire index first
-and performs binary search in bounded memory.
+and performs binary search in bounded memory. `GET` additionally
+opens `STGIN`, retrieves the selected body, recomputes its canonical
+Git object SHA-1 independently, rejects mismatches, and reports the
+first 16 bytes in hex without displaying unbounded object content.
 
 The source and output records fit CMS variable record length 80.
 The code retains only 1,808 descriptors in memory and does not
@@ -55,6 +58,8 @@ GITCIDX BUILD
 GITCIDX CHECK
 GITCIDX FIND 5A81BAF86E7DC7B72377087A8F160CAF8B889B74
 GITCIDX FIND BA9F4D66B41352F0D0266090D14AD52F37318FCB
+GITCIDX GET 5A81BAF86E7DC7B72377087A8F160CAF8B889B74
+GITCIDX GET BA9F4D66B41352F0D0266090D14AD52F37318FCB
 ```
 
 The first STAGE open attempt with no output LRECL failed
@@ -71,7 +76,7 @@ The full run should report `STAGED OBJECTS 1808`,
 The exact unique count is intentionally not assumed until the
 captured real PACK is successfully indexed on CMS.
 
-`FIND` should resolve the first and last displayed OIDs to
+`FIND` and `GET` should resolve the first and last displayed OIDs to
 object ordinals 1 and 1808, provided those OIDs occur only once
 in the captured PACK. If duplicates exist, the index retains the
 earliest ordinal.
@@ -79,13 +84,20 @@ earliest ordinal.
 ## Host tests and remaining work
 
 `tests/native_index_host.c` adds 1,808 synthetic descriptors,
-duplicate normalization, OID lookups, negative lookup, malformed
-record detection and truncated-trailer rejection. The
-`tests/run-native-stage-host.sh` runner compiles it under C89.
-GitHub CI must pass before requesting the combined CMS test.
+duplicate normalization, OID lookups, independently hashed GETs,
+valid-hex body tamper rejection, negative lookup, malformed staged
+record detection and truncated-index-trailer rejection. The
+`tests/run-native-stage-host.sh` runner compiles it under C89 and
+independently checks native Git SHA-1 across all four Git object types
+and both empty and nonempty bodies. GitHub Actions run
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36271873734
+passed the full GET and tamper tests; run
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36271801328
+passed the all-types Git cross-check. These are synthetic host
+proofs, not CMS target tests.
 
-This is only the **index layer**. Durable content-addressable object
+This is only the **index and verified retrieval prototype**. Durable content-addressable object
 storage still requires safe committed generations or equivalent
-recovery, indexed body retrieval, restart proof, and native
+recovery, CMS-verified indexed body retrieval, restart proof, and native
 REF_DELTA resolution. Indexing the verified spool does not complete
 issue #2.
