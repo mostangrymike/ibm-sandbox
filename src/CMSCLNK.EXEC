@@ -1,0 +1,55 @@
+/* CMSCLNK: GCCCMS C build, optionally with native inflater. */
+/* Usage: CMSCLNK name [NAPI|PLAIN] (source on A disk). */
+/* Install on F with GCCE/PDPCLIB; object sources stay on A. */
+parse upper arg name mode extra
+if name='' | extra\='' | length(name)>8 then do
+ say 'Usage: CMSCLNK name [NAPI|PLAIN]'
+ exit 4
+end
+if mode='' then mode='NAPI'
+if mode\='NAPI' & mode\='PLAIN' then do
+ say 'CMSCLNK: mode must be NAPI or PLAIN'
+ exit 4
+end
+address command
+'GLOBAL MACLIB OSMACRO DMSGPI PDPCLIB'
+if rc\=0 then exit rc
+'EXEC GCCE' name 'C A (NOASM PARM STD380'
+if rc\=0 then do
+ say 'CMSCLNK: C compile failed'
+ exit 12
+end
+'ASSEMBLE' name
+if rc\=0 then do
+ say 'CMSCLNK: C assembly failed'
+ exit 16
+end
+if mode='NAPI' then do
+ 'ASSEMBLE GITCAPI'
+ if rc\=0 then do
+  say 'CMSCLNK: adapter assembly failed'
+  exit 16
+ end
+ 'ASSEMBLE GITINFA'
+ if rc\=0 then do
+  say 'CMSCLNK: inflater assembly failed'
+  exit 16
+ end
+end
+'GLOBAL TXTLIB PDPCLIB'
+if rc\=0 then exit rc
+if mode='NAPI' then
+ 'LOAD' name 'GITCAPI GITINFA (NOAUTO NOMAP'
+else
+ 'LOAD' name '(NOAUTO NOMAP'
+if rc\=0 then do
+ say 'CMSCLNK: LOAD failed'
+ exit 20
+end
+'GENMOD' name
+if rc\=0 then do
+ say 'CMSCLNK: GENMOD failed'
+ exit 24
+end
+say 'CMSCLNK: built' name 'MODULE mode' mode
+exit 0
