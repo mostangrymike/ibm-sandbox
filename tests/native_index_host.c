@@ -6,6 +6,22 @@
 #include "../src/GITCIDX.C"
 #undef main
 #include <unistd.h>
+/* Refuse indexes generated with the legacy EBCDIC-hash code. */
+static int reject_v1(const char *filename,long at,int seek) {
+ FILE *f;
+ int c;
+ f=fopen(filename,"r+b");
+ if(!f) return 0;
+ if(fseek(f,at,SEEK_SET)!=0) return 0;
+ c=fgetc(f);
+ if(c!='2'||fseek(f,at,SEEK_SET)!=0||
+    fputc('1',f)==EOF||fclose(f)!=0) return 0;
+ if((seek?sidx_read():idx_read())==0) return 0;
+ f=fopen(filename,"r+b");
+ if(!f||fseek(f,at,SEEK_SET)!=0||
+    fputc('2',f)==EOF||fclose(f)!=0) return 0;
+ return (seek?sidx_read():idx_read())==0;
+}
 int main(void) {
  FILE *f;
  char line[256];
@@ -24,11 +40,13 @@ int main(void) {
  if(sidx_build()!=0||sidx_count!=8) return 39;
  if(rename("dd:FIDXOUT","dd:FIDXIN")!=0||
     sidx_read()!=0||sidx_count!=8) return 40;
+ if(!reject_v1("dd:FIDXIN",4,1)) return 47;
  if(sidx_get(objoid[0])!=0||
     sidx_get(objoid[1807])!=0) return 41;
  if(idx_unique!=8) return 5;
  if(rename("dd:IDXOUT","dd:IDXIN")!=0) return 6;
  if(idx_read()!=0||idx_unique!=8||idx_audit()!=0) return 7;
+ if(!reject_v1("dd:IDXIN",3,0)) return 48;
  for(k=0;k<20;k++) needle[k]=objoid[0][k];
  if(idx_find(needle)!=0||idx_get(needle)!=0) return 8;
  for(k=0;k<idx_unique;k++)
