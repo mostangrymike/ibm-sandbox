@@ -108,3 +108,29 @@ source and host static checks pass. To install the EXEC next to
 GCC on CMS F, check `QUERY DISK F`, copy from A to F only if F is
 R/W, and validate the newly built module before retiring the
 original A-disk GITCLNK. Instructions: `docs/BUILD.md`.
+
+## September 26, 2026 — direct-seek index and native REF progress
+
+On actual CMS, `GITCIDX AUDIT` independently verified all 1,808
+staged bodies and 1,808 unique OIDs. Experimental `SBUILD` and
+`SCHECK` succeeded; direct `SGET` retrieved both end objects,
+confirming ftell/fseek across separate CMS program invocations
+on an unchanged stage. Last-object retrieval improved from
+7.59 s elapsed via the original V1 sequential GET to 1.77 s
+via SGET in the observed runs (4.29x).
+
+The native C PACK walker now also resolves backward, same-PACK
+REF_DELTA chains by OID, without changing the proven original
+PACK file or index. A deterministic three-object REF PACK has
+passed host native parsing, negative tests and independent
+`git index-pack`/`git cat-file` interoperability tests.
+CMS validation of the updated REF-capable C source remains open.
+See `docs/NATIVE_REF.md` for one isolated CMS fixture gate;
+do not repeat the live GitHub network capture.
+
+The remaining full-Git gaps include forward/external REF_DELTA
+bases and atomic/recoverable content-addressable storage. GitHub
+issue #2 remains open. The compiler wrapper has been renamed
+`CMSCLNK EXEC` and is intended for the writable GCC F disk;
+a command-labeled installation result was not present in the
+most recent posted CMS transcript.
