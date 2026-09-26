@@ -122,8 +122,6 @@ int main(int argc,char **argv) {
    for(i=0;i<12;i++) printf("%02X",pack[i]);
    putchar('\n');
   }
-    pack[0],pack[1],pack[2],pack[3],pack[4],pack[5],
-    pack[6],pack[7],pack[8],pack[9],pack[10],pack[11]);
   return 8;
  }
  if(pack[4]!=0||pack[5]!=0||pack[6]!=0||pack[7]!=2) {
