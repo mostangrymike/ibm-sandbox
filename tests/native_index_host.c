@@ -49,6 +49,31 @@ int main(void) {
  if(rename("dd:IDXOUT","dd:IDXIN")!=0) return 6;
  if(idx_read()!=0||idx_unique!=8||idx_audit()!=0) return 7;
  if(!reject_v1("dd:IDXIN",3,0)) return 48;
+ if(idx_pair()!=0) return 50;
+ /* A structurally valid stale SIDX2 descriptor must fail PAIR. */
+ f=fopen("dd:FIDXIN","r+b");
+ if(!f||!fgets(line,sizeof line,f)) return 51;
+ start=ftell(f);
+ if(!fgets(line,sizeof line,f)) return 52;
+ {
+  char *q;
+  q=strchr(line+45,' ');
+  if(!q) return 53;
+  q=strchr(q+1,' ');
+  if(!q||q[1]<'0'||q[1]>'9') return 54;
+  start+=(long)(q+1-line);
+ }
+ if(fseek(f,start,SEEK_SET)!=0) return 55;
+ old=fgetc(f);
+ if(old==EOF||fseek(f,start,SEEK_SET)!=0||
+    fputc(old=='0'?'1':'0',f)==EOF||
+    fclose(f)!=0) return 56;
+ if(sidx_read()!=0||idx_pair()==0) return 57;
+ f=fopen("dd:FIDXIN","r+b");
+ if(!f||fseek(f,start,SEEK_SET)!=0||
+    fputc(old,f)==EOF||fclose(f)!=0) return 58;
+ if(idx_pair()!=0) return 59;
+
  for(k=0;k<20;k++) needle[k]=objoid[0][k];
  if(idx_find(needle)!=0||idx_get(needle)!=0) return 8;
  for(k=0;k<idx_unique;k++)
@@ -92,12 +117,14 @@ int main(void) {
     fputc(old=='0'?'1':'0',f)==EOF||
     fclose(f)!=0) return 35;
  if(idx_get(needle)!=8||idx_audit()!=8||
-    sidx_get(needle)!=8||sidx_audit()!=8) return 36;
+    sidx_get(needle)!=8||sidx_audit()!=8||
+    idx_pair()!=8) return 36;
  f=fopen("dd:STGIN","r+b");
  if(!f||fseek(f,start,SEEK_SET)!=0||
     fputc(old,f)==EOF||fclose(f)!=0) return 37;
  if(idx_get(needle)!=0||idx_audit()!=0||
-    sidx_get(needle)!=0||sidx_audit()!=0) return 38;
+    sidx_get(needle)!=0||sidx_audit()!=0||
+    idx_pair()!=0) return 38;
  /* Reject malformed staged hex, then restore the verified source. */
  f=fopen("dd:STGIN","r+b");
  if(!f||!fgets(line,sizeof line,f)) return 27;
