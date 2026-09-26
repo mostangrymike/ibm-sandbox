@@ -260,3 +260,25 @@ GITFIX SEEK only after the corrected RTEST/RPACK pass on CMS.
 Exact commands: docs/CANONICAL_OIDS.md. The previously measured
 1.77-second SGET run proved seek mechanics, but its legacy stored
 OID is not a canonical Git ID.
+
+## New optional IDX2 and SIDX2 PAIR gate
+
+Following the on-target Git-compatible RTEST, SELF, RPACK and RAPPLY
+success on September 26, 2026, GITCIDX gained a separate PAIR mode.
+It loads both newly generated IDX2 and SIDX2 formats, compares every
+sorted canonical OID, object ordinal, type and size, and then invokes
+SVAUDIT to independently reopen/re-hash every staged object via the
+seek cookies. It detects stale or mismatched index generations,
+corrupt stage bytes and invalid offsets without modifying source or
+index files. The 1,808-synthetic-object host suite passed including
+mismatch injection and restoration in GitHub Actions run
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36280431393 .
+
+PAIR is additional verification, not required before the first
+canonical 1,808-object GITFIX migration. After uploading/building the
+latest GITCIDX.C with the known CMSCLNK GITCIDX PLAIN sequence and
+binding STGIN, IDXIN and FIDXIN to the three new GITFIX files,
+`GITCIDX PAIR` must report `PAIR VERIFIED UNIQUE 1808` before
+regarding the two indexes as a mutually attested candidate. The
+original IDX1/SIDX1 files must remain historical, not be mixed with
+new IDX2/SIDX2 files.
