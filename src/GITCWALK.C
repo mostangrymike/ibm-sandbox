@@ -10,6 +10,57 @@ extern int gitcapi(unsigned long *);
 static unsigned char pack[340027];
 static unsigned char output[65536];
 static unsigned long api[6];
+/* SHA-1 uses 32-bit words even when unsigned long is wider. */
+#define W32 0xffffffffUL
+static unsigned long h[5];
+static unsigned long rol(unsigned long x,unsigned int n) {
+ x &= W32;
+ return ((x<<n)|(x>>(32-n)))&W32;
+}
+static void sha_block(const unsigned char *p) {
+ unsigned long w[80],a,b,c,d,e,t,fun,k;
+ unsigned int i;
+ for(i=0;i<16;i++) {
+  w[i]=((unsigned long)p[i*4]<<24)|
+       ((unsigned long)p[i*4+1]<<16)|
+       ((unsigned long)p[i*4+2]<<8)|p[i*4+3];
+ }
+ for(i=16;i<80;i++)
+  w[i]=rol(w[i-3]^w[i-8]^w[i-14]^w[i-16],1);
+ a=h[0];b=h[1];c=h[2];d=h[3];e=h[4];
+ for(i=0;i<80;i++) {
+  if(i<20) {fun=(b&c)|((~b)&d);k=0x5a827999UL;}
+  else if(i<40) {fun=b^c^d;k=0x6ed9eba1UL;}
+  else if(i<60) {
+   fun=(b&c)|(b&d)|(c&d);k=0x8f1bbcdcUL;
+  } else {fun=b^c^d;k=0xca62c1d6UL;}
+  t=(rol(a,5)+fun+e+k+w[i])&W32;
+  e=d;d=c;c=rol(b,30);b=a;a=t;
+ }
+ h[0]=(h[0]+a)&W32;h[1]=(h[1]+b)&W32;
+ h[2]=(h[2]+c)&W32;h[3]=(h[3]+d)&W32;
+ h[4]=(h[4]+e)&W32;
+}
+static void pack_sha(const unsigned char *p,unsigned long len,
+                     unsigned char digest[20]) {
+ unsigned char tail[128];
+ unsigned long full=len/64,rem=len%64,bits=len*8;
+ unsigned int i,j;
+ h[0]=0x67452301UL;h[1]=0xefcdab89UL;
+ h[2]=0x98badcfeUL;h[3]=0x10325476UL;
+ h[4]=0xc3d2e1f0UL;
+ for(i=0;i<full;i++) sha_block(p+i*64);
+ for(i=0;i<128;i++) tail[i]=0;
+ for(i=0;i<rem;i++) tail[i]=p[full*64+i];
+ tail[rem]=0x80;
+ /* The captured PACK is well below 2^29 bytes. */
+ for(i=0;i<8;i++) tail[(rem<56?56:120)+i]=
+  (unsigned char)(i<4?0:(bits>>(8*(7-i))));
+ sha_block(tail);
+ if(rem>=56) sha_block(tail+64);
+ for(i=0;i<5;i++) for(j=0;j<4;j++)
+  digest[i*4+j]=(unsigned char)(h[i]>>(24-j*8));
+}
 static int nib(int c) {
  if(c>='0'&&c<='9') return c-'0';
  if(c>='A'&&c<='F') return c-'A'+10;
@@ -22,6 +73,7 @@ int main(int argc,char **argv) {
  unsigned long n=0,pos,size,used,base;
  unsigned long count,idx,shift,limit;
  char *end;
+ unsigned char digest[20];
  int i,hi,lo,b,type,rc;
  limit=20;
  if(argc>1) {
@@ -70,6 +122,20 @@ int main(int argc,char **argv) {
  if(pack[4]!=0||pack[5]!=0||pack[6]!=0||pack[7]!=2) {
   puts("UNSUPPORTED PACK VERSION");return 8;
  }
+ pack_sha(pack,n-20,digest);
+ for(i=0;i<20;i++) if(digest[i]!=pack[n-20+i]) {
+  int j;
+  puts("FAIL NATIVE PACK SHA1");
+  printf("COMPUTED ");
+  for(j=0;j<20;j++) printf("%02X",digest[j]);
+  printf("\\nTRAILER  ");
+  for(j=0;j<20;j++) printf("%02X",pack[n-20+j]);
+  putchar('\\n');
+  return 8;
+ }
+ printf("NATIVE PACK SHA1 ");
+ for(i=0;i<20;i++) printf("%02X",digest[i]);
+ putchar('\\n');
  count=((unsigned long)pack[8]<<24)|
        ((unsigned long)pack[9]<<16)|
        ((unsigned long)pack[10]<<8)|pack[11];
