@@ -1,0 +1,39 @@
+/* GITCLNK: build GCCCMS C program with native GITINFA inflater. */
+/* Usage: GITCLNK filename (source on A disk). */
+parse upper arg name extra
+if name='' | extra\='' | length(name)>8 then do
+ say 'Usage: GITCLNK filename'
+ exit 4
+end
+address command
+'GLOBAL MACLIB OSMACRO DMSGPI PDPCLIB'
+if rc\=0 then exit rc
+'EXEC GCCE' name 'C A (NOASM PARM STD380'
+if rc\=0 then do
+ say 'GITCLNK: C compile failed'
+ exit 12
+end
+'ASSEMBLE' name
+if rc\=0 then do
+ say 'GITCLNK: C assembly failed'
+ exit 16
+end
+'ASSEMBLE GITINFA'
+if rc\=0 then do
+ say 'GITCLNK: inflater assembly failed'
+ exit 16
+end
+'GLOBAL TXTLIB PDPCLIB'
+if rc\=0 then exit rc
+'LOAD' name 'GITINFA (NOAUTO NOMAP'
+if rc\=0 then do
+ say 'GITCLNK: combined LOAD failed'
+ exit 20
+end
+'GENMOD' name
+if rc\=0 then do
+ say 'GITCLNK: GENMOD failed'
+ exit 24
+end
+say 'GITCLNK: built' name 'MODULE with GITNAPI'
+exit 0
