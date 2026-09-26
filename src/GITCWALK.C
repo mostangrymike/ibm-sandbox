@@ -202,24 +202,37 @@ static int fast_oid(int type,const unsigned char *p,
 /* Stage verified objects as CMS text records, not loose Git files. */
 static int stage_objects(unsigned long count) {
  FILE *out;
- unsigned long j,k;
+ unsigned long j,k,take,m;
+ char line[65];
+ static const char hex[]="0123456789ABCDEF";
  out=fopen("dd:OBJOUT","w");
  if(!out) {perror("OBJOUT");return 0;}
  for(j=0;j<count;j++) {
   if(fprintf(out,"OBJ %lu %d %lu ",j+1,objtype[j],
-             objlen[j])<0) return 0;
-  for(k=0;k<20;k++)
-   if(fprintf(out,"%02X",objoid[j][k])<0) return 0;
-  if(fputc(10,out)==EOF) return 0;
-  for(k=0;k<objlen[j];k++) {
-   if(fprintf(out,"%02X",objdata[j][k])<0) return 0;
-   if(k%32==31||k+1==objlen[j])
-    if(fputc(10,out)==EOF) return 0;
+             objlen[j])<0) goto fail;
+  for(k=0;k<20;k++) {
+   line[k*2]=hex[objoid[j][k]>>4];
+   line[k*2+1]=hex[objoid[j][k]&15];
   }
-  if(objlen[j]==0&&fputc(10,out)==EOF) return 0;
+  line[40]=0;
+  if(fputs(line,out)==EOF||fputc(10,out)==EOF) goto fail;
+  for(k=0;k<objlen[j];k+=take) {
+   take=objlen[j]-k;
+   if(take>32) take=32;
+   for(m=0;m<take;m++) {
+    line[m*2]=hex[objdata[j][k+m]>>4];
+    line[m*2+1]=hex[objdata[j][k+m]&15];
+   }
+   line[take*2]=0;
+   if(fputs(line,out)==EOF||fputc(10,out)==EOF) goto fail;
+  }
+  if(objlen[j]==0&&fputc(10,out)==EOF) goto fail;
  }
  if(fclose(out)!=0) return 0;
  return 1;
+fail:
+ fclose(out);
+ return 0;
 }
 static int nib(int c) {
  if(c>='0'&&c<='9') return c-'0';
