@@ -22,6 +22,7 @@ int STAGE_HOST_ENTRY(void) {
  unsigned long i,j;
  long at;
  int c;
+ if(ref_selftest()!=0) return 22;
  if(!object_oid(3,abc,3,abc_oid)) return 1;
  printf("HOST ABC OID ");
  for(j=0;j<20;j++) printf("%02x",abc_oid[j]);
