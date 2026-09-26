@@ -911,3 +911,24 @@ Source review caught an EBCDIC portability hazard in the new stage
 code: literal numeric byte 10 is not a portable C newline on CMS.
 Commit `f895939` replaces numeric delimiter constants with proper
 `'\\n'`/`'\\r'` character escapes before any CMS write/readback test.
+
+## Host-side independent regression gate (2026-09-26)
+
+The host-only test `tests/native_stage_host.c` and its shell runner
+`tests/run-native-stage-host.sh` compile `GITCWALK.C` as C89, stage
+1,808 synthetic objects, read back and rehash every record, pass a
+non-destructive in-memory corruption gate, demonstrate detection of an
+actual corrupted disk record, restore the record, and pass readback
+again. The runner independently checks Git's native `git hash-object`
+result for `blob 3\\0abc`: `f2ba8f84ab5c1bce84a7b441cb1959cfc7093b7f`.
+
+GitHub Actions workflow `.github/workflows/native-stage.yml` run
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36271371785
+completed successfully. Its job logs show `STAGE VERIFIED OBJECTS 1808`,
+`PASS BADSTG: ALTERED BODY REJECTED`, detection of disk tamper, and
+`HOST STAGING AND GIT OID TEST PASSED`. These are HOST tests with
+synthetic data, NOT CMS target proof or real-PACK staging proof.
+
+Source code and stage test commands in `docs/NATIVE_STAGE.md` remain
+a CMS validation gate. Do not stop for non-CMS repository tasks; only
+request the real CMS compile/run when needed.
