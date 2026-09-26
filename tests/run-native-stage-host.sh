@@ -24,6 +24,23 @@ ${CC:-cc} -x c -std=c89 -D_POSIX_C_SOURCE=200809L \
  cd "$tmp"
  ./native_index_host > index.log
 )
+for type in commit tree blob tag; do
+ for fixture in ABC EMPTY; do
+  actual=$(sed -n "s/^HOST OID $type $fixture //p" "$tmp/host.log")
+  if [ "$fixture" = ABC ]; then
+   expected=$(printf abc | git hash-object -t "$type" \
+     --literally --stdin)
+  else
+   expected=$(printf '' | git hash-object -t "$type" \
+     --literally --stdin)
+  fi
+  if [ "$actual" != "$expected" ]; then
+   echo "OID mismatch: $type $fixture" >&2
+   echo "Native: $actual Git: $expected" >&2
+   exit 1
+  fi
+ done
+done
 cat "$tmp/host.log"
 cat "$tmp/index.log"
 echo "HOST STAGING, INDEX AND GIT OID TEST PASSED"
