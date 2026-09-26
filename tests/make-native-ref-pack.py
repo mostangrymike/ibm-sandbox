@@ -69,6 +69,8 @@ def main():
         ("REFSHA.PACK", wrong_sha),
     ):
         write_records(folder / name, pack)
+        if name == "REFPACK.PACK":
+            (folder / "REFPACK.bin").write_bytes(pack)
         print(name, len(pack), "bytes")
     print("OID ABC", oid(b"abc").hex().upper())
     print("OID ABCD", oid(b"abcd").hex().upper())
