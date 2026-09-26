@@ -1,4 +1,4 @@
-/* GITCWALK: first 20 live PACK objects, native C + GITCAPI.
+/* GITCWALK: native live PACK walk, C + GITCAPI.
  * Reads hex-record GITPBUF PACK through FILEDEF PACKIN.
  * No delta application yet: checks inflated delta instruction lengths.
  */
@@ -16,12 +16,19 @@ static int nib(int c) {
  if(c>='a'&&c<='f') return c-'a'+10;
  return -1;
 }
-int main(void) {
+int main(int argc,char **argv) {
  FILE *f;
  char line[256];
  unsigned long n=0,pos,size,used,base;
- unsigned long count,idx,shift;
+ unsigned long count,idx,shift,limit;
  int i,hi,lo,b,type,rc;
+ limit=20;
+ if(argc>1) {
+  if(argc!=2 || (argv[1][0]!='A' && argv[1][0]!='a')) {
+   puts("Usage: GITCWALK [ALL]");return 4;
+  }
+  limit=PACKCAP;
+ }
  f=fopen("dd:PACKIN","r");
  if(!f) {perror("PACKIN");return 8;}
  while(fgets(line,sizeof line,f)) {
@@ -49,12 +56,16 @@ int main(void) {
     pack[6],pack[7],pack[8],pack[9],pack[10],pack[11]);
   return 8;
  }
+ if(pack[4]!=0||pack[5]!=0||pack[6]!=0||pack[7]!=2) {
+  puts("UNSUPPORTED PACK VERSION");return 8;
+ }
  count=((unsigned long)pack[8]<<24)|
        ((unsigned long)pack[9]<<16)|
        ((unsigned long)pack[10]<<8)|pack[11];
  printf("PACK BYTES %lu OBJECTS %lu\n",n,count);
  pos=12;
- for(idx=0;idx<20 && idx<count;idx++) {
+ if(limit>count) limit=count;
+ for(idx=0;idx<limit;idx++) {
   if(pos>=n-20) {puts("SHORT HEADER");return 8;}
   b=pack[pos++];
   type=(b>>4)&7;
@@ -86,22 +97,33 @@ int main(void) {
    puts("BAD OBJECT TYPE");return 8;
   }
   if(pos>=n-20) return 8;
+  if(size>OUTCAP) {
+   printf("OBJ %lu OUTPUT CAP %lu SIZE %lu\n",
+          idx+1,OUTCAP,size);
+   return 8;
+  }
   api[0]=(unsigned long)(pack+pos);
   api[1]=n-20-pos;
   api[2]=(unsigned long)output;
   api[3]=OUTCAP;
   api[4]=api[5]=0;
   rc=gitcapi(api);
-  printf("OBJ %lu TYPE %d SIZE %lu",
-         idx+1,type,size);
-  printf(" ZOFF %lu RC %d OUT %lu USED %lu\n",
-         pos,rc,api[4],api[5]);
+  if(limit==20 || rc!=0 || idx%100==0 || idx+1==limit) {
+   printf("OBJ %lu TYPE %d SIZE %lu",
+          idx+1,type,size);
+   printf(" ZOFF %lu RC %d OUT %lu USED %lu\n",
+          pos,rc,api[4],api[5]);
+  }
   if(rc!=0||api[5]==0||api[5]>api[1]||
      api[4]!=size) {
    puts("FAIL OBJECT INFLATE");return 8;
   }
   used=api[5];
   pos+=used;
+ }
+ if(idx==count && pos!=n-20) {
+  printf("PACK END MISMATCH %lu EXPECT %lu\n",pos,n-20);
+  return 8;
  }
  printf("PASS %lu OBJECTS NEXT OFFSET %lu\n",
         idx,pos);
