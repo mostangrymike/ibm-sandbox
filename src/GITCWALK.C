@@ -13,6 +13,9 @@ static unsigned long api[6];
 /* SHA-1 uses 32-bit words even when unsigned long is wider. */
 #define W32 0xffffffffUL
 static unsigned long h[5];
+static unsigned long bxor(unsigned long a,unsigned long b) {
+ return ((a|b)&(~(a&b)))&W32;
+}
 static unsigned long rol(unsigned long x,unsigned int n) {
  x &= W32;
  return ((x<<n)|(x>>(32-n)))&W32;
@@ -26,14 +29,14 @@ static void sha_block(const unsigned char *p) {
        ((unsigned long)p[i*4+2]<<8)|p[i*4+3];
  }
  for(i=16;i<80;i++)
-  w[i]=rol(w[i-3]^w[i-8]^w[i-14]^w[i-16],1);
+  w[i]=rol(bxor(bxor(w[i-3],w[i-8]),bxor(w[i-14],w[i-16])),1);
  a=h[0];b=h[1];c=h[2];d=h[3];e=h[4];
  for(i=0;i<80;i++) {
   if(i<20) {fun=(b&c)|((~b)&d);k=0x5a827999UL;}
-  else if(i<40) {fun=b^c^d;k=0x6ed9eba1UL;}
+  else if(i<40) {fun=bxor(bxor(b,c),d);k=0x6ed9eba1UL;}
   else if(i<60) {
    fun=(b&c)|(b&d)|(c&d);k=0x8f1bbcdcUL;
-  } else {fun=b^c^d;k=0xca62c1d6UL;}
+  } else {fun=bxor(bxor(b,c),d);k=0xca62c1d6UL;}
   t=(rol(a,5)+fun+e+k+w[i])&W32;
   e=d;d=c;c=rol(b,30);b=a;a=t;
  }
@@ -114,7 +117,11 @@ int main(int argc,char **argv) {
  if(n!=PACKCAP||pack[0]!=0x50||pack[1]!=0x41||
     pack[2]!=0x43||pack[3]!=0x4b) {
   printf("PACK HEADER FAIL BYTES %lu EXPECT %lu\n",n,PACKCAP);
-  if(n>=12) printf("HEADER %02X %02X %02X %02X VERSION %02X %02X %02X %02X COUNT %02X %02X %02X %02X\n",
+  if(n>=12) {
+   puts("PACK HEADER DETAIL");
+   for(i=0;i<12;i++) printf("%02X",pack[i]);
+   putchar('\n');
+  }
     pack[0],pack[1],pack[2],pack[3],pack[4],pack[5],
     pack[6],pack[7],pack[8],pack[9],pack[10],pack[11]);
   return 8;
@@ -128,14 +135,14 @@ int main(int argc,char **argv) {
   puts("FAIL NATIVE PACK SHA1");
   printf("COMPUTED ");
   for(j=0;j<20;j++) printf("%02X",digest[j]);
-  printf("\\nTRAILER  ");
+  printf("\nTRAILER  ");
   for(j=0;j<20;j++) printf("%02X",pack[n-20+j]);
-  putchar('\\n');
+  putchar('\n');
   return 8;
  }
  printf("NATIVE PACK SHA1 ");
  for(i=0;i<20;i++) printf("%02X",digest[i]);
- putchar('\\n');
+ putchar('\n');
  count=((unsigned long)pack[8]<<24)|
        ((unsigned long)pack[9]<<16)|
        ((unsigned long)pack[10]<<8)|pack[11];
