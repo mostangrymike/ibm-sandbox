@@ -674,3 +674,11 @@ All new target C source must fit 80-column CMS records. For target testing,
 provide Mac `git pull` plus absolute-path `./cms-upload.sh` first, then
 `FILEDEF PACKIN DISK GITPBUF PACK A`, `GITCLNK GITCWALK`, and specific
 `GITCWALK` gate. No BFS/OpenExtensions dependency.
+
+## 2026-09-26 OFS base-position target proof
+
+GITCWALK ALL on z/VM 6.3 passed native PACK SHA-1, inflated all 1,808
+objects, resolved 1,117 OFS_DELTA base header positions, and ended at
+PACK data offset 340,007. CMS CPU/elapsed: 3.44/3.49 seconds. This
+proves base-position resolution, not delta application, OID calculation,
+or persistence. Next milestone: native bounded delta reconstruction.
