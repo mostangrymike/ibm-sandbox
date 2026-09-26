@@ -21,11 +21,11 @@ int main(int argc,char **argv) {
     unsigned long x=0;
     int i,hi,lo;
     clock_t start,end;
-    if(argc!=2) {
-        puts("Usage: GITCPROB cms-hex-record-file");
+    if(argc!=4) {
+        puts("Usage: GITCPROB fn ft fm");
         return 4;
     }
-    f=fopen(argv[1],"r");
+    {\n        char fileid[40];\n        if(strlen(argv[1])>8 || strlen(argv[2])>8 || strlen(argv[3])>2) {\n            puts("FAIL invalid CMS fileid"); return 4;\n        }\n        sprintf(fileid,"%s %s %s",argv[1],argv[2],argv[3]);\n        f=fopen(fileid,"r");\n    }
     if(!f) { perror("GITCPROB"); return 8; }
     start=clock();
     while(fgets(line,sizeof line,f)) {
