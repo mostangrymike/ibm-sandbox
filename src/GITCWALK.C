@@ -21,13 +21,24 @@ int main(int argc,char **argv) {
  char line[256];
  unsigned long n=0,pos,size,used,base;
  unsigned long count,idx,shift,limit;
+ char *end;
  int i,hi,lo,b,type,rc;
  limit=20;
  if(argc>1) {
-  if(argc!=2 || (argv[1][0]!='A' && argv[1][0]!='a')) {
-   puts("Usage: GITCWALK [ALL]");return 4;
+  if(argc!=2) {
+   puts("Usage: GITCWALK [20|100|ALL]");return 4;
   }
-  limit=PACKCAP;
+  if(argv[1][0]=='A'||argv[1][0]=='a') {
+   if(argv[1][1]!='L'||argv[1][2]!='L'||argv[1][3]!=0) {
+    puts("Usage: GITCWALK [20|100|ALL]");return 4;
+   }
+   limit=PACKCAP;
+  } else {
+   limit=strtoul(argv[1],&end,10);
+   if(*end!=0||limit<1||limit>1808UL) {
+    puts("Object limit must be 1 through 1808");return 4;
+   }
+  }
  }
  f=fopen("dd:PACKIN","r");
  if(!f) {perror("PACKIN");return 8;}
@@ -108,7 +119,7 @@ int main(int argc,char **argv) {
   api[3]=OUTCAP;
   api[4]=api[5]=0;
   rc=gitcapi(api);
-  if(limit==20 || rc!=0 || idx%100==0 || idx+1==limit) {
+  if(limit<=20 || rc!=0 || idx%100==0 || idx+1==limit) {
    printf("OBJ %lu TYPE %d SIZE %lu",
           idx+1,type,size);
    printf(" ZOFF %lu RC %d OUT %lu USED %lu\n",
