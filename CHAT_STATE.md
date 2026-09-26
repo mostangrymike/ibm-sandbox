@@ -1,6 +1,6 @@
 # CMS/zVM Native Git Client — Chat State
 
-Updated: 2026-09-21
+Updated: 2026-09-26
 Repository: `mostangrymike/ibm-sandbox`, branch `main`
 
 ## Workflow/rules
@@ -649,3 +649,28 @@ GCCCMS on CMS F is operational. `GITCLNK` builds a C program with the `GITCAPI` 
 ## 2026-09-26 native C/assembler integration checkpoint
 
 GCCCMS is operational on CMS F. GITCLNK builds C with GITCAPI and GITINFA. GITCAPI converts GCCCMS's argument-list calling convention to GITNAPI's direct six-fullword parameter-block ABI. GITCINF passed its abc fixture (RC 0, output 3, consumed 11; data 61 62 63) and first live PACK object (RC 0, output 270, consumed 182; next object offset 196). The initial RC 8 was caused by the ABI mismatch, not proof of invalid zlib input. Preserve the newer 1,808-object GITCWALK inflate-only gate recorded in docs/STATUS.md. Next: native PACK checksum, OFS/REF delta resolution, object OIDs and persistence; retain the target-proven REXX fallback.
+
+## 2026-09-26 native PACK SHA-1 closure and next gate
+
+Repository `main` is canonical. Target z/VM 6.3 GCCCMS `GITCLNK GITCWALK`
+built successfully with three clean Assembler XF passes. Existing live capture
+`GITPBUF PACK A` is 340,027 bytes, PACK v2, 1,808 objects. Native GITCWALK
+verified PACK SHA-1 `8C92E274ECA84B797F8925A6082915DD6CCDE196`
+and inflated all 1,808 streams to final offset 340,007 in 3.33 CPU /
+3.38 elapsed seconds. A separate in-memory corrupt-trailer mode,
+`GITCWALK BADSHA`, returned `PASS BADSHA: CORRUPT TRAILER REJECTED`, RC 0,
+in 1.81 CPU / 1.83 elapsed seconds. The subsequent unmodified `GITCWALK ALL`
+passed again in 3.30 CPU / 3.34 elapsed seconds. Both positive and negative
+native PACK SHA-1 tests are target-proven; never mutate the captured PACK or
+repeat the network POST for local gates. Earlier inflation-only benchmark
+was 2.10 CPU / 2.14 elapsed seconds, not comparable as checksum-inclusive.
+
+Next: native OFS_DELTA base-position resolution, then bounded delta application
+and reconstructed object OIDs. Native C currently only inflates delta instruction
+streams; REXX `GITP9PWK` remains the correctness reference. Preserve known-good
+GITCAPI/GITINFA and the single c3270 transfer workflow. The GCCCMS source
+transfer translated C caret XOR badly; native SHA-1 uses `bxor` instead.
+All new target C source must fit 80-column CMS records. For target testing,
+provide Mac `git pull` plus absolute-path `./cms-upload.sh` first, then
+`FILEDEF PACKIN DISK GITPBUF PACK A`, `GITCLNK GITCWALK`, and specific
+`GITCWALK` gate. No BFS/OpenExtensions dependency.
