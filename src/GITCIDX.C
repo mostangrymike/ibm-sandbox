@@ -702,7 +702,7 @@ int main(int argc,char **argv) {
   if(strcmp(argv[1],"GET")==0) return idx_get(query);
   return idx_find(query);
  }
- puts("GITCIDX BUILD CHECK AUDIT FIND GET");
- puts("Experimental: SBUILD SCHECK SGET");
+ puts("GITCIDX SELF BUILD CHECK AUDIT FIND GET");
+ puts("GITCIDX SBUILD SCHECK SGET SVAUDIT PAIR");
  return 4;
 }
