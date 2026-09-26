@@ -194,8 +194,7 @@ all 1,808 objects successfully and ended at offset 340,007, exactly 20 bytes
 before the trailer. CMS reported `Ready; T=3.33/3.38` (CPU/elapsed seconds).
 This is the checksum-plus-inflation gate; it does not imply delta application,
 base resolution, object OID calculation or persistence. The earlier 2.14-second
-inflation-only measurement remains a separate proven benchmark. A corrupted
-trailer negative test remains to be run for fail-closed regression coverage.
+inflation-only measurement remains a separate proven benchmark. The corrupt-trailer negative test subsequently passed on CMS.
 
 ## Next action
 
@@ -204,12 +203,16 @@ GITPBUF PACK A. Then implement native OFS_DELTA base resolution and delta
 application, followed by REF_DELTA, object OIDs and persistence. Preserve the
 REXX walker as the correctness reference and avoid another network POST.
 
-## Corrupt-trailer regression prepared — awaiting CMS test
+## Corrupt-trailer regression — CMS proven
 
 GITCWALK BADSHA now loads the existing captured PACK into memory, flips the
 last trailer byte **only in the in-memory copy**, and expects the native
 checksum comparison to reject it. The CMS `GITPBUF PACK A` remains unchanged.
 The negative gate returns RC 0 only when the corruption is rejected and RC 8
 if the corrupted trailer is incorrectly accepted. After testing BADSHA, rerun
-GITCWALK ALL as the positive regression. This code is committed but is not
-yet target-proven.
+GITCWALK ALL as the positive regression. CMS ran GITCWALK BADSHA and printed
+`PASS BADSHA: CORRUPT TRAILER REJECTED`, RC 0, CPU/elapsed 1.81/1.83 seconds.
+A subsequent GITCWALK ALL verified SHA-1
+`8C92E274ECA84B797F8925A6082915DD6CCDE196`, inflated all 1,808
+objects, and ended at offset 340,007, CPU/elapsed 3.30/3.34 seconds.
+Both positive and negative checksum regressions are target-proven.
