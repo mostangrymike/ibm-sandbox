@@ -18,6 +18,11 @@ if rc\=0 then do
  say 'GITCLNK: C assembly failed'
  exit 16
 end
+'ASSEMBLE GITCAPI'
+if rc\=0 then do
+ say 'GITCLNK: adapter assembly failed'
+ exit 16
+end
 'ASSEMBLE GITINFA'
 if rc\=0 then do
  say 'GITCLNK: inflater assembly failed'
@@ -25,7 +30,7 @@ if rc\=0 then do
 end
 'GLOBAL TXTLIB PDPCLIB'
 if rc\=0 then exit rc
-'LOAD' name 'GITINFA (NOAUTO NOMAP'
+'LOAD' name 'GITCAPI GITINFA (NOAUTO NOMAP'
 if rc\=0 then do
  say 'GITCLNK: combined LOAD failed'
  exit 20
