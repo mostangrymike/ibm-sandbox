@@ -199,6 +199,28 @@ static int fast_oid(int type,const unsigned char *p,
  return 1;
 }
 
+/* Stage verified objects as CMS text records, not loose Git files. */
+static int stage_objects(unsigned long count) {
+ FILE *out;
+ unsigned long j,k;
+ out=fopen("dd:OBJOUT","w");
+ if(!out) {perror("OBJOUT");return 0;}
+ for(j=0;j<count;j++) {
+  if(fprintf(out,"OBJ %lu %d %lu ",j+1,objtype[j],
+             objlen[j])<0) return 0;
+  for(k=0;k<20;k++)
+   if(fprintf(out,"%02X",objoid[j][k])<0) return 0;
+  if(fputc(10,out)==EOF) return 0;
+  for(k=0;k<objlen[j];k++) {
+   if(fprintf(out,"%02X",objdata[j][k])<0) return 0;
+   if(k%32==31||k+1==objlen[j])
+    if(fputc(10,out)==EOF) return 0;
+  }
+  if(objlen[j]==0&&fputc(10,out)==EOF) return 0;
+ }
+ if(fclose(out)!=0) return 0;
+ return 1;
+}
 static int nib(int c) {
  if(c>='0'&&c<='9') return c-'0';
  if(c>='A'&&c<='F') return c-'A'+10;
@@ -212,7 +234,7 @@ int main(int argc,char **argv) {
  unsigned long ofs_count=0,applied=0,rs=0;
  unsigned char *tmp;
  int baseidx=-1,doapply=0,dooid=0,profile=0,fastmode=0;
- int fastonly=0,optmode=0,optcheck=0;
+ int fastonly=0,optmode=0,optcheck=0,stage=0;
  unsigned char reference[20];
  clock_t t0,hash_ticks=0,delta_ticks=0;
  unsigned long hash_bytes=0,delta_bytes=0;
@@ -225,7 +247,11 @@ int main(int argc,char **argv) {
   if(argc!=2) {
    puts("Usage: GITCWALK [20|100|ALL|BADSHA]");return 4;
   }
-  if(argv[1][0]=='O'&&argv[1][1]=='P'&&
+  if(argv[1][0]=='S'&&argv[1][1]=='T'&&
+     argv[1][2]=='A'&&argv[1][3]=='G'&&
+     argv[1][4]=='E'&&argv[1][5]==0) {
+   doapply=1;dooid=1;stage=1;limit=PACKCAP;
+  } else if(argv[1][0]=='O'&&argv[1][1]=='P'&&
      argv[1][2]=='T'&&argv[1][3]=='C'&&
      argv[1][4]=='H'&&argv[1][5]=='E'&&
      argv[1][6]=='C'&&argv[1][7]=='K'&&
@@ -444,7 +470,7 @@ int main(int argc,char **argv) {
    if(type==6) free(tmp);
    if(dooid) {
     if(profile) t0=clock();
-    if(optmode||optcheck) use_opt_sha=1;
+    if(optmode||optcheck||stage) use_opt_sha=1;
     if(optcheck) {
      if(!object_oid(objtype[idx],objdata[idx],rs,objoid[idx])) {
       puts("FAIL OPT OID");return 8;
@@ -474,7 +500,7 @@ int main(int argc,char **argv) {
                           objoid[idx])) {
      puts("FAIL OBJECT OID");return 8;
     }
-    if(optmode||optcheck) use_opt_sha=0;
+    if(optmode||optcheck||stage) use_opt_sha=0;
     if(profile) {
      hash_ticks+=clock()-t0;
      hash_bytes+=rs;
@@ -503,6 +529,10 @@ int main(int argc,char **argv) {
  if(fastonly) printf("FAST ONLY OIDS COMPUTED %lu\n",idx);
  if(optmode) printf("OPT SHA OIDS COMPUTED %lu\n",idx);
  if(optcheck) printf("OPT OIDS MATCH REFERENCE %lu\n",idx);
+ if(stage) {
+  if(!stage_objects(count)) {puts("STAGE WRITE FAIL");return 8;}
+  printf("STAGED OBJECTS %lu\n",count);
+ }
  if(profile) {
   printf("PROFILE CLOCKS PER SEC %lu\n",
          (unsigned long)CLOCKS_PER_SEC);
