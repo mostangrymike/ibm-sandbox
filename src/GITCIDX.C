@@ -379,8 +379,221 @@ bad:
  fclose(f);
  return 8;
 }
+
+/* Experimental ftell/fseek index. V1 remains the proven fallback. */
+struct seek_entry {
+ unsigned char oid[20];
+ unsigned long number,size;
+ long offset;
+ int type;
+};
+static struct seek_entry sidx[1808];
+static unsigned long sidx_count;
+static int sidx_cmp(const void *a,const void *b) {
+ const struct seek_entry *x=(const struct seek_entry *)a;
+ const struct seek_entry *y=(const struct seek_entry *)b;
+ int c=memcmp(x->oid,y->oid,20);
+ if(c) return c;
+ if(x->number<y->number) return -1;
+ if(x->number>y->number) return 1;
+ return 0;
+}
+/* Stage record positioning is captured before its OBJ header. */
+static int sidx_build(void) {
+ FILE *f,*out;
+ char line[128],oidtext[41],extra;
+ unsigned long j,num,n,k,take,m,unique=0;
+ long pos;
+ int typ,fields;
+ struct seek_entry next;
+ f=fopen("dd:STGIN","r");
+ if(!f) {perror("STGIN");return 8;}
+ for(j=0;j<IDXCAP;j++) {
+  pos=ftell(f);
+  if(pos<0||!idx_line(f,line,sizeof line)) goto badstage;
+  fields=sscanf(line,"OBJ %lu %d %lu %40s %c",
+                &num,&typ,&n,oidtext,&extra);
+  if(fields!=4||num!=j+1||typ<1||typ>4||
+     n>IDXSIZE||!idx_hex(oidtext,next.oid))
+   goto badstage;
+  next.number=num;next.type=typ;
+  next.size=n;next.offset=pos;
+  sidx[j]=next;
+  if(n==0) {
+   if(!idx_line(f,line,sizeof line)||line[0])
+    goto badstage;
+  }
+  for(k=0;k<n;k+=take) {
+   take=n-k;if(take>32) take=32;
+   if(!idx_line(f,line,sizeof line)||
+      strlen(line)!=2*take) goto badstage;
+   for(m=0;m<take*2;m++)
+    if(idx_nib((unsigned char)line[m])<0)
+     goto badstage;
+  }
+ }
+ if(idx_line(f,line,sizeof line)||ferror(f)) goto badstage;
+ if(fclose(f)!=0) return 8;
+ qsort(sidx,IDXCAP,sizeof sidx[0],sidx_cmp);
+ for(j=0;j<IDXCAP;j++) {
+  if(unique&&memcmp(sidx[j].oid,
+                    sidx[unique-1].oid,20)==0) {
+   if(sidx[j].type!=sidx[unique-1].type||
+      sidx[j].size!=sidx[unique-1].size) {
+    puts("SEEK DUPLICATE CONFLICT");return 8;
+   }
+  } else sidx[unique++]=sidx[j];
+ }
+ out=fopen("dd:FIDXOUT","w");
+ if(!out) {perror("FIDXOUT");return 8;}
+ if(fprintf(out,"SIDX1 1808 %lu\n",unique)<0) goto badout;
+ for(j=0;j<unique;j++) {
+  if(fputs("OID ",out)==EOF) goto badout;
+  idx_print(out,sidx[j].oid);
+  if(fprintf(out," %lu %d %lu %ld\n",
+             sidx[j].number,sidx[j].type,
+             sidx[j].size,sidx[j].offset)<0) goto badout;
+ }
+ if(fprintf(out,"SEND 1808 %lu\n",unique)<0) goto badout;
+ if(fclose(out)!=0) {
+  puts("SEEK INDEX CLOSE FAIL");return 8;
+ }
+ sidx_count=unique;
+ printf("SEEK INDEX WRITTEN 1808 UNIQUE %lu\n",unique);
+ return 0;
+badstage:
+ printf("SEEK BAD STAGE OBJ %lu\n",j+1);
+ fclose(f);
+ return 8;
+badout:
+ puts("SEEK INDEX WRITE FAIL");
+ fclose(out);
+ return 8;
+}
+/* Load a complete, versioned seek index; no implicit V1 promotion. */
+static int sidx_read(void) {
+ FILE *f;
+ char line[128],oidtext[41],extra;
+ unsigned long j=0,total,unique,num,n,endtotal,endunique;
+ long pos;
+ int typ,fields;
+ f=fopen("dd:FIDXIN","r");
+ if(!f) {perror("FIDXIN");return 8;}
+ if(!idx_line(f,line,sizeof line)) goto bad;
+ fields=sscanf(line,"SIDX1 %lu %lu %c",
+               &total,&unique,&extra);
+ if(fields!=2||total!=IDXCAP||unique<1||unique>IDXCAP)
+  goto bad;
+ for(j=0;j<unique;j++) {
+  if(!idx_line(f,line,sizeof line)) goto bad;
+  fields=sscanf(line,"OID %40s %lu %d %lu %ld %c",
+                oidtext,&num,&typ,&n,&pos,&extra);
+  if(fields!=5||num<1||num>IDXCAP||typ<1||typ>4||
+     n>IDXSIZE||pos<0||!idx_hex(oidtext,sidx[j].oid))
+   goto bad;
+  sidx[j].number=num;sidx[j].type=typ;
+  sidx[j].size=n;sidx[j].offset=pos;
+  if(j&&memcmp(sidx[j-1].oid,sidx[j].oid,20)>=0)
+   goto bad;
+ }
+ if(!idx_line(f,line,sizeof line)) goto bad;
+ fields=sscanf(line,"SEND %lu %lu %c",
+               &endtotal,&endunique,&extra);
+ if(fields!=2||endtotal!=total||endunique!=unique)
+  goto bad;
+ if(idx_line(f,line,sizeof line)||ferror(f)) goto bad;
+ if(fclose(f)!=0) return 8;
+ sidx_count=unique;
+ return 0;
+bad:
+ printf("SEEK INDEX RECORD FAIL ENTRY %lu\n",j+1);
+ fclose(f);
+ return 8;
+}
+static int sidx_locate(const unsigned char *oid) {
+ unsigned long lo=0,hi=sidx_count,mid;
+ int cmp;
+ while(lo<hi) {
+  mid=lo+(hi-lo)/2;
+  cmp=memcmp(sidx[mid].oid,oid,20);
+  if(cmp<0) lo=mid+1;
+  else hi=mid;
+ }
+ if(lo>=sidx_count||memcmp(sidx[lo].oid,oid,20)!=0)
+  return -1;
+ return (int)lo;
+}
+/* Verify direct-seek metadata and all object bytes before success. */
+static int sidx_get(const unsigned char *target) {
+ FILE *f;
+ char line[128],oidtext[41],extra;
+ unsigned char head_oid[20],digest[20];
+ unsigned long num,n,k,take,m,at;
+ int pos,typ,fields,hi,lo;
+ pos=sidx_locate(target);
+ if(pos<0) {puts("SEEK OID NOT FOUND");return 4;}
+ f=fopen("dd:STGIN","r");
+ if(!f) {perror("STGIN");return 8;}
+ if(fseek(f,sidx[pos].offset,SEEK_SET)!=0) {
+  puts("SEEK UNAVAILABLE ON CMS STAGE");fclose(f);
+  return 8;
+ }
+ if(!idx_line(f,line,sizeof line)) goto bad;
+ fields=sscanf(line,"OBJ %lu %d %lu %40s %c",
+               &num,&typ,&n,oidtext,&extra);
+ if(fields!=4||num!=sidx[pos].number||
+    typ!=sidx[pos].type||n!=sidx[pos].size||
+    !idx_hex(oidtext,head_oid)||
+    memcmp(target,head_oid,20)!=0) goto bad;
+ if(n==0) {
+  if(!idx_line(f,line,sizeof line)||line[0])
+   goto bad;
+ }
+ for(k=0;k<n;k+=take) {
+  take=n-k;if(take>32) take=32;
+  if(!idx_line(f,line,sizeof line)||
+     strlen(line)!=2*take) goto bad;
+  for(m=0;m<take;m++) {
+   hi=idx_nib((unsigned char)line[m*2]);
+   lo=idx_nib((unsigned char)line[m*2+1]);
+   if(hi<0||lo<0) goto bad;
+   idx_body[k+m]=(unsigned char)((hi<<4)|lo);
+  }
+ }
+ if(fclose(f)!=0) return 8;
+ if(!idx_hash(typ,idx_body,n,digest)||
+    memcmp(digest,target,20)!=0) {
+  puts("SEEK OBJECT CONTENT OID MISMATCH");
+  return 8;
+ }
+ printf("SEEK OBJECT OID ");
+ idx_print(stdout,target);
+ printf(" OBJ %lu TYPE %d SIZE %lu PREFIX ",num,typ,n);
+ at=n;if(at>16) at=16;
+ if(at==0) putchar('-');
+ for(k=0;k<at;k++) printf("%02X",idx_body[k]);
+ putchar('\n');
+ return 0;
+bad:
+ puts("SEEK STAGE HEADER/BODY MISMATCH");
+ fclose(f);
+ return 8;
+}
 int main(int argc,char **argv) {
  unsigned char query[20];
+ if(argc==2&&strcmp(argv[1],"SBUILD")==0)
+  return sidx_build();
+ if(argc==2&&strcmp(argv[1],"SCHECK")==0) {
+  if(sidx_read()!=0) return 8;
+  printf("SEEK INDEX VERIFIED 1808 UNIQUE %lu\n",sidx_count);
+  return 0;
+ }
+ if(argc==3&&strcmp(argv[1],"SGET")==0) {
+  if(strlen(argv[2])!=40||!idx_hex(argv[2],query))
+   {puts("SGET REQUIRES 40 HEX DIGITS");return 4;}
+  if(sidx_read()!=0) return 8;
+  return sidx_get(query);
+ }
  if(argc==2&&strcmp(argv[1],"AUDIT")==0)
   return idx_audit();
  if(argc==2&&strcmp(argv[1],"BUILD")==0)
@@ -398,6 +611,7 @@ int main(int argc,char **argv) {
   if(strcmp(argv[1],"GET")==0) return idx_get(query);
   return idx_find(query);
  }
- puts("Usage: GITCIDX BUILD | CHECK | FIND/GET 40-hex-OID");
+ puts("GITCIDX BUILD CHECK AUDIT FIND GET");
+ puts("Experimental: SBUILD SCHECK SGET");
  return 4;
 }
