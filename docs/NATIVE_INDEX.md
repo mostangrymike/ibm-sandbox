@@ -136,7 +136,7 @@ https://github.com/mostangrymike/ibm-sandbox/actions/runs/36272574127
 completed successfully. Synthetic fixture has 8 unique objects;
 real captured PACK has 1,808 unique objects on CMS.
 
-### Next required CMS-only validation
+### Completed CMS AUDIT and direct-seek validation (historical commands)
 
 The target-proven `GITSTAGE DATA A` and `GITINDEX DATA A`
 already exist. No new PACK download or restaging is necessary.
@@ -212,3 +212,34 @@ legacy build sequence. The new optional PLAIN mode omits the native
 inflater adapter for GITCIDX and other ordinary C programs. Host
 static-source checks passed; CMS F-disk placement and PLAIN-mode
 module linking still require target validation. See [Build](BUILD.md).
+
+## Latest result: target-proven direct seek
+
+September 26, 2026 CMS transcript:
+
+| Mode | Result | CPU / elapsed |
+|---|---|---|
+| AUDIT | 1,808 staged bodies, 1,808 unique OIDs | 20.96 / 21.09 s |
+| SBUILD | 1,808-unique separate seek index written | 7.13 / 7.21 s |
+| SCHECK | 1,808-unique seek index verified | 0.14 / 0.15 s |
+| SGET first | commit #1, 270 bytes, expected OID | 0.15 / 0.15 s |
+| SGET last | tree #1808, 5,224 bytes, expected OID | 1.72 / 1.77 s |
+
+The last-object sequential V1 GET previously took 7.59 seconds
+elapsed. The single observed direct-seek run reduced this to
+1.77 seconds, a 4.29x ratio and approximately 76.7% less time.
+The SBUILD/SCHECK and first/last SGET success on actual CMS prove
+that this GCCCMS runtime can reuse saved ftell positions after
+closing and reopening the **unchanged** CMS staging file. They do
+not prove index-cookie portability after stage modification or
+system reboot. Retain V1 index/GET as fallback. The user's
+log begins after an unlabeled command's Ready line, so actual
+F-disk CMSCLNK installation is not independently confirmed by
+that excerpt.
+
+The next functional gate is native backward REF_DELTA, now
+implemented and independently validated with Git on the host.
+See [Native REF_DELTA](NATIVE_REF.md) for generated positive and
+negative PACK fixtures, exact Mac upload/CMS execution commands,
+and the limits of this first native REF milestone. No real-PACK
+restaging or separate seek-index retest is needed.
