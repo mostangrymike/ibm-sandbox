@@ -28,8 +28,9 @@ Git object SHA-1 independently, rejects mismatches, and reports the
 first 16 bytes in hex without displaying unbounded object content.
 
 The source and output records fit CMS variable record length 80.
-The code retains only 1,808 descriptors in memory and does not
-retain staged body data.
+BUILD, CHECK and FIND retain only 1,808 bounded descriptors in
+memory. GET additionally holds one selected decoded body (up to
+65,536 bytes) and a bounded canonical-hash scratch buffer.
 
 ## Consolidated CMS validation gate
 
