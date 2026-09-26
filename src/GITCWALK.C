@@ -4,6 +4,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 extern int gitcapi(unsigned long *);
 #define PACKCAP 340027UL
 #define OUTCAP 65536UL
@@ -143,7 +144,9 @@ int main(int argc,char **argv) {
  unsigned long n=0,pos,size,used,base,start,dist;
  unsigned long ofs_count=0,applied=0,rs=0;
  unsigned char *tmp;
- int baseidx=-1,doapply=0,dooid=0;
+ int baseidx=-1,doapply=0,dooid=0,profile=0;
+ clock_t t0,hash_ticks=0,delta_ticks=0;
+ unsigned long hash_bytes=0,delta_bytes=0;
  unsigned long count,idx,shift,limit;
  char *end;
  unsigned char digest[20];
@@ -153,7 +156,12 @@ int main(int argc,char **argv) {
   if(argc!=2) {
    puts("Usage: GITCWALK [20|100|ALL|BADSHA]");return 4;
   }
-  if(argv[1][0]=='O'&&argv[1][1]=='I'&&
+  if(argv[1][0]=='P'&&argv[1][1]=='R'&&
+     argv[1][2]=='O'&&argv[1][3]=='F'&&
+     argv[1][4]=='I'&&argv[1][5]=='L'&&
+     argv[1][6]=='E'&&argv[1][7]==0) {
+   doapply=1;dooid=1;profile=1;limit=PACKCAP;
+  } else if(argv[1][0]=='O'&&argv[1][1]=='I'&&
      argv[1][2]=='D'&&argv[1][3]==0) {
    doapply=1;dooid=1;limit=PACKCAP;
   } else if(argv[1][0]=='O'||argv[1][0]=='o') {
@@ -325,9 +333,14 @@ int main(int argc,char **argv) {
     }
     tmp=(unsigned char *)malloc(OUTCAP);
     if(!tmp) {puts("DELTA ALLOC FAIL");return 8;}
+    if(profile) t0=clock();
     if(!dapply(output,size,objdata[baseidx],
                objlen[baseidx],tmp,&rs)) {
      puts("FAIL OFS DELTA APPLY");free(tmp);return 8;
+    }
+    if(profile) {
+     delta_ticks+=clock()-t0;
+     delta_bytes+=rs;
     }
     applied++;
    } else {
@@ -339,8 +352,13 @@ int main(int argc,char **argv) {
    objlen[idx]=rs;
    if(type==6) free(tmp);
    if(dooid) {
+    if(profile) t0=clock();
     if(!object_oid(objtype[idx],objdata[idx],rs,objoid[idx])) {
      puts("FAIL OBJECT OID");return 8;
+    }
+    if(profile) {
+     hash_ticks+=clock()-t0;
+     hash_bytes+=rs;
     }
     if(idx<3||idx+1==count) {
      printf("OID OBJ %lu TYPE %d SIZE %lu ",
@@ -362,5 +380,13 @@ int main(int argc,char **argv) {
  printf("OFS BASE POSITIONS RESOLVED %lu\n",ofs_count);
  if(doapply) printf("OFS DELTAS APPLIED %lu\n",applied);
  if(dooid) printf("OBJECT OIDS COMPUTED %lu\n",idx);
+ if(profile) {
+  printf("PROFILE CLOCKS PER SEC %lu\n",
+         (unsigned long)CLOCKS_PER_SEC);
+  printf("PROFILE DELTA TICKS %lu BYTES %lu\n",
+         (unsigned long)delta_ticks,delta_bytes);
+  printf("PROFILE HASH TICKS %lu BYTES %lu\n",
+         (unsigned long)hash_ticks,hash_bytes);
+ }
  return 0;
 }
