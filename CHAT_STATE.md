@@ -851,3 +851,22 @@ existing gates. Do not claim Git loose-object storage exists yet.
 ## Mandatory execution rule (2026-09-26)
 
 Maximize useful autonomous work in every turn. Do not pause, request permission, or stop after an intermediate documentation/code step when more repository work can be completed independently. Stop only when actual CMS target validation is required; at that point provide exact Mac transfer and CMS test commands. Document completed work and target results in CHAT_STATE.md and docs/STATUS.md, follow all existing project rules, and never claim untested code is target-proven.
+
+## 2026-09-26 Native STAGE gate prepared (CMS validation pending)
+
+Commit `a2d1743` adds isolated `GITCWALK STAGE`. It runs the proven
+PACK integrity, inflation, OFS reconstruction and optimized SHA-1
+OID path, then writes all reconstructed objects to FILEDEF `OBJOUT`
+as CMS text records. Each object has a header `OBJ index type length
+40-hex-OID`, followed by uppercase hex body lines of up to 32 bytes
+(64 characters) per record; empty bodies get a blank record. This is
+an intermediate validated staging format, NOT Git loose-object storage.
+All prior GITCWALK modes remain available. C source max line 72 chars.
+CMS compilation, FILEDEF record behavior, and spool correctness have
+NOT yet been target-validated. To test: Mac git pull; upload absolute
+path `/Users/mikewommack/ibm-sandbox/src/GITCWALK.C` using existing
+cms-upload.sh. CMS: `FILEDEF PACKIN DISK GITPBUF PACK A`,
+`FILEDEF OBJOUT DISK GITSTAGE DATA A`, `GITCLNK GITCWALK`,
+`GITCWALK STAGE`. Expected final `STAGED OBJECTS 1808`; inspect
+`LISTFILE GITSTAGE DATA A` and first/last records after success.
+Keep #2 open until persistence and REF_DELTA support are addressed.
