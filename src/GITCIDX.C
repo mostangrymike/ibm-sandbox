@@ -323,8 +323,66 @@ badget:
  fclose(f);
  return 8;
 }
+
+/* Independently reconcile every stored object with the sorted index. */
+static int idx_audit(void) {
+ static unsigned char seen[1808];
+ unsigned char headeroid[20],digest[20];
+ char line[128],oidtext[41],extra;
+ unsigned long j,num,n,k,take,m,matched=0;
+ int typ,fields,hi,lo,pos;
+ FILE *f;
+ if(idx_read()!=0) return 8;
+ memset(seen,0,sizeof seen);
+ f=fopen("dd:STGIN","r");
+ if(!f) {perror("STGIN");return 8;}
+ for(j=1;j<=IDXCAP;j++) {
+  if(!idx_line(f,line,sizeof line)) goto bad;
+  fields=sscanf(line,"OBJ %lu %d %lu %40s %c",
+                &num,&typ,&n,oidtext,&extra);
+  if(fields!=4||num!=j||typ<1||typ>4||
+     n>IDXSIZE||!idx_hex(oidtext,headeroid)) goto bad;
+  pos=idx_locate(headeroid);
+  if(pos<0||idx_entries[pos].size!=n||
+     idx_entries[pos].type!=typ||
+     idx_entries[pos].number>j) goto bad;
+  if(idx_entries[pos].number==j&&!seen[pos]) {
+   seen[pos]=1;matched++;
+  }
+  if(n==0) {
+   if(!idx_line(f,line,sizeof line)||line[0])
+    goto bad;
+  }
+  for(k=0;k<n;k+=take) {
+   take=n-k;if(take>32) take=32;
+   if(!idx_line(f,line,sizeof line)||
+      strlen(line)!=2*take) goto bad;
+   for(m=0;m<take;m++) {
+    hi=idx_nib((unsigned char)line[m*2]);
+    lo=idx_nib((unsigned char)line[m*2+1]);
+    if(hi<0||lo<0) goto bad;
+    idx_body[k+m]=(unsigned char)((hi<<4)|lo);
+   }
+  }
+  if(!idx_hash(typ,idx_body,n,digest)||
+     memcmp(digest,headeroid,20)!=0) goto bad;
+ }
+ if(idx_line(f,line,sizeof line)||ferror(f)) goto bad;
+ if(fclose(f)!=0) return 8;
+ if(matched!=idx_unique) {
+  puts("AUDIT INDEX COVERAGE FAIL");return 8;
+ }
+ printf("AUDIT VERIFIED 1808 UNIQUE %lu\n",matched);
+ return 0;
+bad:
+ printf("AUDIT OBJECT FAIL %lu\n",j);
+ fclose(f);
+ return 8;
+}
 int main(int argc,char **argv) {
  unsigned char query[20];
+ if(argc==2&&strcmp(argv[1],"AUDIT")==0)
+  return idx_audit();
  if(argc==2&&strcmp(argv[1],"BUILD")==0)
   return idx_build();
  if(argc==2&&strcmp(argv[1],"CHECK")==0) {
