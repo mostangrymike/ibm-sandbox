@@ -699,3 +699,16 @@ without repeating the network POST. First rerun ALL to ensure no regression,
 then OFSAPPLY. Mac: git pull, cms-upload.sh absolute GITCWALK.C; CMS:
 FILEDEF PACKIN DISK GITPBUF PACK A, GITCLNK GITCWALK, GITCWALK ALL,
 GITCWALK OFSAPPLY.
+
+## 2026-09-26 native OFS_DELTA application — TARGET PROVEN
+
+CMS `GITCWALK ALL` verified SHA-1
+`8C92E274ECA84B797F8925A6082915DD6CCDE196`, inflated all 1,808
+objects, resolved all 1,117 OFS_DELTA base positions, and ended at PACK
+offset 340,007 (CPU/elapsed 3.49/3.55 seconds). The separate
+`GITCWALK OFSAPPLY` mode then passed the same integrity and inflation
+gates and reported `OFS DELTAS APPLIED 1117`, with final offset 340,007
+(CPU/elapsed 5.19/5.27 seconds). The native OFS_DELTA application gate is
+now target-proven. Native REF_DELTA support, independent reconstructed-object
+OID verification, and object persistence are not yet implemented. Continue
+using the unchanged captured PACK and preserve existing ALL/BADSHA gates.
