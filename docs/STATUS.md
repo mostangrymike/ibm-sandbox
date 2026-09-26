@@ -382,3 +382,7 @@ runs. Kept #2 open: native PACK persistence/REF_DELTA and production
 readiness remain unfinished despite substantial speed improvements.
 Kept #5 open: automatic stunnel startup/reboot persistence is still
 unproven. Do not claim these remaining tasks completed.
+
+## Mandatory execution rule (2026-09-26)
+
+Maximize useful autonomous work in every turn. Do not pause, request permission, or stop after an intermediate documentation/code step when more repository work can be completed independently. Stop only when actual CMS target validation is required; at that point provide exact Mac transfer and CMS test commands. Document completed work and target results in CHAT_STATE.md and docs/STATUS.md, follow all existing project rules, and never claim untested code is target-proven.
