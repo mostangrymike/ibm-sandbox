@@ -189,3 +189,9 @@ IDX1/SIDX1 with RC 8. Do this only before rebinding those FILEDEFs
 to the new GITFIX files. Do not accept a failure from the legacy
 source as proof of the new code; RTEST and SELF are authoritative
 for the canonical hash correction on CMS.
+
+## September 26 CMS validation completed
+
+The corrected RTEST and index SELF both passed on the target. RPACK verified the 114-byte fixture and produced Git-compatible IDs for abc, abcd and abcde. Both backward chained REF deltas applied. RAPPLY also passed with on-demand OID resolution. The four malformed external fixture cases have not been run on CMS. The prior full 1,808-object stage and indexes remain legacy and must be preserved.
+
+The next target-only step uses the existing corrected binaries and saved original GITPBUF PACK A. No transfer, compile or new network request is needed. Run the offline GITFIX STAGE, VERIFY, BUILD/CHECK/AUDIT and SBUILD/SCHECK/SVAUDIT commands in the preceding section. Require all 1,808 reconstructed objects, full independent readback and both complete canonical IDX2/SIDX2 audits. Record the new first and last OIDs from target output rather than assuming old OIDs. Do not overwrite legacy files before full independent validation.
