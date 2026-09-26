@@ -670,3 +670,54 @@ result has yet been supplied.
 User CMS output: `GITCIDX AUDIT` printed `AUDIT VERIFIED 1808 UNIQUE 1808`, CPU/elapsed 20.96/21.09 seconds. `GITCIDX SBUILD` wrote 1,808 unique entries in 7.13/7.21 seconds. `GITCIDX SCHECK` verified all 1,808 unique entries in 0.14/0.15 seconds. `GITCIDX SGET` on OID `5A81BAF86E7DC7B72377087A8F160CAF8B889B74` returned object #1, commit (type 1), 270 bytes, in 0.15/0.15 seconds. `SGET` on OID `BA9F4D66B41352F0D0266090D14AD52F37318FCB` returned object #1808, tree (type 2), 5224 bytes, in 1.72/1.77 seconds. Previous original indexed sequential GET for last object elapsed 7.59 seconds; direct SGET last object was 4.29x faster, elapsed reduction ~76.7%, single runs. The source output prefix is truncated by terminal capture and not independently asserted. The successful separate runs establish CMS `ftell` positions saved during SBUILD can be reused by `fseek` after reopening STGIN from another invocation for this unchanged staging file. NO reboot or modified-stage cookie lifetime proof. The leading `Ready; T=3.41/3.56` in user's paste has no associated preceding command. Therefore CMSCLNK F installation and PLAIN mode may have succeeded, but the visible transcript does not independently identify or prove that command. Do not mark F-based compiler placement proven until explicit `STATE CMSCLNK EXEC F` and a labeled build result are available.
 
 Full stage + original index + new AUDIT + direct seek are target-proven for the captured PACK. Next independent development: native backward REF_DELTA resolution and bounded synthetic tests, while preserving current target-proven modes and staging/index files. User rule: maximize work per turn; only pause when actual CMS validation becomes necessary.
+
+## 2026-09-26 target-proven direct seek; host-proven backward REF_DELTA
+
+Latest user CMS output: `GITCIDX AUDIT` verified 1,808 stored objects and
+1,808 unique index entries (20.96 CPU/21.09 elapsed seconds).
+`SBUILD` wrote an independent 1,808-unique seek index
+(7.13/7.21 seconds); `SCHECK` passed (0.14/0.15 seconds).
+`SGET` succeeded across separate CMS invocations and file reopen:
+first captured commit OID `5A81BAF86E7DC7B72377087A8F160CAF8B889B74`,
+object 1/type 1/270 bytes at 0.15/0.15 seconds; last captured tree
+OID `BA9F4D66B41352F0D0266090D14AD52F37318FCB`,
+object 1808/type 2/5,224 bytes at 1.72/1.77 seconds.
+Original V1 sequential `GET` took 7.49/7.59 seconds for that last
+object. The one-run last-object direct-seek improvement is 4.29x,
+about 76.7% lower elapsed time. This proves ftell/fseek cookies
+persist across a new invocation on the **unchanged** STGIN file;
+not across disk mutation or reboot. Console output prefixes were
+truncated, so no complete prefix was asserted. Leading user
+`Ready T=3.41/3.56` has no associated command; do not assume
+CMSCLNK F installation/PLAIN build was proven. F disk was already
+confirmed R/W in earlier `Q DISK` output.
+
+Continued autonomous development after these target results.
+`src/GITCWALK.C` now supports bounded backward same-PACK native
+REF_DELTA resolution by reconstructed base OID and proper inherited
+object type, including chained REF_DELTA. In OFSAPPLY path, base OIDs
+are computed on demand when first needed; zero-REF captured PACK
+retains its existing behavior. Unresolved, forward or external
+bases fail closed rather than accessing uninitialized objects.
+New `RTEST` in-memory chain/negative gate, `RPACK` bounded
+variable-length synthetic PACK integration mode, and `RAPPLY`
+no-prehash gate; no change to saved GITPBUF/STAGE/IDX files.
+`tests/make-native-ref-pack.py` creates CMS 64-char ASCII hex
+positive REFPACK plus REFBAD/REFFWD/REFSIZE/REFSHA negatives.
+`tests/native_ref_pack_host.c` substitutes zlib only for CMS
+inflater. Git's own `git index-pack --stdin` and `git cat-file`
+independently accept/reconstruct all 3 reference fixture blobs
+(abc, abcd, abcde); expected OIDs match Git hash-object.
+Positive fixture ends at offset 94, 2 REF deltas; negative missing,
+forward, malformed delta base size and bad trailer all rejected.
+Full latest host CI passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36274025088 .
+Actual updated REF C code and fixture tests NOT YET CMS-validated.
+Complete concise Mac/CMS test instructions in `docs/NATIVE_REF.md`.
+Do not rerun network POST or overwrite 1,808-object real PACK.
+Still missing native external/forward REF base resolution and
+recoverable store/restart proof; leave GitHub issue #2 open.
+
+Rule: maximize independent work each turn; pause only for genuine
+CMS validation. Preserve source max 80 columns, current compiled
+CMS modules, single Mac c3270 uploader, and protected stage/index.
