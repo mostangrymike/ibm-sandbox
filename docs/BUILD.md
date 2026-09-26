@@ -83,3 +83,7 @@ core intact.
 Dynamic SSL research. They are not required for the practical stunnel transport.
 Do not regress the target-proven VMCF callcodes or retry certificate-validation
 bypass attempts; server-certificate validation is mandatory on this path.
+
+## GCCCMS native build checkpoint (2026-09-26)
+
+GITCLNK compiles GCCCMS C with GCCE NOASM PARM STD380, assembles generated source and GITCAPI/GITINFA using Assembler XF, and links with PDPCLIB. GITCAPI converts the GCCCMS argument-list convention into the direct parameter-block convention required by GITNAPI. With PACKIN defined for GITPBUF PACK A, GITCLNK GITCINF and GITCINF passed the abc fixture (3 bytes output, 11 consumed) and first live object (270 bytes output, 182 consumed, next object at offset 196). See docs/STATUS.md for the later 1,808-object native inflate-only result.
