@@ -228,3 +228,20 @@ all 1,117 OFS_DELTA base positions resolved, final offset 340,007,
 and CPU/elapsed 3.44/3.49 seconds. It does **not** reconstruct delta output,
 calculate object OIDs, or persist objects. Use the existing captured PACK;
 rerun BADSHA as a regression after the new ALL gate if needed.
+
+## Native OFS_DELTA application gate — prepared, not target-proven
+
+Commit `9a0453d` adds isolated `GITCWALK OFSAPPLY` mode. The existing
+`GITCWALK ALL` and `BADSHA` modes retain their previous behavior. OFSAPPLY
+uses a bounded Git delta varint/copy/insert parser, retains prior reconstructed
+objects by PACK index, inherits the base object's type, and applies OFS_DELTA
+instructions to the resolved base. It checks base and result lengths and
+copy/insert bounds with a 65,536-byte per-object cap. It prints
+`OFS DELTAS APPLIED N` on success. REF_DELTA reconstruction and object OIDs
+remain unimplemented in native C; OFSAPPLY stops explicitly if it encounters
+a REF_DELTA. This code awaits CMS compile and target execution; do not mark
+it proven before the user returns output. Test with existing captured PACK,
+without repeating the network POST. First rerun ALL to ensure no regression,
+then OFSAPPLY. Mac: git pull, cms-upload.sh absolute GITCWALK.C; CMS:
+FILEDEF PACKIN DISK GITPBUF PACK A, GITCLNK GITCWALK, GITCWALK ALL,
+GITCWALK OFSAPPLY.
