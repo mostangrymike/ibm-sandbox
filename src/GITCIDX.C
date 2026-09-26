@@ -643,10 +643,33 @@ static int sidx_audit(void) {
  printf("SEEK AUDIT VERIFIED UNIQUE %lu\n",sidx_count);
  return 0;
 }
+/* Confirm both independent index formats name the same objects. */
+static int idx_pair(void) {
+ unsigned long j;
+ if(idx_read()!=0||sidx_read()!=0) return 8;
+ if(idx_unique!=sidx_count) {
+  puts("PAIR UNIQUE COUNT MISMATCH");return 8;
+ }
+ for(j=0;j<idx_unique;j++) {
+  if(memcmp(idx_entries[j].oid,sidx[j].oid,20)!=0||
+     idx_entries[j].number!=sidx[j].number||
+     idx_entries[j].type!=sidx[j].type||
+     idx_entries[j].size!=sidx[j].size) {
+   printf("PAIR ENTRY MISMATCH %lu\n",j+1);
+   return 8;
+  }
+ }
+ /* SVAUDIT reopens STGIN and hashes each selected body. */
+ if(sidx_audit()!=0) return 8;
+ printf("PAIR VERIFIED UNIQUE %lu\n",idx_unique);
+ return 0;
+}
 int main(int argc,char **argv) {
  unsigned char query[20];
  if(argc==2&&strcmp(argv[1],"SELF")==0)
   return idx_self();
+ if(argc==2&&strcmp(argv[1],"PAIR")==0)
+  return idx_pair();
  if(argc==2&&strcmp(argv[1],"SVAUDIT")==0)
   return sidx_audit();
  if(argc==2&&strcmp(argv[1],"SBUILD")==0)
