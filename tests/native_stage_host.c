@@ -26,6 +26,16 @@ int STAGE_HOST_ENTRY(void) {
  printf("HOST ABC OID ");
  for(j=0;j<20;j++) printf("%02x",abc_oid[j]);
  putchar('\n');
+ for(i=1;i<=4;i++) {
+  if(!object_oid((int)i,abc,3,abc_oid)) return 20;
+  printf("HOST OID %s ABC ",typenames[i]);
+  for(j=0;j<20;j++) printf("%02x",abc_oid[j]);
+  putchar('\n');
+  if(!object_oid((int)i,abc,0,abc_oid)) return 21;
+  printf("HOST OID %s EMPTY ",typenames[i]);
+  for(j=0;j<20;j++) printf("%02x",abc_oid[j]);
+  putchar('\n');
+ }
  for(i=0;i<1808;i++) {
   objtype[i]=(int)(i%4)+1;
   objlen[i]=(i&&i%5==0)?0:3;
