@@ -721,3 +721,79 @@ recoverable store/restart proof; leave GitHub issue #2 open.
 Rule: maximize independent work each turn; pause only for genuine
 CMS validation. Preserve source max 80 columns, current compiled
 CMS modules, single Mac c3270 uploader, and protected stage/index.
+
+## 2026-09-26 confirmed CMS EBCDIC canonical OID bug and fix
+
+User target: `CMSCLNK GITCWALK` NAPI compiled cleanly (5.10 CPU /
+5.33 elapsed seconds). Original `GITCWALK RTEST` printed a false-pass
+non-Git SHA-1 of `0414AADE456A43A390C3A0E689DD2CDE0439DAA7`.
+The valid transferred synthetic REF PACK (114 bytes, checksum
+9CD9B4CCFA5D5371C608230D3157F4766248355F) decoded blob ABC
+with correct zlib return and 11 consumed bytes, but computed OID
+5492DC378EC7097F3437B18BE17F4C58D0923A03 rather than Git's
+F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F; both RPACK/RAPPLY
+failed `UNRESOLVED REF BASE OBJ 2` with RC8. Verified exactly:
+CMS code's sprintf built a **CP037 EBCDIC** header
+`8293968240F300` for blob3; SHA-1 of that header plus ASCII
+`616263` exactly equals erroneous 5492DC... . Git requires
+raw ASCII header `626C6F62203300`; SHA-1 of header plus
+`616263` is F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F.
+Old RTEST also used native EBCDIC character constants for its body,
+explaining old 0414AA... rather than Git's correct ABCDE SHA-1
+6A8165460570531A1247BD99A73B53A5A6E500D5.
+
+Current repo FIXES BOTH programs, not just REF lookup:
+- GITCWALK canonical_head and GITCIDX idx_head use explicit raw ASCII
+  type name, 0x20 separator, 0x30+decimal-digit and NUL 0x00
+  before appending raw object body. No native-text sprintf for Git
+  object hashing. Both regular and optimized SHA-1 use fixed header.
+- RTEST uses ASCII byte constants for ABC, D and E and directly
+  validates the known Git ABC and ABCDE digests. GITCIDX SELF checks
+  the known Git ABC digest without any staging file.
+- New IDX2/SIDX2 reader/writer formats plus END2/SEND2 explicitly
+  REJECT incompatible historical IDX1/SIDX1 indexes; host negative
+  regressions prove rejection.
+- New GITCIDX SVAUDIT independently reopens and SHA-1-checks every
+  stored direct-seek cookie, with progress each 256 entries.
+- Source-guard CI enforces no native sprintf Git header.
+- All host code and tests pass, including independent Git-generated
+  fixture and complete 1,808 synthetic stage/index and seek-audit
+  tamper/legacy-version tests:
+  https://github.com/mostangrymike/ibm-sandbox/actions/runs/36274871780 .
+  Static ASCII/CMS source guard CI also passed:
+  https://github.com/mostangrymike/ibm-sandbox/actions/runs/36274777916 .
+
+CRITICAL: The earlier CMS 1,808-object OID parity and STAGE/VERIFY/
+AUDIT/SGET results were internally consistent but all shared the
+same EBCDIC canonical header bug. These runs prove raw PACK checksum,
+decompression, OFS reconstruction, bounded CMS files and real fseek
+behavior, NOT Git-compatible object identities. Mark all historical
+GITSTAGE DATA A, GITINDEX DATA A (IDX1), GITSEEK INDEX A (SIDX1) as
+LEGACY, never as production Git object store. Preserve legacy files;
+do not overwrite or erase them until correct replacement validated.
+The captured GITPBUF PACK A binary is still valid and needs NO
+new GitHub download. Inspected older REXX GITBOID/GITOID already
+construct ASCII headers as literal HEX and do not share this C flaw.
+Do not fabricate corrected first/last OIDs for the real captured
+PACK before the updated C source computes them on CMS.
+
+Next actual CMS-dependent gate only: Mac git pull then upload updated
+GITCWALK.C and GITCIDX.C via existing cms-upload.sh. Existing REFPACK
+PACK A already transferred and checksum-validated; no retransmission.
+Compile CMSCLNK GITCWALK and CMSCLNK GITCIDX PLAIN BEFORE FILEDEFs;
+run GITCWALK RTEST, GITCIDX SELF; set PACKIN REFPACK PACK A,
+run GITCWALK RPACK and RAPPLY. Expect known Git ABC/ABCD/ABCDE
+OIDs, 3 objects, 2 REF DELTAs, no missing base, and correct PACK
+checksum. When these pass, rebuild the existing captured PACK
+OFFLINE into distinct GITFIX STAGE A, GITFIX INDEX A and
+GITFIX SEEK A (IDX2/SIDX2); run STAGE, VERIFY, BUILD, CHECK,
+AUDIT, SBUILD, SCHECK and SVAUDIT without touching legacy files.
+New complete commands in docs/CANONICAL_OIDS.md. Corrected C code,
+new indexes and SVAUDIT are HOST-proven only, NOT CMS-proven yet.
+CMSCLNK NAPI compilation is target-proven; F disk is confirmed R/W,
+but physical installed EXEC F state and CMSCLNK PLAIN test remain
+unverified until labeled target output is seen.
+
+Observe mandatory max-work-per-turn rule: no pause except for
+actual CMS target validation. Keep issue #2 open for correct OID
+migration, forward/external REF and durable generation/recovery.
