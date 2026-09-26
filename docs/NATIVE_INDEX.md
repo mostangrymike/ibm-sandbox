@@ -136,3 +136,76 @@ use fseek for direct retrieval, but CMS variable-record seek
 semantics are **not yet tested**. Preserve proven CHECK and GET
 unchanged; any new seek behavior must be independently validated
 on actual target before adoption.
+
+## M13 next gate: complete AUDIT and experimental direct-seek index
+
+Commit `a838b28` adds `GITCIDX AUDIT`: it loads the proven V1
+index, scans all 1,808 staged objects, recomputes every canonical
+Git SHA-1, verifies type, length and earliest object ordinal, and
+requires complete coverage of all unique index entries. It is a
+whole-file integrity reconciliation, not just a selected-object GET.
+
+Commit `6e6b5b3` adds a **separate experimental seek index**.
+`GITCIDX SBUILD` records each staged object's `ftell` position
+before reading its header, writes a separately versioned sorted
+OID index with record positions to FILEDEF `FIDXOUT` and adds a
+mandatory `SEND` trailer. `SCHECK` validates this index using
+`FIDXIN`. `SGET` uses `fseek` with the stored position to load
+and independently hash only the selected object. Original V1
+BUILD/CHECK/FIND/GET are retained unchanged as fallback.
+
+IBM's C library documentation describes `ftell` values for
+record-oriented text files as encoded positions. The native CMS
+GCCCMS runtime must prove that an `ftell` position saved during
+SBUILD can be consumed by `fseek` after the file is reopened
+in a separate process. Host success does NOT prove this on CMS.
+If it fails or returns the wrong record, SGET fails closed rather
+than falling back silently. The measured baseline for sequential
+V1 GET on captured OBJ 1808 is 7.59 s elapsed.
+
+New host tests exercise 1,808 synthetic objects, full AUDIT
+and negative tamper gates, SBUILD and SCHECK, direct SGET on
+both ends, stale-body SHA rejection, and truncated seek-index
+trailer rejection. GitHub Actions run
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36272574127
+completed successfully. Synthetic fixture has 8 unique objects;
+real captured PACK has 1,808 unique objects on CMS.
+
+### Next required CMS-only validation
+
+The target-proven `GITSTAGE DATA A` and `GITINDEX DATA A`
+already exist. No new PACK download or restaging is necessary.
+
+On Mac, from `ibm-sandbox/src`:
+
+```sh
+git pull
+./cms-upload.sh /Users/mikewommack/ibm-sandbox/src/GITCIDX.C
+```
+
+On CMS, compile first to avoid losing FILEDEFs; use distinct
+`GITSEEK INDEX A` so the target-proven V1 index is untouched:
+
+```text
+GITCLNK GITCIDX
+FILEDEF STGIN DISK GITSTAGE DATA A
+FILEDEF IDXIN DISK GITINDEX DATA A
+FILEDEF FIDXOUT DISK GITSEEK INDEX A (RECFM V LRECL 80
+FILEDEF FIDXIN DISK GITSEEK INDEX A
+GITCIDX AUDIT
+GITCIDX SBUILD
+GITCIDX SCHECK
+GITCIDX SGET 5A81BAF86E7DC7B72377087A8F160CAF8B889B74
+GITCIDX SGET BA9F4D66B41352F0D0266090D14AD52F37318FCB
+```
+
+Required positive markers: `AUDIT VERIFIED 1808 UNIQUE 1808`,
+`SEEK INDEX WRITTEN 1808 UNIQUE 1808`, and
+`SEEK INDEX VERIFIED 1808 UNIQUE 1808`. Both SGET results
+must return the same validated OIDs, types and sizes as V1 GET.
+The last object's elapsed time is the important performance
+measurement; do not claim a speedup before observing it on CMS.
+
+Do not clear or overwrite target-proven `GITINDEX DATA A`
+during this experiment. Failure of the seek experiment leaves
+V1 CHECK/GET available.
