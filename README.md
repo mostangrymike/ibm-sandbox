@@ -46,6 +46,12 @@ object and BADSTG rejected deliberately altered content. GITCIDX
 CHECK validated 1,808 unique indexed OIDs, and first/last GETs
 returned independently SHA-1-checked object content on actual CMS.
 
+The canonical compiler wrapper is now `CMSCLNK EXEC`, with the
+existing native-inflater link mode as its default and a new `PLAIN`
+mode for programs without inflater dependencies. It is prepared for
+installation beside GCCCMS on F; see `docs/BUILD.md`. Its F-disk
+placement and PLAIN linkage still require CMS validation.
+
 The separate GITCIDX AUDIT mode and experimental ftell/fseek
 seek index with direct SGET have passed host C89/CI regressions,
 including corrupt stage and truncated-index tests. The faster seek
@@ -92,3 +98,13 @@ The working GCCCMS toolchain now builds C plus the existing assembler inflater. 
 ## GCCCMS native C integration (2026-09-26)
 
 GCCCMS now builds a combined C and native assembler CMS module using GITCLNK, GITCAPI, and GITINFA. The adapter corrects GCCCMS argument-list calling convention. GITCINF passed the known abc fixture (3 output bytes, 11 consumed) and the first live PACK object (270 output bytes, 182 consumed; second object at offset 196). GITCWALK subsequently completed the 1,808-object inflation gate; see docs/STATUS.md for its measured time and the remaining delta, OID, checksum, and persistence work. Preserve the REXX implementation as the correctness reference.
+
+## GCCCMS build-tool rename
+
+`CMSCLNK EXEC` supersedes `GITCLNK EXEC` as the build wrapper for
+GCCCMS. Default `CMSCLNK GITCWALK` links the native inflater;
+`CMSCLNK GITCIDX PLAIN` builds an ordinary C-only module. GitHub
+source and host static checks pass. To install the EXEC next to
+GCC on CMS F, check `QUERY DISK F`, copy from A to F only if F is
+R/W, and validate the newly built module before retiring the
+original A-disk GITCLNK. Instructions: `docs/BUILD.md`.
