@@ -132,6 +132,47 @@ static int object_oid(int type,const unsigned char *p,
  return 1;
 }
 
+
+/* Hash canonical header and body without copying the object. */
+static int fast_oid(int type,const unsigned char *p,
+                    unsigned long n,unsigned char oid[20]) {
+ unsigned char head[32],block[64],tail[128];
+ unsigned long total,done=0,part,rem,bits;
+ int k,i,j;
+ if(type<1||type>4||n>OUTCAP) return 0;
+ k=sprintf((char *)head,"%s %lu",typenames[type],n);
+ head[k++]=0;
+ total=(unsigned long)k+n;
+ h[0]=0x67452301UL;h[1]=0xefcdab89UL;
+ h[2]=0x98badcfeUL;h[3]=0x10325476UL;
+ h[4]=0xc3d2e1f0UL;
+ while(total-done>=64) {
+  for(i=0;i<64;i++) {
+   part=done+(unsigned long)i;
+   block[i]=part<(unsigned long)k?
+            head[part]:p[part-(unsigned long)k];
+  }
+  sha_block(block);
+  done+=64;
+ }
+ rem=total-done;
+ for(i=0;i<128;i++) tail[i]=0;
+ for(i=0;i<(int)rem;i++) {
+  part=done+(unsigned long)i;
+  tail[i]=part<(unsigned long)k?
+          head[part]:p[part-(unsigned long)k];
+ }
+ tail[rem]=0x80;
+ bits=total*8;
+ for(i=0;i<8;i++) tail[(rem<56?56:120)+i]=
+  (unsigned char)(i<4?0:(bits>>(8*(7-i))));
+ sha_block(tail);
+ if(rem>=56) sha_block(tail+64);
+ for(i=0;i<5;i++) for(j=0;j<4;j++)
+  oid[i*4+j]=(unsigned char)(h[i]>>(24-j*8));
+ return 1;
+}
+
 static int nib(int c) {
  if(c>='0'&&c<='9') return c-'0';
  if(c>='A'&&c<='F') return c-'A'+10;
@@ -144,7 +185,8 @@ int main(int argc,char **argv) {
  unsigned long n=0,pos,size,used,base,start,dist;
  unsigned long ofs_count=0,applied=0,rs=0;
  unsigned char *tmp;
- int baseidx=-1,doapply=0,dooid=0,profile=0;
+ int baseidx=-1,doapply=0,dooid=0,profile=0,fastmode=0;
+ unsigned char reference[20];
  clock_t t0,hash_ticks=0,delta_ticks=0;
  unsigned long hash_bytes=0,delta_bytes=0;
  unsigned long count,idx,shift,limit;
@@ -156,7 +198,12 @@ int main(int argc,char **argv) {
   if(argc!=2) {
    puts("Usage: GITCWALK [20|100|ALL|BADSHA]");return 4;
   }
-  if(argv[1][0]=='P'&&argv[1][1]=='R'&&
+  if(argv[1][0]=='F'&&argv[1][1]=='A'&&
+     argv[1][2]=='S'&&argv[1][3]=='T'&&
+     argv[1][4]=='O'&&argv[1][5]=='I'&&
+     argv[1][6]=='D'&&argv[1][7]==0) {
+   doapply=1;dooid=1;fastmode=1;limit=PACKCAP;
+  } else if(argv[1][0]=='P'&&argv[1][1]=='R'&&
      argv[1][2]=='O'&&argv[1][3]=='F'&&
      argv[1][4]=='I'&&argv[1][5]=='L'&&
      argv[1][6]=='E'&&argv[1][7]==0) {
@@ -353,7 +400,17 @@ int main(int argc,char **argv) {
    if(type==6) free(tmp);
    if(dooid) {
     if(profile) t0=clock();
-    if(!object_oid(objtype[idx],objdata[idx],rs,objoid[idx])) {
+    if(fastmode) {
+     if(!fast_oid(objtype[idx],objdata[idx],rs,objoid[idx])||
+        !object_oid(objtype[idx],objdata[idx],rs,reference)) {
+      puts("FAIL FAST OID");return 8;
+     }
+     for(i=0;i<20;i++) if(objoid[idx][i]!=reference[i]) {
+      printf("FAST OID MISMATCH OBJ %lu\\n",idx+1);
+      return 8;
+     }
+    } else if(!object_oid(objtype[idx],objdata[idx],rs,
+                          objoid[idx])) {
      puts("FAIL OBJECT OID");return 8;
     }
     if(profile) {
@@ -380,6 +437,7 @@ int main(int argc,char **argv) {
  printf("OFS BASE POSITIONS RESOLVED %lu\n",ofs_count);
  if(doapply) printf("OFS DELTAS APPLIED %lu\n",applied);
  if(dooid) printf("OBJECT OIDS COMPUTED %lu\n",idx);
+ if(fastmode) printf("FAST OIDS MATCH REFERENCE %lu\n",idx);
  if(profile) {
   printf("PROFILE CLOCKS PER SEC %lu\n",
          (unsigned long)CLOCKS_PER_SEC);
