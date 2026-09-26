@@ -431,6 +431,7 @@ struct seek_entry {
 };
 static struct seek_entry sidx[1808];
 static unsigned long sidx_count;
+static int sidx_silent=0;
 static int sidx_cmp(const void *a,const void *b) {
  const struct seek_entry *x=(const struct seek_entry *)a;
  const struct seek_entry *y=(const struct seek_entry *)b;
@@ -608,23 +609,46 @@ static int sidx_get(const unsigned char *target) {
   puts("SEEK OBJECT CONTENT OID MISMATCH");
   return 8;
  }
- printf("SEEK OBJECT OID ");
- idx_print(stdout,target);
- printf(" OBJ %lu TYPE %d SIZE %lu PREFIX ",num,typ,n);
- at=n;if(at>16) at=16;
- if(at==0) putchar('-');
- for(k=0;k<at;k++) printf("%02X",idx_body[k]);
- putchar('\n');
+ if(!sidx_silent) {
+  printf("SEEK OBJECT OID ");
+  idx_print(stdout,target);
+  printf(" OBJ %lu TYPE %d SIZE %lu PREFIX ",num,typ,n);
+  at=n;if(at>16) at=16;
+  if(at==0) putchar('-');
+  for(k=0;k<at;k++) printf("%02X",idx_body[k]);
+  putchar('\n');
+ }
+
  return 0;
 bad:
  puts("SEEK STAGE HEADER/BODY MISMATCH");
  fclose(f);
  return 8;
 }
+/* Revalidate every persistent direct-seek cookie by fresh open. */
+static int sidx_audit(void) {
+ unsigned long i;
+ if(sidx_read()!=0) return 8;
+ sidx_silent=1;
+ for(i=0;i<sidx_count;i++) {
+  if(sidx_get(sidx[i].oid)!=0) {
+   sidx_silent=0;
+   printf("SEEK AUDIT FAIL ENTRY %lu\n",i+1);
+   return 8;
+  }
+  if((i+1)%256==0)
+   printf("SEEK AUDIT PROGRESS %lu\n",i+1);
+ }
+ sidx_silent=0;
+ printf("SEEK AUDIT VERIFIED UNIQUE %lu\n",sidx_count);
+ return 0;
+}
 int main(int argc,char **argv) {
  unsigned char query[20];
  if(argc==2&&strcmp(argv[1],"SELF")==0)
   return idx_self();
+ if(argc==2&&strcmp(argv[1],"SVAUDIT")==0)
+  return sidx_audit();
  if(argc==2&&strcmp(argv[1],"SBUILD")==0)
   return sidx_build();
  if(argc==2&&strcmp(argv[1],"SCHECK")==0) {
