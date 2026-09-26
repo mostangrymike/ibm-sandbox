@@ -21,13 +21,13 @@ int main(void) {
  char line[256];
  unsigned long n=0,pos,size,used,base;
  unsigned long count,idx,shift;
- int i,hi,lo,b,type,rc,more;
+ int i,hi,lo,b,type,rc;
  f=fopen("dd:PACKIN","r");
  if(!f) {perror("PACKIN");return 8;}
  while(fgets(line,sizeof line,f)) {
   for(i=0;line[i];) {
-   if(line[i]==' '||line[i]=='\\n'||
-      line[i]=='\\r') {++i;continue;}
+   if(line[i]==' '||line[i]=='\n'||
+      line[i]=='\r') {++i;continue;}
    hi=nib((unsigned char)line[i++]);
    if(hi<0||!line[i]) {
     puts("BAD HEX");fclose(f);return 8;
@@ -48,7 +48,7 @@ int main(void) {
  count=((unsigned long)pack[8]<<24)|
        ((unsigned long)pack[9]<<16)|
        ((unsigned long)pack[10]<<8)|pack[11];
- printf("PACK BYTES %lu OBJECTS %lu\\n",n,count);
+ printf("PACK BYTES %lu OBJECTS %lu\n",n,count);
  pos=12;
  for(idx=0;idx<20 && idx<count;idx++) {
   if(pos>=n-20) {puts("SHORT HEADER");return 8;}
@@ -90,7 +90,7 @@ int main(void) {
   rc=gitcapi(api);
   printf("OBJ %lu TYPE %d SIZE %lu",
          idx+1,type,size);
-  printf(" ZOFF %lu RC %d OUT %lu USED %lu\\n",
+  printf(" ZOFF %lu RC %d OUT %lu USED %lu\n",
          pos,rc,api[4],api[5]);
   if(rc!=0||api[5]==0||api[5]>api[1]||
      api[4]!=size) {
@@ -99,7 +99,7 @@ int main(void) {
   used=api[5];
   pos+=used;
  }
- printf("PASS %lu OBJECTS NEXT OFFSET %lu\\n",
+ printf("PASS %lu OBJECTS NEXT OFFSET %lu\n",
         idx,pos);
  return 0;
 }
