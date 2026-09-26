@@ -6,6 +6,7 @@ extern int gitnapi(unsigned long *);
 static unsigned char input[1024];
 static unsigned char output[1024];
 static unsigned long param[6];
+static unsigned char fixture[11]={0x78,0x9c,0x4b,0x4c,0x4a,0x06,0x00,0x02,0x4d,0x01,0x27};
 static int nib(int c) {
  if(c>='0'&&c<='9') return c-'0';
  if(c>='A'&&c<='F') return c-'A'+10;
@@ -44,6 +45,18 @@ int main(void) {
  printf("INPUT %lu PREFIX",remaining);
  for(i=0;i<16;i++) printf(" %02X",(unsigned int)input[i]);
  putchar('\n');
+ param[0]=(unsigned long)fixture;
+ param[1]=sizeof fixture;
+ param[2]=(unsigned long)output;
+ param[3]=sizeof output;
+ param[4]=param[5]=0;
+ rc=gitnapi(param);
+ printf("FIXTURE RC %d OUTPUT %lu USED %lu DATA %02X %02X %02X\\n",
+        rc,param[4],param[5],output[0],output[1],output[2]);
+ if(rc!=0 || param[4]!=3UL || param[5]!=11UL ||
+    output[0]!='a' || output[1]!='b' || output[2]!='c') {
+  puts("FAIL NATIVE ABI FIXTURE");return 8;
+ }
  param[0]=(unsigned long)input;
  param[1]=remaining;
  param[2]=(unsigned long)output;
