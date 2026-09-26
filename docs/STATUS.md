@@ -25,8 +25,8 @@ PACK processing, objects, and refs remain owned by CMS.
 - M11 native CMS TCP + bounded binary-safe HTTP: DONE
 - M12 practical HTTPS transport: EC2 TLS bridge and live GitHub smart-HTTP
   discovery/upload-pack transport PROVEN. Native z/VM System SSL remains experimental.
-- M13 native C live-PACK walker: 1,808-object inflate gate PASSED; delta
-  resolution, object OIDs and native PACK SHA-1 verification DONE; delta resolution and object OIDs remain.
+- M13 native C live-PACK walker: 1,808-object inflation and native PACK
+  SHA-1 verification PASSED; delta reconstruction, OIDs and persistence remain.
 
 All completed milestones above are target-proven.
 
@@ -165,7 +165,8 @@ The native GITCWALK C + GITCAPI + GITINFA program walked the captured
 340,027-byte, 1,808-object PACK in 2.14 seconds elapsed (2.10 CPU). All
 1,808 object headers and zlib streams passed; final data offset 340,007
 leaves the expected 20-byte trailing checksum. The live capture's SHA-1
-was separately validated in M12, but GITCWALK does not yet verify it.
+was separately validated in M12; native GITCWALK SHA-1 verification was
+subsequently proven in the checkpoint below.
 
 This is a successful *inflation* gate, not yet a full Git object import.
 The walker checks inflated delta-instruction sizes but does not apply deltas,
@@ -173,15 +174,14 @@ resolve bases, compute object OIDs or persist the resulting objects.
 
 ## Next action
 
-Extend the native C walker with PACK trailer SHA-1 verification, then
-OFS_DELTA base resolution and delta application, followed by full object
-SHA-1/OID checks. Preserve the existing target-proven REXX implementation
+After the native PACK checksum gate, implement OFS_DELTA base resolution
+and delta application, followed by REF_DELTA and object SHA-1/OID checks. Preserve the existing target-proven REXX implementation
 as a correctness reference and the captured PACK as the benchmark. Do not
 rerun the network POST for local performance testing.
 
 ## 2026-09-26 first-object ABI and live inflate regression
 
-The combined `GITCLNK GITCINF` build completed with three clean Assembler XF assemblies. `GITCAPI` resolves GCCCMS's argument-list ABI versus `GITNAPI`'s direct parameter-block ABI. The known-good `abc` fixture returned `RC 0 OUTPUT 3 USED 11 DATA 61 62 63`. The live PACK first object at byte offset 14 returned `RC 0 OUTPUT 270 USED 182`, establishing the second-object offset at 196; CMS printed `PASS FIRST LIVE OBJECT INFLATE`. These results corroborate the newer 1,808-object `GITCWALK` inflate-only milestone above. Native PACK trailer verification, OFS/REF delta reconstruction, final object OIDs and persistence remain distinct unfinished acceptance gates.
+The combined `GITCLNK GITCINF` build completed with three clean Assembler XF assemblies. `GITCAPI` resolves GCCCMS's argument-list ABI versus `GITNAPI`'s direct parameter-block ABI. The known-good `abc` fixture returned `RC 0 OUTPUT 3 USED 11 DATA 61 62 63`. The live PACK first object at byte offset 14 returned `RC 0 OUTPUT 270 USED 182`, establishing the second-object offset at 196; CMS printed `PASS FIRST LIVE OBJECT INFLATE`. These results corroborate the newer 1,808-object `GITCWALK` inflate-only milestone above. Native PACK trailer verification was subsequently proven; OFS/REF delta reconstruction, final object OIDs and persistence remain distinct unfinished acceptance gates.
 
 ## Native PACK checksum target proof — 2026-09-26
 
@@ -203,3 +203,13 @@ Add an isolated negative checksum test without modifying the captured
 GITPBUF PACK A. Then implement native OFS_DELTA base resolution and delta
 application, followed by REF_DELTA, object OIDs and persistence. Preserve the
 REXX walker as the correctness reference and avoid another network POST.
+
+## Corrupt-trailer regression prepared — awaiting CMS test
+
+GITCWALK BADSHA now loads the existing captured PACK into memory, flips the
+last trailer byte **only in the in-memory copy**, and expects the native
+checksum comparison to reject it. The CMS `GITPBUF PACK A` remains unchanged.
+The negative gate returns RC 0 only when the corruption is rejected and RC 8
+if the corrupted trailer is incorrectly accepted. After testing BADSHA, rerun
+GITCWALK ALL as the positive regression. This code is committed but is not
+yet target-proven.
