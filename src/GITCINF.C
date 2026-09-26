@@ -57,7 +57,7 @@ int main(void) {
  printf("FIXTURE RC %d OUTPUT %lu USED %lu DATA %02X %02X %02X\n",
         rc,param[4],param[5],output[0],output[1],output[2]);
  if(rc!=0 || param[4]!=3UL || param[5]!=11UL ||
-    output[0]!='a' || output[1]!='b' || output[2]!='c') {
+    output[0]!=0x61 || output[1]!=0x62 || output[2]!=0x63) {
   puts("FAIL NATIVE ABI FIXTURE");return 8;
  }
  param[0]=(unsigned long)input;
