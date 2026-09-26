@@ -40,7 +40,8 @@ int main(void) {
  if(sidx_build()!=0||sidx_count!=8) return 39;
  if(rename("dd:FIDXOUT","dd:FIDXIN")!=0||
     sidx_read()!=0||sidx_count!=8) return 40;
- if(!reject_v1("dd:FIDXIN",4,1)) return 47;
+ if(!reject_v1("dd:FIDXIN",4,1)||sidx_audit()!=0)
+  return 47;
  if(sidx_get(objoid[0])!=0||
     sidx_get(objoid[1807])!=0) return 41;
  if(idx_unique!=8) return 5;
@@ -90,12 +91,12 @@ int main(void) {
     fputc(old=='0'?'1':'0',f)==EOF||
     fclose(f)!=0) return 35;
  if(idx_get(needle)!=8||idx_audit()!=8||
-    sidx_get(needle)!=8) return 36;
+    sidx_get(needle)!=8||sidx_audit()!=8) return 36;
  f=fopen("dd:STGIN","r+b");
  if(!f||fseek(f,start,SEEK_SET)!=0||
     fputc(old,f)==EOF||fclose(f)!=0) return 37;
  if(idx_get(needle)!=0||idx_audit()!=0||
-    sidx_get(needle)!=0) return 38;
+    sidx_get(needle)!=0||sidx_audit()!=0) return 38;
  /* Reject malformed staged hex, then restore the verified source. */
  f=fopen("dd:STGIN","r+b");
  if(!f||!fgets(line,sizeof line,f)) return 27;
@@ -113,10 +114,12 @@ int main(void) {
  if(!f||fseek(f,0,SEEK_END)!=0) return 42;
  end=ftell(f);
  if(end<16||ftruncate(fileno(f),end-2)!=0) return 43;
- if(fclose(f)!=0||sidx_read()==0) return 44;
+ if(fclose(f)!=0||sidx_read()==0||sidx_audit()==0)
+  return 44;
  if(sidx_build()!=0||
     rename("dd:FIDXOUT","dd:FIDXIN")!=0||
-    sidx_read()!=0||sidx_get(objoid[1807])!=0)
+    sidx_read()!=0||sidx_get(objoid[1807])!=0||
+    sidx_audit()!=0)
   return 45;
  if(remove("dd:FIDXIN")!=0) return 46;
  if(remove("dd:IDXIN")!=0||
