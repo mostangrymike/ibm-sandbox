@@ -138,7 +138,7 @@ static int idx_read(void) {
  f=fopen("dd:IDXIN","r");
  if(!f) {perror("IDXIN");return 8;}
  if(!idx_line(f,line,sizeof line)) goto bad;
- fields=sscanf(line,"IDX1 %lu %lu %c",
+ fields=sscanf(line,"IDX2 %lu %lu %c",
                &total,&unique,&extra);
  if(fields!=2||total!=IDXCAP||unique<1||unique>IDXCAP)
   goto bad;
@@ -158,7 +158,7 @@ static int idx_read(void) {
   prev=idx_entries[j];
  }
  if(!idx_line(f,line,sizeof line)) goto bad;
- fields=sscanf(line,"END %lu %lu %c",
+ fields=sscanf(line,"END2 %lu %lu %c",
                &endtotal,&endunique,&extra);
  if(fields!=2||endtotal!=total||endunique!=unique)
   goto bad;
@@ -522,7 +522,7 @@ static int sidx_read(void) {
  f=fopen("dd:FIDXIN","r");
  if(!f) {perror("FIDXIN");return 8;}
  if(!idx_line(f,line,sizeof line)) goto bad;
- fields=sscanf(line,"SIDX1 %lu %lu %c",
+ fields=sscanf(line,"SIDX2 %lu %lu %c",
                &total,&unique,&extra);
  if(fields!=2||total!=IDXCAP||unique<1||unique>IDXCAP)
   goto bad;
@@ -539,7 +539,7 @@ static int sidx_read(void) {
    goto bad;
  }
  if(!idx_line(f,line,sizeof line)) goto bad;
- fields=sscanf(line,"SEND %lu %lu %c",
+ fields=sscanf(line,"SEND2 %lu %lu %c",
                &endtotal,&endunique,&extra);
  if(fields!=2||endtotal!=total||endunique!=unique)
   goto bad;
