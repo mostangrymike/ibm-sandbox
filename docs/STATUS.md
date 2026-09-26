@@ -467,3 +467,55 @@ synthetic data, NOT CMS target proof or real-PACK staging proof.
 Source code and stage test commands in `docs/NATIVE_STAGE.md` remain
 a CMS validation gate. Do not stop for non-CMS repository tasks; only
 request the real CMS compile/run when needed.
+
+## 2026-09-26 max-autonomy follow-on: native staged OID index and GET
+
+Mandatory work rule: maximize independent repository work each turn;
+do NOT stop after intermediate implementation or docs if other repo
+work remains. Stop only for actual CMS target validation. No background
+work is promised. This rule and all prior project rules remain active.
+
+After the failed CMS STAGE attempt (`DMSSOP036E` output open error 4),
+the staging code got explicit CMS-output FILEDEF guidance and HOST
+verification; target STAGE/VERIFY/BADSTG still require a CMS run.
+Additional independent work completed before stopping:
+
+- `src/GITCIDX.C` is a separate bounded C89 program; BUILD reads
+  exactly 1,808 staged descriptors and checks every bounded hex body,
+  sorts binary 20-byte OIDs, normalizes matching duplicates, rejects
+  conflicting duplicates and writes a versioned CMS text OID index
+  with a mandatory END trailer.
+- CHECK rejects malformed, unsorted, duplicated, truncated and extra
+  index records. FIND validates the index and binary-searches an OID.
+- GET validates the index, walks STGIN to the indexed object, strictly
+  parses records, recomputes canonical Git SHA-1 over the selected
+  staged body with its own C89 implementation and rejects a mismatch.
+  Success reports metadata and a bounded 16-byte hex prefix. This is
+  a prototype retrieval path, NOT a committed loose-object database.
+- `tests/native_index_host.c` exercises 1,808 synthetic objects,
+  duplicate normalization (8 unique synthetic OIDs), positive/negative
+  indexed lookup, independently hashed GET, valid-hex body corruption,
+  malformed stage hex, malformed index entry, incomplete trailer and
+  restoration. The host runner compares C SHA-1 to Git's own
+  `git hash-object` for commit/tree/blob/tag on both empty and
+  three-byte bodies.
+- CI passed https://github.com/mostangrymike/ibm-sandbox/actions/runs/36271873734
+  for expanded GET/tamper tests and
+  https://github.com/mostangrymike/ibm-sandbox/actions/runs/36271801328
+  for all-four-type Git OID cross-check.
+- The procedures and source format are documented in
+  `docs/NATIVE_STAGE.md` and `docs/NATIVE_INDEX.md`; README updated;
+  issue #2 updated but must remain open. Issue #5 also remains open.
+
+Next ONLY CMS-dependent gate: Mac git pull and existing cms-upload.sh
+absolute-path upload BOTH `src/GITCWALK.C` and `src/GITCIDX.C`.
+On CMS compile `GITCLNK GITCWALK` and `GITCLNK GITCIDX`
+BEFORE output FILEDEFs; define PACKIN, OBJOUT with
+`FILEDEF OBJOUT DISK GITSTAGE DATA A (RECFM V LRECL 80`,
+STGIN, IDXOUT with
+`FILEDEF IDXOUT DISK GITINDEX DATA A (RECFM V LRECL 80`,
+and IDXIN. Run GITCWALK STAGE, VERIFY, BADSTG; GITCIDX BUILD, CHECK,
+FIND and GET against known first/last captured OIDs. Full commands
+are in docs/NATIVE_INDEX.md. No new live GitHub POST needed.
+Do NOT claim CMS staging, CMS indexing, or real-PACK GET proven until
+user sends successful actual target output.
