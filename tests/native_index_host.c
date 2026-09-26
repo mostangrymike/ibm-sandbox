@@ -1,7 +1,7 @@
 /* Host-only index tests reuse the proven synthetic staging fixture. */
-#define main native_stage_entry
+#define STAGE_HOST_ENTRY native_stage_entry
 #include "native_stage_host.c"
-#undef main
+#undef STAGE_HOST_ENTRY
 #define main gitcidx_entry
 #include "../src/GITCIDX.C"
 #undef main
