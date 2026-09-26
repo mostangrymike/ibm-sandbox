@@ -147,13 +147,40 @@ static void pack_sha(const unsigned char *p,unsigned long len,
 }
 static unsigned char objoid[1808][20];
 static unsigned char hashbuf[65568];
+/* Git hashes ASCII bytes, not CMS-native/EBCDIC text strings. */
+static const unsigned char typascii[5][7]={
+ {0},
+ {0x63,0x6f,0x6d,0x6d,0x69,0x74,0},
+ {0x74,0x72,0x65,0x65,0,0,0},
+ {0x62,0x6c,0x6f,0x62,0,0,0},
+ {0x74,0x61,0x67,0,0,0,0}
+};
 static const char *typenames[5]={"","commit","tree","blob","tag"};
+/* Return byte count including binary NUL. No sprintf/native charset. */
+static int canonical_head(int type,unsigned long n,
+                          unsigned char *dst) {
+ unsigned char digits[12];
+ unsigned long rem=n;
+ int i=0,j=0;
+ if(type<1||type>4||n>OUTCAP) return 0;
+ while(typascii[type][i]) {
+  dst[i]=typascii[type][i];i++;
+ }
+ dst[i++]=0x20;
+ do {
+  digits[j++]=(unsigned char)(0x30+rem%10);
+  rem/=10;
+ } while(rem);
+ while(j) dst[i++]=digits[--j];
+ dst[i++]=0;
+ return i;
+}
 static int object_oid(int type,const unsigned char *p,
                       unsigned long n,unsigned char oid[20]) {
  int k,j;
  if(type<1||type>4||n>OUTCAP) return 0;
- k=sprintf((char *)hashbuf,"%s %lu",typenames[type],n);
- hashbuf[k++]=0;
+ k=canonical_head(type,n,hashbuf);
+ if(!k) return 0;
  for(j=0;j<(int)n;j++) hashbuf[k+j]=p[j];
  pack_sha(hashbuf,(unsigned long)k+n,oid);
  return 1;
@@ -167,8 +194,8 @@ static int fast_oid(int type,const unsigned char *p,
  unsigned long total,done=0,part,rem,bits;
  int k,i,j;
  if(type<1||type>4||n>OUTCAP) return 0;
- k=sprintf((char *)head,"%s %lu",typenames[type],n);
- head[k++]=0;
+ k=canonical_head(type,n,head);
+ if(!k) return 0;
  total=(unsigned long)k+n;
  h[0]=0x67452301UL;h[1]=0xefcdab89UL;
  h[2]=0x98badcfeUL;h[3]=0x10325476UL;
@@ -211,31 +238,58 @@ static int find_ref_base(const unsigned char *oid,unsigned long prior) {
  return -1;
 }
 /* No inflater or PACK file needed: isolate REF OID/delta gates. */
+/* Compare known Git wire bytes and known Git SHA-1 test vectors. */
 static int ref_selftest(void) {
- static unsigned char abc[3]={'a','b','c'};
- static unsigned char four[8],five[8];
- static const unsigned char d1[]={3,4,0x90,3,1,'d'};
- static const unsigned char d2[]={4,5,0x90,4,1,'e'};
- static const unsigned char bad[]={4,4,0x90,3,1,'d'};
+ static unsigned char abc[3]={0x61,0x62,0x63};
+ static unsigned char abcd[4]={0x61,0x62,0x63,0x64};
+ static unsigned char abcde[5]={0x61,0x62,0x63,0x64,0x65};
+ static unsigned char four[8],five[8],hdr[32];
+ static const unsigned char head3[7]={
+  0x62,0x6c,0x6f,0x62,0x20,0x33,0
+ };
+ static const unsigned char shaabc[20]={
+  0xf2,0xba,0x8f,0x84,0xab,0x5c,0x1b,0xce,
+  0x84,0xa7,0xb4,0x41,0xcb,0x19,0x59,0xcf,
+  0xc7,0x09,0x3b,0x7f
+ };
+ static const unsigned char shafive[20]={
+  0x6a,0x81,0x65,0x46,0x05,0x70,0x53,0x1a,
+  0x12,0x47,0xbd,0x99,0xa7,0x3b,0x53,0xa5,
+  0xa6,0xe5,0x00,0xd5
+ };
+ static const unsigned char d1[]={3,4,0x90,3,1,0x64};
+ static const unsigned char d2[]={4,5,0x90,4,1,0x65};
+ static const unsigned char bad[]={4,4,0x90,3,1,0x64};
  unsigned char missing[20];
  unsigned long n=0;
  int i;
+ if(canonical_head(3,3,hdr)!=7||
+    memcmp(hdr,head3,7)!=0) return 8;
  objdata[0]=abc;objlen[0]=3;objtype[0]=3;
- if(!object_oid(3,abc,3,objoid[0])) return 8;
+ if(!object_oid(3,abc,3,objoid[0])||
+    memcmp(objoid[0],shaabc,20)!=0) {
+  puts("CANONICAL ASCII ABC HASH FAIL");return 8;
+ }
  if(find_ref_base(objoid[0],1)!=0) return 8;
  if(!dapply(d1,sizeof d1,abc,3,four,&n)||n!=4||
-    memcmp(four,"abcd",4)!=0) return 8;
+    memcmp(four,abcd,4)!=0) return 8;
  objdata[1]=four;objlen[1]=4;objtype[1]=3;
  if(!object_oid(3,four,4,objoid[1])) return 8;
  if(find_ref_base(objoid[1],2)!=1) return 8;
  if(!dapply(d2,sizeof d2,four,4,five,&n)||n!=5||
-    memcmp(five,"abcde",5)!=0) return 8;
+    memcmp(five,abcde,5)!=0) return 8;
  if(dapply(bad,sizeof bad,abc,3,four,&n)) return 8;
  memcpy(missing,objoid[1],20);
  missing[0]=(unsigned char)(missing[0]+1);
  if(find_ref_base(missing,2)>=0) return 8;
  if(find_ref_base(objoid[1],1)>=0) return 8;
- if(!object_oid(3,five,5,missing)) return 8;
+ if(!object_oid(3,five,5,missing)||
+    memcmp(missing,shafive,20)!=0) {
+  puts("CANONICAL ASCII ABCDE HASH FAIL");return 8;
+ }
+ printf("CANONICAL ABC OID ");
+ for(i=0;i<20;i++) printf("%02X",objoid[0][i]);
+ putchar('\n');
  printf("REFTEST OID ");
  for(i=0;i<20;i++) printf("%02x",missing[i]);
  putchar('\n');
