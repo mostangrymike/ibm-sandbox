@@ -724,3 +724,26 @@ The OID mode has not yet been compiled or run on CMS, and its output
 must be compared with an independent Git/REXX reference before claiming
 OID correctness. `ALL`, `BADSHA`, and `OFSAPPLY` remain separate gates.
 Native REF_DELTA resolution and CMS persistence remain future work.
+
+## 2026-09-26 OID target proof and profiling next gate
+
+CMS `GITCWALK OID` verified PACK SHA-1
+`8C92E274ECA84B797F8925A6082915DD6CCDE196`, inflated 1,808
+objects, applied all 1,117 OFS_DELTA programs, computed 1,808 Git object
+IDs and ended at byte offset 340,007 (CPU/elapsed 20.70/20.83 seconds).
+Sample IDs: obj 1 COMMIT 270 bytes
+`5A81BAF86E7DC7B72377087A8F160CAF8B889B74`; obj 2 BLOB 1841 bytes
+`030E4837F28336A89B785202BC84B00E934F7C94`; obj 3 TREE 139 bytes
+`450532795889EE54C540AC1AE9581E0FA98C7866`; obj 1808 TREE 5224 bytes
+`BA9F4D66B41352F0D0266090D14AD52F37318FCB`. All OIDs were computed
+on CMS, but independent comparison remains pending. OFSAPPLY previously took
+5.19/5.27 seconds and ALL 3.49/3.55 seconds; do not attribute the difference
+to SHA-1 until separately measured.
+
+Commit `e5001c1` adds `GITCWALK PROFILE` as an isolated OID-equivalent mode
+using C `clock()` around delta application and object hash calls. It prints
+`PROFILE CLOCKS PER SEC`, `PROFILE DELTA TICKS ... BYTES ...` and
+`PROFILE HASH TICKS ... BYTES ...`. PROFILE has not yet been compiled or
+run on CMS. Preserve ALL, BADSHA, OFSAPPLY and OID modes. Next target gate:
+Mac git pull and absolute-path cms-upload.sh GITCWALK.C; CMS FILEDEF PACKIN,
+GITCLNK GITCWALK, then GITCWALK PROFILE. Do not repeat network POST.
