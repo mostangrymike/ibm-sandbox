@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+"""Write bounded CMS text-record PACK v2 native REF_DELTA fixtures."""
+import hashlib
+import pathlib
+import sys
+import zlib
+
+
+def oid(blob):
+    return hashlib.sha1(b"blob " + str(len(blob)).encode("ascii")
+                        + b"\x00" + blob).digest()
+
+
+def header(kind, size):
+    first = (kind << 4) | (size & 15)
+    size >>= 4
+    out = bytearray()
+    while size:
+        out.append(first | 128)
+        first = size & 127
+        size >>= 7
+    out.append(first)
+    return bytes(out)
+
+
+def ordinary(body):
+    return header(3, len(body)) + zlib.compress(body)
+
+
+def refdelta(base, delta):
+    return header(7, len(delta)) + base + zlib.compress(delta)
+
+
+def make_pack(entries):
+    data = b"PACK" + (2).to_bytes(4, "big")
+    data += len(entries).to_bytes(4, "big") + b"".join(entries)
+    return data + hashlib.sha1(data).digest()
+
+
+def write_records(path, data):
+    with path.open("w", encoding="ascii", newline="\n") as out:
+        for at in range(0, len(data), 32):
+            out.write(data[at:at + 32].hex().upper() + "\n")
+
+
+def main():
+    if len(sys.argv) != 2:
+        raise SystemExit("Usage: make-native-ref-pack.py OUTPUT_DIRECTORY")
+    folder = pathlib.Path(sys.argv[1])
+    folder.mkdir(parents=True, exist_ok=True)
+    delta1 = bytes((3, 4, 0x90, 3, 1, ord("d")))
+    delta2 = bytes((4, 5, 0x90, 4, 1, ord("e")))
+    first = ordinary(b"abc")
+    second = refdelta(oid(b"abc"), delta1)
+    third = refdelta(oid(b"abcd"), delta2)
+    good = make_pack((first, second, third))
+    unknown = bytearray(oid(b"abc"))
+    unknown[0] ^= 1
+    bad = make_pack((first, refdelta(unknown, delta1), third))
+    forward = make_pack((second, first))
+    wrong_sha = good[:-1] + bytes((good[-1] ^ 1,))
+    for name, pack in (
+        ("REFPACK.PACK", good),
+        ("REFBAD.PACK", bad),
+        ("REFFWD.PACK", forward),
+        ("REFSHA.PACK", wrong_sha),
+    ):
+        write_records(folder / name, pack)
+        print(name, len(pack), "bytes")
+    print("OID ABC", oid(b"abc").hex().upper())
+    print("OID ABCD", oid(b"abcd").hex().upper())
+    print("OID ABCDE", oid(b"abcde").hex().upper())
+
+
+if __name__ == "__main__":
+    main()
