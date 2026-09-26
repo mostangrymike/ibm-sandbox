@@ -41,8 +41,8 @@ int main(void) {
  }
  if(ferror(f)) {puts("READ ERROR");fclose(f);return 8;}
  fclose(f);
- if(n!=PACKCAP||pack[0]!='P'||pack[1]!='A'||
-    pack[2]!='C'||pack[3]!='K') {
+ if(n!=PACKCAP||pack[0]!=0x50||pack[1]!=0x41||
+    pack[2]!=0x43||pack[3]!=0x4b) {
   printf("PACK HEADER FAIL BYTES %lu EXPECT %lu\n",n,PACKCAP);
   if(n>=12) printf("HEADER %02X %02X %02X %02X VERSION %02X %02X %02X %02X COUNT %02X %02X %02X %02X\n",
     pack[0],pack[1],pack[2],pack[3],pack[4],pack[5],
