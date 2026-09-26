@@ -39,21 +39,21 @@ the optimized and reference SHA-1 implementations agreed on every
 reconstructed object, including all 1,117 OFS_DELTA objects.
 `OPTSHA` ran in 19.29 s CPU / 19.42 s elapsed on one CMS run.
 
-The first `STAGE` attempt completed PACK reconstruction but failed
-opening the output file (`DMSSOP036E` error 4). The updated `STAGE`,
-`VERIFY`, and `BADSTG` code now specifies a target CMS validation
-gate with an explicit output record length. The isolated `GITCIDX`
-C89 prototype builds a bounded, sorted OID index, validates its
-completion marker, performs binary-search lookup, and provides
-SHA-1-checked staged-object `GET` by OID. Host CI passes synthetic
-1,808-object, tamper, and cross-Git hashing regressions; **CMS staging
-and indexing are not yet target-proven**.
+The original STAGE output FILEDEF error was corrected by specifying
+RECFM V and LRECL 80. On September 26, CMS STAGE wrote all 1,808
+reconstructed objects; VERIFY independently rehashed every stored
+object and BADSTG rejected deliberately altered content. GITCIDX
+CHECK validated 1,808 unique indexed OIDs, and first/last GETs
+returned independently SHA-1-checked object content on actual CMS.
 
-See `docs/NATIVE_STAGE.md` and `docs/NATIVE_INDEX.md` for the
-combined target test. Native forward/external REF_DELTA resolution,
-safe committed storage generations, and reboot/restart validation are
-still outstanding. Keep issue #2 open.
-
+The separate GITCIDX AUDIT mode and experimental ftell/fseek
+seek index with direct SGET have passed host C89/CI regressions,
+including corrupt stage and truncated-index tests. The faster seek
+mode still needs real CMS validation. See docs/NATIVE_STAGE.md and
+docs/NATIVE_INDEX.md for the full record and next target gate.
+Native forward/external REF_DELTA resolution, safe committed storage
+generations, and reboot/restart proof remain outstanding. Issue #2
+remains open.
 
 ## Performance redesign: native PACK engine
 
