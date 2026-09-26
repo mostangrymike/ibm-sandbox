@@ -1,0 +1,53 @@
+/* GITCBLD: compile, assemble, and GENMOD a GCCCMS C source. */
+/* Usage: GITCBLD filename [filemode] [parmfile] */
+/* Requires GCCE EXEC and PDPCLIB TXTLIB on accessed disks. */
+parse upper arg name fm parm extra
+if name='' | extra\='' | length(name)>8 then do
+ say 'Usage: GITCBLD filename [filemode] [parmfile]'
+ exit 4
+end
+if fm='' then fm='A'
+if parm='' then parm='STD380'
+if length(fm)>2 | length(parm)>8 then exit 4
+address command
+'STATE' name 'C' fm
+if rc\=0 then do
+ say 'GITCBLD: source not found:' name 'C' fm
+ exit 8
+end
+'GLOBAL MACLIB OSMACRO DMSGPI PDPCLIB'
+if rc\=0 then exit rc
+'EXEC GCCE' name 'C' fm '(NOASM PARM' parm
+if rc\=0 then do
+ say 'GITCBLD: compiler failed; not assembling'
+ exit 12
+end
+'STATE' name 'ASSEMBLE' fm
+if rc\=0 then do
+ say 'GITCBLD: compiler produced no assembler source'
+ exit 12
+end
+'ASSEMBLE' name
+if rc\=0 then do
+ say 'GITCBLD: assembly failed; existing MODULE preserved'
+ exit 16
+end
+'STATE' name 'TEXT' fm
+if rc\=0 then do
+ say 'GITCBLD: missing TEXT; existing MODULE preserved'
+ exit 16
+end
+'GLOBAL TXTLIB PDPCLIB'
+if rc\=0 then exit rc
+'LOAD' name '(NOAUTO NOMAP'
+if rc\=0 then do
+ say 'GITCBLD: LOAD failed; existing MODULE preserved'
+ exit 20
+end
+'GENMOD' name
+if rc\=0 then do
+ say 'GITCBLD: GENMOD failed'
+ exit 24
+end
+say 'GITCBLD: built' name 'MODULE'
+exit 0
