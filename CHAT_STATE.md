@@ -1271,3 +1271,49 @@ migration, forward/external REF and durable generation/recovery.
 ### Latest canonical OID host gate
 
 Final host CI run https://github.com/mostangrymike/ibm-sandbox/actions/runs/36275050558 succeeded after adding an explicit GITCIDX SELF invocation to host regression. Its logs include correct `CANONICAL ABC OID F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F`, `INDEX CANONICAL ASCII ABC PASSED`, successful backward REF PACK Git checks, and full `SEEK AUDIT VERIFIED UNIQUE 8` with corruption rejection. The complete safe CMS retest plus IDX2 migration procedure and expected markers are in docs/CANONICAL_OIDS.md. Main remains GitHub canonical; corrected code is HOST-proven and requires the real CMS retest before production use.
+
+## 2026-09-26 18:42–18:43 CDT: corrected ASCII and REF target gate PASSED
+
+User supplied the complete real CMS output: `GITCWALK RTEST`
+printed `CANONICAL ABC OID F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F`
+and `REFTEST OID 6a8165460570531a1247bd99a73b53a5a6e500d5`,
+then `REF BACKWARD CHAIN AND NEGATIVE TESTS PASSED` (0.01 CPU /
+0.02 elapsed). `GITCIDX SELF` printed
+`INDEX CANONICAL ASCII ABC PASSED` (0.01/0.01).
+With `FILEDEF PACKIN DISK REFPACK PACK A`, `GITCWALK RPACK`
+verified PACK SHA-1 `9CD9B4CCFA5D5371C608230D3157F4766248355F`,
+114 bytes and 3 objects; OBJ 1 blob abc OID
+F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F,
+OBJ 2 REF_DELTA reconstructed blob abcd OID
+85DF50785D62D3B05AB03D9CBF7E4A0B49449730,
+OBJ 3 chained REF_DELTA reconstructed blob abcde OID
+6A8165460570531A1247BD99A73B53A5A6E500D5,
+`PASS 3 OBJECTS NEXT OFFSET 94`, OFS=0, REF=2,
+OIDs=3, CMS 0.01/0.03. `GITCWALK RAPPLY` independently passed
+all 3 objects and 2 REF deltas without normal OID output,
+0.01/0.02. These are target-proven **correct Git canonical ASCII
+OID hashing** for tested vectors and **backward same-PACK chained
+REF_DELTA** (with normal and on-demand base OID paths).
+
+No actual negative REFBAD/REFFWD/REFSIZE/REFSHA CMS runs were
+included in this latest user transcript: the negative fixtures
+remain host-tested only; do not mark them target-proven. Nor was
+the corrected full captured 1,808-object PACK restaged on CMS.
+Existing GITPBUF PACK A stays verified; old GITSTAGE DATA A,
+GITINDEX DATA A (IDX1) and GITSEEK INDEX A (SIDX1) remain
+legacy with noncanonical Git OIDs; keep all untouched.
+
+The next CMS-only step is the **offline canonical migration**:
+use existing GITCWALK and GITCIDX binaries and existing
+GITPBUF PACK A; create NEW GITFIX STAGE A (RECFM V LRECL 80)
+and run GITCWALK STAGE/VERIFY, then new GITFIX INDEX A
+(IDX2) BUILD/CHECK/AUDIT and GITFIX SEEK A (SIDX2)
+SBUILD/SCHECK/SVAUDIT. Do not recompile/transfer/re-download
+unless an independent code change is needed. Use docs/CANONICAL_OIDS.md
+for exact commands. Preserve old files and never infer corrected
+first/last captured PACK OIDs from historical values.
+
+User rule: MAX WORK PER TURN; do all independent GitHub code,
+regression, docs, issue hygiene possible; pause only for genuine
+CMS validation. Keep issue #2 open for target-proven canonical
+migration, external/forward REF and generation recovery.
