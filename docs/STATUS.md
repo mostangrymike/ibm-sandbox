@@ -847,3 +847,26 @@ User rule: MAX WORK PER TURN; do all independent GitHub code,
 regression, docs, issue hygiene possible; pause only for genuine
 CMS validation. Keep issue #2 open for target-proven canonical
 migration, external/forward REF and generation recovery.
+
+### Independent follow-on after CMS canonical REF success
+
+Committed GITCIDX optional PAIR: load both canonical IDX2/SIDX2
+indexes via IDXIN/FIDXIN, compare each sorted binary OID, ordinal,
+type and size and then invoke SVAUDIT to reopen/re-hash every
+referenced staged body from STGIN. PAIR reports
+`PAIR VERIFIED UNIQUE 1808` on a valid complete canonical real-PACK
+migration. It fails on stale/mismatched index descriptor or body
+tampering; host synthetic regression deliberately mutates valid
+SIDX2 descriptor and body, checks rejection, restores them, and
+checks acceptance. Latest host CI PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36280431393 .
+New PAIR code is NOT in the older GITCIDX binary already run by the
+user; it is OPTIONAL for the initial canonical migration and would
+need the latest GITCIDX.C uploaded and recompiled in a later CMS
+gate. Do not make its availability a prerequisite to running the
+already prepared full 1,808-object offline canonical STAGE/VERIFY,
+BUILD/CHECK/AUDIT, and SBUILD/SCHECK/SVAUDIT commands. Those
+original CMS modules and GITPBUF PACK A are already present. Docs:
+docs/CANONICAL_OIDS.md and docs/NATIVE_INDEX.md. Issue #2 remains
+open until corrected full real-PACK migration and later external/
+forward REF plus generation recovery are target-proven.
