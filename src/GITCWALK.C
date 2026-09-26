@@ -216,7 +216,7 @@ static int stage_objects(unsigned long count) {
    line[k*2+1]=hex[objoid[j][k]&15];
   }
   line[40]=0;
-  if(fputs(line,out)==EOF||fputc(10,out)==EOF) goto fail;
+  if(fputs(line,out)==EOF||fputc('\n',out)==EOF) goto fail;
   for(k=0;k<objlen[j];k+=take) {
    take=objlen[j]-k;
    if(take>32) take=32;
@@ -225,9 +225,9 @@ static int stage_objects(unsigned long count) {
     line[m*2+1]=hex[objdata[j][k+m]&15];
    }
    line[take*2]=0;
-   if(fputs(line,out)==EOF||fputc(10,out)==EOF) goto fail;
+   if(fputs(line,out)==EOF||fputc('\n',out)==EOF) goto fail;
   }
-  if(objlen[j]==0&&fputc(10,out)==EOF) goto fail;
+  if(objlen[j]==0&&fputc('\n',out)==EOF) goto fail;
   if((j+1)%256==0) printf("STAGE WRITTEN %lu\n",j+1);
  }
  if(fclose(out)!=0) return 0;
@@ -249,7 +249,7 @@ static int stage_line(FILE *f,char *line,int cap) {
  int n;
  if(!fgets(line,cap,f)) return 0;
  for(n=0;line[n];n++)
-  if(line[n]==10||line[n]==13) {line[n]=0;break;}
+  if(line[n]=='\n'||line[n]=='\r') {line[n]=0;break;}
  while(n>0&&line[n-1]==' ') line[--n]=0;
  return 1;
 }
@@ -307,7 +307,7 @@ static int verify_stage(int tamper) {
    printf("STAGE OID OBJ %lu TYPE %d SIZE %lu ",
           j,type,size);
    for(k=0;k<20;k++) printf("%02X",computed[k]);
-   putchar(10);
+   putchar('\n');
   }
  }
  if(stage_line(f,line,sizeof line)) goto bad;
