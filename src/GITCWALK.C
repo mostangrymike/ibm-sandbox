@@ -371,7 +371,7 @@ int main(int argc,char **argv) {
  unsigned long ofs_count=0,applied=0,rs=0,ref_count=0;
  unsigned char *tmp;
  int baseidx=-1,doapply=0,dooid=0,profile=0,fastmode=0;
- int fastonly=0,optmode=0,optcheck=0,stage=0;
+ int fastonly=0,optmode=0,optcheck=0,stage=0,rpack=0;
  unsigned char reference[20],refbase[20];
  clock_t t0,hash_ticks=0,delta_ticks=0;
  unsigned long hash_bytes=0,delta_bytes=0;
@@ -390,7 +390,9 @@ int main(int argc,char **argv) {
   if(argc!=2) {
    puts("Usage: GITCWALK [20|100|ALL|BADSHA]");return 4;
   }
-  if(argv[1][0]=='S'&&argv[1][1]=='T'&&
+  if(strcmp(argv[1],"RPACK")==0) {
+   doapply=1;dooid=1;rpack=1;limit=PACKCAP;
+  } else if(argv[1][0]=='S'&&argv[1][1]=='T'&&
      argv[1][2]=='A'&&argv[1][3]=='G'&&
      argv[1][4]=='E'&&argv[1][5]==0) {
    doapply=1;dooid=1;stage=1;limit=PACKCAP;
@@ -469,7 +471,8 @@ int main(int argc,char **argv) {
  }
  if(ferror(f)) {puts("READ ERROR");fclose(f);return 8;}
  fclose(f);
- if(n!=PACKCAP||pack[0]!=0x50||pack[1]!=0x41||
+ if((!rpack&&n!=PACKCAP)||(rpack&&n<32)||
+    pack[0]!=0x50||pack[1]!=0x41||
     pack[2]!=0x43||pack[3]!=0x4b) {
   printf("PACK HEADER FAIL BYTES %lu EXPECT %lu\n",n,PACKCAP);
   if(n>=12) {
@@ -509,6 +512,9 @@ int main(int argc,char **argv) {
  count=((unsigned long)pack[8]<<24)|
        ((unsigned long)pack[9]<<16)|
        ((unsigned long)pack[10]<<8)|pack[11];
+ if(count>1808UL||count==0) {
+  puts("PACK OBJECT COUNT OUT OF BOUNDS");return 8;
+ }
  printf("PACK BYTES %lu OBJECTS %lu\n",n,count);
  pos=12;
  if(limit>count) limit=count;
