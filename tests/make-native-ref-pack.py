@@ -58,11 +58,14 @@ def main():
     unknown[0] ^= 1
     bad = make_pack((first, refdelta(unknown, delta1), third))
     forward = make_pack((second, first))
+    wrong_size = make_pack((first, refdelta(oid(b"abc"),
+                            bytes((4, 4, 0x90, 3, 1, ord("d"))))))
     wrong_sha = good[:-1] + bytes((good[-1] ^ 1,))
     for name, pack in (
         ("REFPACK.PACK", good),
         ("REFBAD.PACK", bad),
         ("REFFWD.PACK", forward),
+        ("REFSIZE.PACK", wrong_size),
         ("REFSHA.PACK", wrong_sha),
     ):
         write_records(folder / name, pack)
