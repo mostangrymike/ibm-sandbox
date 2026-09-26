@@ -7,6 +7,7 @@ on:
       - 'tests/native_ref_pack_host.c'
       - 'tests/make-native-ref-pack.py'
       - 'src/GITCIDX.C'
+      - 'tests/check-canonical-source.sh'
       - 'src/CMSCLNK.EXEC'
       - 'docs/BUILD.md'
       - 'tests/check-cmsclnk-source.sh'
@@ -20,6 +21,7 @@ on:
       - 'tests/native_ref_pack_host.c'
       - 'tests/make-native-ref-pack.py'
       - 'src/GITCIDX.C'
+      - 'tests/check-canonical-source.sh'
       - 'src/CMSCLNK.EXEC'
       - 'docs/BUILD.md'
       - 'tests/check-cmsclnk-source.sh'
@@ -35,5 +37,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check neutral compiler EXEC source and F-disk setup
         run: sh tests/check-cmsclnk-source.sh
+      - name: Reject native-text Git object headers in CMS C source
+        run: sh tests/check-canonical-source.sh
       - name: Compile and test staging, OID index and native REF PACK on host
         run: sh tests/run-native-stage-host.sh
