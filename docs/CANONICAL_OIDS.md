@@ -217,3 +217,17 @@ FIDXIN FILEDEFs pointing at the new GITFIX files, then run
 GITCIDX PAIR. Expected final marker is
 PAIR VERIFIED UNIQUE 1808. No legacy file is overwritten and
 PAIR does not modify the stage or either index.
+
+### Separate negative REF fixture target gate (after canonical migration)
+
+The positive CMS transcript did not include the four transferred
+negative fixtures. If REFBAD, REFFWD, REFSIZE and REFSHA PACK A are
+still present, verify that each correctly returns CMS RC 8 after
+setting its own PACKIN. The expected diagnostic sequence is:
+`UNRESOLVED REF BASE OBJ 2`, `UNRESOLVED REF BASE OBJ 1`,
+`FAIL NATIVE DELTA APPLY`, and `FAIL NATIVE PACK SHA1`.
+The host suite already checks all four cases with recomputed
+checksums where appropriate. This additional CMS fixture test uses
+only separate fixture files and does not modify GITPBUF or the
+staging/index datasets. It is not a substitute for the full
+canonical stage migration or its readback verification.
