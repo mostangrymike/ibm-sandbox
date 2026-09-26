@@ -38,7 +38,7 @@ int main(int argc,char **argv) {
     while(fgets(line,sizeof line,f)) {
         ++records;
         for(i=0;line[i];) {
-            if(line[i]==' ' || line[i]=='\n' || line[i]=='\\r') {
+            if(line[i]==' ' || line[i]=='\n' || line[i]=='\r') {
                 ++i; continue;
             }
             hi=nib((unsigned char)line[i++]);
