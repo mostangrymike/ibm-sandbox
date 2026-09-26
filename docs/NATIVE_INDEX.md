@@ -243,3 +243,20 @@ See [Native REF_DELTA](NATIVE_REF.md) for generated positive and
 negative PACK fixtures, exact Mac upload/CMS execution commands,
 and the limits of this first native REF milestone. No real-PACK
 restaging or separate seek-index retest is needed.
+
+## EBCDIC canonical OID correction
+
+The first CMS REF fixture revealed that native C code formatted the Git
+object header using EBCDIC, producing consistent but noncanonical
+hashes. The original staging/index tests proved reconstruction and
+readback consistency, not Git object-ID correctness. Original IDX1
+and SIDX1 indexes must not be promoted. Current GITCIDX uses explicit
+ASCII for the type, separator, decimal length and zero byte;
+SELF checks the known Git blob ABC vector. New IDX2/SIDX2 formats
+reject the old indexes, and SVAUDIT independently rehashes every
+saved direct-seek entry. Preserve existing GITSTAGE, GITINDEX and
+GITSEEK files. Regenerate into GITFIX STAGE, GITFIX INDEX and
+GITFIX SEEK only after the corrected RTEST/RPACK pass on CMS.
+Exact commands: docs/CANONICAL_OIDS.md. The previously measured
+1.77-second SGET run proved seek mechanics, but its legacy stored
+OID is not a canonical Git ID.
