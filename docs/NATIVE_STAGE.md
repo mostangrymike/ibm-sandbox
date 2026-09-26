@@ -146,3 +146,18 @@ Staging and indexing are thus target-proven for this captured PACK;
 they are not a committed generation/recovery mechanism or native
 REF_DELTA resolution. New AUDIT and experimental direct-seek index
 tests are documented in [Native index](NATIVE_INDEX.md).
+
+## Critical correctness revision: EBCDIC canonical hash headers
+
+The earlier CMS STAGE/VERIFY/BADSTG run reconstructed and consistently
+hashed all 1,808 objects, and PACK checksum verification was valid.
+However, both the original native SHA implementations formatted Git
+object headers using CMS-native EBCDIC text. Their agreement did
+not prove correct Git object IDs. Existing GITSTAGE DATA A and
+GITINDEX/GITSEEK files are now **legacy and unsuitable for real Git
+interoperability**, though their captured object body bytes remain
+useful. Corrected GITCWALK now uses explicit ASCII canonical headers.
+Create the new stage as `GITFIX STAGE A` instead of overwriting the
+legacy file, then independently rehash every object and build new
+IDX2/SIDX2 indexes. See [Canonical Git OIDs](CANONICAL_OIDS.md)
+for the exact required validation and migration commands.
