@@ -176,18 +176,36 @@ real captured PACK has 1,808 unique objects on CMS.
 The target-proven `GITSTAGE DATA A` and `GITINDEX DATA A`
 already exist. No new PACK download or restaging is necessary.
 
-On Mac, from `ibm-sandbox/src`:
+On the Mac, from `ibm-sandbox/src`, transfer the neutral
+compiler EXEC and current GITCIDX C source via the proven uploader:
 
 ```sh
 git pull
+./cms-upload.sh /Users/mikewommack/ibm-sandbox/src/CMSCLNK.EXEC
 ./cms-upload.sh /Users/mikewommack/ibm-sandbox/src/GITCIDX.C
 ```
 
-On CMS, compile first to avoid losing FILEDEFs; use distinct
-`GITSEEK INDEX A` so the target-proven V1 index is untouched:
+On CMS, check whether the existing GCC F disk is writable. If it
+reports `R/W`, install the neutral EXEC there and verify the copy.
 
 ```text
-GITCLNK GITCIDX
+QUERY DISK F
+COPYFILE CMSCLNK EXEC A CMSCLNK EXEC F
+STATE CMSCLNK EXEC F
+```
+
+**Only after the copy succeeds**, erase `CMSCLNK EXEC A` to force
+subsequent commands to resolve from F. If F reports `R/O`, skip the
+COPYFILE/ERASE steps and use the uploaded A copy temporarily; an
+authorized R/W F-disk access will be required for permanent installation.
+
+For the independent AUDIT/seek gate, build the C-only program with
+`CMSCLNK GITCIDX PLAIN`, then issue FILEDEFs. The experiment uses
+distinct `GITSEEK INDEX A`; it cannot overwrite the target-proven
+V1 `GITINDEX DATA A`.
+
+```text
+CMSCLNK GITCIDX PLAIN
 FILEDEF STGIN DISK GITSTAGE DATA A
 FILEDEF IDXIN DISK GITINDEX DATA A
 FILEDEF FIDXOUT DISK GITSEEK INDEX A (RECFM V LRECL 80
@@ -209,3 +227,13 @@ measurement; do not claim a speedup before observing it on CMS.
 Do not clear or overwrite target-proven `GITINDEX DATA A`
 during this experiment. Failure of the seek experiment leaves
 V1 CHECK/GET available.
+
+### Compiler EXEC rename
+
+`GITCLNK` is the historical build utility used for the target-proven
+C/assembler modules; `CMSCLNK` is now the canonical GCCCMS build
+utility intended to reside on F. Its default NAPI mode retains the
+legacy build sequence. The new optional PLAIN mode omits the native
+inflater adapter for GITCIDX and other ordinary C programs. Host
+static-source checks passed; CMS F-disk placement and PLAIN-mode
+module linking still require target validation. See [Build](BUILD.md).
