@@ -154,3 +154,38 @@ REF_DELTA, correct fresh stage/index, persisted external and forward
 REF_DELTA support, and safe committed/recoverable storage. GitHub
 issue #2 remains open. Follow maximum-work-per-turn rule; CMS
 runtime behavior requires actual target validation.
+
+## Current independent validation evidence
+
+The full C89 host regression, explicit ASCII source guard, backward
+REF fixture verified through real Git index-pack/cat-file, canonical
+GITCWALK RTEST and GITCIDX SELF, IDX1/SIDX1 rejection, corrupted-stage
+negative tests, and full direct-seek SVAUDIT all pass:
+
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36275050558
+
+The CMS staging migration has not yet been run with these fixes.
+Expected positive summaries when the new target test succeeds are:
+
+```text
+CANONICAL ABC OID F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F
+REFTEST OID 6a8165460570531a1247bd99a73b53a5a6e500d5
+INDEX CANONICAL ASCII ABC PASSED
+REF DELTAS APPLIED 2
+STAGED OBJECTS 1808
+STAGE VERIFIED OBJECTS 1808
+INDEX WRITTEN 1808 UNIQUE 1808
+INDEX VERIFIED 1808 UNIQUE 1808
+AUDIT VERIFIED 1808 UNIQUE 1808
+SEEK INDEX WRITTEN 1808 UNIQUE 1808
+SEEK INDEX VERIFIED 1808 UNIQUE 1808
+SEEK AUDIT VERIFIED UNIQUE 1808
+```
+
+In addition, the old index versions can be tested nondestructively
+by pointing IDXIN at GITINDEX DATA A and FIDXIN at GITSEEK INDEX A
+and running CHECK and SCHECK after compilation; both must reject
+IDX1/SIDX1 with RC 8. Do this only before rebinding those FILEDEFs
+to the new GITFIX files. Do not accept a failure from the legacy
+source as proof of the new code; RTEST and SELF are authoritative
+for the canonical hash correction on CMS.
