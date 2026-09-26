@@ -7,11 +7,14 @@ GITCAPI  CSECT
          BALR  12,0
          USING *,12
          ST    0,SAV12
+         ST    14,SAV14
          L     1,0(1)
          L     15,=V(GITNAPI)
          BALR  14,15
+         L     14,SAV14
          L     12,SAV12
          BR    14
          LTORG
 SAV12    DS    F
+SAV14    DS    F
          END
