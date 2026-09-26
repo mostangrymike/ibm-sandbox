@@ -651,3 +651,16 @@ Detailed exact Mac and CMS commands are in docs/NATIVE_INDEX.md
 and docs/BUILD.md. No new network PACK POST or restaging needed.
 Maintain all other project rules and maximize independent work;
 pause only for genuine CMS target validation.
+
+## 2026-09-26 GCC F disk confirmed writable
+
+User supplied live `Q DISK`: GCCLIB at VDEV 29D is F R/W,
+20 cylinders, 4K blocks, 38 files, 1,545 used and 2,055 free.
+The canonical non-Git compiler wrapper src/CMSCLNK.EXEC can be
+installed beside GCC via COPYFILE from temporary A to F, followed
+by STATE CMSCLNK EXEC F. Erase the A copy only on verified copy.
+Retain old target-proven GITCLNK EXEC A as a fallback until actual
+CMSCLNK GITCIDX PLAIN build succeeds; the existing GITINDEX DATA A
+is protected during separate GITSEEK INDEX A experiment.
+No remount or access change required; no installation or build
+result has yet been supplied.
