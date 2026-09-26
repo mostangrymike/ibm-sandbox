@@ -605,3 +605,49 @@ generation storage not yet implemented; issue #2 remains open.
 
 Mandatory user rule remains: maximize independent work every turn,
 pause only for actual CMS validation, follow all project rules.
+
+## 2026-09-26 CMS compiler EXEC migration: neutral name and GCC F
+
+User requested no unnecessary pauses and the existing C compiler
+wrapper renamed to a non-Git name on the same F disk as GCCCMS.
+Canonical repository build wrapper is now `src/CMSCLNK.EXEC`
+(commit `6dbc8a4`); original `src/GITCLNK.EXEC` removed from
+the repository in commit `83c1e419`, while existing CMS A-disk
+`GITCLNK EXEC A` is preserved as a target-proven rollback until
+the replacement is actually installed and tested. Do NOT erase the
+existing old A-disk wrapper before verifying the new F-based build.
+
+`CMSCLNK name [NAPI|PLAIN]`: defaults to NAPI and preserves
+the proven GCCE C A NOASM STD380, generated source ASSEMBLE,
+GITCAPI/GITINFA assembly, PDPCLIB LOAD, and GENMOD sequence.
+New optional PLAIN compiles/assembles/loads ordinary C modules
+without Git-specific native inflater adapters. This is designed
+as a reusable GCCCMS build tool, unlike the historical name.
+It uses source files on A even when CMSCLNK resides on F.
+Source fixed-card max 63 columns, filename under eight chars.
+CI static validation of script structure, preserved native
+link sequence and documented F installation passed
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36273033118
+. The CI cannot validate the REXX script on actual CMS.
+
+F writability has not been observed. IBM-documented `QUERY DISK F`
+reports R/W or R/O, and `COPYFILE CMSCLNK EXEC A CMSCLNK EXEC F`
+moves a copy only if F is R/W. Canonical Mac upload uses the one
+existing c3270: git pull, then cms-upload.sh absolute paths for
+CMSCLNK.EXEC and current GITCIDX.C. If F is writable, use COPYFILE
+and STATE CMSCLNK EXEC F, then erase only CMSCLNK EXEC A after
+successful copy (so program search resolves F). If F is R/O, leave
+the new A-disk copy usable temporarily: do not attempt unauthorized
+remount or modify GCC disk; authorized write access is required
+for requested final F placement.
+
+Actual next CMS validation combines F placement, a new PLAIN build
+of GITCIDX, and host-proven AUDIT and experimental SBUILD/SCHECK/
+SGET using previously target-proven GITSTAGE DATA A and existing
+GITINDEX DATA A. The experimental seek index is a DIFFERENT
+GITSEEK INDEX A file; never overwrite the proven V1 index.
+Compare last-object SGET elapsed to V1 GET 7.59 s.
+Detailed exact Mac and CMS commands are in docs/NATIVE_INDEX.md
+and docs/BUILD.md. No new network PACK POST or restaging needed.
+Maintain all other project rules and maximize independent work;
+pause only for genuine CMS target validation.
