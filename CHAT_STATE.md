@@ -847,3 +847,7 @@ byte-for-byte equal to the original implementation, final offset
 Separate optimized-only OPTSHA baseline remains 19.29/19.42 seconds.
 Next: isolated native object persistence staging, preserving all
 existing gates. Do not claim Git loose-object storage exists yet.
+
+## Mandatory execution rule (2026-09-26)
+
+Maximize useful autonomous work in every turn. Do not pause, request permission, or stop after an intermediate documentation/code step when more repository work can be completed independently. Stop only when actual CMS target validation is required; at that point provide exact Mac transfer and CMS test commands. Document completed work and target results in CHAT_STATE.md and docs/STATUS.md, follow all existing project rules, and never claim untested code is target-proven.
