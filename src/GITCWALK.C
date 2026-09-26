@@ -117,6 +117,20 @@ static void pack_sha(const unsigned char *p,unsigned long len,
  for(i=0;i<5;i++) for(j=0;j<4;j++)
   digest[i*4+j]=(unsigned char)(h[i]>>(24-j*8));
 }
+static unsigned char objoid[1808][20];
+static unsigned char hashbuf[65568];
+static const char *typenames[5]={"","commit","tree","blob","tag"};
+static int object_oid(int type,const unsigned char *p,
+                      unsigned long n,unsigned char oid[20]) {
+ int k,j;
+ if(type<1||type>4||n>OUTCAP) return 0;
+ k=sprintf((char *)hashbuf,"%s %lu",typenames[type],n);
+ hashbuf[k++]=0;
+ for(j=0;j<(int)n;j++) hashbuf[k+j]=p[j];
+ pack_sha(hashbuf,(unsigned long)k+n,oid);
+ return 1;
+}
+
 static int nib(int c) {
  if(c>='0'&&c<='9') return c-'0';
  if(c>='A'&&c<='F') return c-'A'+10;
@@ -129,7 +143,7 @@ int main(int argc,char **argv) {
  unsigned long n=0,pos,size,used,base,start,dist;
  unsigned long ofs_count=0,applied=0,rs=0;
  unsigned char *tmp;
- int baseidx=-1,doapply=0;
+ int baseidx=-1,doapply=0,dooid=0;
  unsigned long count,idx,shift,limit;
  char *end;
  unsigned char digest[20];
@@ -139,7 +153,10 @@ int main(int argc,char **argv) {
   if(argc!=2) {
    puts("Usage: GITCWALK [20|100|ALL|BADSHA]");return 4;
   }
-  if(argv[1][0]=='O'||argv[1][0]=='o') {
+  if(argv[1][0]=='O'&&argv[1][1]=='I'&&
+     argv[1][2]=='D'&&argv[1][3]==0) {
+   doapply=1;dooid=1;limit=PACKCAP;
+  } else if(argv[1][0]=='O'||argv[1][0]=='o') {
    if(argv[1][1]!='F'||argv[1][2]!='S'||
       argv[1][3]!='A'||argv[1][4]!='P'||
       argv[1][5]!='P'||argv[1][6]!='L'||
@@ -321,6 +338,17 @@ int main(int argc,char **argv) {
    for(i=0;i<(int)rs;i++) objdata[idx][i]=tmp[i];
    objlen[idx]=rs;
    if(type==6) free(tmp);
+   if(dooid) {
+    if(!object_oid(objtype[idx],objdata[idx],rs,objoid[idx])) {
+     puts("FAIL OBJECT OID");return 8;
+    }
+    if(idx<3||idx+1==count) {
+     printf("OID OBJ %lu TYPE %d SIZE %lu ",
+            idx+1,objtype[idx],rs);
+     for(i=0;i<20;i++) printf("%02X",objoid[idx][i]);
+     putchar('\n');
+    }
+   }
   }
   used=api[5];
   pos+=used;
@@ -333,5 +361,6 @@ int main(int argc,char **argv) {
         idx,pos);
  printf("OFS BASE POSITIONS RESOLVED %lu\n",ofs_count);
  if(doapply) printf("OFS DELTAS APPLIED %lu\n",applied);
+ if(dooid) printf("OBJECT OIDS COMPUTED %lu\n",idx);
  return 0;
 }
