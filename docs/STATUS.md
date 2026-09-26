@@ -25,7 +25,8 @@ PACK processing, objects, and refs remain owned by CMS.
 - M11 native CMS TCP + bounded binary-safe HTTP: DONE
 - M12 practical HTTPS transport: EC2 TLS bridge and live GitHub smart-HTTP
   discovery/upload-pack transport PROVEN. Native z/VM System SSL remains experimental.
-- M13 native C live-PACK walker: 1,808-object inflate gate PASSED; delta\n  resolution, object OIDs and native PACK SHA-1 verification remain.
+- M13 native C live-PACK walker: 1,808-object inflate gate PASSED; delta
+  resolution, object OIDs and native PACK SHA-1 verification remain.
 
 All completed milestones above are target-proven.
 
@@ -155,12 +156,29 @@ heavy EXECIO disk traffic and linear context lookup in `GIT9CTX`.
 
 ## M13 native C PACK walk — 2026-09-26
 
-GCCCMS builds C modules using GCCE NOASM, IBM ASSEMBLE, PDPCLIB and GENMOD.\nA small GITCAPI assembler adapter converts GCCCMS's argument-list convention\nto GITINFA's direct six-fullword parameter-block convention. Its known-good\nzlib fixture returned RC 0, output 3, consumed 11.\n\nThe native GITCWALK C + GITCAPI + GITINFA program walked the captured\n340,027-byte, 1,808-object PACK in 2.14 seconds elapsed (2.10 CPU). All\n1,808 object headers and zlib streams passed; final data offset 340,007\nleaves the expected 20-byte trailing checksum. The live capture's SHA-1\nwas separately validated in M12, but GITCWALK does not yet verify it.\n\nThis is a successful *inflation* gate, not yet a full Git object import.\nThe walker checks inflated delta-instruction sizes but does not apply deltas,\nresolve bases, compute object OIDs or persist the resulting objects.\n\n## Next action\n\nExtend the native C walker with PACK trailer SHA-1 verification, then\nOFS_DELTA base resolution and delta application, followed by full object\nSHA-1/OID checks. Preserve the existing target-proven REXX implementation\nas a correctness reference and the captured PACK as the benchmark. Do not\nrerun the network POST for local performance testing.
+GCCCMS builds C modules using GCCE NOASM, IBM ASSEMBLE, PDPCLIB and GENMOD.
+A small GITCAPI assembler adapter converts GCCCMS's argument-list convention
+to GITINFA's direct six-fullword parameter-block convention. Its known-good
+zlib fixture returned RC 0, output 3, consumed 11.
+
+The native GITCWALK C + GITCAPI + GITINFA program walked the captured
+340,027-byte, 1,808-object PACK in 2.14 seconds elapsed (2.10 CPU). All
+1,808 object headers and zlib streams passed; final data offset 340,007
+leaves the expected 20-byte trailing checksum. The live capture's SHA-1
+was separately validated in M12, but GITCWALK does not yet verify it.
+
+This is a successful *inflation* gate, not yet a full Git object import.
+The walker checks inflated delta-instruction sizes but does not apply deltas,
+resolve bases, compute object OIDs or persist the resulting objects.
+
+## Next action
+
+Extend the native C walker with PACK trailer SHA-1 verification, then
+OFS_DELTA base resolution and delta application, followed by full object
+SHA-1/OID checks. Preserve the existing target-proven REXX implementation
+as a correctness reference and the captured PACK as the benchmark. Do not
+rerun the network POST for local performance testing.
 
 ## 2026-09-26 first-object ABI and live inflate regression
 
 The combined `GITCLNK GITCINF` build completed with three clean Assembler XF assemblies. `GITCAPI` resolves GCCCMS's argument-list ABI versus `GITNAPI`'s direct parameter-block ABI. The known-good `abc` fixture returned `RC 0 OUTPUT 3 USED 11 DATA 61 62 63`. The live PACK first object at byte offset 14 returned `RC 0 OUTPUT 270 USED 182`, establishing the second-object offset at 196; CMS printed `PASS FIRST LIVE OBJECT INFLATE`. These results corroborate the newer 1,808-object `GITCWALK` inflate-only milestone above. Native PACK trailer verification, OFS/REF delta reconstruction, final object OIDs and persistence remain distinct unfinished acceptance gates.
-
-## First-object C/assembler regression (2026-09-26)
-
-CMS confirmed GITCLNK builds C, GITCAPI, and GITINFA cleanly. The GCCCMS adapter fixes the argument-list versus direct parameter-block ABI mismatch. GITCINF passed its abc fixture (RC 0, output 3, consumed 11, data 61 62 63) and the first live PACK object (RC 0, output 270, consumed 182, next object offset 196). These results complement the later 1,808-object GITCWALK inflate-only gate already recorded above. Native checksum verification, delta application, object IDs, and persistence remain unfinished.
