@@ -22,8 +22,8 @@ int main(void) {
  /* Read bounded compressed input starting at verified offset 14.
   * 1024 bytes is sufficient for the first 270-byte object gate.
   */
- while(fgets(line,sizeof line,f) && count<14+1024UL) {
-  for(i=0;line[i] && count<14+65536UL;) {
+ while(count<14+1024UL && fgets(line,sizeof line,f)) {
+  for(i=0;line[i] && count<14+1024UL;) {
    if(line[i]==' '||line[i]=='\n'||line[i]=='\r') {++i;continue;}
    hi=nib((unsigned char)line[i++]);
    if(hi<0||!line[i]) {puts("BAD HEX");fclose(f);return 8;}
@@ -38,6 +38,9 @@ int main(void) {
  fclose(f);
  if(count<=20) {puts("INPUT TOO SHORT");return 8;}
  remaining=count-14;
+ if(remaining>sizeof input) {
+  puts("FAIL INPUT BOUNDS");return 8;
+ }
  printf("INPUT %lu PREFIX",remaining);
  for(i=0;i<16;i++) printf(" %02X",(unsigned int)input[i]);
  putchar('\n');
