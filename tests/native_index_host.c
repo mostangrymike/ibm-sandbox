@@ -54,6 +54,19 @@ int main(void) {
  if(idx_build()!=0) return 23;
  if(rename("dd:IDXOUT","dd:IDXIN")!=0) return 24;
  if(idx_read()!=0) return 25;
+ /* Reject malformed staged hex, then restore the verified source. */
+ f=fopen("dd:STGIN","r+b");
+ if(!f||!fgets(line,sizeof line,f)) return 27;
+ start=ftell(f);
+ old=fgetc(f);
+ if(old==EOF||fseek(f,start,SEEK_SET)!=0||
+    fputc('G',f)==EOF||fclose(f)!=0) return 28;
+ if(idx_build()==0) return 29;
+ f=fopen("dd:STGIN","r+b");
+ if(!f||fseek(f,start,SEEK_SET)!=0||
+    fputc(old,f)==EOF||fclose(f)!=0) return 30;
+ if(idx_build()!=0) return 31;
+ if(remove("dd:IDXOUT")!=0) return 32;
  if(remove("dd:IDXIN")!=0||
     remove("dd:STGIN")!=0||
     remove("dd:OBJOUT")!=0) return 26;
