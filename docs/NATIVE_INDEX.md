@@ -34,56 +34,21 @@ BUILD, CHECK and FIND retain only 1,808 bounded descriptors in
 memory. GET additionally holds one selected decoded body (up to
 65,536 bytes) and a bounded canonical-hash scratch buffer.
 
-## Consolidated CMS validation gate
+## Completed V1 CMS validation (historical)
 
-On the Mac, from the repository's `src` directory:
+The September 26, 2026 target session compiled the original
+GITCWALK and GITCIDX modules, defined the variable-length staging
+files with LRECL 80, staged and independently verified all 1,808
+reconstructed objects, and rejected deliberately corrupted data.
+The resulting index passed CHECK with exactly 1,808 unique OIDs;
+GET independently rehashed the first and last real objects. The
+old compiler wrapper was GITCLNK; the canonical replacement is
+now CMSCLNK, intended for the GCC F disk.
 
-```sh
-git pull
-./cms-upload.sh /Users/mikewommack/ibm-sandbox/src/GITCWALK.C
-./cms-upload.sh /Users/mikewommack/ibm-sandbox/src/GITCIDX.C
-```
-
-On CMS, compile both programs **before** defining the DD names:
-
-```text
-GITCLNK GITCWALK
-GITCLNK GITCIDX
-FILEDEF PACKIN DISK GITPBUF PACK A
-FILEDEF OBJOUT DISK GITSTAGE DATA A (RECFM V LRECL 80
-FILEDEF STGIN DISK GITSTAGE DATA A
-FILEDEF IDXOUT DISK GITINDEX DATA A (RECFM V LRECL 80
-FILEDEF IDXIN DISK GITINDEX DATA A
-GITCWALK STAGE
-GITCWALK VERIFY
-GITCWALK BADSTG
-GITCIDX BUILD
-GITCIDX CHECK
-GITCIDX FIND 5A81BAF86E7DC7B72377087A8F160CAF8B889B74
-GITCIDX FIND BA9F4D66B41352F0D0266090D14AD52F37318FCB
-GITCIDX GET 5A81BAF86E7DC7B72377087A8F160CAF8B889B74
-GITCIDX GET BA9F4D66B41352F0D0266090D14AD52F37318FCB
-```
-
-The first STAGE open attempt with no output LRECL failed
-`DMSSOP036E Open error code 4 on OBJOUT`. Explicit
-`(RECFM V LRECL 80` on both output FILEDEFs has now been
-confirmed on CMS for staging and the index exists and passes CHECK. If
-either output open fails, collect the exact FILEDEF and runtime
-diagnostics; do not infer the index is valid or silently fall back.
-
-The full run should report `STAGED OBJECTS 1808`,
-`STAGE VERIFIED OBJECTS 1808`,
-`PASS BADSTG: ALTERED BODY REJECTED`,
-`INDEX WRITTEN 1808 UNIQUE N` and
-`INDEX VERIFIED 1808 UNIQUE N` with the same N.
-The captured real PACK index has been checked on CMS with
-**exactly 1,808 unique OIDs**.
-
-`FIND` and `GET` should resolve the first and last displayed OIDs to
-object ordinals 1 and 1808, provided those OIDs occur only once
-in the captured PACK. If duplicates exist, the index retains the
-earliest ordinal.
+These commands do not need to be repeated for the next experiment.
+For the only current target-dependent AUDIT and direct-seek test,
+use the installation and test commands in the next-gate section
+near the end of this document, including the new CMSCLNK EXEC.
 
 ## Host tests and remaining work
 
