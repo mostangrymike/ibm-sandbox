@@ -294,3 +294,27 @@ using C `clock()` around delta application and object hash calls. It prints
 run on CMS. Preserve ALL, BADSHA, OFSAPPLY and OID modes. Next target gate:
 Mac git pull and absolute-path cms-upload.sh GITCWALK.C; CMS FILEDEF PACKIN,
 GITCLNK GITCWALK, then GITCWALK PROFILE. Do not repeat network POST.
+
+## 2026-09-26 CMS PROFILE result and FASTOID gate
+
+`GITCWALK PROFILE` passed PACK SHA-1, all 1,808 inflations, all 1,117
+OFS_DELTA applications, and all 1,808 OID computations. The sample OIDs
+matched the prior OID run. CPU/elapsed: 20.70/20.83 seconds. It reported
+`CLOCKS PER SEC 1000`, `DELTA TICKS 0 BYTES 3406774`, and
+`HASH TICKS 0 BYTES 3936764`. CMS `clock()` did not yield usable
+per-call timing; the prior 5.27-second OFSAPPLY and 20.83-second OID
+whole-run comparison suggests about 15.56 seconds additional OID-mode
+work, not exclusively proven to be SHA-1.
+
+Commit `950b199` (diagnostic fix `8ac152f`) adds isolated
+`GITCWALK FASTOID` mode. Its streaming SHA-1 hashes the canonical Git
+object header and reconstructed body without copying the entire body to
+a contiguous hash buffer. FASTOID independently computes the existing
+reference OID for every object and fails on any byte mismatch. It reports
+`FAST OIDS MATCH REFERENCE 1808` only after all 1,808 match. This is
+awaiting CMS compile/run; it deliberately performs both hash paths, so
+FASTOID total runtime is not an optimization benchmark. Once parity
+passes, a separate fast-only benchmark can measure speed. Keep ALL,
+BADSHA, OFSAPPLY, OID, and PROFILE unchanged. Mac git pull and upload
+absolute-path GITCWALK.C; CMS FILEDEF PACKIN, GITCLNK GITCWALK,
+GITCWALK FASTOID. No network POST needed.
