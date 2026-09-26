@@ -5,6 +5,9 @@ on:
     paths:
       - 'src/GITCWALK.C'
       - 'src/GITCIDX.C'
+      - 'src/CMSCLNK.EXEC'
+      - 'docs/BUILD.md'
+      - 'tests/check-cmsclnk-source.sh'
       - 'tests/native_stage_host.c'
       - 'tests/native_index_host.c'
       - 'tests/run-native-stage-host.sh'
@@ -13,6 +16,9 @@ on:
     paths:
       - 'src/GITCWALK.C'
       - 'src/GITCIDX.C'
+      - 'src/CMSCLNK.EXEC'
+      - 'docs/BUILD.md'
+      - 'tests/check-cmsclnk-source.sh'
       - 'tests/native_stage_host.c'
       - 'tests/native_index_host.c'
       - 'tests/run-native-stage-host.sh'
@@ -23,5 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Check neutral compiler EXEC source and F-disk setup
+        run: sh tests/check-cmsclnk-source.sh
       - name: Compile and test CMS staging and OID index on host
         run: sh tests/run-native-stage-host.sh
