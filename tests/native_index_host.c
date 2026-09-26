@@ -11,17 +11,21 @@ int main(void) {
  char line[256];
  long start,end;
  int old;
- unsigned char missing[20],needle[20];
+ unsigned char missing[20],needle[20],digest[20];
  unsigned long k;
  if(native_stage_entry()!=0) return 1;
  if(!stage_objects(1808)) return 2;
+ for(k=0;k<1808;k++) {
+  if(!idx_hash(objtype[k],objdata[k],objlen[k],digest)||
+     memcmp(digest,objoid[k],20)!=0) return 33;
+ }
  if(link("dd:OBJOUT","dd:STGIN")!=0) return 3;
  if(idx_build()!=0) return 4;
  if(idx_unique!=8) return 5;
  if(rename("dd:IDXOUT","dd:IDXIN")!=0) return 6;
  if(idx_read()!=0||idx_unique!=8) return 7;
  for(k=0;k<20;k++) needle[k]=objoid[0][k];
- if(idx_find(needle)!=0) return 8;
+ if(idx_find(needle)!=0||idx_get(needle)!=0) return 8;
  for(k=0;k<idx_unique;k++)
   if(memcmp(idx_entries[k].oid,needle,20)==0) {
    if(idx_entries[k].number!=1||
@@ -31,7 +35,7 @@ int main(void) {
   }
  if(k==idx_unique) return 10;
  for(k=0;k<20;k++) missing[k]=0xff;
- if(idx_find(missing)!=4) return 11;
+ if(idx_find(missing)!=4||idx_get(missing)!=4) return 11;
  f=fopen("dd:IDXIN","r+b");
  if(!f||!fgets(line,sizeof line,f)) return 12;
  start=ftell(f);
@@ -54,6 +58,18 @@ int main(void) {
  if(idx_build()!=0) return 23;
  if(rename("dd:IDXOUT","dd:IDXIN")!=0) return 24;
  if(idx_read()!=0) return 25;
+ /* Valid hex corruption must still fail a GET content hash check. */
+ f=fopen("dd:STGIN","r+b");
+ if(!f||!fgets(line,sizeof line,f)) return 34;
+ start=ftell(f);old=fgetc(f);
+ if(old==EOF||fseek(f,start,SEEK_SET)!=0||
+    fputc(old=='0'?'1':'0',f)==EOF||
+    fclose(f)!=0) return 35;
+ if(idx_get(needle)!=8) return 36;
+ f=fopen("dd:STGIN","r+b");
+ if(!f||fseek(f,start,SEEK_SET)!=0||
+    fputc(old,f)==EOF||fclose(f)!=0) return 37;
+ if(idx_get(needle)!=0) return 38;
  /* Reject malformed staged hex, then restore the verified source. */
  f=fopen("dd:STGIN","r+b");
  if(!f||!fgets(line,sizeof line,f)) return 27;
