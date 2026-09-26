@@ -2,6 +2,9 @@
  * Host-only smoke test for the native CMS staging format.
  * GCC/clang compile src/GITCWALK.C as C, not C++.
  */
+#ifndef STAGE_HOST_ENTRY
+#define STAGE_HOST_ENTRY main
+#endif
 #define main gitcwalk_entry
 #include "../src/GITCWALK.C"
 #undef main
@@ -10,7 +13,7 @@ int gitcapi(unsigned long *p) {
  (void)p;
  return 8; /* Inflater is unused by isolated staging tests. */
 }
-int main(void) {
+int STAGE_HOST_ENTRY(void) {
  static unsigned char abc[]={'a','b','c'};
  static unsigned char xyz[]={'x','y','z'};
  unsigned char reference[20],test[20],abc_oid[20];
