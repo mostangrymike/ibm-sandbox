@@ -835,3 +835,15 @@ runs. Kept #2 open: native PACK persistence/REF_DELTA and production
 readiness remain unfinished despite substantial speed improvements.
 Kept #5 open: automatic stunnel startup/reboot persistence is still
 unproven. Do not claim these remaining tasks completed.
+
+## 2026-09-26 OPTCHECK target result
+
+CMS GITCWALK OPTCHECK passed: native PACK checksum
+8C92E274ECA84B797F8925A6082915DD6CCDE196, 1,808 objects,
+1,117 OFS_DELTA applications, all 1,808 optimized SHA-1 OIDs
+byte-for-byte equal to the original implementation, final offset
+340007. Reported `OPT OIDS MATCH REFERENCE 1808`; CPU/elapsed
+34.50/34.66 seconds (dual hashing, not a speed benchmark).
+Separate optimized-only OPTSHA baseline remains 19.29/19.42 seconds.
+Next: isolated native object persistence staging, preserving all
+existing gates. Do not claim Git loose-object storage exists yet.
