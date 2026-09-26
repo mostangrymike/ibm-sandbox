@@ -11,6 +11,58 @@ static unsigned char pack[340027];
 static unsigned char output[65536];
 static unsigned long api[6];
 static unsigned long objpos[1808];
+static unsigned char *objdata[1808];
+static unsigned long objlen[1808];
+static int objtype[1808];
+/* Git delta variable integer; all reconstructed objects are bounded. */
+static int dvar(const unsigned char *p,unsigned long n,
+                unsigned long *at,unsigned long *v) {
+ unsigned long x=0,shift=0;
+ int b;
+ do {
+  if(*at>=n||shift>28) return 0;
+  b=p[(*at)++];
+  x|=((unsigned long)(b&127))<<shift;
+  shift+=7;
+ } while(b&128);
+ *v=x;
+ return 1;
+}
+static int dapply(const unsigned char *p,unsigned long n,
+                  const unsigned char *base,unsigned long blen,
+                  unsigned char *dst,unsigned long *outlen) {
+ unsigned long at=0,bs,rs,off,sz,w=0;
+ int op,j;
+ if(!dvar(p,n,&at,&bs)||!dvar(p,n,&at,&rs)) return 0;
+ if(bs!=blen||rs>OUTCAP) return 0;
+ while(at<n) {
+  op=p[at++];
+  if(op&128) {
+   off=0;sz=0;
+   for(j=0;j<4;j++) if(op&(1<<j)) {
+    if(at>=n) return 0;
+    off|=((unsigned long)p[at++])<<(j*8);
+   }
+   for(j=0;j<3;j++) if(op&(16<<j)) {
+    if(at>=n) return 0;
+    sz|=((unsigned long)p[at++])<<(j*8);
+   }
+   if(sz==0) sz=65536UL;
+   if(off>blen||sz>blen-off||sz>rs-w) return 0;
+   for(j=0;j<(int)sz;j++) dst[w+j]=base[off+j];
+   w+=sz;
+  } else if(op) {
+   if((unsigned long)op>n-at||
+      (unsigned long)op>rs-w) return 0;
+   for(j=0;j<op;j++) dst[w+j]=p[at+j];
+   at+=(unsigned long)op;
+   w+=(unsigned long)op;
+  } else return 0;
+ }
+ if(w!=rs) return 0;
+ *outlen=w;
+ return 1;
+}
 /* SHA-1 uses 32-bit words even when unsigned long is wider. */
 #define W32 0xffffffffUL
 static unsigned long h[5];
@@ -75,7 +127,9 @@ int main(int argc,char **argv) {
  FILE *f;
  char line[256];
  unsigned long n=0,pos,size,used,base,start,dist;
- unsigned long ofs_count=0;
+ unsigned long ofs_count=0,applied=0,rs=0;
+ unsigned char *tmp;
+ int baseidx=-1,doapply=0;
  unsigned long count,idx,shift,limit;
  char *end;
  unsigned char digest[20];
@@ -85,7 +139,13 @@ int main(int argc,char **argv) {
   if(argc!=2) {
    puts("Usage: GITCWALK [20|100|ALL|BADSHA]");return 4;
   }
-  if(argv[1][0]=='B'||argv[1][0]=='b') {
+  if(argv[1][0]=='O'||argv[1][0]=='o') {
+   if(argv[1][1]!='F'||argv[1][2]!='S'||
+      argv[1][3]!='A'||argv[1][4]!='P'||
+      argv[1][5]!='P'||argv[1][6]!='L'||
+      argv[1][7]!='Y'||argv[1][8]!=0) return 4;
+   doapply=1;limit=PACKCAP;
+  } else if(argv[1][0]=='B'||argv[1][0]=='b') {
    if(argv[1][1]!='A'||argv[1][2]!='D'||
       argv[1][3]!='S'||argv[1][4]!='H'||
       argv[1][5]!='A'||argv[1][6]!=0) {
@@ -205,6 +265,7 @@ int main(int argc,char **argv) {
            idx+1,base);
     return 8;
    }
+   baseidx=i;
    ofs_count++;
   } else if(type==7) {
    if(pos+20>n-20) return 8;
@@ -213,6 +274,8 @@ int main(int argc,char **argv) {
    puts("BAD OBJECT TYPE");return 8;
   }
   objpos[idx]=start;
+  if(type>=1&&type<=4) objtype[idx]=type;
+  else if(type==6) objtype[idx]=objtype[baseidx];
   if(pos>=n-20) return 8;
   if(size>OUTCAP) {
    printf("OBJ %lu OUTPUT CAP %lu SIZE %lu\n",
@@ -235,6 +298,30 @@ int main(int argc,char **argv) {
      api[4]!=size) {
    puts("FAIL OBJECT INFLATE");return 8;
   }
+  if(doapply) {
+   if(type>=1&&type<=4) {
+    rs=size;
+    tmp=output;
+   } else if(type==6) {
+    if(!objdata[baseidx]) {
+     puts("MISSING RECONSTRUCTED BASE");return 8;
+    }
+    tmp=(unsigned char *)malloc(OUTCAP);
+    if(!tmp) {puts("DELTA ALLOC FAIL");return 8;}
+    if(!dapply(output,size,objdata[baseidx],
+               objlen[baseidx],tmp,&rs)) {
+     puts("FAIL OFS DELTA APPLY");free(tmp);return 8;
+    }
+    applied++;
+   } else {
+    puts("REF DELTA NEEDS OID RESOLUTION");return 8;
+   }
+   objdata[idx]=(unsigned char *)malloc(rs?rs:1);
+   if(!objdata[idx]) {puts("OBJECT ALLOC FAIL");return 8;}
+   for(i=0;i<(int)rs;i++) objdata[idx][i]=tmp[i];
+   objlen[idx]=rs;
+   if(type==6) free(tmp);
+  }
   used=api[5];
   pos+=used;
  }
@@ -245,5 +332,6 @@ int main(int argc,char **argv) {
  printf("PASS %lu OBJECTS NEXT OFFSET %lu\n",
         idx,pos);
  printf("OFS BASE POSITIONS RESOLVED %lu\n",ofs_count);
+ if(doapply) printf("OFS DELTAS APPLIED %lu\n",applied);
  return 0;
 }
