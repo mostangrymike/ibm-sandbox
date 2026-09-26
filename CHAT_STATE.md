@@ -1267,3 +1267,7 @@ unverified until labeled target output is seen.
 Observe mandatory max-work-per-turn rule: no pause except for
 actual CMS target validation. Keep issue #2 open for correct OID
 migration, forward/external REF and durable generation/recovery.
+
+### Latest canonical OID host gate
+
+Final host CI run https://github.com/mostangrymike/ibm-sandbox/actions/runs/36275050558 succeeded after adding an explicit GITCIDX SELF invocation to host regression. Its logs include correct `CANONICAL ABC OID F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F`, `INDEX CANONICAL ASCII ABC PASSED`, successful backward REF PACK Git checks, and full `SEEK AUDIT VERIFIED UNIQUE 8` with corruption rejection. The complete safe CMS retest plus IDX2 migration procedure and expected markers are in docs/CANONICAL_OIDS.md. Main remains GitHub canonical; corrected code is HOST-proven and requires the real CMS retest before production use.
