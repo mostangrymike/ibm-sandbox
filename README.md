@@ -154,3 +154,24 @@ separately named GITFIX stage/index/seek files from the saved PACK
 after the corrected REF test succeeds. See docs/CANONICAL_OIDS.md
 for exact safe commands and source of the defect. Issue #2 remains
 open for target proof and broader native Git functionality.
+
+## September 26: canonical REF validation on CMS completed
+
+The corrected GITCWALK RTEST and independent GITCIDX SELF now pass
+on real CMS with known Git canonical SHA-1 vectors. The saved small
+three-object REF fixture passes on the target, reconstructing abc,
+abcd and abcde with the correct Git object IDs, and both chained
+backward same-PACK REF_DELTA instructions apply correctly in RPACK
+and RAPPLY modes. This fixes the confirmed EBCDIC canonical-header
+failure exposed in the earlier REF attempt. The four separately
+generated malformed PACK fixtures remain host-tested; they were not
+part of the latest target transcript.
+
+The earlier 1,808-object staging and seek/index artifacts still have
+legacy incompatible IDs. The next required step is to rebuild the
+existing captured PACK offline into new GITFIX STAGE, INDEX and SEEK
+files and verify every object and both canonical IDX2/SIDX2 indexes.
+Do not overwrite the original stage or indexes. Full commands and
+success criteria: docs/CANONICAL_OIDS.md. A later optional GITCIDX
+PAIR mode is host-tested to compare both new indexes and independently
+rehash each indexed body; it may require one new compiler transfer.
