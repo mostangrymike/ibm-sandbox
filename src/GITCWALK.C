@@ -228,10 +228,13 @@ static int stage_objects(unsigned long count) {
    if(fputs(line,out)==EOF||fputc(10,out)==EOF) goto fail;
   }
   if(objlen[j]==0&&fputc(10,out)==EOF) goto fail;
+  if((j+1)%256==0) printf("STAGE WRITTEN %lu\n",j+1);
  }
  if(fclose(out)!=0) return 0;
  return 1;
 fail:
+ printf("STAGE WRITE STOP OBJ %lu\n",j+1);
+ perror("OBJOUT WRITE");
  fclose(out);
  return 0;
 }
