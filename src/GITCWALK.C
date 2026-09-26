@@ -582,8 +582,12 @@ int main(int argc,char **argv) {
   }
   objpos[idx]=start;
   if(type>=1&&type<=4) objtype[idx]=type;
-  else if((type==6||type==7)&&doapply)
+  else if((type==6||type==7)&&doapply) {
+   if(baseidx<0||baseidx>=(int)idx) {
+    puts("INVALID NATIVE DELTA BASE");return 8;
+   }
    objtype[idx]=objtype[baseidx];
+  }
   if(pos>=n-20) return 8;
   if(size>OUTCAP) {
    printf("OBJ %lu OUTPUT CAP %lu SIZE %lu\n",
