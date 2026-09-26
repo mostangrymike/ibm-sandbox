@@ -51,12 +51,8 @@ ${CC:-cc} -x c -std=c89 -O2 -Wall -Wextra \
  cp REFPACK.PACK 'dd:PACKIN'
  ./native_ref_pack_host > ref-positive.log
  grep -q '^PASS 3 OBJECTS NEXT OFFSET ' ref-positive.log
- grep -q '^OFS DELTAS APPLIED 0
-echo "HOST STAGING, INDEX AND GIT OID TEST PASSED"
- ref-positive.log
- grep -q '^REF DELTAS APPLIED 2
-echo "HOST STAGING, INDEX AND GIT OID TEST PASSED"
- ref-positive.log
+ grep -q '^OFS DELTAS APPLIED 0$' ref-positive.log
+ grep -q '^REF DELTAS APPLIED 2$' ref-positive.log
  for entry in 'REFBAD.PACK:2' 'REFFWD.PACK:1'; do
   filename=${entry%%:*}; object=${entry##*:}
   cp "$filename" 'dd:PACKIN'
@@ -71,9 +67,7 @@ echo "HOST STAGING, INDEX AND GIT OID TEST PASSED"
   echo 'Accepted corrupted PACK trailer' >&2
   exit 1
  fi
- grep -q '^FAIL NATIVE PACK SHA1
-echo "HOST STAGING, INDEX AND GIT OID TEST PASSED"
- ref-negative.log
+ grep -q '^FAIL NATIVE PACK SHA1$' ref-negative.log
 )
 for pair in '1:abc' '2:abcd' '3:abcde'; do
  number=${pair%%:*}; body=${pair##*:}
