@@ -58,7 +58,7 @@ Git SHA-1. Successful output: `STAGE VERIFIED OBJECTS 1808`.
 `BADSTG` changes the first object **in memory only**, without altering
 the file, and must print `PASS BADSTG: ALTERED BODY REJECTED`.
 
-## Next CMS test
+## Completed original CMS staging test
 
 On the Mac, from the repository's `src` directory:
 
@@ -92,10 +92,10 @@ the object; treat any partial file as invalid.
 The isolated `GITCIDX` prototype is now committed, host-tested and
 documented in [Native index](NATIVE_INDEX.md). It creates a sorted OID
 index, detects incomplete index writes, and rehashes selected staged
-objects during `GET`. Its actual CMS runtime remains untested, so the
-next step is a combined target STAGE/VERIFY/BADSTG and index
-BUILD/CHECK/FIND/GET gate. Remaining work: safe committed storage
-generations, restart/readback validation and native REF_DELTA support.
+objects during `GET`. Its original CHECK and first/last GET are now CMS target-proven;
+AUDIT and experimental direct-seek modes still need CMS validation.
+Remaining work: safe committed storage generations,
+restart/readback validation and native REF_DELTA support.
 The captured PACK uses OFS_DELTA, so the current 1,808-object test
 does not exercise REF. Issue #2 remains open.
 
@@ -113,12 +113,12 @@ GitHub Actions workflow `.github/workflows/native-stage.yml` run
 https://github.com/mostangrymike/ibm-sandbox/actions/runs/36271371785
 completed successfully. Its job logs show `STAGE VERIFIED OBJECTS 1808`,
 `PASS BADSTG: ALTERED BODY REJECTED`, detection of disk tamper, and
-`HOST STAGING AND GIT OID TEST PASSED`. These are HOST tests with
-synthetic data, NOT CMS target proof or real-PACK staging proof.
+`HOST STAGING AND GIT OID TEST PASSED`. Those initial results were HOST tests with synthetic data; the
+subsequent real-PACK CMS proof appears in the target result below.
 
-Source code and stage test commands in `docs/NATIVE_STAGE.md` remain
-a CMS validation gate. Do not stop for non-CMS repository tasks; only
-request the real CMS compile/run when needed.
+The original staging gate is now complete on CMS. The next new
+CMS-only gate is AUDIT and the isolated direct-seek experiment,
+documented in [Native index](NATIVE_INDEX.md).
 
 ## Combined CMS gate and host-proven index extension
 
@@ -129,8 +129,8 @@ bounded sorted index construction, OID lookup, independently hashed
 rejection. All four canonical Git type hashes have been cross-checked
 against Git using both empty and nonempty synthetic bodies. Latest
 expanded run: https://github.com/mostangrymike/ibm-sandbox/actions/runs/36271873734 .
-This does not prove CMS variable-record output, CMS readback, or the
-real captured PACK's unique index count.
+Those host tests preceded the subsequent CMS proof of variable-record
+output, full readback and 1,808 unique indexed OIDs.
 
 ## Target result: CMS staging and full readback
 
