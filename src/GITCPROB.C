@@ -30,8 +30,8 @@ int main(int argc,char **argv) {
         if(strlen(argv[1])>8 || strlen(argv[2])>8 || strlen(argv[3])>2) {
             puts("FAIL invalid CMS fileid"); return 4;
         }
-        sprintf(fileid,"%s %s %s",argv[1],argv[2],argv[3]);
-        f=fopen(fileid,"r");
+        /* CMS FILEDEF PACKIN DISK fn ft fm must precede execution. */
+        f=fopen("dd:PACKIN","r");
     }
     if(!f) { perror("GITCPROB"); return 8; }
     start=clock();
