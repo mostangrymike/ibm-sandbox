@@ -336,3 +336,22 @@ compiled/tested on CMS. Next: Mac git pull and absolute-path upload
 GITCWALK.C; CMS FILEDEF PACKIN, GITCLNK GITCWALK, GITCWALK FASTONLY.
 Compare its CPU/elapsed to prior OID 20.70/20.83 seconds. No network
 POST needed. Independent Git/REXX sample-OID comparison still pending.
+
+## 2026-09-26 FASTONLY benchmark and next OPTSHA gate
+
+CMS `GITCWALK FASTONLY` passed SHA-1, 1,808 inflations and OIDs,
+1,117 OFS_DELTA applications, and final PACK offset 340,007. Sample
+OIDs matched OID/FASTOID. CPU/elapsed 20.98/21.11 seconds versus
+original OID 20.70/20.83 and OFSAPPLY 5.19/5.27. Streaming alone did
+not demonstrate a speedup in this single run; do not claim it did.
+
+Commit `154509c` adds isolated `GITCWALK OPTSHA` mode, using a second
+SHA-1 compression routine with macro-expanded XOR rather than repeated
+`bxor()` calls. Existing PACK checksum and original SHA-1 gates remain
+unchanged; OPTSHA selects the alternate compression routine only while
+computing object OIDs. This is an experimental benchmark, not yet CMS
+compiled/tested or independently Git-verified. Mac: git pull and upload
+absolute-path GITCWALK.C. CMS: FILEDEF PACKIN DISK GITPBUF PACK A,
+GITCLNK GITCWALK, GITCWALK OPTSHA. Compare sample IDs and timings to
+original OID 20.70/20.83 seconds; run FASTOID for established parity if
+needed. Preserve prior target-proven modes and captured PACK.
