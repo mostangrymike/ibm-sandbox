@@ -23,7 +23,7 @@ int main(void) {
  if(idx_build()!=0) return 4;
  if(idx_unique!=8) return 5;
  if(rename("dd:IDXOUT","dd:IDXIN")!=0) return 6;
- if(idx_read()!=0||idx_unique!=8) return 7;
+ if(idx_read()!=0||idx_unique!=8||idx_audit()!=0) return 7;
  for(k=0;k<20;k++) needle[k]=objoid[0][k];
  if(idx_find(needle)!=0||idx_get(needle)!=0) return 8;
  for(k=0;k<idx_unique;k++)
@@ -65,11 +65,11 @@ int main(void) {
  if(old==EOF||fseek(f,start,SEEK_SET)!=0||
     fputc(old=='0'?'1':'0',f)==EOF||
     fclose(f)!=0) return 35;
- if(idx_get(needle)!=8) return 36;
+ if(idx_get(needle)!=8||idx_audit()!=8) return 36;
  f=fopen("dd:STGIN","r+b");
  if(!f||fseek(f,start,SEEK_SET)!=0||
     fputc(old,f)==EOF||fclose(f)!=0) return 37;
- if(idx_get(needle)!=0) return 38;
+ if(idx_get(needle)!=0||idx_audit()!=0) return 38;
  /* Reject malformed staged hex, then restore the verified source. */
  f=fopen("dd:STGIN","r+b");
  if(!f||!fgets(line,sizeof line,f)) return 27;
@@ -77,11 +77,11 @@ int main(void) {
  old=fgetc(f);
  if(old==EOF||fseek(f,start,SEEK_SET)!=0||
     fputc('G',f)==EOF||fclose(f)!=0) return 28;
- if(idx_build()==0) return 29;
+ if(idx_build()==0||idx_audit()==0) return 29;
  f=fopen("dd:STGIN","r+b");
  if(!f||fseek(f,start,SEEK_SET)!=0||
     fputc(old,f)==EOF||fclose(f)!=0) return 30;
- if(idx_build()!=0) return 31;
+ if(idx_build()!=0||idx_audit()!=0) return 31;
  if(remove("dd:IDXOUT")!=0) return 32;
  if(remove("dd:IDXIN")!=0||
     remove("dd:STGIN")!=0||
