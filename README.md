@@ -32,6 +32,29 @@ facilities, so it is no longer the practical blocker for GitHub transport.
 
 See `docs/BUILD.md`, `docs/STATUS.md`, and `CHAT_STATE.md`.
 
+## Native PACK checkpoint: staging and index prototypes
+
+`GITCWALK OPTCHECK` is CMS-proven for the captured 1,808-object PACK:
+the optimized and reference SHA-1 implementations agreed on every
+reconstructed object, including all 1,117 OFS_DELTA objects.
+`OPTSHA` ran in 19.29 s CPU / 19.42 s elapsed on one CMS run.
+
+The first `STAGE` attempt completed PACK reconstruction but failed
+opening the output file (`DMSSOP036E` error 4). The updated `STAGE`,
+`VERIFY`, and `BADSTG` code now specifies a target CMS validation
+gate with an explicit output record length. The isolated `GITCIDX`
+C89 prototype builds a bounded, sorted OID index, validates its
+completion marker, performs binary-search lookup, and provides
+SHA-1-checked staged-object `GET` by OID. Host CI passes synthetic
+1,808-object, tamper, and cross-Git hashing regressions; **CMS staging
+and indexing are not yet target-proven**.
+
+See `docs/NATIVE_STAGE.md` and `docs/NATIVE_INDEX.md` for the
+combined target test. Native forward/external REF_DELTA resolution,
+safe committed storage generations, and reboot/restart validation are
+still outstanding. Keep issue #2 open.
+
+
 ## Performance redesign: native PACK engine
 
 The REXX-per-object pipeline is a correctness reference, not the intended
