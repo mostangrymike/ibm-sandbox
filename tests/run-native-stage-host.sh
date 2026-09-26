@@ -43,6 +43,15 @@ for type in commit tree blob tag; do
 done
 # Native full PACK integration (host zlib only, not CMS inflater).
 python3 "$root/tests/make-native-ref-pack.py" "$tmp" > "$tmp/ref-fixtures.log"
+# Independently ask Git to index and reconstruct the same REF PACK.
+git init -q "$tmp/packrepo"
+git -C "$tmp/packrepo" index-pack --stdin < "$tmp/REFPACK.bin" \
+    > "$tmp/git-index-ref.log"
+for blob in abc abcd abcde; do
+ oid=$(printf %s "$blob" | git hash-object --stdin)
+ git -C "$tmp/packrepo" cat-file blob "$oid" > "$tmp/from-git"
+ printf %s "$blob" | cmp - "$tmp/from-git"
+done
 ${CC:-cc} -x c -std=c89 -O2 -Wall -Wextra \
     -o "$tmp/native_ref_pack_host" \
     "$root/tests/native_ref_pack_host.c" -lz
