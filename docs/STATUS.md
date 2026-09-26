@@ -1,6 +1,6 @@
 # CMS Git project status
 
-Updated: 2026-09-24
+Updated: 2026-09-26
 
 ## Goal
 
@@ -25,7 +25,7 @@ PACK processing, objects, and refs remain owned by CMS.
 - M11 native CMS TCP + bounded binary-safe HTTP: DONE
 - M12 practical HTTPS transport: EC2 TLS bridge and live GitHub smart-HTTP
   discovery/upload-pack transport PROVEN. Native z/VM System SSL remains experimental.
-- M13 live-pack scalability/performance: NEXT.
+- M13 native C live-PACK walker: 1,808-object inflate gate PASSED; delta\n  resolution, object OIDs and native PACK SHA-1 verification remain.
 
 All completed milestones above are target-proven.
 
@@ -153,10 +153,6 @@ the complete PACK checksum already proves byte-for-byte integrity. The next
 engineering problem is PACK/object materialization performance, especially
 heavy EXECIO disk traffic and linear context lookup in `GIT9CTX`.
 
-## Next action
+## M13 native C PACK walk — 2026-09-26
 
-M13: optimize the bounded live PACK walker/context path without weakening the
-bounded-storage guarantees. Preserve the proven M12 capture and checksum as the
-large real-world benchmark. First target the linear G9CIDX lookup and excessive
-per-object EXECIO/file open-close traffic; do not rerun the GitHub network POST
-merely to benchmark local PACK processing.
+GCCCMS builds C modules using GCCE NOASM, IBM ASSEMBLE, PDPCLIB and GENMOD.\nA small GITCAPI assembler adapter converts GCCCMS's argument-list convention\nto GITINFA's direct six-fullword parameter-block convention. Its known-good\nzlib fixture returned RC 0, output 3, consumed 11.\n\nThe native GITCWALK C + GITCAPI + GITINFA program walked the captured\n340,027-byte, 1,808-object PACK in 2.14 seconds elapsed (2.10 CPU). All\n1,808 object headers and zlib streams passed; final data offset 340,007\nleaves the expected 20-byte trailing checksum. The live capture's SHA-1\nwas separately validated in M12, but GITCWALK does not yet verify it.\n\nThis is a successful *inflation* gate, not yet a full Git object import.\nThe walker checks inflated delta-instruction sizes but does not apply deltas,\nresolve bases, compute object OIDs or persist the resulting objects.\n\n## Next action\n\nExtend the native C walker with PACK trailer SHA-1 verification, then\nOFS_DELTA base resolution and delta application, followed by full object\nSHA-1/OID checks. Preserve the existing target-proven REXX implementation\nas a correctness reference and the captured PACK as the benchmark. Do not\nrerun the network POST for local performance testing.
