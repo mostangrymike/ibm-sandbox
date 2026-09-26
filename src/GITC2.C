@@ -106,7 +106,7 @@ int main(void) {
   ref=20;
  }
  zoff=14+pos;
- printf("SECOND TYPE %d SIZE %lu ZLIB OFFSET %lu\\n",
+ printf("SECOND TYPE %d SIZE %lu ZLIB OFFSET %lu\n",
         type,sz,zoff);
  if(type<1 || type>7 || type==5 || sz>sizeof output) {
   puts("SECOND OBJECT UNSUPPORTED");return 8;
@@ -118,13 +118,13 @@ int main(void) {
  param[3]=sizeof output;
  param[4]=param[5]=0;
  rc=gitcapi(param);
- printf("SECOND INFLATE RC %d OUTPUT %lu USED %lu\\n",
+ printf("SECOND INFLATE RC %d OUTPUT %lu USED %lu\n",
         rc,param[4],param[5]);
  if(rc!=0 || param[4]!=sz || param[5]<6 ||
     param[5]>remaining-pos) {
   puts("FAIL SECOND LIVE OBJECT");return 8;
  }
- printf("THIRD OBJECT OFFSET %lu\\n",zoff+param[5]);
+ printf("THIRD OBJECT OFFSET %lu\n",zoff+param[5]);
  puts("PASS FIRST TWO LIVE OBJECTS");
  return 0;
 }
