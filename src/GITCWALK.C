@@ -200,6 +200,49 @@ static int fast_oid(int type,const unsigned char *p,
  return 1;
 }
 
+
+/* Resolve only a reconstructed in-pack base preceding this delta. */
+static int find_ref_base(const unsigned char *oid,unsigned long prior) {
+ unsigned long j;
+ for(j=0;j<prior;j++) {
+  if(objdata[j]&&memcmp(objoid[j],oid,20)==0)
+   return (int)j;
+ }
+ return -1;
+}
+/* No inflater or PACK file needed: isolate REF OID/delta gates. */
+static int ref_selftest(void) {
+ static unsigned char abc[3]={'a','b','c'};
+ static unsigned char four[8],five[8];
+ static const unsigned char d1[]={3,4,0x90,3,1,'d'};
+ static const unsigned char d2[]={4,5,0x90,4,1,'e'};
+ static const unsigned char bad[]={4,4,0x90,3,1,'d'};
+ unsigned char missing[20];
+ unsigned long n=0;
+ int i;
+ objdata[0]=abc;objlen[0]=3;objtype[0]=3;
+ if(!object_oid(3,abc,3,objoid[0])) return 8;
+ if(find_ref_base(objoid[0],1)!=0) return 8;
+ if(!dapply(d1,sizeof d1,abc,3,four,&n)||n!=4||
+    memcmp(four,"abcd",4)!=0) return 8;
+ objdata[1]=four;objlen[1]=4;objtype[1]=3;
+ if(!object_oid(3,four,4,objoid[1])) return 8;
+ if(find_ref_base(objoid[1],2)!=1) return 8;
+ if(!dapply(d2,sizeof d2,four,4,five,&n)||n!=5||
+    memcmp(five,"abcde",5)!=0) return 8;
+ if(dapply(bad,sizeof bad,abc,3,four,&n)) return 8;
+ memcpy(missing,objoid[1],20);
+ missing[0]=(unsigned char)(missing[0]+1);
+ if(find_ref_base(missing,2)>=0) return 8;
+ if(find_ref_base(objoid[1],1)>=0) return 8;
+ if(!object_oid(3,five,5,missing)) return 8;
+ printf("REFTEST OID ");
+ for(i=0;i<20;i++) printf("%02x",missing[i]);
+ putchar('\n');
+ puts("REF BACKWARD CHAIN AND NEGATIVE TESTS PASSED");
+ return 0;
+}
+
 /* Stage verified objects as CMS text records, not loose Git files. */
 static int stage_objects(unsigned long count) {
  FILE *out;
@@ -325,17 +368,19 @@ int main(int argc,char **argv) {
  FILE *f;
  char line[256];
  unsigned long n=0,pos,size,used,base,start,dist;
- unsigned long ofs_count=0,applied=0,rs=0;
+ unsigned long ofs_count=0,applied=0,rs=0,ref_count=0;
  unsigned char *tmp;
  int baseidx=-1,doapply=0,dooid=0,profile=0,fastmode=0;
  int fastonly=0,optmode=0,optcheck=0,stage=0;
- unsigned char reference[20];
+ unsigned char reference[20],refbase[20];
  clock_t t0,hash_ticks=0,delta_ticks=0;
  unsigned long hash_bytes=0,delta_bytes=0;
  unsigned long count,idx,shift,limit;
  char *end;
  unsigned char digest[20];
  int i,hi,lo,b,type,rc,badsha=0;
+ if(argc==2&&!strcmp(argv[1],"RTEST"))
+  return ref_selftest();
  if(argc==2&&!strcmp(argv[1],"VERIFY"))
   return verify_stage(0);
  if(argc==2&&!strcmp(argv[1],"BADSTG"))
@@ -509,13 +554,30 @@ int main(int argc,char **argv) {
    ofs_count++;
   } else if(type==7) {
    if(pos+20>n-20) return 8;
+   memcpy(refbase,pack+pos,20);
    pos+=20;
+   if(doapply) {
+    /* OFSAPPLY normally skips OID work; REF needs base OIDs. */
+    if(!dooid) for(i=0;i<(int)idx;i++) {
+     if(!object_oid(objtype[i],objdata[i],
+                    objlen[i],objoid[i])) {
+      puts("REF BASE OID HASH FAIL");return 8;
+     }
+    }
+    baseidx=find_ref_base(refbase,idx);
+    if(baseidx<0) {
+     printf("UNRESOLVED REF BASE OBJ %lu\n",idx+1);
+     return 8;
+    }
+    ref_count++;
+   }
   } else if(type<1||type>4) {
    puts("BAD OBJECT TYPE");return 8;
   }
   objpos[idx]=start;
   if(type>=1&&type<=4) objtype[idx]=type;
-  else if(type==6) objtype[idx]=objtype[baseidx];
+  else if((type==6||type==7)&&doapply)
+   objtype[idx]=objtype[baseidx];
   if(pos>=n-20) return 8;
   if(size>OUTCAP) {
    printf("OBJ %lu OUTPUT CAP %lu SIZE %lu\n",
@@ -542,7 +604,7 @@ int main(int argc,char **argv) {
    if(type>=1&&type<=4) {
     rs=size;
     tmp=output;
-   } else if(type==6) {
+   } else if(type==6||type==7) {
     if(!objdata[baseidx]) {
      puts("MISSING RECONSTRUCTED BASE");return 8;
     }
@@ -551,7 +613,7 @@ int main(int argc,char **argv) {
     if(profile) t0=clock();
     if(!dapply(output,size,objdata[baseidx],
                objlen[baseidx],tmp,&rs)) {
-     puts("FAIL OFS DELTA APPLY");free(tmp);return 8;
+     puts("FAIL NATIVE DELTA APPLY");free(tmp);return 8;
     }
     if(profile) {
      delta_ticks+=clock()-t0;
@@ -565,7 +627,7 @@ int main(int argc,char **argv) {
    if(!objdata[idx]) {puts("OBJECT ALLOC FAIL");return 8;}
    for(i=0;i<(int)rs;i++) objdata[idx][i]=tmp[i];
    objlen[idx]=rs;
-   if(type==6) free(tmp);
+   if(type==6||type==7) free(tmp);
    if(dooid) {
     if(profile) t0=clock();
     if(optmode||optcheck||stage) use_opt_sha=1;
@@ -621,7 +683,8 @@ int main(int argc,char **argv) {
  printf("PASS %lu OBJECTS NEXT OFFSET %lu\n",
         idx,pos);
  printf("OFS BASE POSITIONS RESOLVED %lu\n",ofs_count);
- if(doapply) printf("OFS DELTAS APPLIED %lu\n",applied);
+ if(doapply) printf("OFS DELTAS APPLIED %lu\n",applied-ref_count);
+ if(doapply) printf("REF DELTAS APPLIED %lu\n",ref_count);
  if(dooid) printf("OBJECT OIDS COMPUTED %lu\n",idx);
  if(fastmode) printf("FAST OIDS MATCH REFERENCE %lu\n",idx);
  if(fastonly) printf("FAST ONLY OIDS COMPUTED %lu\n",idx);
