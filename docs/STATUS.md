@@ -558,3 +558,50 @@ generation/restart proof, full per-OID independent cross-Git hash
 verification of actual captured data, or native REF_DELTA support.
 Keep issue #2 open and continue autonomous repository work until
 actual CMS validation of next isolated experiment.
+
+## 2026-09-26 follow-on: host-verified AUDIT and experimental SGET
+
+Actual CMS STAGE, VERIFY, BADSTG, INDEX CHECK and first/last GET
+passed on the captured real PACK as recorded immediately above.
+The record is **1,808 unique native-indexed OIDs**, all reconstructed
+bodies independently rehashed on CMS. Last sequential GET elapsed
+7.59 s versus first GET 0.14 s; GET walks preceding staged records.
+
+Autonomous follow-on committed:
+- `GITCIDX AUDIT`: read proven V1 index, scan all 1,808 staged
+  bodies, independently recompute each Git OID, reconcile header
+  type/size/index earliest ordinal and check all unique index OIDs
+  are represented; fails on malformed/stale/truncated data.
+- Separate experimental `GITCIDX SBUILD` / `SCHECK` / `SGET`.
+  SBUILD collects ftell tokens for each staged header and stores a
+  binary-OID-sorted index with an SIDX1/SEND version and completeness
+  trailer. SCHECK validates entire seek index. SGET uses fseek on a
+  freshly reopened STGIN and hashes the actual selected body before
+  returning. Old V1 BUILD/CHECK/GET remain unchanged. New file is
+  `GITSEEK INDEX A` through FIDXOUT/FIDXIN, never overwrite V1
+  `GITINDEX DATA A`. CMS ftell/fseek across file reopen is NOT
+  target-proven; fail closed if unavailable.
+- Host tests for 1,808 synthetic objects, AUDIT, negative stage
+  corruption, synthetic duplicate normalization, direct SGET,
+  stale-body hash rejection, and incomplete seek trailer passed:
+  https://github.com/mostangrymike/ibm-sandbox/actions/runs/36272574127
+  . All four canonical type hashes against Git on empty and
+  nonempty fixtures were already CI-proven.
+
+Current only target-dependent checkpoint, without rerunning STAGE:
+Mac `git pull` then upload absolute-path `src/GITCIDX.C` with
+existing `cms-upload.sh`. CMS `GITCLNK GITCIDX` BEFORE FILEDEFs;
+`FILEDEF STGIN DISK GITSTAGE DATA A`;
+`FILEDEF IDXIN DISK GITINDEX DATA A`;
+`FILEDEF FIDXOUT DISK GITSEEK INDEX A (RECFM V LRECL 80`;
+`FILEDEF FIDXIN DISK GITSEEK INDEX A`.
+Run `GITCIDX AUDIT`, `GITCIDX SBUILD`,
+`GITCIDX SCHECK`, then `GITCIDX SGET` for first OID
+5A81BAF86E7DC7B72377087A8F160CAF8B889B74 and last OID
+BA9F4D66B41352F0D0266090D14AD52F37318FCB. Compare latter
+elapsed with old sequential GET 7.59 s. Commands fully documented
+in `docs/NATIVE_INDEX.md`. Next native REF_DELTA and recoverable
+generation storage not yet implemented; issue #2 remains open.
+
+Mandatory user rule remains: maximize independent work every turn,
+pause only for actual CMS validation, follow all project rules.
