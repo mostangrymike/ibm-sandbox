@@ -406,7 +406,7 @@ int main(int argc,char **argv) {
       puts("FAIL FAST OID");return 8;
      }
      for(i=0;i<20;i++) if(objoid[idx][i]!=reference[i]) {
-      printf("FAST OID MISMATCH OBJ %lu\\n",idx+1);
+      printf("FAST OID MISMATCH OBJ %lu\n",idx+1);
       return 8;
      }
     } else if(!object_oid(objtype[idx],objdata[idx],rs,
