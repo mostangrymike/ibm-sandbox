@@ -77,13 +77,21 @@ int main(int argc,char **argv) {
  unsigned long count,idx,shift,limit;
  char *end;
  unsigned char digest[20];
- int i,hi,lo,b,type,rc;
+ int i,hi,lo,b,type,rc,badsha=0;
  limit=20;
  if(argc>1) {
   if(argc!=2) {
-   puts("Usage: GITCWALK [20|100|ALL]");return 4;
+   puts("Usage: GITCWALK [20|100|ALL|BADSHA]");return 4;
   }
-  if(argv[1][0]=='A'||argv[1][0]=='a') {
+  if(argv[1][0]=='B'||argv[1][0]=='b') {
+   if(argv[1][1]!='A'||argv[1][2]!='D'||
+      argv[1][3]!='S'||argv[1][4]!='H'||
+      argv[1][5]!='A'||argv[1][6]!=0) {
+    puts("Usage: GITCWALK [20|100|ALL|BADSHA]");
+    return 4;
+   }
+   badsha=1;
+  } else if(argv[1][0]=='A'||argv[1][0]=='a') {
    if(argv[1][1]!='L'||argv[1][2]!='L'||argv[1][3]!=0) {
     puts("Usage: GITCWALK [20|100|ALL]");return 4;
    }
@@ -127,15 +135,25 @@ int main(int argc,char **argv) {
  if(pack[4]!=0||pack[5]!=0||pack[6]!=0||pack[7]!=2) {
   puts("UNSUPPORTED PACK VERSION");return 8;
  }
+ /* Negative gate mutates only this in-memory copy, not CMS disk. */
+ if(badsha) pack[n-1]=(unsigned char)(pack[n-1]==0?1:0);
  pack_sha(pack,n-20,digest);
  for(i=0;i<20;i++) if(digest[i]!=pack[n-20+i]) {
   int j;
+  if(badsha) {
+   puts("PASS BADSHA: CORRUPT TRAILER REJECTED");
+   return 0;
+  }
   puts("FAIL NATIVE PACK SHA1");
   printf("COMPUTED ");
   for(j=0;j<20;j++) printf("%02X",digest[j]);
   printf("\nTRAILER  ");
   for(j=0;j<20;j++) printf("%02X",pack[n-20+j]);
   putchar('\n');
+  return 8;
+ }
+ if(badsha) {
+  puts("FAIL BADSHA: CORRUPT TRAILER ACCEPTED");
   return 8;
  }
  printf("NATIVE PACK SHA1 ");
