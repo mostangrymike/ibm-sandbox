@@ -29,6 +29,7 @@ int main(void) {
  int old;
  unsigned char missing[20],needle[20],digest[20];
  unsigned long k;
+ if(idx_self()!=0) return 49;
  if(native_stage_entry()!=0) return 1;
  if(!stage_objects(1808)) return 2;
  for(k=0;k<1808;k++) {
