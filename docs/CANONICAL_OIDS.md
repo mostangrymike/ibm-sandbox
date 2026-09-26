@@ -195,3 +195,25 @@ for the canonical hash correction on CMS.
 The corrected RTEST and index SELF both passed on the target. RPACK verified the 114-byte fixture and produced Git-compatible IDs for abc, abcd and abcde. Both backward chained REF deltas applied. RAPPLY also passed with on-demand OID resolution. The four malformed external fixture cases have not been run on CMS. The prior full 1,808-object stage and indexes remain legacy and must be preserved.
 
 The next target-only step uses the existing corrected binaries and saved original GITPBUF PACK A. No transfer, compile or new network request is needed. Run the offline GITFIX STAGE, VERIFY, BUILD/CHECK/AUDIT and SBUILD/SCHECK/SVAUDIT commands in the preceding section. Require all 1,808 reconstructed objects, full independent readback and both complete canonical IDX2/SIDX2 audits. Record the new first and last OIDs from target output rather than assuming old OIDs. Do not overwrite legacy files before full independent validation.
+
+### Optional further verification: matching two canonical indexes
+
+A new, separate GITCIDX PAIR mode is committed after the CMS RTEST/
+RPACK success. It compares every IDX2 and SIDX2 entry's canonical
+OID, ordinal, type and length, then invokes a full direct-seek
+content rehash to confirm that every cookie still resolves to the
+correct bytes in STGIN. It fails if either index is stale, the stage
+body is altered, or a stored cookie is invalid. Host CI covers both
+matching and deliberately mismatched index descriptors, valid-hex
+stage corruption and recovery:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36280431393 .
+
+The GITCIDX binary used for the successful SELF test may precede
+PAIR. The base 1,808-object migration above needs no new transfer;
+run its existing VERIFY, AUDIT and SVAUDIT gates first. To add PAIR,
+transfer the latest src/GITCIDX.C through the existing uploader,
+compile with CMSCLNK GITCIDX PLAIN, reestablish STGIN, IDXIN and
+FIDXIN FILEDEFs pointing at the new GITFIX files, then run
+GITCIDX PAIR. Expected final marker is
+PAIR VERIFIED UNIQUE 1808. No legacy file is overwritten and
+PAIR does not modify the stage or either index.
