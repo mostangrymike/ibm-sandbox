@@ -10,6 +10,7 @@ extern int gitcapi(unsigned long *);
 static unsigned char pack[340027];
 static unsigned char output[65536];
 static unsigned long api[6];
+static unsigned long objpos[1808];
 /* SHA-1 uses 32-bit words even when unsigned long is wider. */
 #define W32 0xffffffffUL
 static unsigned long h[5];
@@ -73,7 +74,8 @@ static int nib(int c) {
 int main(int argc,char **argv) {
  FILE *f;
  char line[256];
- unsigned long n=0,pos,size,used,base;
+ unsigned long n=0,pos,size,used,base,start,dist;
+ unsigned long ofs_count=0;
  unsigned long count,idx,shift,limit;
  char *end;
  unsigned char digest[20];
@@ -167,6 +169,7 @@ int main(int argc,char **argv) {
  if(limit>count) limit=count;
  for(idx=0;idx<limit;idx++) {
   if(pos>=n-20) {puts("SHORT HEADER");return 8;}
+  start=pos;
   b=pack[pos++];
   type=(b>>4)&7;
   size=(unsigned long)(b&15);
@@ -183,19 +186,33 @@ int main(int argc,char **argv) {
    /* OFS_DELTA base offset uses Git's offset encoding. */
    if(pos>=n-20) return 8;
    b=pack[pos++];
-   base=(unsigned long)(b&127);
+   dist=(unsigned long)(b&127);
    while(b&128) {
     if(pos>=n-20) return 8;
     b=pack[pos++];
-    base=((base+1)<<7)|(unsigned long)(b&127);
+    if(dist>(PACKCAP>>7)) {
+     puts("OFS DISTANCE OVERFLOW");return 8;
+    }
+    dist=((dist+1)<<7)|(unsigned long)(b&127);
    }
-   if(base>pos) {puts("BAD DELTA BASE");return 8;}
+   if(dist==0||dist>start) {
+    puts("BAD OFS DISTANCE");return 8;
+   }
+   base=start-dist;
+   for(i=0;i<(int)idx;i++) if(objpos[i]==base) break;
+   if(i==(int)idx) {
+    printf("UNRESOLVED OFS BASE OBJ %lu OFFSET %lu\n",
+           idx+1,base);
+    return 8;
+   }
+   ofs_count++;
   } else if(type==7) {
    if(pos+20>n-20) return 8;
    pos+=20;
   } else if(type<1||type>4) {
    puts("BAD OBJECT TYPE");return 8;
   }
+  objpos[idx]=start;
   if(pos>=n-20) return 8;
   if(size>OUTCAP) {
    printf("OBJ %lu OUTPUT CAP %lu SIZE %lu\n",
@@ -227,5 +244,6 @@ int main(int argc,char **argv) {
  }
  printf("PASS %lu OBJECTS NEXT OFFSET %lu\n",
         idx,pos);
+ printf("OFS BASE POSITIONS RESOLVED %lu\n",ofs_count);
  return 0;
 }
