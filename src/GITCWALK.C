@@ -43,7 +43,11 @@ int main(void) {
  fclose(f);
  if(n!=PACKCAP||pack[0]!='P'||pack[1]!='A'||
     pack[2]!='C'||pack[3]!='K') {
-  puts("PACK HEADER FAIL");return 8;
+  printf("PACK HEADER FAIL BYTES %lu EXPECT %lu\n",n,PACKCAP);
+  if(n>=12) printf("HEADER %02X %02X %02X %02X VERSION %02X %02X %02X %02X COUNT %02X %02X %02X %02X\n",
+    pack[0],pack[1],pack[2],pack[3],pack[4],pack[5],
+    pack[6],pack[7],pack[8],pack[9],pack[10],pack[11]);
+  return 8;
  }
  count=((unsigned long)pack[8]<<24)|
        ((unsigned long)pack[9]<<16)|
