@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 extern int gitcapi(unsigned long *);
 #define PACKCAP 340027UL
 #define OUTCAP 65536UL
@@ -240,6 +241,83 @@ static int nib(int c) {
  if(c>='a'&&c<='f') return c-'a'+10;
  return -1;
 }
+/* Independently rehash the persisted CMS text staging spool. */
+static int stage_line(FILE *f,char *line,int cap) {
+ int n;
+ if(!fgets(line,cap,f)) return 0;
+ for(n=0;line[n];n++)
+  if(line[n]==10||line[n]==13) {line[n]=0;break;}
+ while(n>0&&line[n-1]==' ') line[--n]=0;
+ return 1;
+}
+static int verify_stage(int tamper) {
+ static unsigned char body[65536];
+ unsigned char stored[20],computed[20];
+ char line[256],oidtext[41],extra;
+ unsigned long j,k,size,index,offset,take,m;
+ int type,fields,hi,lo;
+ FILE *f=fopen("dd:OBJOUT","r");
+ if(!f) {perror("OBJOUT");return 8;}
+ for(j=1;j<=1808UL;j++) {
+  if(!stage_line(f,line,sizeof line)) goto bad;
+  fields=sscanf(line,"OBJ %lu %d %lu %40s %c",
+                &index,&type,&size,oidtext,&extra);
+  if(fields!=4||index!=j||type<1||type>4||
+     size>OUTCAP) goto bad;
+  for(k=0;k<40;k++) {
+   if(!oidtext[k]) goto bad;
+   hi=nib((unsigned char)oidtext[k]);
+   if(hi<0) goto bad;
+   if(k%2==0) stored[k/2]=(unsigned char)(hi<<4);
+   else stored[k/2]|=(unsigned char)hi;
+  }
+  if(oidtext[40]) goto bad;
+  if(size==0) {
+   if(!stage_line(f,line,sizeof line)||line[0]) goto bad;
+  }
+  for(offset=0;offset<size;offset+=take) {
+   take=size-offset;
+   if(take>32) take=32;
+   if(!stage_line(f,line,sizeof line)) goto bad;
+   for(m=0;m<take;m++) {
+    hi=nib((unsigned char)line[m*2]);
+    lo=nib((unsigned char)line[m*2+1]);
+    if(hi<0||lo<0) goto bad;
+    body[offset+m]=(unsigned char)((hi<<4)|lo);
+   }
+   if(line[take*2]) goto bad;
+  }
+  if(tamper&&j==1) body[0]=(unsigned char)(body[0]+1);
+  use_opt_sha=1;
+  if(!object_oid(type,body,size,computed)) goto bad;
+  use_opt_sha=0;
+  for(k=0;k<20;k++) if(stored[k]!=computed[k]) {
+   if(tamper&&j==1) {
+    fclose(f);
+    puts("PASS BADSTG: ALTERED BODY REJECTED");
+    return 0;
+   }
+   printf("STAGE OID MISMATCH OBJ %lu\n",j);
+   fclose(f);return 8;
+  }
+  if(j==1||j==1808UL) {
+   printf("STAGE OID OBJ %lu TYPE %d SIZE %lu ",
+          j,type,size);
+   for(k=0;k<20;k++) printf("%02X",computed[k]);
+   putchar(10);
+  }
+ }
+ if(stage_line(f,line,sizeof line)) goto bad;
+ if(ferror(f)) goto bad;
+ if(fclose(f)!=0) {puts("STAGE CLOSE FAIL");return 8;}
+ if(tamper) {puts("FAIL BADSTG: NOT REJECTED");return 8;}
+ puts("STAGE VERIFIED OBJECTS 1808");
+ return 0;
+bad:
+ printf("STAGE RECORD FAIL OBJ %lu\n",j);
+ fclose(f);
+ return 8;
+}
 int main(int argc,char **argv) {
  FILE *f;
  char line[256];
@@ -255,6 +333,10 @@ int main(int argc,char **argv) {
  char *end;
  unsigned char digest[20];
  int i,hi,lo,b,type,rc,badsha=0;
+ if(argc==2&&!strcmp(argv[1],"VERIFY"))
+  return verify_stage(0);
+ if(argc==2&&!strcmp(argv[1],"BADSTG"))
+  return verify_stage(1);
  limit=20;
  if(argc>1) {
   if(argc!=2) {
