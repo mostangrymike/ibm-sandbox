@@ -390,8 +390,11 @@ int main(int argc,char **argv) {
   if(argc!=2) {
    puts("Usage: GITCWALK [20|100|ALL|BADSHA]");return 4;
   }
-  if(strcmp(argv[1],"RPACK")==0) {
-   doapply=1;dooid=1;rpack=1;limit=PACKCAP;
+  if(strcmp(argv[1],"RPACK")==0||
+     strcmp(argv[1],"RAPPLY")==0) {
+   doapply=1;
+   dooid=strcmp(argv[1],"RPACK")==0;
+   rpack=1;limit=PACKCAP;
   } else if(argv[1][0]=='S'&&argv[1][1]=='T'&&
      argv[1][2]=='A'&&argv[1][3]=='G'&&
      argv[1][4]=='E'&&argv[1][5]==0) {
