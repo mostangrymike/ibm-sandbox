@@ -132,7 +132,7 @@ badout:
 static int idx_read(void) {
  FILE *f;
  char line[128],oidtext[41],extra;
- unsigned long j,total,unique,num,size,endtotal,endunique;
+ unsigned long j=0,total,unique,num,size,endtotal,endunique;
  int typ,fields;
  struct idx_entry prev;
  f=fopen("dd:IDXIN","r");
