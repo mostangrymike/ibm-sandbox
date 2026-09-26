@@ -216,3 +216,14 @@ A subsequent GITCWALK ALL verified SHA-1
 `8C92E274ECA84B797F8925A6082915DD6CCDE196`, inflated all 1,808
 objects, and ended at offset 340,007, CPU/elapsed 3.30/3.34 seconds.
 Both positive and negative checksum regressions are target-proven.
+
+## Native OFS base-position gate — awaiting target test
+
+GITCWALK.C now records each object header's starting PACK byte offset in an
+1,808-entry native table. For each OFS_DELTA, it decodes Git's offset distance
+relative to that object's header, checks nonzero/bounded distance, and requires
+the resulting base position to equal an earlier object's header offset. On a
+successful walk it prints `OFS BASE POSITIONS RESOLVED N`. The code has not
+yet been built or tested on CMS. It does **not** reconstruct delta output,
+calculate object OIDs, or persist objects. Use the existing captured PACK;
+rerun BADSHA as a regression after the new ALL gate if needed.
