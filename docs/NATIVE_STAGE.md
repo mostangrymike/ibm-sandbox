@@ -89,12 +89,15 @@ the object; treat any partial file as invalid.
 
 ## Later work, not yet claimed
 
-After target-proving the spool and readback gates, implement a
-CMS-native indexed content-addressable object store with persistent
-OID lookup, restart/readback validation, and atomic or detectable
-incomplete writes. Add native REF_DELTA lookup; the captured PACK
-uses OFS_DELTA, so the current 1,808-object run does not exercise REF.
-Issue #2 remains open.
+The isolated `GITCIDX` prototype is now committed, host-tested and
+documented in [Native index](NATIVE_INDEX.md). It creates a sorted OID
+index, detects incomplete index writes, and rehashes selected staged
+objects during `GET`. Its actual CMS runtime remains untested, so the
+next step is a combined target STAGE/VERIFY/BADSTG and index
+BUILD/CHECK/FIND/GET gate. Remaining work: safe committed storage
+generations, restart/readback validation and native REF_DELTA support.
+The captured PACK uses OFS_DELTA, so the current 1,808-object test
+does not exercise REF. Issue #2 remains open.
 
 ## Host-side independent regression gate (2026-09-26)
 
@@ -116,3 +119,15 @@ synthetic data, NOT CMS target proof or real-PACK staging proof.
 Source code and stage test commands in `docs/NATIVE_STAGE.md` remain
 a CMS validation gate. Do not stop for non-CMS repository tasks; only
 request the real CMS compile/run when needed.
+
+## Combined CMS gate and host-proven index extension
+
+The complete current test procedure is in
+[`docs/NATIVE_INDEX.md`](NATIVE_INDEX.md). Host CI also proves
+bounded sorted index construction, OID lookup, independently hashed
+`GET`, malformed staged-body rejection, and incomplete index trailer
+rejection. All four canonical Git type hashes have been cross-checked
+against Git using both empty and nonempty synthetic bodies. Latest
+expanded run: https://github.com/mostangrymike/ibm-sandbox/actions/runs/36271873734 .
+This does not prove CMS variable-record output, CMS readback, or the
+real captured PACK's unique index count.
