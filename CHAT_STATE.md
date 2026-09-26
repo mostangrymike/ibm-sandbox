@@ -984,3 +984,42 @@ FIND and GET against known first/last captured OIDs. Full commands
 are in docs/NATIVE_INDEX.md. No new live GitHub POST needed.
 Do NOT claim CMS staging, CMS indexing, or real-PACK GET proven until
 user sends successful actual target output.
+
+## 2026-09-26 CMS target proof: staged readback and full unique index
+
+Target logs from user, no repeated live POST:
+`GITCLNK GITCWALK` built with no assembler flags (4.78/5.01 s).
+`GITCLNK GITCIDX` built with no assembler flags (2.47/2.59 s).
+Issuing `FILEDEF OBJOUT DISK GITSTAGE DATA A (RECFM V LRECL 80`
+after compilation fixed the original OBJOUT open error 4.
+`GITCWALK STAGE` verified PACK SHA-1
+`8C92E274ECA84B797F8925A6082915DD6CCDE196`;
+1,808 PACK objects, 1,117 OFS_DELTA applied and all 1,808 optimized
+OIDs computed; final offset 340,007. `STAGE WRITTEN` checkpoints
+256,512,768,1024,1280,1536,1792; `STAGED OBJECTS 1808`.
+CPU/elapsed 24.89/25.32 s. `GITCWALK VERIFY`: independent readback
+and rehash of all 1,808 staged bodies passed, including first
+5A81BAF86E7DC7B72377087A8F160CAF8B889B74 and last
+BA9F4D66B41352F0D0266090D14AD52F37318FCB; 22.64/22.84 s.
+`GITCWALK BADSTG`: `PASS BADSTG: ALTERED BODY REJECTED`,
+0.01/0.01 s, stages unaffected. `GITCIDX CHECK` printed
+`INDEX VERIFIED 1808 UNIQUE 1808`, 0.13/0.14 s. The posted
+log did not include `GITCIDX BUILD` itself; CHECK establishes
+that a complete and valid 1,808-unique-object index exists, without
+claiming BUILD timing. `GITCIDX GET` successfully rehashed first
+OID, returning OBJ 1 TYPE 1 SIZE 270 (0.13/0.14 s), and last OID,
+returning OBJ 1808 TYPE 2 SIZE 5224 (7.49/7.59 s). Console
+line for PREFIX was truncated on capture; full prefix not asserted.
+GET cost grows with the target's staging-file ordinal because
+GITCIDX scans staged preceding records. Next optimization:
+experiment with separate offset/seek index mode without replacing
+the target-proven original; target CMS `ftell/fseek` on variable
+records MUST be validated before trusting random access.
+
+This is real CMS target proof for reconstructed staging, independent
+readback, non-destructive negative gate, valid unique index and
+GET from both ends of the real captured PACK. It is NOT committed
+generation/restart proof, full per-OID independent cross-Git hash
+verification of actual captured data, or native REF_DELTA support.
+Keep issue #2 open and continue autonomous repository work until
+actual CMS validation of next isolated experiment.
