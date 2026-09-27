@@ -2246,3 +2246,40 @@ requires preserving VM dump and taking the real DASD
 backup once operator confirms actual Hercules image,
 offline status and storage destination. Avoid claiming
 any repair or safe A-disk writes until then.
+
+## Continued offline-only recovery work after TRKDE incident
+
+User said proceed after the safety hold. All independent
+development remained on GitHub and on synthetic CI data;
+NO CMS or real Hercules DASD images were touched.
+
+Hardened scripts/backup-offline-dasd.sh to publish verified
+offline copies using atomic hard-link create-if-absent rather
+than mv -n, so two backup attempts cannot silently replace
+each other's preservation result. Added
+scripts/inspect-hercules-config.sh, a *read-only* inventory
+helper that takes an operator-verified active Hercules
+configuration file and reports simple CKD address/device/
+backing-filename declarations without disclosing arbitrary
+config lines or guessing the CMS virtual 191 host mapping.
+It does not follow INCLUDE records or certify quiescence.
+Added tests/test-hercules-config.sh with synthetic records,
+missing-file and symlink refusal cases; integrated with
+native-stage GitHub CI. Full integrated CI PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36353438291 .
+Additional synthetic backup-helper symlink source/destination
+negative cases were just committed, CI run
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36353470091
+was queued when last inspected. Expanded
+docs/CMS_DASD_RECOVERY.md with helper usage and
+verification caveats.
+
+Safest user next step: on the actual Hercules host,
+locate verified active Hercules config and CP MDISK mapping,
+preserve crash dump/Hercules logs, quiesce the actual guest
+and emulator or take coordinated host-storage snapshot,
+then back up the full appropriate DASD image/overlays
+to independent storage. Do NOT run user CMS's old uploaded
+cleanup GITRUN. GitHub src/GITRUN.EXEC remains fail-fast
+safety hold (RC12). Actual host file names, verified image
+backup and post-crash disk integrity are still UNKNOWN.
