@@ -195,3 +195,7 @@ host tested. The already validated GITFIX stage and both canonical
 indexes were unchanged. This experimental lookup is sequential,
 not indexed. Full GEN2 sealing and reopening also passed on CMS;
 see [generation recovery](GENERATION_RECOVERY.md).
+
+### Target-proven indexed external REF
+
+The optional XSEEK and XSAPPLY modes subsequently passed on actual CMS on September 27, 2026. Using XREAL PACK A, EXIDX GITFIX SEEK A and EXTIN GITFIX STAGE A, both independently validated the real stored first commit (TYPE 1, SIZE 270) via its canonical Git OID. XSEEK produced 00D8D63229305230C8D37F884CE87F9E1A89468C and completed in 0.19 sec elapsed; XSAPPLY completed in 0.18 sec. XPACK's prior sequential lookup took 8.17 sec elapsed in a separate run. The original canonical stage/indexes/GEN2 files were not altered. See docs/INDEXED_EXTERNAL_REF.md.
