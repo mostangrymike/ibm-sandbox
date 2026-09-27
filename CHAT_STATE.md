@@ -2217,3 +2217,32 @@ batch from a new pull. Abandoned native TLS GitHub
 experimental sources are deleted; historical Git
 commits still preserve them. Current on-disk state
 of M12ATLS ASSEMBLE after failed erase is UNKNOWN.
+
+## After TRKDE incident: independent GitHub recovery work completed
+
+Following user instruction "do not pause", completed the work
+that does not touch the possibly damaged CMS A disk.
+GitHub src/GITRUN.EXEC remains the RC12 safety hold; do
+NOT run the prior cleanup EXEC still uploaded on CMS.
+Added docs/CMS_DASD_RECOVERY.md with IBM sourced diagnosis,
+minidisk image preservation, CP DDR/MDCHECK follow-up on
+the actual z/VM version and recovery exit criteria.
+Added scripts/backup-offline-dasd.sh: refuses to run without
+OFFLINE_CONFIRMED=YES, accepts only explicit non-symlink
+regular source and unused destination, checks optional
+fuser and exact byte count/cmp plus SHA256, does not
+modify the source, and retains incomplete backup output
+on errors. It is NOT a live-snapshot substitute; no
+actual host paths are assumed. Added synthetic
+tests/test-offline-dasd-backup.sh and wired it into the
+native-stage GitHub CI workflow; the complete suite
+PASSED at
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36353242601 .
+No CMS files or live DASD images have been copied,
+inspected or repaired by assistant. User has not yet
+provided host path, quiesced storage state, or a
+verified backup of MNT191. The precise next step
+requires preserving VM dump and taking the real DASD
+backup once operator confirms actual Hercules image,
+offline status and storage destination. Avoid claiming
+any repair or safe A-disk writes until then.
