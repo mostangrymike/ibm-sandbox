@@ -287,11 +287,8 @@ Compile the updated program, then restore its input FILEDEFs:
 
 ```text
 CMSCLNK GITCIDX PLAIN
-FILEDEF STGIN CLEAR
 FILEDEF STGIN DISK GITFIX STAGE A
-FILEDEF IDXIN CLEAR
 FILEDEF IDXIN DISK GITFIX INDEX A
-FILEDEF FIDXIN CLEAR
 FILEDEF FIDXIN DISK GITFIX SEEK A
 GITCIDX SFAST
 GITCIDX PAIR
@@ -306,3 +303,15 @@ SFAST full verification after cross-checking both index formats,
 so it reads all bodies again. Measure actual CMS timings.
 The original SVAUDIT may be kept as a slower optional diagnostic;
 it is no longer required for completion of the index-pair gate.
+
+### FILEDEF input status from the latest CMS session
+
+The user issued `FILEDEF STGIN CLEAR`, `FILEDEF IDXIN CLEAR`, and
+`FILEDEF FIDXIN CLEAR`, and each reported `DMSFLD704I Invalid CLEAR
+request`. The immediately following three `FILEDEF ... DISK` commands
+all returned normal `Ready` with no errors, so their desired GITFIX
+input definitions were established. Do not repeat CLEAR or DISK
+before SFAST/PAIR/SGET in that same session. CLEAR is unnecessary
+when the DD name has no existing definition; only remove or replace
+an actual prior definition when needed. Continue directly with the
+already-linked current GITCIDX module's read-only validation gates.
