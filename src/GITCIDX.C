@@ -432,6 +432,10 @@ struct seek_entry {
 static struct seek_entry sidx[1808];
 static unsigned long sidx_count;
 static int sidx_silent=0;
+/* M19: opt-in complete body framing after independent OID rehash.
+ * Keep normal SGET bounded-prefix output exactly unchanged.
+ */
+static int sidx_emit_full=0;
 static int sidx_cmp(const void *a,const void *b) {
  const struct seek_entry *x=(const struct seek_entry *)a;
  const struct seek_entry *y=(const struct seek_entry *)b;
@@ -614,6 +618,15 @@ static int sidx_read_at(FILE *f,
   if(at==0) putchar('-');
   for(k=0;k<at;k++) printf("%02X",idx_body[k]);
   putchar('\n');
+  if(sidx_emit_full) {
+   puts("OBJECT DATA BEGIN");
+   for(k=0;k<n;k++) {
+    if(k%32==0) fputs("HEX ",stdout);
+    printf("%02X",idx_body[k]);
+    if(k%32==31||k+1==n) putchar('\n');
+   }
+   puts("OBJECT DATA END");
+  }
  }
 
  return 0;
