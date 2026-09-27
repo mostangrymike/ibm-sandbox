@@ -85,8 +85,8 @@ def main():
                   "NO VALID SELECTOR SLOT")
         # SELECT uses a replaceable full-verification callback. The
         # host simulator uses marker files, NOT actual CMS GENCHECK.
-        (folder / "verified_GITOLD.txt").write_text(OLD + "\\n")
-        (folder / "verified_GITNEW.txt").write_text(NEW + "\\n")
+        (folder / "verified_GITOLD.txt").write_text(OLD + "\n")
+        (folder / "verified_GITNEW.txt").write_text(NEW + "\n")
 
         def select(slot0, slot1):
             for name, data in (("dd:SEL0", slot0), ("dd:SEL1", slot1)):
@@ -105,7 +105,7 @@ def main():
         check(select(old, new), 0, "RECOVERED 41 GITOLD")
         (folder / "verified_GITOLD.txt").unlink()
         check(select(old, new), 8, "NO FULLY VERIFIED GENERATION")
-        (folder / "verified_GITOLD.txt").write_text(OLD + "\\n")
+        (folder / "verified_GITOLD.txt").write_text(OLD + "\n")
         for length in range(len(new)):
             check(select(old, new[:length]), 0,
                   "SELECTED 41 GITOLD")
