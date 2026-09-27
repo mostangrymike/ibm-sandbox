@@ -142,7 +142,7 @@ int main(void) {
   sprintf(command,"./native_recovery GET GENOLD GENNEW %s"
           " > recovery.log",missinghex);
   if(system(command)==0||
-     !selected_output("INDEX OID NOT FOUND")) return 128;
+     !selected_output("SEEK OID NOT FOUND")) return 128;
   if(system("./native_recovery GET GENOLD GENNEW NOTANID"
             " > recovery.log")==0||
      !selected_output("GET REQUIRES 40 HEX DIGITS")) return 129;
