@@ -121,11 +121,21 @@ def main():
     later = "OBJ 1 3 5 " + oid(b"other").hex().upper()
     later += "\n6F74686572\n"
     later_offset = len(later.encode("ascii"))
+    mult_entries = sorted((
+        (abc_hex, 2, 3, 3, later_offset),
+        (oid(b"other").hex().upper(), 1, 3, 5, 0),
+    ))
+    mult_lines = [
+        f"OID {item_oid} {number} {kind} {size} {offset}"
+        for item_oid, number, kind, size, offset in mult_entries
+    ]
     (folder / "EXMULT.IDX").write_text(
-        "SIDX2 1808 2\n"
-        + "OID " + abc_hex + " 2 3 3 " + str(later_offset)
-        + "\nOID " + oid(b"other").hex().upper()
-        + " 1 3 5 0\nSEND2 1808 2\n", encoding="ascii"
+        "SIDX2 1808 2\n" + "\n".join(mult_lines)
+        + "\nSEND2 1808 2\n", encoding="ascii"
+    )
+    (folder / "EXUNSORT.IDX").write_text(
+        "SIDX2 1808 2\n" + "\n".join(reversed(mult_lines))
+        + "\nSEND2 1808 2\n", encoding="ascii"
     )
     (folder / "EXWRONG.IDX").write_text(
         "SIDX2 1808 1\nOID " + abc_hex
