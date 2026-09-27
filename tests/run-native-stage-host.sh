@@ -117,6 +117,15 @@ ${CC:-cc} -x c -std=c89 -O2 -Wall -Wextra \
  grep -q '^REF DELTAS APPLIED 1$' x-positive.log
  grep -q '^REF DELTAS APPLIED 1$' x-apply.log
  grep -q '^PASS 1 OBJECTS NEXT OFFSET ' x-positive.log
+ cp EXTMULT.DATA 'dd:EXTIN'
+ ./native_ref_pack_host XPACK > x-mult.log
+ grep -q '^EXTERNAL REF BASE VERIFIED TYPE 3 SIZE 3$' x-mult.log
+ cp EXTDUP.DATA 'dd:EXTIN'
+ if ./native_ref_pack_host XPACK > x-negative.log; then
+  echo 'Accepted duplicate external staged OID' >&2
+  exit 1
+ fi
+ grep -q '^INVALID EXTERNAL STAGE RECORD 2$' x-negative.log
  cp EXTBAD.DATA 'dd:EXTIN'
  if ./native_ref_pack_host XPACK > x-negative.log; then
   echo 'Accepted corrupted external stage base' >&2
@@ -130,6 +139,12 @@ ${CC:-cc} -x c -std=c89 -O2 -Wall -Wextra \
  fi
  grep -q '^UNRESOLVED REF BASE OBJ 1$' x-negative.log
  cp EXTBASE.DATA 'dd:EXTIN'
+ cp XREAL.PACK 'dd:PACKIN'
+ if ./native_ref_pack_host XPACK > x-negative.log; then
+  echo 'Accepted real-commit external ref without that commit' >&2
+  exit 1
+ fi
+ grep -q '^UNRESOLVED REF BASE OBJ 1$' x-negative.log
  cp XBAD.PACK 'dd:PACKIN'
  if ./native_ref_pack_host XPACK > x-negative.log; then
   echo 'Accepted unprovided external REF base' >&2
