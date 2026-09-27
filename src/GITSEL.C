@@ -103,6 +103,7 @@ static int selector_state(const char *name) {
  if(!proper_name(name)) return 4;
  sprintf(command,"STATE %s PTR A",name);
  rc=system(command);
+ printf("SELECTOR STATE RETURN %d\n",rc);
  if(rc==0) {
   puts("SELECTOR OUTPUT EXISTS");
   return 8;
@@ -239,9 +240,12 @@ int main(int argc,char **argv) {
  if((argc==5||argc==6)&&strcmp(argv[1],"WRITE")==0)
   return selector_write(argv[2],argv[3],argv[4],
                         argc==6?argv[5]:(const char *)0);
- if((argc==4||argc==5)&&strcmp(argv[1],"WRITEGEN")==0)
+ if((argc==4||argc==5)&&strcmp(argv[1],"WRITEGEN")==0) {
+  printf("WRITEGEN ARGUMENT COUNT %d SLOT %s\n",
+         argc,argc==5?argv[4]:"(none)");
   return selector_writegen(argv[2],argv[3],
                            argc==5?argv[4]:(const char *)0);
+ }
  if(argc!=2) {
   puts("Usage: GITSEL CHECK (candidates only)");
   return 4;
