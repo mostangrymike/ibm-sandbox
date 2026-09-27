@@ -85,7 +85,175 @@ ${CC:-cc} -x c -std=c89 -O2 -Wall -Wextra \
   echo 'Accepted corrupted PACK trailer' >&2
   exit 1
  fi
- grep -q '^FAIL NATIVE PACK SHA1$' ref-negative.log
+ grep -q '^FAIL NATIVE PACK SHA1
+for pair in '1:abc' '2:abcd' '3:abcde'; do
+ number=${pair%%:*}; body=${pair##*:}
+ expected=$(printf %s "$body" | git hash-object --stdin)
+ oid=$(sed -n "s/^OID OBJ $number TYPE 3 SIZE [0-9]* //p" \
+     "$tmp/ref-positive.log")
+ if [ "$(printf %s "$oid" | tr 'A-F' 'a-f')" != "$expected" ]; then
+  echo "Native REF OID $number differs from Git" >&2
+  exit 1
+ fi
+done
+ref_oid=$(sed -n 's/^REFTEST OID //p' "$tmp/host.log")
+expected_ref=$(printf abcde | git hash-object --stdin)
+test "$ref_oid" = "$expected_ref"
+external_oid=$(sed -n 's/^OID OBJ 1 TYPE 3 SIZE 4 //p' \
+    "$tmp/x-positive.log")
+expected_external=$(printf abcd | git hash-object --stdin)
+test "$(printf %s "$external_oid" | tr 'A-F' 'a-f')" = \
+    "$expected_external"
+cat "$tmp/x-positive.log"
+echo "HOST EXTERNAL REF BASE POSITIVE AND NEGATIVE GATES PASSED"
+cat "$tmp/ref-positive.log"
+echo "HOST REF PACK INTEGRATION AND NEGATIVE GATES PASSED"
+cat "$tmp/host.log"
+cat "$tmp/index.log"
+echo "HOST STAGING, INDEX AND GIT OID TEST PASSED"
+ ref-negative.log
+ # External base exists only in a separate, validated stage.
+ cp XPACK.PACK 'dd:PACKIN'
+ cp EXTBASE.DATA 'dd:EXTIN'
+ ./native_ref_pack_host XPACK > x-positive.log
+ ./native_ref_pack_host XAPPLY > x-apply.log
+ grep -q '^EXTERNAL REF BASE VERIFIED TYPE 3 SIZE 3
+for pair in '1:abc' '2:abcd' '3:abcde'; do
+ number=${pair%%:*}; body=${pair##*:}
+ expected=$(printf %s "$body" | git hash-object --stdin)
+ oid=$(sed -n "s/^OID OBJ $number TYPE 3 SIZE [0-9]* //p" \
+     "$tmp/ref-positive.log")
+ if [ "$(printf %s "$oid" | tr 'A-F' 'a-f')" != "$expected" ]; then
+  echo "Native REF OID $number differs from Git" >&2
+  exit 1
+ fi
+done
+ref_oid=$(sed -n 's/^REFTEST OID //p' "$tmp/host.log")
+expected_ref=$(printf abcde | git hash-object --stdin)
+test "$ref_oid" = "$expected_ref"
+cat "$tmp/ref-positive.log"
+echo "HOST REF PACK INTEGRATION AND NEGATIVE GATES PASSED"
+cat "$tmp/host.log"
+cat "$tmp/index.log"
+echo "HOST STAGING, INDEX AND GIT OID TEST PASSED"
+ x-positive.log
+ grep -q '^REF DELTAS APPLIED 1
+for pair in '1:abc' '2:abcd' '3:abcde'; do
+ number=${pair%%:*}; body=${pair##*:}
+ expected=$(printf %s "$body" | git hash-object --stdin)
+ oid=$(sed -n "s/^OID OBJ $number TYPE 3 SIZE [0-9]* //p" \
+     "$tmp/ref-positive.log")
+ if [ "$(printf %s "$oid" | tr 'A-F' 'a-f')" != "$expected" ]; then
+  echo "Native REF OID $number differs from Git" >&2
+  exit 1
+ fi
+done
+ref_oid=$(sed -n 's/^REFTEST OID //p' "$tmp/host.log")
+expected_ref=$(printf abcde | git hash-object --stdin)
+test "$ref_oid" = "$expected_ref"
+cat "$tmp/ref-positive.log"
+echo "HOST REF PACK INTEGRATION AND NEGATIVE GATES PASSED"
+cat "$tmp/host.log"
+cat "$tmp/index.log"
+echo "HOST STAGING, INDEX AND GIT OID TEST PASSED"
+ x-positive.log
+ grep -q '^REF DELTAS APPLIED 1
+for pair in '1:abc' '2:abcd' '3:abcde'; do
+ number=${pair%%:*}; body=${pair##*:}
+ expected=$(printf %s "$body" | git hash-object --stdin)
+ oid=$(sed -n "s/^OID OBJ $number TYPE 3 SIZE [0-9]* //p" \
+     "$tmp/ref-positive.log")
+ if [ "$(printf %s "$oid" | tr 'A-F' 'a-f')" != "$expected" ]; then
+  echo "Native REF OID $number differs from Git" >&2
+  exit 1
+ fi
+done
+ref_oid=$(sed -n 's/^REFTEST OID //p' "$tmp/host.log")
+expected_ref=$(printf abcde | git hash-object --stdin)
+test "$ref_oid" = "$expected_ref"
+cat "$tmp/ref-positive.log"
+echo "HOST REF PACK INTEGRATION AND NEGATIVE GATES PASSED"
+cat "$tmp/host.log"
+cat "$tmp/index.log"
+echo "HOST STAGING, INDEX AND GIT OID TEST PASSED"
+ x-apply.log
+ grep -q '^PASS 1 OBJECTS NEXT OFFSET ' x-positive.log
+ cp EXTBAD.DATA 'dd:EXTIN'
+ if ./native_ref_pack_host XPACK > x-negative.log; then
+  echo 'Accepted corrupted external stage base' >&2
+  exit 1
+ fi
+ grep -q '^INVALID EXTERNAL STAGE RECORD 1
+for pair in '1:abc' '2:abcd' '3:abcde'; do
+ number=${pair%%:*}; body=${pair##*:}
+ expected=$(printf %s "$body" | git hash-object --stdin)
+ oid=$(sed -n "s/^OID OBJ $number TYPE 3 SIZE [0-9]* //p" \
+     "$tmp/ref-positive.log")
+ if [ "$(printf %s "$oid" | tr 'A-F' 'a-f')" != "$expected" ]; then
+  echo "Native REF OID $number differs from Git" >&2
+  exit 1
+ fi
+done
+ref_oid=$(sed -n 's/^REFTEST OID //p' "$tmp/host.log")
+expected_ref=$(printf abcde | git hash-object --stdin)
+test "$ref_oid" = "$expected_ref"
+cat "$tmp/ref-positive.log"
+echo "HOST REF PACK INTEGRATION AND NEGATIVE GATES PASSED"
+cat "$tmp/host.log"
+cat "$tmp/index.log"
+echo "HOST STAGING, INDEX AND GIT OID TEST PASSED"
+ x-negative.log
+ cp EXTMISS.DATA 'dd:EXTIN'
+ if ./native_ref_pack_host XPACK > x-negative.log; then
+  echo 'Accepted absent external stage OID' >&2
+  exit 1
+ fi
+ grep -q '^UNRESOLVED REF BASE OBJ 1
+for pair in '1:abc' '2:abcd' '3:abcde'; do
+ number=${pair%%:*}; body=${pair##*:}
+ expected=$(printf %s "$body" | git hash-object --stdin)
+ oid=$(sed -n "s/^OID OBJ $number TYPE 3 SIZE [0-9]* //p" \
+     "$tmp/ref-positive.log")
+ if [ "$(printf %s "$oid" | tr 'A-F' 'a-f')" != "$expected" ]; then
+  echo "Native REF OID $number differs from Git" >&2
+  exit 1
+ fi
+done
+ref_oid=$(sed -n 's/^REFTEST OID //p' "$tmp/host.log")
+expected_ref=$(printf abcde | git hash-object --stdin)
+test "$ref_oid" = "$expected_ref"
+cat "$tmp/ref-positive.log"
+echo "HOST REF PACK INTEGRATION AND NEGATIVE GATES PASSED"
+cat "$tmp/host.log"
+cat "$tmp/index.log"
+echo "HOST STAGING, INDEX AND GIT OID TEST PASSED"
+ x-negative.log
+ cp EXTBASE.DATA 'dd:EXTIN'
+ cp XBAD.PACK 'dd:PACKIN'
+ if ./native_ref_pack_host XPACK > x-negative.log; then
+  echo 'Accepted unprovided external REF base' >&2
+  exit 1
+ fi
+ grep -q '^UNRESOLVED REF BASE OBJ 1
+for pair in '1:abc' '2:abcd' '3:abcde'; do
+ number=${pair%%:*}; body=${pair##*:}
+ expected=$(printf %s "$body" | git hash-object --stdin)
+ oid=$(sed -n "s/^OID OBJ $number TYPE 3 SIZE [0-9]* //p" \
+     "$tmp/ref-positive.log")
+ if [ "$(printf %s "$oid" | tr 'A-F' 'a-f')" != "$expected" ]; then
+  echo "Native REF OID $number differs from Git" >&2
+  exit 1
+ fi
+done
+ref_oid=$(sed -n 's/^REFTEST OID //p' "$tmp/host.log")
+expected_ref=$(printf abcde | git hash-object --stdin)
+test "$ref_oid" = "$expected_ref"
+cat "$tmp/ref-positive.log"
+echo "HOST REF PACK INTEGRATION AND NEGATIVE GATES PASSED"
+cat "$tmp/host.log"
+cat "$tmp/index.log"
+echo "HOST STAGING, INDEX AND GIT OID TEST PASSED"
+ x-negative.log
 )
 for pair in '1:abc' '2:abcd' '3:abcde'; do
  number=${pair%%:*}; body=${pair##*:}
