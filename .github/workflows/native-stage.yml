@@ -14,6 +14,9 @@ on:
       - 'tests/native_stage_host.c'
       - 'tests/native_index_host.c'
       - 'tests/test-native-cathex-large.py'
+      - 'src/GITRCHK.EXEC'
+      - 'src/GITRUN.EXEC'
+      - 'tests/check-readonly-gitrchk.sh'
       - 'scripts/backup-offline-dasd.sh'
       - 'scripts/inspect-hercules-config.sh'
       - 'scripts/map-cms-minidisk.sh'
@@ -39,6 +42,9 @@ on:
       - 'tests/native_stage_host.c'
       - 'tests/native_index_host.c'
       - 'tests/test-native-cathex-large.py'
+      - 'src/GITRCHK.EXEC'
+      - 'src/GITRUN.EXEC'
+      - 'tests/check-readonly-gitrchk.sh'
       - 'scripts/backup-offline-dasd.sh'
       - 'scripts/inspect-hercules-config.sh'
       - 'scripts/map-cms-minidisk.sh'
@@ -63,6 +69,8 @@ jobs:
         run: sh tests/test-hercules-config.sh
       - name: Test offline-only DASD backup safeguards
         run: sh tests/test-offline-dasd-backup.sh
+      - name: Enforce read-only CMS CATHEX gate and cleanup hold
+        run: sh tests/check-readonly-gitrchk.sh
       - name: Check neutral compiler EXEC source and F-disk setup
         run: sh tests/check-cmsclnk-source.sh
       - name: Reject native-text Git object headers in CMS C source
