@@ -1,31 +1,66 @@
-/* GITRUN: reusable CMS batch; M14 read-only durability audit. */
-/* Safe on ordinary later CMS logon or authorized system reboot. */
+/* GITRUN: reusable CMS milestone runner; M15 copy preparation. */
+/* Preserve GITFIX and GITSEL0/GITSEL1. No pointer writes. */
 address cms
-say 'GITRUN M14 READ-ONLY DUAL-SLOT DURABILITY'
-'STATE GITSEL0 PTR A'
-if rc \= 0 then do
- say 'GITRUN STOP: old selector missing RC' rc
- exit 8
+say 'GITRUN M15 ISOLATED GENERATION COPY AND AUDIT'
+say 'GITRUN CHECK EXISTING CANONICAL INPUTS'
+do i=1 to 4
+ typ=word('STAGE INDEX SEEK GEN',i)
+ 'STATE GITFIX' typ 'A'
+ if rc \= 0 then do
+  say 'GITRUN STOP: missing GITFIX' typ 'RC' rc
+  exit 8
+ end
 end
-'STATE GITSEL1 PTR A'
-if rc \= 0 then do
- say 'GITRUN STOP: newer selector missing RC' rc
- exit 8
+say 'GITRUN CHECK ALL FOUR NEW FILES ARE UNUSED'
+do i=1 to 4
+ typ=word('STAGE INDEX SEEK GEN',i)
+ 'STATE M15NEW' typ 'A'
+ if rc \= 28 then do
+  say 'GITRUN STOP: M15NEW' typ 'is not unused RC' rc
+  exit 8
+ end
 end
-'FILEDEF SEL0 DISK GITSEL0 PTR A'
+say 'GITRUN CHECK NEW DISPOSABLE SLOT NAMES'
+do i=0 to 1
+ name='M15SL'||i
+ 'STATE' name 'PTR A'
+ if rc \= 28 then do
+  say 'GITRUN STOP: slot' name 'already exists RC' rc
+  exit 8
+ end
+end
+say 'GITRUN TARGET DISK CAPACITY'
+'QUERY DISK A'
 if rc \= 0 then exit rc
-'FILEDEF SEL1 DISK GITSEL1 PTR A'
+say 'GITRUN COPY ONLY TO FRESH M15NEW FILES'
+do i=1 to 4
+ typ=word('STAGE INDEX SEEK GEN',i)
+ 'COPYFILE GITFIX' typ 'A M15NEW' typ 'A'
+ if rc \= 0 then do
+  say 'GITRUN STOP: copying' typ 'failed RC' rc
+  exit 8
+ end
+ 'STATE M15NEW' typ 'A'
+ if rc \= 0 then do
+  say 'GITRUN STOP: new' typ 'not accessible RC' rc
+  exit 8
+ end
+end
+say 'GITRUN FULL INDEPENDENT COPY VERIFICATION'
+'FILEDEF STGIN DISK M15NEW STAGE A'
 if rc \= 0 then exit rc
-'FILEDEF C0STG DISK GITFIX STAGE A'
+'FILEDEF IDXIN DISK M15NEW INDEX A'
 if rc \= 0 then exit rc
-'FILEDEF C0IDX DISK GITFIX INDEX A'
+'FILEDEF FIDXIN DISK M15NEW SEEK A'
 if rc \= 0 then exit rc
-'FILEDEF C0SEEK DISK GITFIX SEEK A'
+'FILEDEF GENIN DISK M15NEW GEN A'
 if rc \= 0 then exit rc
-'FILEDEF C0GEN DISK GITFIX GEN A'
-if rc \= 0 then exit rc
-say 'GITRUN EXPECT RECOVERED 41 GITFIX AND RC 0'
-'GITREC SELECT GITFIX GITBAD'
-selectrc=rc
-say 'GITRUN RECOVERY RC' selectrc
-exit selectrc
+'GITCIDX GENCHECK'
+auditrc=rc
+say 'GITRUN M15 COPY GENCHECK RC' auditrc
+if auditrc \= 0 then do
+ say 'GITRUN COPY UNVERIFIED: NO SELECTOR WILL BE WRITTEN'
+ exit auditrc
+end
+say 'GITRUN M15 COPY VERIFIED; POINTERS UNCHANGED'
+exit 0
