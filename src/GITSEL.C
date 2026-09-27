@@ -156,7 +156,8 @@ static int sel_line(FILE *f,char *line) {
  return 1;
 }
 static int selector_writegen(const char *sequence,const char *name,
-                             const char *slotname) {
+                             const char *slotname,
+                             const char *attestation) {
  FILE *f;
  char line[128],digest[41],minoid[41],maxoid[41],extra;
  unsigned long total,unique,endtotal,endunique;
