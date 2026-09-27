@@ -120,9 +120,9 @@ def main():
         # CMS safe path uses explicit STATE, not a lazy dd:SELOUT fopen.
         state = folder / "STATE"
         state.write_text(
-            "#!/bin/sh\\n"
-            "if [ -e dd:SELOUT ]; then exit 0; fi\\n"
-            "exit 28\\n",
+            "#!/bin/sh\n"
+            "if [ -e dd:SELOUT ]; then exit 0; fi\n"
+            "exit 28\n",
             encoding="ascii",
         )
         state.chmod(0o755)
@@ -140,7 +140,7 @@ def main():
             cwd=folder, env=env, capture_output=True, text=True,
         ), 8, "SELECTOR OUTPUT EXISTS")
         output.unlink()
-        state.write_text("#!/bin/sh\\nexit 9\\n", encoding="ascii")
+        state.write_text("#!/bin/sh\nexit 9\n", encoding="ascii")
         check(subprocess.run(
             [str(binary), "WRITEGEN", "47", "GENNEW", "GITSEL0"],
             cwd=folder, env=env, capture_output=True, text=True,
