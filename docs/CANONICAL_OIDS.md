@@ -315,3 +315,26 @@ before SFAST/PAIR/SGET in that same session. CLEAR is unnecessary
 when the DD name has no existing definition; only remove or replace
 an actual prior definition when needed. Continue directly with the
 already-linked current GITCIDX module's read-only validation gates.
+
+## Final 1,808-object CMS migration gate PASSED
+
+The updated GITCIDX module built under CMSCLNK PLAIN and all new
+canonical datasets were fully validated on September 26, 2026:
+`GITCIDX SFAST` hashed all 1,808 unique objects and validated
+seek cookies in 20.85 s CPU / 20.99 s elapsed; `PAIR` reconciled
+IDX2 and SIDX2 descriptors and rehashed the stage again in
+21.24/21.38 s. Direct SGET succeeded on the first canonical
+commit `00D8D63229305230C8D37F884CE87F9E1A89468C`
+(270 bytes; 0.15 s elapsed) and last canonical tree
+`EB37E3F23FF4FC137D715D71A711D3B7632D75F2`
+(5,224 bytes; 1.81 s elapsed). All original raw-PACK,
+STAGE/VERIFY, BUILD/CHECK/AUDIT and SBUILD/SCHECK gates also
+passed on this generation. The earlier slow SVAUDIT is superseded
+by target-proven SFAST and PAIR; do not repeat the entire migration.
+
+Follow-on external/forward REF resolution and a candidate-generation
+manifest have passed host tests. They are **separate new target
+gates**, documented in [REF resolution](REF_RESOLUTION.md) and
+[GEN2 recovery](GENERATION_RECOVERY.md); they must not overwrite
+or alter the validated stage or indexes. Historical IDX1/SIDX1
+remain noncanonical and unpromoted.
