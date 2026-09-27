@@ -410,7 +410,8 @@ static int ext_lookup(const unsigned char *want) {
   fields=sscanf(line,"OBJ %lu %d %lu %40s %c",
                 &num,&typ,&n,hexid,&extra);
   if(j>1808UL||fields!=4||num!=j||
-     typ<1||typ>4||n>OUTCAP) goto bad;
+     typ<1||typ>4||n>OUTCAP||strlen(hexid)!=40)
+   goto bad;
   for(k=0;k<20;k++) {
    hi=nib((unsigned char)hexid[2*k]);
    lo=nib((unsigned char)hexid[2*k+1]);
