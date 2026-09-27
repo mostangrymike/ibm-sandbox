@@ -450,6 +450,94 @@ bad:
  return 0;
 }
 
+/* Optional direct external REF lookup with SIDX2 seek cookies. */
+static int ext_seek(const unsigned char *want) {
+ FILE *ix,*st;
+ char line[256],hexid[41],extra;
+ unsigned char oid[20],digest[20];
+ unsigned long j,total,unique,et,eu,num,n,k,take,m;
+ unsigned long selected_num=0,selected_size=0;
+ long cookie=-1,off,selected_off=-1;
+ int typ,fields,selected_type=0,hi,lo,found=0;
+ ix=fopen("dd:EXIDX","r");
+ if(!ix) {perror("EXIDX");return 0;}
+ if(!stage_line(ix,line,sizeof line)) goto badidx;
+ fields=sscanf(line,"SIDX2 %lu %lu %c",&total,&unique,&extra);
+ if(fields!=2||total!=1808UL||unique<1||unique>1808UL)
+  goto badidx;
+ for(j=0;j<unique;j++) {
+  if(!stage_line(ix,line,sizeof line)) goto badidx;
+  fields=sscanf(line,"OID %40s %lu %d %lu %ld %c",
+                hexid,&num,&typ,&n,&off,&extra);
+  if(fields!=5||strlen(hexid)!=40||num<1||
+     num>1808UL||typ<1||typ>4||n>OUTCAP||off<0)
+   goto badidx;
+  for(k=0;k<20;k++) {
+   hi=nib((unsigned char)hexid[2*k]);
+   lo=nib((unsigned char)hexid[2*k+1]);
+   if(hi<0||lo<0) goto badidx;
+   oid[k]=(unsigned char)((hi<<4)|lo);
+  }
+  if(memcmp(oid,want,20)==0) {
+   if(found) goto badidx;
+   found=1;selected_num=num;selected_type=typ;
+   selected_size=n;selected_off=off;
+  }
+ }
+ if(!stage_line(ix,line,sizeof line)) goto badidx;
+ fields=sscanf(line,"SEND2 %lu %lu %c",&et,&eu,&extra);
+ if(fields!=2||et!=total||eu!=unique) goto badidx;
+ if(stage_line(ix,line,sizeof line)||ferror(ix)) goto badidx;
+ if(fclose(ix)!=0) return 0;
+ if(!found) return 0;
+ st=fopen("dd:EXTIN","r");
+ if(!st) {perror("EXTIN");return 0;}
+ cookie=ftell(st);
+ if(cookie<0||fseek(st,selected_off,SEEK_SET)!=0||
+    !stage_line(st,line,sizeof line)) goto badstage;
+ fields=sscanf(line,"OBJ %lu %d %lu %40s %c",
+               &num,&typ,&n,hexid,&extra);
+ if(fields!=4||num!=selected_num||
+    typ!=selected_type||n!=selected_size||
+    strlen(hexid)!=40) goto badstage;
+ for(k=0;k<20;k++) {
+  hi=nib((unsigned char)hexid[2*k]);
+  lo=nib((unsigned char)hexid[2*k+1]);
+  if(hi<0||lo<0) goto badstage;
+  oid[k]=(unsigned char)((hi<<4)|lo);
+ }
+ if(memcmp(oid,want,20)!=0) goto badstage;
+ if(n==0) {
+  if(!stage_line(st,line,sizeof line)||line[0]) goto badstage;
+ }
+ for(k=0;k<n;k+=take) {
+  take=n-k;if(take>32) take=32;
+  if(!stage_line(st,line,sizeof line)||
+     strlen(line)!=2*take) goto badstage;
+  for(m=0;m<take;m++) {
+   hi=nib((unsigned char)line[2*m]);
+   lo=nib((unsigned char)line[2*m+1]);
+   if(hi<0||lo<0) goto badstage;
+   ext_body[k+m]=(unsigned char)((hi<<4)|lo);
+  }
+ }
+ if(!object_oid(typ,ext_body,n,digest)||
+    memcmp(digest,want,20)!=0) goto badstage;
+ if(fclose(st)!=0) return 0;
+ ext_type=typ;ext_len=n;
+ printf("EXTERNAL SEEK VERIFIED TYPE %d SIZE %lu\n",
+        typ,n);
+ return 1;
+badidx:
+ puts("EXTERNAL SEEK INDEX INVALID");
+ fclose(ix);
+ return 0;
+badstage:
+ puts("EXTERNAL SEEK STAGE INVALID");
+ fclose(st);
+ return 0;
+}
+
 static int verify_stage(int tamper) {
  static unsigned char body[65536];
  unsigned char stored[20],computed[20];
@@ -526,7 +614,7 @@ int main(int argc,char **argv) {
  unsigned char *tmp;
  int baseidx=-1,doapply=0,dooid=0,profile=0,fastmode=0;
  int fastonly=0,optmode=0,optcheck=0,stage=0,rpack=0,xpack=0;
- int fpack=0;
+ int fpack=0,xseek=0;
  unsigned char reference[20],refbase[20];
  clock_t t0,hash_ticks=0,delta_ticks=0;
  unsigned long hash_bytes=0,delta_bytes=0;
@@ -545,7 +633,11 @@ int main(int argc,char **argv) {
   if(argc!=2) {
    puts("Usage: GITCWALK [20|100|ALL|BADSHA]");return 4;
   }
-  if(strcmp(argv[1],"FPACK")==0) {
+  if(strcmp(argv[1],"XSEEK")==0||
+     strcmp(argv[1],"XSAPPLY")==0) {
+   doapply=1;dooid=strcmp(argv[1],"XSEEK")==0;
+   rpack=1;xseek=1;limit=PACKCAP;
+  } else if(strcmp(argv[1],"FPACK")==0) {
    doapply=1;dooid=1;rpack=1;fpack=1;limit=PACKCAP;
   } else if(strcmp(argv[1],"XPACK")==0||
      strcmp(argv[1],"XAPPLY")==0) {
@@ -736,6 +828,7 @@ int main(int argc,char **argv) {
     }
     baseidx=find_ref_base(refbase,idx);
     if(baseidx<0&&xpack&&ext_lookup(refbase)) baseidx=-2;
+    if(baseidx<0&&xseek&&ext_seek(refbase)) baseidx=-2;
     if(baseidx<0&&fpack) {
      baseidx=-3;memcpy(forward_oid[idx],refbase,20);
     }
@@ -752,7 +845,7 @@ int main(int argc,char **argv) {
   if(type>=1&&type<=4) objtype[idx]=type;
   else if((type==6||type==7)&&doapply) {
    if(baseidx==-3&&type==7&&fpack) objtype[idx]=0;
-   else if(baseidx==-2&&type==7&&xpack)
+   else if(baseidx==-2&&type==7&&(xpack||xseek))
     objtype[idx]=ext_type;
    else {
     if(baseidx<0||baseidx>=(int)idx) {
