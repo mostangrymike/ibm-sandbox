@@ -1543,3 +1543,31 @@ optional direct-seek external REF mode with cryptographic body
 verification, leaving XPACK's conservative full scan intact.
 Mandatory user max-autonomy rule: implement and host-test as much
 as possible; stop only at actual CMS validation with exact commands.
+
+## Follow-on host-proven XSEEK direct external REF lookup
+
+After the target-proven FPACK, external XPACK from actual GITFIX stage,
+and GEN2 seal/recheck, the real external first-commit XPACK full scan
+was observed at 8.05/8.17 sec on CMS. Independently committed
+optional GITCWALK XSEEK/XSAPPLY to use already validated SIDX2
+GITFIX SEEK A from FILEDEF EXIDX and direct fseek on EXTIN
+GITFIX STAGE A. Selected record ordinal, type, length and OID are
+checked against the index and its complete body is independently
+rehashed to the requested canonical Git OID before REF application.
+This leaves all known-good XPACK and target GITFIX artifacts
+unchanged. The new isolated modes have host tests for positive
+synthetic first and later entry, corrupt stage, stale saved cookie,
+and truncated SIDX2 index. Latest fully green host CI:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36283446044 .
+Actual CMS compilation/running and performance still required.
+Exact one-source Mac upload plus CMS test commands in
+`docs/INDEXED_EXTERNAL_REF.md`: CMSCLNK GITCWALK first, then
+PACKIN XREAL PACK A, EXTIN GITFIX STAGE A, EXIDX GITFIX SEEK A,
+GITCWALK XSEEK and XSAPPLY. Require verified type1 size270 and
+reconstructed canonical commit OID
+00D8D63229305230C8D37F884CE87F9E1A89468C. No new PACK,
+staging, indexes or GEN2 manifest writes needed. In a separately
+requested read-only durability test, GITCIDX GENCHECK after user
+logoff/logon must re-open and independently validate existing
+GITFIX GEN A without GENWRITE. No such cross-logon/reboot result
+yet exists.
