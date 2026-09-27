@@ -1983,3 +1983,40 @@ M15NEW GEN A and require SELECTED 52 M15NEW RC0 after
 fresh full audit. No selectors or data are modified.
 Mac: git pull; ./cms-upload.sh GITRUN.EXEC.
 CMS: GITRUN.
+
+## September 27 12:48 M15 two-generation fallback PASSED; 10-case batch pending
+
+Native CMS GITRUN temporarily bound newer seq52 M15NEW C1GEN
+to verified-absent M15BAD GEN A, leaving real M15SL0 and
+M15SL1 selectors and all data intact. GITREC ran full
+1808-object SFAST/PAIR/GENCHECK on protected older GITFIX,
+RECOVERED 51 GITFIX digest
+493F0896884B28AC4836B88328629B7E95404B46, RC0.
+Restoring C1GEN M15NEW GEN A led to complete independent
+1808-object rehash/PAIR/GENCHECK, SELECTED 52 M15NEW
+same digest RC0. Total elapsed 43.19 seconds.
+Both generations' files and both disposable M15 selectors
+remain intact.
+
+User explicitly requests maximum work per CMS upload/run and
+not pausing unnecessarily. The reusable GITRUN.EXEC is now
+a **single 10-case read-only M15 test** using only FILEDEF
+input remapping: first verify both original full candidate
+file sets and both M15SL selector records exist and every
+M15BAD STAGE/INDEX/SEEK/GEN A fixture is absent RC28.
+Test four independent newer component omissions, each
+requiring RECOVERED 51 GITFIX RC0; missing older GEN
+requires SELECTED 52 M15NEW RC0; both GEN inputs missing
+require NO FULLY VERIFIED GENERATION RC8; malformed
+newer slot via a read-only GEN2 input requires SELECTED
+51 GITFIX RC0; malformed older slot requires SELECTED
+52 M15NEW RC0; both malformed slots require RC8;
+then restore both true slot FILEDEFs and require
+SELECTED 52 M15NEW RC0. Program requires expected RC
+for each and aborts upon discrepancy. Visual output
+must also be checked for the exact selected sequence/name.
+No data bytes, pointer records, protected GITFIX
+generation or M15NEW files are rewritten.
+Mac: git pull, ./cms-upload.sh GITRUN.EXEC.
+CMS: GITRUN. Ten cases may run several complete
+~21-second full audits in a single invocation.
