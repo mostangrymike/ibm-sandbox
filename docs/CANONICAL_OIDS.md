@@ -231,3 +231,78 @@ checksums where appropriate. This additional CMS fixture test uses
 only separate fixture files and does not modify GITPBUF or the
 staging/index datasets. It is not a substitute for the full
 canonical stage migration or its readback verification.
+
+## Actual 1,808-object canonical migration: stage and indexes passed
+
+September 26, 2026 target output from the saved GITPBUF PACK A
+confirmed the correct raw PACK SHA-1, all 1,117 OFS_DELTA operations,
+and 1,808 newly reconstructed canonical object OIDs. The new
+GITFIX STAGE A file was written in 25.16/25.58 s CPU/elapsed;
+independent GITCWALK VERIFY rehashed all 1,808 records in
+22.37/22.57 s. The correct real-PACK first commit OID is
+00D8D63229305230C8D37F884CE87F9E1A89468C (270 bytes);
+the last tree OID is
+EB37E3F23FF4FC137D715D71A711D3B7632D75F2 (5224 bytes).
+Do not use the historical legacy first/last values.
+
+The separate GITFIX INDEX A IDX2 file was built (6.86/6.94 s),
+checked twice and fully AUDIT-verified (20.86/20.99 s):
+1,808 unique entries. GITFIX SEEK A SIDX2 was built
+(7.29/7.39 s), checked and found structurally valid with
+1,808 unique entries. The original SVAUDIT emitted progress
+through 256, but the user reported severe slowness before
+completion. It must **not** be marked target-passed.
+
+The slow code repeatedly reopened STGIN, once for each of the
+1,808 OIDs. New GitHub code optimizes old SVAUDIT to use one
+open stream, and offers a more efficient SFAST full canonical
+audit: one sequential read of all staged bodies, an independent
+hash check of each body, matching SIDX2 metadata and precise
+saved-ftell-cookie agreement on the reopened STGIN. PAIR
+compares the complete IDX2/SIDX2 descriptor sets and then
+runs SFAST instead of 1,808 individual reopen/seek operations.
+Host synthetic corruption, mismatched-index and open-count
+regressions PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36281295118 .
+Target execution of the **new optimized audit code** is pending.
+
+### Only next required CMS test: SFAST and PAIR
+
+All corrected GITFIX files have already been created. Do not
+re-download the live PACK, repeat STAGE, repeat index BUILD,
+overwrite GITFIX, or erase the old historical files.
+
+If the old read-only SVAUDIT is still running, PA1 may interrupt
+that operation. The existing GITFIX STAGE/INDEX/SEEK files
+remain valid; an interrupted read-only audit is not evidence of
+file corruption. On the Mac, in the existing ibm-sandbox/src
+working directory, with the same one-instance c3270 uploader:
+
+```sh
+git pull
+./cms-upload.sh /Users/mikewommack/ibm-sandbox/src/GITCIDX.C
+```
+
+Compile the updated program, then restore its input FILEDEFs:
+
+```text
+CMSCLNK GITCIDX PLAIN
+FILEDEF STGIN CLEAR
+FILEDEF STGIN DISK GITFIX STAGE A
+FILEDEF IDXIN CLEAR
+FILEDEF IDXIN DISK GITFIX INDEX A
+FILEDEF FIDXIN CLEAR
+FILEDEF FIDXIN DISK GITFIX SEEK A
+GITCIDX SFAST
+GITCIDX PAIR
+GITCIDX SGET 00D8D63229305230C8D37F884CE87F9E1A89468C
+GITCIDX SGET EB37E3F23FF4FC137D715D71A711D3B7632D75F2
+```
+
+Required summaries: `FAST AUDIT VERIFIED 1808 UNIQUE 1808`,
+`PAIR VERIFIED UNIQUE 1808`, and both SGET results must give
+the expected OIDs and object types/sizes. PAIR repeats the
+SFAST full verification after cross-checking both index formats,
+so it reads all bodies again. Measure actual CMS timings.
+The original SVAUDIT may be kept as a slower optional diagnostic;
+it is no longer required for completion of the index-pair gate.
