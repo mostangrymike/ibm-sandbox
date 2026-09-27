@@ -102,7 +102,6 @@ static int rec_tree_walk(unsigned long n,int emit) {
   at+=20;
   count++;
  }
- if(!count) return 0;
  if(emit) printf("TREE ENTRIES %lu\n",count);
  return 1;
 }
