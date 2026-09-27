@@ -99,7 +99,8 @@ static int slot_read(const char *dd,struct slot *out) {
  */
 /* Write an untrusted SEL1 record to a caller-created output FILEDEF. */
 static int selector_write(const char *sequence,const char *name,
-                          const char *digest,const char *slotname,\n                          const char *attestation) {
+                          const char *digest,const char *slotname,
+                          const char *attestation) {
  FILE *f;
  char payload[90],*end;
  unsigned long seq,crc;
