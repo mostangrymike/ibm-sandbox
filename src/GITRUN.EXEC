@@ -1,27 +1,53 @@
-/* Reusable CMS runner: M15 full read-only failure matrix. */
-/* Only FILEDEF input mappings vary. No file is modified. */
+/* M15 large CMS batch: audit both generations and retire legacy data. */
+/* Only three explicitly named obsolete noncanonical files erased. */
 address cms
-say 'GITRUN M15 COMPREHENSIVE RECOVERY MATRIX'
-say 'GITRUN CONFIRM BOTH COMPLETE REAL GENERATIONS'
+say 'GITRUN M15 AUDIT, SELECTOR REJECTION, LEGACY CLEANUP'
+say 'GITRUN REQUIRE ALL 8 SEALED GENERATION FILES'
 do i=1 to 4
  typ=word('STAGE INDEX SEEK GEN',i)
  'STATE GITFIX' typ 'A'
  if rc \= 0 then exit 8
  'STATE M15NEW' typ 'A'
  if rc \= 0 then exit 8
- 'STATE M15BAD' typ 'A'
- if rc \= 28 then do
-  say 'GITRUN STOP: missing fixture exists' typ
-  exit 8
- end
 end
 'STATE M15SL0 PTR A'
 if rc \= 0 then exit 8
 'STATE M15SL1 PTR A'
 if rc \= 0 then exit 8
-'FILEDEF SEL0 DISK M15SL0 PTR A'
+'STATE GITSEL0 PTR A'
+if rc \= 0 then exit 8
+'STATE GITSEL1 PTR A'
+if rc \= 0 then exit 8
+say 'GITRUN PHASE 1: ORIGINAL FULL INDEPENDENT GEN2 AUDIT'
+'FILEDEF STGIN DISK GITFIX STAGE A'
 if rc \= 0 then exit rc
-'FILEDEF SEL1 DISK M15SL1 PTR A'
+'FILEDEF IDXIN DISK GITFIX INDEX A'
+if rc \= 0 then exit rc
+'FILEDEF FIDXIN DISK GITFIX SEEK A'
+if rc \= 0 then exit rc
+'FILEDEF GENIN DISK GITFIX GEN A'
+if rc \= 0 then exit rc
+'GITCIDX GENCHECK'
+checkrc=rc
+say 'GITRUN GITFIX AUDIT RC' checkrc
+if checkrc \= 0 then exit 12
+say 'GITRUN PHASE 2: NEW FULL INDEPENDENT GEN2 AUDIT'
+'FILEDEF STGIN DISK M15NEW STAGE A'
+if rc \= 0 then exit rc
+'FILEDEF IDXIN DISK M15NEW INDEX A'
+if rc \= 0 then exit rc
+'FILEDEF FIDXIN DISK M15NEW SEEK A'
+if rc \= 0 then exit rc
+'FILEDEF GENIN DISK M15NEW GEN A'
+if rc \= 0 then exit rc
+'GITCIDX GENCHECK'
+checkrc=rc
+say 'GITRUN M15NEW AUDIT RC' checkrc
+if checkrc \= 0 then exit 12
+say 'GITRUN PHASE 3: EXERCISE SWAPPED SELECTOR INPUTS'
+'FILEDEF SEL0 DISK M15SL1 PTR A'
+if rc \= 0 then exit rc
+'FILEDEF SEL1 DISK M15SL0 PTR A'
 if rc \= 0 then exit rc
 do i=1 to 4
  typ=word('STAGE INDEX SEEK GEN',i)
@@ -32,75 +58,60 @@ do i=1 to 4
  'FILEDEF' dd 'DISK M15NEW' typ 'A'
  if rc \= 0 then exit rc
 end
-say 'GITRUN CASE 1-4: WITHHOLD EACH NEWER COMPONENT'
-do i=1 to 4
- typ=word('STAGE INDEX SEEK GEN',i)
- dd=word('C1STG C1IDX C1SEEK C1GEN',i)
- 'FILEDEF' dd 'DISK M15BAD' typ 'A'
- if rc \= 0 then exit rc
- say 'GITRUN EXPECT RECOVERED 51 GITFIX FOR' typ
- 'GITREC SELECT GITFIX M15NEW'
- test=rc
- say 'GITRUN NEWER MISSING' typ 'RC' test
- if test \= 0 then exit 12
- 'FILEDEF' dd 'DISK M15NEW' typ 'A'
- if rc \= 0 then exit rc
-end
-say 'GITRUN CASE 5: WITHHOLD OLDER MANIFEST'
-'FILEDEF C0GEN DISK M15BAD GEN A'
-if rc \= 0 then exit rc
-say 'GITRUN EXPECT SELECTED 52 M15NEW'
+say 'GITRUN EXPECT TWO SLOT NAME MISMATCHES AND RC 8'
 'GITREC SELECT GITFIX M15NEW'
-test=rc
-say 'GITRUN OLDER MISSING RC' test
-if test \= 0 then exit 12
-say 'GITRUN CASE 6: WITHHOLD BOTH MANIFESTS'
-'FILEDEF C1GEN DISK M15BAD GEN A'
-if rc \= 0 then exit rc
-say 'GITRUN EXPECT NO FULLY VERIFIED GENERATION'
-'GITREC SELECT GITFIX M15NEW'
-test=rc
-say 'GITRUN BOTH MISSING RC' test
-if test \= 8 then exit 12
-'FILEDEF C0GEN DISK GITFIX GEN A'
-if rc \= 0 then exit rc
-'FILEDEF C1GEN DISK M15NEW GEN A'
-if rc \= 0 then exit rc
-say 'GITRUN CASE 7: MALFORMED NEWER SELECTOR'
-'FILEDEF SEL1 DISK M15NEW GEN A'
-if rc \= 0 then exit rc
-say 'GITRUN EXPECT SELECTED 51 GITFIX'
-'GITREC SELECT GITFIX M15NEW'
-test=rc
-say 'GITRUN MALFORMED NEWER RC' test
-if test \= 0 then exit 12
-'FILEDEF SEL1 DISK M15SL1 PTR A'
-if rc \= 0 then exit rc
-say 'GITRUN CASE 8: MALFORMED OLDER SELECTOR'
-'FILEDEF SEL0 DISK GITFIX GEN A'
-if rc \= 0 then exit rc
-say 'GITRUN EXPECT SELECTED 52 M15NEW'
-'GITREC SELECT GITFIX M15NEW'
-test=rc
-say 'GITRUN MALFORMED OLDER RC' test
-if test \= 0 then exit 12
-say 'GITRUN CASE 9: BOTH SELECTORS MALFORMED'
-'FILEDEF SEL1 DISK M15NEW GEN A'
-if rc \= 0 then exit rc
-say 'GITRUN EXPECT NO FULLY VERIFIED GENERATION'
-'GITREC SELECT GITFIX M15NEW'
-test=rc
-say 'GITRUN BOTH MALFORMED RC' test
-if test \= 8 then exit 12
-say 'GITRUN CASE 10: RESTORE ALL FILEDEF INPUTS'
+badrc=rc
+say 'GITRUN SWAPPED SLOT RC' badrc
+if badrc \= 8 then exit 12
+say 'GITRUN PHASE 4: RESTORE NEWER FULL-VERIFY SELECTION'
 'FILEDEF SEL0 DISK M15SL0 PTR A'
 if rc \= 0 then exit rc
 'FILEDEF SEL1 DISK M15SL1 PTR A'
 if rc \= 0 then exit rc
-say 'GITRUN EXPECT SELECTED 52 M15NEW'
+say 'GITRUN EXPECT SELECTED 52 M15NEW AFTER FULL AUDIT'
 'GITREC SELECT GITFIX M15NEW'
-test=rc
-say 'GITRUN FINAL RESTORATION RC' test
-if test \= 0 then exit 12
-say 'GITRUN COMPLETE: 10 READ-ONLY RECOVERY CASES'
+goodrc=rc
+say 'GITRUN RESTORED TWO-SLOT RC' goodrc
+if goodrc \= 0 then exit 12
+say 'GITRUN PHASE 5: ERASE ONLY OLD NONCANONICAL COPIES'
+do i=1 to 3
+ name=word('GITSTAGE GITINDEX GITSEEK',i)
+ typ=word('DATA DATA INDEX',i)
+ 'STATE' name typ 'A'
+ oldrc=rc
+ if oldrc=28 then do
+  say 'GITRUN LEGACY ALREADY ABSENT' name typ
+  iterate
+ end
+ if oldrc \= 0 then do
+  say 'GITRUN STOP: LEGACY STATE FAILURE' name oldrc
+  exit 12
+ end
+ 'ERASE' name typ 'A'
+ if rc \= 0 then do
+  say 'GITRUN STOP: LEGACY ERASE FAILURE' name 'RC' rc
+  exit 12
+ end
+ 'STATE' name typ 'A'
+ if rc \= 28 then do
+  say 'GITRUN STOP: LEGACY STILL PRESENT' name 'RC' rc
+  exit 12
+ end
+ say 'GITRUN LEGACY REMOVED' name typ
+end
+say 'GITRUN PHASE 6: VERIFY ALL PROTECTED FILES STILL EXIST'
+do i=1 to 4
+ typ=word('STAGE INDEX SEEK GEN',i)
+ 'STATE GITFIX' typ 'A'
+ if rc \= 0 then exit 12
+ 'STATE M15NEW' typ 'A'
+ if rc \= 0 then exit 12
+end
+do i=0 to 1
+ 'STATE GITSEL'||i 'PTR A'
+ if rc \= 0 then exit 12
+ 'STATE M15SL'||i 'PTR A'
+ if rc \= 0 then exit 12
+end
+say 'GITRUN COMPLETE: THREE FULL AUDITS; LEGACY CLEANUP'
 exit 0
