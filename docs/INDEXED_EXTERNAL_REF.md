@@ -87,3 +87,7 @@ For subsequent cross-logon durability validation, avoid
 overwriting GITFIX GEN A and only rebind the four required input
 FILEDEFs and run GITCIDX GENCHECK after logging back on. Reboot
 persistence and atomic generation promotion are separate gates.
+
+## Real CMS XSEEK performance and correctness PASSED
+
+On September 27, 2026 at 10:09–10:10 CDT, the user compiled the updated GITCWALK under CMSCLNK NAPI with three clean Assembler XF passes (6.44/6.72 sec CPU/elapsed). XSEEK on the existing XREAL PACK A, EXIDX GITFIX SEEK A and EXTIN GITFIX STAGE A validated the full 68-byte thin PACK, selected and independently rehashed the actual persisted first commit (TYPE 1 SIZE 270), applied one REF delta and returned its canonical OID 00D8D63229305230C8D37F884CE87F9E1A89468C, PASS 1 OBJECTS NEXT OFFSET 48, in 0.17/0.19 sec. XSAPPLY also verified the base and applied the REF successfully without ordinary OID printing in 0.17/0.18 sec. Historical sequential XPACK on the same actual commit took 8.05/8.17 sec; timings are individual observations, not a controlled benchmark. This proves SIDX2-indexed external REF direct access on the actual CMS stage without changing GITFIX or GEN2. Cross-logon/reboot GEN2 durability is still untested; keep protected files intact.
