@@ -196,3 +196,50 @@ Read-only next steps:
   guessed disk. Once the actual volume/image/dependencies
   and quiescence are verified, preserve crash dump and
   create an independently verified forensic backup.
+
+## Correlating the confirmed Hercules inventory to CMS MNT191
+
+The active operator-supplied Hercules configuration is
+`/home/admin/vm630/hercules.cnf`. Its simple 3390
+declarations are `0123 dasd1`, `0124 dasd2`,
+`0125 dasd3`, `0126 dasd4`, `0127 dasd5`,
+`0128 dasd6`. CMS `QUERY DISK` reports
+`MNT191` mounted R/W as virtual 191 with 175
+cylinders, 239 files, 9110 used and 22390 free
+4-KiB blocks, AFTER the interrupted ERASE. Virtual
+191 still is not the Hercules real channel address.
+
+On CMS, **read-only**:
+
+```text
+CP QUERY MDISK 191 LOCATION
+```
+
+Record `OwnerID`, `Odev`, `Dtype`,
+`Vol-ID`, `Rdev`, `StartLoc` and `Size`.
+Match `Rdev` to the Hercules real channel address,
+`StartLoc` and `Size` to the 175-cylinder minidisk
+extent, and corroborate real volume `Vol-ID`.
+IBM CP QUERY MDISK documentation:
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
+
+On the Hercules Linux host, establish the effective cwd
+of the **actual** emulator process. The config lists only
+relative `dasd1`–`dasd6`, not verified absolute
+image paths. Inspect any INCLUDE and shadow/overlay
+configuration before backup. After CP reports the actual
+real device, the repo's new read-only helper can resolve
+only an unambiguous straightforward CKD declaration:
+
+```sh
+bash scripts/map-cms-minidisk.sh CP_REAL_RDEV \
+  /home/admin/vm630/hercules.cnf /verified/hercules/process/cwd
+```
+
+The helper explicitly requires the real `Rdev` from
+CP, refuses duplicate device declarations and missing
+backing files, and prints an absolute base-image path.
+It cannot prove that the base image is sufficient for
+a consistent backup or that the system is offline.
+It does not inspect or modify disk contents and it
+does not accept a guessed Rdev for production use.
