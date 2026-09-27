@@ -235,3 +235,20 @@ or reboot recovery. Future work includes faster indexed external REF
 lookup, cross-logon/reboot durability tests and safe active-generation
 selection; see docs/REF_RESOLUTION.md and
  docs/GENERATION_RECOVERY.md.
+
+## New optional fast external REF lookup
+
+The real CMS XREAL test successfully used a complete sequential scan
+of the validated GITFIX STAGE to reconstruct its own 270-byte first
+commit. That scan took 8.17 s elapsed. GITCWALK now has an optional
+indexed alternative, XSEEK/XSAPPLY, that reads the existing SIDX2
+seek index, selects an external base's saved ftell cookie, seeks to
+it and independently hashes the selected body before delta
+application. Host tests for the targeted lookup, later record,
+corrupted object, bad index cookie and truncated index passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36283446044 .
+This new indexed path is NOT yet CMS-proven. The single-source
+upload and nondestructive CMS gate using the existing XREAL PACK,
+GITFIX STAGE and SEEK are in docs/INDEXED_EXTERNAL_REF.md.
+Cross-logon GEN2 GENCHECK is also still pending; existing same-session
+GENWRITE/GENCHECK already passed on CMS.
