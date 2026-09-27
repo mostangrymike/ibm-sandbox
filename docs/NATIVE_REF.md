@@ -165,3 +165,21 @@ and safe separately named staging/index rebuild, use
 [Canonical Git OIDs on CMS](CANONICAL_OIDS.md). The older RPACK
 steps above are historical and do not by themselves establish a
 successful target result. No new live GitHub capture is needed.
+
+## Follow-on host milestones: external and forward REF
+
+The original backward same-PACK chained REF implementation passed
+actual CMS RPACK and RAPPLY tests with canonical Git OIDs. The
+subsequent full 1,808-object GITFIX stage plus both canonical IDX2
+and SIDX2 indexes passed complete target readback, full SFAST and
+PAIR audit (20.99 and 21.38 seconds elapsed respectively).
+
+Additional **host-verified, not yet CMS-verified** modes in the
+latest GITCWALK source now cover deferred forward same-PACK REF
+chains and external bases provided by bounded, independently
+SHA-checked CMS staging records. Git independently indexed and
+reconstructed the forward-chain test PACK; corrupted, absent,
+duplicated and mismatched external stages are rejected by host tests.
+The full consolidated CMS fixture transfer and safe validation gate
+is in [External and forward REF resolution](REF_RESOLUTION.md).
+The validated GITFIX generation is read-only throughout these tests.
