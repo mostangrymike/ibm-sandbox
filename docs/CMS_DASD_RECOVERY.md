@@ -243,3 +243,54 @@ It cannot prove that the base image is sufficient for
 a consistent backup or that the system is offline.
 It does not inspect or modify disk contents and it
 does not accept a guessed Rdev for production use.
+
+## Confirmed CP-to-Hercules volume mapping at 17:36
+
+The actual CP read-only command `CP QUERY MDISK 191 LOCATION`
+reported:
+
+```text
+TargetID Tdev OwnerID Odev Dtype Vol-ID Rdev StartLoc Size
+MAINT    0191 MAINT   0191 3390  M01RES 0123 494      175
+```
+
+Combined with the operator-confirmed active Hercules
+configuration line `0123 3390 dasd1`, this conclusively
+identifies MAINT's virtual `0191` CMS A minidisk
+(label `MNT191`) as a 175-cylinder region starting
+at cylinder 494 on real `0123`, volume `M01RES`,
+backed by the active Hercules `dasd1` image and
+any applicable overlays/shadows. `MNT191` is the
+CMS minidisk label; `M01RES` is the real CKD volume
+serial. These are not contradictory.
+
+**The candidate backup base image is dasd1, NOT all
+six Hercules drives, and NOT an assumed /home/admin/
+vm630/dasd1 until the emulator's actual working
+directory is verified.** The minimal preservation
+scope is all backing files necessary to reconstruct
+the current real 0123 volume, including any shadow
+chain, plus available dump/log evidence; a coordinated
+wider snapshot is prudent if disk dependencies cross
+volumes or the host setup is not simple.
+
+On the Hercules host, first identify its actual
+process ID and cwd without changing anything:
+
+```sh
+pgrep -af '[h]ercules'
+readlink -f /proc/ACTUAL_HERCULES_PID/cwd
+grep -nEi 'sf=|shadow|include' /home/admin/vm630/hercules.cnf
+```
+
+Resolve `dasd1` relative to the verified emulator
+cwd, then cross-check volume M01RES from emulator
+startup logs/operator device query if available;
+a filename alone does not prove its internal VOLSER.
+Do not use the backup helper on the live, still
+open DASD file. Quiesce the actual emulator first
+or use a coordinated, provider-supported snapshot
+that captures all backing files atomically. The
+original user-facing CMS cleanup EXEC remains unsafe
+until disk integrity and a verified backup are
+established; the GitHub runner is an RC12 safety hold.
