@@ -79,3 +79,37 @@ introduce promotion writes against GITFIX during development.
 **CHECK deliberately prints candidates as UNTRUSTED; it does not select an active generation.** The actual generation must independently pass full `GENCHECK` before selection or promotion. This prevents the parser from becoming an unsafe shortcut around the complete 1,808-object audit. Never connect the parser to the protected current GITFIX data as a writer.
 
 `tests/test_native_selector.py` compiles production `src/GITSEL.C` as strict C89 with all warnings as errors, generates records with the independent Python protocol, tests every truncated prefix and checksum/grammar corruption and verifies same-sequence conflict rejection. The complete native staging CI passed: https://github.com/mostangrymike/ibm-sandbox/actions/runs/36329974642 . This is **host-compiled only**; the native reader still needs CMS compilation and its full GENCHECK integration before it can safely select any active generation.
+
+## M14 combined native C89 recovery gate implemented (host only)
+
+The standalone GITSEL parser now has a bounded `GITSEL WRITE`
+operation for new, disposable SEL1 records, tested byte-for-byte
+against Python's independent canonical ASCII CRC32 implementation.
+Its optional linked SELECT callback refuses to elect a candidate
+until the callback fully validates that generation.
+
+The new `src/GITREC.C` links actual GITSEL and GITCIDX source,
+reads slot records from SEL0/SEL1, and maps each independently
+named candidate to separate input FILEDEFs C0STG/C0IDX/C0SEEK/C0GEN
+or C1STG/C1IDX/C1SEEK/C1GEN. It checks selector identity and the
+GEN2 DIGEST record, then invokes the real full `gen_check()`
+for every candidate it considers. Only after complete canonical
+object/paired-index/seek-cookie/manifest verification can a slot
+be selected. A damaged newer slot or incomplete newer generation
+causes recovery through the older fully verified candidate.
+
+The host integration runs the *compiled GITREC binary* against
+two disposable 1,808-record synthetic candidate generations and
+injects corrupt GEN2, corrupt stage, truncated SIDX2, missing IDX2
+and spoofed selector identity. It asserts that neither stage
+corruption nor selector parsing alone can bypass full GENCHECK.
+All these tests passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36330993480 .
+
+This code is **not an active pointer writer, not a lock and not
+an atomic promotion operation**. Real CMS compilation and the
+safe read-only valid-old/invalid-new test remain to be performed.
+See [the exact next target gate](NATIVE_RECOVERY_GATE.md), which
+uses the actual GEN2 DIGEST from the protected GITFIX generation
+and only two disposable selector files. No original stage, index,
+seek or manifest file is modified.
