@@ -14,6 +14,8 @@ on:
       - 'tests/native_stage_host.c'
       - 'tests/native_index_host.c'
       - 'scripts/backup-offline-dasd.sh'
+      - 'scripts/inspect-hercules-config.sh'
+      - 'tests/test-hercules-config.sh'
       - 'tests/test-offline-dasd-backup.sh'
       - 'src/GITSEL.C'
       - 'src/GITREC.C'
@@ -34,6 +36,8 @@ on:
       - 'tests/native_stage_host.c'
       - 'tests/native_index_host.c'
       - 'scripts/backup-offline-dasd.sh'
+      - 'scripts/inspect-hercules-config.sh'
+      - 'tests/test-hercules-config.sh'
       - 'tests/test-offline-dasd-backup.sh'
       - 'src/GITSEL.C'
       - 'src/GITREC.C'
@@ -47,6 +51,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Test read-only Hercules config inventory
+        run: sh tests/test-hercules-config.sh
       - name: Test offline-only DASD backup safeguards
         run: sh tests/test-offline-dasd-backup.sh
       - name: Check neutral compiler EXEC source and F-disk setup
