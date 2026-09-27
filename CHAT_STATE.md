@@ -1769,3 +1769,20 @@ Next independent target durability gate is the same
 read-only GITRUN after a confirmed ordinary logoff/logon,
 or subsequently after an authorized normal VM reboot.
 Do not force a reboot, rewrite selectors, or rerun GENWRITE.
+
+## M14 next target gate: read-only identity rejection
+
+Do not wait for reboot: continue independent work. The reusable
+src/GITRUN.EXEC has been updated to bind both already-existing
+GITSEL0/GITSEL1 PTR A slots and four protected C0 read inputs.
+It first calls GITREC SELECT GITBAD GITFIX, intentionally
+swapping expected generation names. The strict parser must
+print SELECTOR SLOT 0 NAME MISMATCH and SELECTOR SLOT 1
+NAME MISMATCH, then NO FULLY VERIFIED GENERATION and RC 8.
+The EXEC treats this as the expected negative result; any
+other RC aborts. It then calls the valid GITREC SELECT GITFIX
+GITBAD, expecting complete 1808-object audit and RECOVERED
+41 GITFIX DIGEST 493F0896884B28AC4836B88328629B7E95404B46
+RC 0. This gate is pending actual CMS output, and no
+source rebuild or selector write is necessary. Mac pull
+and upload only GITRUN.EXEC, then run GITRUN once on CMS.
