@@ -215,3 +215,40 @@ Cleanup remains target-pending until the CMS transcript
 shows the expected success. Full CMS interrupted write,
 exclusive lock and reboot persistence remain distinct
 unproven production requirements.
+
+## September 27 current CMS cleanup verified; M16 in progress
+
+The high-density M15 audit-and-cleanup run succeeded on actual
+CMS: independent GEN2 audit of GITFIX and M15NEW (1808
+unique each, RC0), deliberate selector swap rejected with
+two name mismatches RC8, restored M15 selectors chose seq52
+M15NEW after complete GENCHECK RC0. The three old noncanonical
+GITSTAGE DATA A, GITINDEX DATA A and GITSEEK INDEX A files
+were erased; each subsequent STATE confirmed absence.
+The final guards found both complete canonical sealed
+generations and both original/disposable pairs of PTR
+selector records intact. GITPBUF PACK remains preserved.
+
+M16 advances beyond missing inputs into native selector
+protocol attacks, with a single self-cleaning CMS GITRUN:
+a correctly checksummed seq60 M15NEW selector with a forged
+zero manifest digest must be rejected in favor of verified
+seq51 GITFIX; a genuine M15NEW seq50 selector must lose
+to verified older-generation seq51 GITFIX; a genuine
+same-sequence seq51 M15NEW selector must conflict with the
+distinct seq51 GITFIX and fail closed RC8; restoring intact
+original seq52 M15NEW must pass complete independent
+GENCHECK. All M16 temporary PTR fixtures are created only
+under verified-unused names M16BAD/M16LOW/M16CON and erased
+after the entire test succeeds. The runner ends by
+checking that all eight sealed-generation files and
+the original four PTR files remain present.
+
+The companion host regression tests the actual compiled
+native GITREC for forged checksummed digest, sequence
+ordering, conflict and restoration. Neither these
+protocol tests nor the earlier read-only missing-input
+matrix prove atomic CMS file replacement or exclusive
+writer ownership. Retain both complete sealed generations
+and their current selector records until real cross-logon
+and normal reboot survival are explicitly established.
