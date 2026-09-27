@@ -198,6 +198,23 @@ int main(void) {
      !selected_output("SELECTED 42 GENNEW")) return 118;
  }
 
+ {
+  char hex[41],fake[41];
+  for(k=0;k<20;k++) sprintf(hex+2*k,"%02X",digest[k]);
+  memset(fake,'0',40);fake[40]=0;
+  if(!write_slot("dd:SEL1",60,"GENNEW",fake)) return 119;
+  if(system("./native_recovery SELECT GENOLD GENNEW > recovery.log")!=0||
+     !selected_output("RECOVERED 41 GENOLD")) return 120;
+  if(!write_slot("dd:SEL1",40,"GENNEW",hex)) return 121;
+  if(system("./native_recovery SELECT GENOLD GENNEW > recovery.log")!=0||
+     !selected_output("SELECTED 41 GENOLD")) return 122;
+  if(!write_slot("dd:SEL1",41,"GENNEW",hex)) return 123;
+  if(system("./native_recovery SELECT GENOLD GENNEW > recovery.log")==0||
+     !selected_output("CONFLICTING SELECTOR SEQUENCE")) return 124;
+  if(!write_slot("dd:SEL1",42,"GENNEW",hex)) return 125;
+  if(system("./native_recovery SELECT GENOLD GENNEW > recovery.log")!=0||
+     !selected_output("SELECTED 42 GENNEW")) return 126;
+ }
  f=fopen("dd:C1GEN","r+b");
  if(!f||fputc('X',f)==EOF||fclose(f)!=0) return 85;
  if(system("./native_recovery SELECT GENOLD GENNEW"
