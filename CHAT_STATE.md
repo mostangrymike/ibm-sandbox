@@ -1827,3 +1827,26 @@ unverifiable newer GITBAD. Expect NO FULLY VERIFIED
 GENERATION RC8; then restore SEL0 mapping to GITSEL0 PTR A,
 run full GITREC SELECT and expect RECOVERED 41 GITFIX RC0.
 Do not write to any protected file or create more selectors.
+
+## September 27 12:31 M14 malformed-slot gate PASSED
+
+The user ran GITRUN with SEL0 deliberately rebound READ-ONLY
+to existing GITFIX GEN A, whose GEN2 records cannot parse as
+a SEL1 record. The newer SEL1 seq42 GITBAD remained readable
+but C1GEN absent. GITREC returned NO FULLY VERIFIED
+GENERATION RC8, as required. Rebinding SEL0 to GITSEL0
+PTR A then caused the full native 1808-object audit to pass,
+RECOVERED 41 GITFIX with digest
+493F0896884B28AC4836B88328629B7E95404B46,
+RC0; 21.50 seconds elapsed. No protected files or selector
+records were changed.
+
+GITRUN.EXEC is now advanced to a three-stage read-only
+missing-slot test: require GITBAD PTR A nonexistent, map
+SEL1 to that missing file and SEL0 to intact GITSEL0
+and expect SELECTED 41 GITFIX RC0; then map SEL0 to
+missing and SEL1 to invalid-new GITSEL1 and require
+NO FULLY VERIFIED GENERATION RC8; finally restore
+both original mappings, require RECOVERED 41 GITFIX
+RC0. No compilation, writing, file erasure or reboot
+is required. Pull and upload only src/GITRUN.EXEC.
