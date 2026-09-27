@@ -2171,3 +2171,49 @@ are preserved. SSLPOOL service logs and historical
 SSL trace DATA are NOT in this M17 deletion batch.
 Mac from ibm-sandbox/src: git pull;
 ./cms-upload.sh GITRUN.EXEC. CMS: GITRUN.
+
+## September 27 13:01-13:07 M17 CMS DATA INTEGRITY INCIDENT
+
+M16 adversarial selector test fully passed and erased its
+three disposable pointer fixtures, preserving all protected
+data. The subsequent M17 GITRUN on CMS also passed both
+complete independent GITCIDX GENCHECKs (GITFIX and
+M15NEW, each 1808 unique) and complete GITREC selection of
+seq52 M15NEW, digest
+493F0896884B28AC4836B88328629B7E95404B46,
+all before attempting any cleanup. However, on the FIRST
+attempt to erase historical M12ATLS ASSEMBLE A1, CMS
+displayed:
+DMSDKD1307T File system error detected by DMSERS
+at address 00F1CFE0 offset 00001428:
+TRKDE request failed with code 4 while processing file
+M12ATLS ASSEMBLE A1.
+HCPGIR450W CP entered; disabled wait PSW
+000A0000 00F08312.
+User issued IPL CMS and received ordinary z/VM 6.3
+CMS signon. This is NOT evidence of successful removal
+or trustworthy persisted minidisk integrity.
+
+IBM DMS1307T documentation explicitly identifies TRKDE
+code 4 as attempted deallocation of a nonallocated
+disk block, possibly due to prior CMS minidisk corruption,
+storage allocation map corruption in virtual memory or
+file structural corruption. Disabled wait can leave
+uncommitted A-disk directories unwritten. Preserve any
+CMS dump and operator/Hercules logs. NO FURTHER A-DISK
+WRITES, CLEANUP, OR GITRUN TESTS before obtaining a
+consistent backup/snapshot of actual host DASD image
+with the VM properly quiesced. Do not assume the
+Hercules host OS/path or run remote shell commands
+without verification. After preserving disk image,
+diagnose disk integrity on a copy, inspect directory,
+allocation map, duplicate or cross-linked blocks,
+and investigate any Hercules I/O errors. Only after
+recovery and validated canonical data should development
+resume. In GitHub, src/GITRUN.EXEC was immediately
+replaced with a SAFETY HOLD exit RC12, no write actions,
+to prevent accidentally rerunning the dangerous cleanup
+batch from a new pull. Abandoned native TLS GitHub
+experimental sources are deleted; historical Git
+commits still preserve them. Current on-disk state
+of M12ATLS ASSEMBLE after failed erase is UNKNOWN.
