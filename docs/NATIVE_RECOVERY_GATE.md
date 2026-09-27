@@ -122,3 +122,19 @@ records and failure injection, with a verified writer
 exclusion protocol. Actual CMS recovery across system
 reboot is still untested. The verified existing GITFIX
 generation must never be used as a mutation target.
+
+## Existing selector overwrite safeguard (host-proven)
+
+The latest native `GITSEL WRITE` additionally opens SELOUT for
+reading first and refuses to create an output when the mapped
+selector slot already exists. It returns RC 8 and prints
+`SELECTOR OUTPUT EXISTS` without overwriting the existing record.
+The strict C89 regression tests verify the old selector bytes remain
+unchanged after a second WRITE attempt. Full host CI passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36331581650 .
+
+This guard prevents accidental sequential reuse of a selector file;
+it is **not** an atomic create-if-absent operation or concurrent
+writer lock. The test above must still use only previously unused
+disposable selector filenames. Never bind SELOUT to a protected
+existing selector or any GITFIX stage/index/seek/GEN data file.
