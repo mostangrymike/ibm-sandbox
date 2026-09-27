@@ -64,6 +64,12 @@ def main():
                                second, first))
     external = make_pack((second,))
     external_missing = make_pack((refdelta(oid(b"missing"), delta1),))
+    # Copy the real first 270-byte commit through a thin REF delta.
+    # Its canonical OID was independently verified on target.
+    real_commit = bytes.fromhex("00D8D63229305230C8D37F884CE87F9E1A89468C")
+    real_copy = bytes((0x8e, 0x02, 0x8e, 0x02,
+                       0xb0, 0x0e, 0x01))
+    external_real = make_pack((refdelta(real_commit, real_copy),))
     wrong_sha = good[:-1] + bytes((good[-1] ^ 1,))
     for name, pack in (
         ("REFPACK.PACK", good),
@@ -74,6 +80,7 @@ def main():
         ("XPACK.PACK", external),
         ("XBAD.PACK", external_missing),
         ("FCHAIN.PACK", forward_chain),
+        ("XREAL.PACK", external_real),
     ):
         write_records(folder / name, pack)
         if name == "REFPACK.PACK":
