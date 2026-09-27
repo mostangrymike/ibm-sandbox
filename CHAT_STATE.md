@@ -1725,3 +1725,28 @@ if absent, write selector zero with the revised command, then bind SEL0
 and every C0 input including C0IDX to the old canonical GITFIX data.
 Require the full 1808-object GENCHECK and SELECTED 41 GITFIX. Do not
 run GENWRITE or rebuild either canonical index.
+
+## M14 dual-slot native CMS target evidence, September 27 12:19
+
+GITSEL/GITREC PLAIN builds succeeded on CMS. GITRUN created
+GITSEL0 PTR A (SEL1 seq 41 GITFIX) using REXX STATE RC28
+and GITSEL WRITEGEN with ABSENT28 attestation. GITREC
+verified all 1808 unique objects and selected seq 41 GITFIX
+with digest 493F0896884B28AC4836B88328629B7E95404B46
+and RC 0. Then GITRUN created GITSEL1 PTR A (seq 42
+GITBAD), intentionally left all four C1 input DDs absent,
+and full recovery rejected the new candidate and returned
+RECOVERED 41 GITFIX with same 1808-object GEN2 audit and
+RC 0 (elapsed 21.69s). Both M14 selection/fallback
+native CMS gates PASSED. Four harmless invalid CLEAR
+diagnostics resulted from trying to clear undefined DDs;
+omit these on subsequent batches.
+
+Preserve both existing selector files and all protected
+GITFIX STAGE/INDEX/SEEK/GEN files. Do NOT rerun WRITEGEN,
+GENWRITE, stage or index construction. Next GITRUN.EXEC
+will be read-only: bind both selector inputs and the
+four C0 data files, leave C1 absent, run GITREC SELECT.
+Use after a normal fresh CMS logon, and optionally after
+an authorized ordinary system reboot. Host-only interrupted
+promotion design and atomicity/writer exclusion remain open.
