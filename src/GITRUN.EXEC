@@ -108,9 +108,11 @@ do i=1 to 4
  if rc \= 0 then exit 12
 end
 do i=0 to 1
- 'STATE GITSEL'||i 'PTR A'
+ name='GITSEL'||i
+ 'STATE' name 'PTR A'
  if rc \= 0 then exit 12
- 'STATE M15SL'||i 'PTR A'
+ name='M15SL'||i
+ 'STATE' name 'PTR A'
  if rc \= 0 then exit 12
 end
 say 'GITRUN COMPLETE: THREE FULL AUDITS; LEGACY CLEANUP'
