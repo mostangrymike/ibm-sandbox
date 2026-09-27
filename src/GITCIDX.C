@@ -730,10 +730,106 @@ static int idx_pair(void) {
  printf("PAIR VERIFIED UNIQUE %lu\n",idx_unique);
  return 0;
 }
+/* Deterministic GEN2 digest binds both canonical indexes and cookies. */
+static unsigned char gen_bytes[65536];
+static int gen_digest(unsigned char digest[20]) {
+ unsigned long j,n=0,v;
+ int k;
+ if(idx_unique!=sidx_count||idx_unique>1808) return 0;
+ for(j=0;j<idx_unique;j++) {
+  memcpy(gen_bytes+n,idx_entries[j].oid,20);n+=20;
+  v=idx_entries[j].number;
+  gen_bytes[n++]=(unsigned char)(v>>8);
+  gen_bytes[n++]=(unsigned char)v;
+  gen_bytes[n++]=(unsigned char)idx_entries[j].type;
+  v=idx_entries[j].size;
+  for(k=3;k>=0;k--)
+   gen_bytes[n++]=(unsigned char)(v>>(8*k));
+  if(sidx[j].offset<0) return 0;
+  v=(unsigned long)sidx[j].offset;
+  if(v>0xffffffffUL) return 0;
+  for(k=3;k>=0;k--)
+   gen_bytes[n++]=(unsigned char)(v>>(8*k));
+ }
+ return idx_hash(3,gen_bytes,n,digest);
+}
+/* Write this candidate's manifest LAST, only after full PAIR. */
+static int gen_write(void) {
+ FILE *f;
+ unsigned char digest[20];
+ if(idx_pair()!=0||!gen_digest(digest)) return 8;
+ f=fopen("dd:GENOUT","w");
+ if(!f) {perror("GENOUT");return 8;}
+ if(fprintf(f,"GEN2 1808 %lu\n",idx_unique)<0) goto bad;
+ if(fputs("DIGEST ",f)==EOF) goto bad;
+ idx_print(f,digest);
+ if(fputc('\n',f)==EOF) goto bad;
+ if(fputs("MINOID ",f)==EOF) goto bad;
+ idx_print(f,idx_entries[0].oid);
+ if(fputc('\n',f)==EOF) goto bad;
+ if(fputs("MAXOID ",f)==EOF) goto bad;
+ idx_print(f,idx_entries[idx_unique-1].oid);
+ if(fputc('\n',f)==EOF) goto bad;
+ if(fprintf(f,"GEND2 1808 %lu\n",idx_unique)<0) goto bad;
+ if(fclose(f)!=0) return 8;
+ printf("GENERATION SEALED 1808 UNIQUE %lu\n",idx_unique);
+ return 0;
+bad:
+ puts("GENERATION MANIFEST WRITE FAIL");
+ fclose(f);
+ return 8;
+}
+/* Validate completed manifest and full data after separate reopen. */
+static int gen_check(void) {
+ FILE *f;
+ char line[128],hextext[41],extra;
+ unsigned char digest[20],minoid[20],maxoid[20],got[20];
+ unsigned long total,unique,endtotal,endunique;
+ int fields;
+ f=fopen("dd:GENIN","r");
+ if(!f) {perror("GENIN");return 8;}
+ if(!idx_line(f,line,sizeof line)) goto bad;
+ fields=sscanf(line,"GEN2 %lu %lu %c",
+               &total,&unique,&extra);
+ if(fields!=2||total!=IDXCAP||unique<1||
+    unique>IDXCAP) goto bad;
+ if(!idx_line(f,line,sizeof line)) goto bad;
+ if(sscanf(line,"DIGEST %40s %c",hextext,&extra)!=1||
+    !idx_hex(hextext,digest)) goto bad;
+ if(!idx_line(f,line,sizeof line)) goto bad;
+ if(sscanf(line,"MINOID %40s %c",hextext,&extra)!=1||
+    !idx_hex(hextext,minoid)) goto bad;
+ if(!idx_line(f,line,sizeof line)) goto bad;
+ if(sscanf(line,"MAXOID %40s %c",hextext,&extra)!=1||
+    !idx_hex(hextext,maxoid)) goto bad;
+ if(!idx_line(f,line,sizeof line)) goto bad;
+ fields=sscanf(line,"GEND2 %lu %lu %c",
+               &endtotal,&endunique,&extra);
+ if(fields!=2||endtotal!=total||
+    endunique!=unique) goto bad;
+ if(idx_line(f,line,sizeof line)||ferror(f)) goto bad;
+ if(fclose(f)!=0) return 8;
+ if(idx_pair()!=0||idx_unique!=unique||
+    !gen_digest(got)||memcmp(got,digest,20)!=0||
+    memcmp(idx_entries[0].oid,minoid,20)!=0||
+    memcmp(idx_entries[idx_unique-1].oid,maxoid,20)!=0) {
+  puts("GENERATION CONTENT MISMATCH");return 8;
+ }
+ printf("GENERATION VERIFIED 1808 UNIQUE %lu\n",unique);
+ return 0;
+bad:
+ puts("GENERATION MANIFEST INVALID");
+ fclose(f);
+ return 8;
+}
 int main(int argc,char **argv) {
  unsigned char query[20];
  if(argc==2&&strcmp(argv[1],"SELF")==0)
   return idx_self();
+ if(argc==2&&strcmp(argv[1],"GENWRITE")==0)
+  return gen_write();
+ if(argc==2&&strcmp(argv[1],"GENCHECK")==0)
+  return gen_check();
  if(argc==2&&strcmp(argv[1],"PAIR")==0)
   return idx_pair();
  if(argc==2&&strcmp(argv[1],"SFAST")==0)
@@ -772,5 +868,6 @@ int main(int argc,char **argv) {
  }
  puts("GITCIDX SELF BUILD CHECK AUDIT FIND GET");
  puts("GITCIDX SBUILD SCHECK SGET SVAUDIT SFAST PAIR");
+ puts("Generation: GENWRITE GENCHECK");
  return 4;
 }
