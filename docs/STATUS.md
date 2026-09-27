@@ -944,3 +944,7 @@ INDEX A (SIDX1) as legacy snapshots. Preserve correct new
 GITFIX files. After SFAST/PAIR target proof, continue with
 external/forward REF and safe generation/reboot recovery;
 issue #2 remains open. Mandatory max-work-per-turn rule active.
+
+## 2026-09-26 19:06–19:07 CDT FILEDEF readiness
+
+User's latest CMS transcript: `FILEDEF STGIN CLEAR`, `IDXIN CLEAR` and `FIDXIN CLEAR` each returned `DMSFLD704I Invalid CLEAR request`, consistent with no existing definitions to clear after previous compilation. Immediately afterward, `FILEDEF STGIN DISK GITFIX STAGE A`, `FILEDEF IDXIN DISK GITFIX INDEX A` and `FILEDEF FIDXIN DISK GITFIX SEEK A` all returned normal `Ready` without error. Required current input FILEDEFs are therefore set; do not repeat CLEAR, redefine, retransfer, rebuild the PACK, stage or index. Proceed directly to read-only `GITCIDX SFAST`, `GITCIDX PAIR`, and canonical first/last SGET using 00D8D63229305230C8D37F884CE87F9E1A89468C and EB37E3F23FF4FC137D715D71A711D3B7632D75F2. The successful FILEDEF definitions do NOT yet prove SFAST or PAIR completed. docs/CANONICAL_OIDS.md corrected to omit unnecessary CLEAR lines in the current target gate.
