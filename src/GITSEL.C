@@ -93,9 +93,30 @@ static int slot_read(const char *dd,struct slot *out) {
  out->valid=1;
  return 1;
 }
+/* CMS STATE avoids lazy fopen("dd:SELOUT","r") false positives.
+ * The optional explicit output basename enables this safe CMS gate.
+ * The caller must bind SELOUT to the same basename, PTR, mode A.
+ */
+static int selector_state(const char *name) {
+ char command[32];
+ int rc;
+ if(!proper_name(name)) return 4;
+ sprintf(command,"STATE %s PTR A",name);
+ rc=system(command);
+ if(rc==0) {
+  puts("SELECTOR OUTPUT EXISTS");
+  return 8;
+ }
+ /* CMS returns 28 for missing. Unix test shells encode it as 28<<8. */
+ if(rc!=28&&rc!=7168) {
+  printf("SELECTOR STATE FAILED RC %d\\n",rc);
+  return 8;
+ }
+ return 0;
+}
 /* Write an untrusted SEL1 record to a caller-created output FILEDEF. */
 static int selector_write(const char *sequence,const char *name,
-                          const char *digest) {
+                          const char *digest,const char *slotname) {
  FILE *f;
  char payload[90],*end;
  unsigned long seq,crc;
@@ -110,12 +131,17 @@ static int selector_write(const char *sequence,const char *name,
  sprintf(payload,"SEL1 %lu %s %s",seq,name,digest);
  crc=crc32_ascii(payload);
  if(strlen(payload)+10>80) return 4;
- /* Prevent accidental overwrite of an existing active slot. */
- f=fopen("dd:SELOUT","r");
- if(f) {
-  fclose(f);
-  puts("SELECTOR OUTPUT EXISTS");
-  return 8;
+ /* Prefer the explicit CMS STATE probe for lazy DD open runtimes. */
+ if(slotname) {
+  int status=selector_state(slotname);
+  if(status) return status;
+ } else {
+  f=fopen("dd:SELOUT","r");
+  if(f) {
+   fclose(f);
+   puts("SELECTOR OUTPUT EXISTS");
+   return 8;
+  }
  }
  f=fopen("dd:SELOUT","w");
  if(!f) {perror("SELOUT");return 8;}
@@ -140,7 +166,8 @@ static int sel_line(FILE *f,char *line) {
  for(;*p;p++) if(*p=='\n'||*p=='\r') return 0;
  return 1;
 }
-static int selector_writegen(const char *sequence,const char *name) {
+static int selector_writegen(const char *sequence,const char *name,
+                             const char *slotname) {
  FILE *f;
  char line[128],digest[41],minoid[41],maxoid[41],extra;
  unsigned long total,unique,endtotal,endunique;
@@ -175,7 +202,7 @@ done:
   return 8;
  }
  /* The SELECT verifier must still perform the FULL GENCHECK. */
- return selector_write(sequence,name,digest);
+ return selector_write(sequence,name,digest,slotname);
 }
 /* Callback must fully rehash candidate and validate its GEN2 seal. */
 #ifdef GITSEL_VERIFY
@@ -209,10 +236,12 @@ static int selector_choose(struct slot *a,struct slot *b) {
 #endif
 int main(int argc,char **argv) {
  struct slot a,b;
- if(argc==5&&strcmp(argv[1],"WRITE")==0)
-  return selector_write(argv[2],argv[3],argv[4]);
- if(argc==4&&strcmp(argv[1],"WRITEGEN")==0)
-  return selector_writegen(argv[2],argv[3]);
+ if((argc==5||argc==6)&&strcmp(argv[1],"WRITE")==0)
+  return selector_write(argv[2],argv[3],argv[4],
+                        argc==6?argv[5]:(const char *)0);
+ if((argc==4||argc==5)&&strcmp(argv[1],"WRITEGEN")==0)
+  return selector_writegen(argv[2],argv[3],
+                           argc==5?argv[4]:(const char *)0);
  if(argc!=2) {
   puts("Usage: GITSEL CHECK (candidates only)");
   return 4;
