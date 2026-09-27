@@ -256,3 +256,24 @@ GENWRITE/GENCHECK already passed on CMS.
 ## 2026-09-27 10:20–10:21 CDT: GEN2 cross-logon survival PROVEN ON CMS
 
 After an actual logoff and fresh CMS logon, the user successfully defined STGIN GITFIX STAGE A, IDXIN GITFIX INDEX A, FIDXIN GITFIX SEEK A and GENIN GITFIX GEN A. They ran only `GITCIDX GENCHECK`, without rewriting the stage, indexes, or GEN2 manifest. The existing program printed all SFAST progress checkpoints (256 to 1792), `FAST AUDIT VERIFIED 1808 UNIQUE 1808`, `PAIR VERIFIED UNIQUE 1808`, and `GENERATION VERIFIED 1808 UNIQUE 1808`, with normal RC 0, CPU 21.47 sec and elapsed 21.68 sec. This now conclusively establishes **same minidisk cross-logon CMS persistence** for this validated, unmodified full canonical 1,808-object candidate generation, including stage body integrity, both index descriptors, saved seek-cookie correspondence and manifest digest. It does NOT establish survival across an actual system restart or atomic active-generation promotion/multi-writer safety. Protect GITFIX STAGE/INDEX/SEEK/GEN A; no need to rerun GENWRITE or recapture the PACK. The next user-controlled, read-only durability gate, only when a regular system reboot is appropriate, is to reaccess the same A minidisk and reissue the four input FILEDEFs followed by GITCIDX GENCHECK. Concurrent with target work, independently design active-generation selection and interrupted-promotion recovery in GitHub, without claiming an untested atomic CMS file rename guarantee.
+
+## M14: real full-audit dual-slot recovery now host-tested
+
+The native C89 `GITSEL` parser now writes and checks bounded
+checksummed SEL1 selector records. New `src/GITREC.C` binds each
+slot to a distinct set of candidate FILEDEFs and requires the
+actual GITCIDX full `GENCHECK` — including all staged canonical
+Git OIDs, IDX2/SIDX2 pairing, saved seek cookies and GEN2 seal —
+before selecting a candidate. Its host regression uses two
+independent 1,808-record synthetic generations and tests rollback
+from damaged GEN2, modified stage, truncated seek index, missing
+ordinary index and spoofed selector names. The complete host
+suite passed at
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36330993480 .
+
+This is not yet compiled on CMS and performs no automatic active
+pointer writes. Real CMS compilation and a *read-only* selection
+test using protected GITFIX as the older generation and disposable
+SEL1 files are described in docs/NATIVE_RECOVERY_GATE.md. Existing
+GITFIX has already passed same-minidisk cross-logon GENCHECK;
+system reboot persistence and actual atomic promotion remain open.
