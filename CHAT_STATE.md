@@ -1850,3 +1850,25 @@ NO FULLY VERIFIED GENERATION RC8; finally restore
 both original mappings, require RECOVERED 41 GITFIX
 RC0. No compilation, writing, file erasure or reboot
 is required. Pull and upload only src/GITRUN.EXEC.
+
+## September 27 12:34 M14 missing-slot triple gate PASSED
+
+Native CMS GITRUN required GITBAD PTR A absent, then mapped
+SEL0 to the valid original GITSEL0 and SEL1 to missing:
+full SFAST/PAIR/GENCHECK passed 1808 objects, SELECTED 41
+GITFIX digest 493F0896884B28AC4836B88328629B7E95404B46
+RC0. Then SEL0 was mapped missing and SEL1 to intact
+syntactically valid but unverified seq42 GITBAD: the
+new candidate failed because C1GEN absent; NO FULLY
+VERIFIED GENERATION, RC8. Finally both true slots were
+restored; complete 1808-object audit passed,
+RECOVERED 41 GITFIX, same digest, RC0. Total elapsed
+42.98s. All selector files and protected GITFIX data
+were read-only. This closes the current M14 on-target
+dual-slot read and fallback test matrix; cross-logon
+of both selectors remains unconfirmed unless a new
+CMS login occurred before one of the runs. A full
+system reboot is not needed to continue independent
+next-milestone development. Future GITRUN should
+remain a reusable read-only dual-slot re-verification
+gate until a genuinely new target test is engineered.
