@@ -13,8 +13,6 @@ on:
       - 'tests/check-cmsclnk-source.sh'
       - 'tests/native_stage_host.c'
       - 'tests/native_index_host.c'
-      - 'tests/active_generation_selector.py'
-      - 'tests/test_active_generation_selector.py'
       - 'src/GITSEL.C'
       - 'src/GITREC.C'
       - 'tests/test_native_selector.py'
@@ -33,8 +31,6 @@ on:
       - 'tests/check-cmsclnk-source.sh'
       - 'tests/native_stage_host.c'
       - 'tests/native_index_host.c'
-      - 'tests/active_generation_selector.py'
-      - 'tests/test_active_generation_selector.py'
       - 'src/GITSEL.C'
       - 'src/GITREC.C'
       - 'tests/test_native_selector.py'
@@ -51,8 +47,6 @@ jobs:
         run: sh tests/check-cmsclnk-source.sh
       - name: Reject native-text Git object headers in CMS C source
         run: sh tests/check-canonical-source.sh
-      - name: Test fail-closed two-slot generation recovery prototype
-        run: python3 tests/test_active_generation_selector.py
       - name: Compile and fuzz interrupted writes in native C89 selector
         run: python3 tests/test_native_selector.py
       - name: Compile and test staging, OID index and native REF PACK on host
