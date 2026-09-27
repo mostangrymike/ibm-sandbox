@@ -1806,3 +1806,24 @@ C0GEN to that missing input, require GITREC SELECT to fail
 closed with RC 8, rebind C0GEN to protected GITFIX GEN A
 and require full recovery with RC 0. Upload only the updated
 GITRUN.EXEC after git pull; no C source change or rebuild.
+
+## September 27 12:29 M14 missing-old-manifest gate PASSED
+
+CMS GITRUN checked GITBAD GEN A absent (STATE RC28),
+temporarily bound C0GEN to the nonexistent GITBAD GEN A
+while maintaining SEL0 seq41 GITFIX and SEL1 seq42 GITBAD.
+GITREC SELECT GITFIX GITBAD reported C1GEN and C0GEN open
+errors, NO FULLY VERIFIED GENERATION, RC8. GITRUN then
+restored C0GEN to protected GITFIX GEN A and reran the
+complete 1808-object full audit. Result: RECOVERED 41
+GITFIX digest 493F0896884B28AC4836B88328629B7E95404B46
+RC0; elapsed 21.45 seconds. No source data was modified.
+
+The same reusable GITRUN.EXEC is now a pending *read-only*
+malformed-selector input test: temporarily map SEL0 to the
+existing protected GITFIX GEN A (GEN2 text is not a valid
+SEL1 slot), with SEL1 still the syntactically valid
+unverifiable newer GITBAD. Expect NO FULLY VERIFIED
+GENERATION RC8; then restore SEL0 mapping to GITSEL0 PTR A,
+run full GITREC SELECT and expect RECOVERED 41 GITFIX RC0.
+Do not write to any protected file or create more selectors.
