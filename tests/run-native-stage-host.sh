@@ -41,6 +41,7 @@ for type in commit tree blob tag; do
   fi
  done
 done
+set -x
 # Native full PACK integration (host zlib only, not CMS inflater).
 python3 "$root/tests/make-native-ref-pack.py" "$tmp" > "$tmp/ref-fixtures.log"
 # Independently ask Git to index and reconstruct the same REF PACK.
