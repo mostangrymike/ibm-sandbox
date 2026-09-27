@@ -13,6 +13,7 @@ on:
       - 'tests/check-cmsclnk-source.sh'
       - 'tests/native_stage_host.c'
       - 'tests/native_index_host.c'
+      - 'tests/test-native-cathex-large.py'
       - 'scripts/backup-offline-dasd.sh'
       - 'scripts/inspect-hercules-config.sh'
       - 'scripts/map-cms-minidisk.sh'
@@ -37,6 +38,7 @@ on:
       - 'tests/check-cmsclnk-source.sh'
       - 'tests/native_stage_host.c'
       - 'tests/native_index_host.c'
+      - 'tests/test-native-cathex-large.py'
       - 'scripts/backup-offline-dasd.sh'
       - 'scripts/inspect-hercules-config.sh'
       - 'scripts/map-cms-minidisk.sh'
@@ -67,5 +69,7 @@ jobs:
         run: sh tests/check-canonical-source.sh
       - name: Compile and fuzz interrupted writes in native C89 selector
         run: python3 tests/test_native_selector.py
+      - name: Check full 64-KiB binary CATHEX output and verified fallback
+        run: python3 tests/test-native-cathex-large.py
       - name: Compile and test staging, OID index and native REF PACK on host
         run: sh tests/run-native-stage-host.sh
