@@ -49,10 +49,11 @@ upload()
         return 1
     fi
 
-    # Script-port action arguments are double-quoted; avoid injection.
+    # c3270 Transfer() treats quotes around LocalFile as literal pathname
+    # characters. Keep the absolute path unquoted and reject action delimiters.
     case "$localfile" in
-        *[\"\\]*)
-            echo "ERROR: unsupported quote or backslash in local path" >&2
+        *[,\"\\\(\)]*)
+            echo "ERROR: unsupported punctuation in local path" >&2
             return 1
             ;;
     esac
@@ -61,7 +62,7 @@ upload()
     while [ "$try" -le "$MAXTRIES" ]; do
         echo "=== $input -> $cmsname $cmstype $FILEMODE (attempt $try/$MAXTRIES) ==="
 
-        result=$(action "Transfer(Direction=send,\"HostFile=$cmsname $cmstype $FILEMODE\",LocalFile=\"$localfile\",Host=vm,Mode=ascii,Exist=replace,Recfm=fixed,Lrecl=80,BufferSize=$BUFFER)")
+        result=$(action "Transfer(Direction=send,\"HostFile=$cmsname $cmstype $FILEMODE\",LocalFile=$localfile,Host=vm,Mode=ascii,Exist=replace,Recfm=fixed,Lrecl=80,BufferSize=$BUFFER)")
         status=$?
         printf '%s\n' "$result"
 
