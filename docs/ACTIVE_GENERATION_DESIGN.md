@@ -275,7 +275,7 @@ seek index and stage are opened by `sidx_read`/
 `sidx_get`; a newer unverified generation cannot
 leak object bytes. The existing `SGET` independently
 rehashes the selected body's Git SHA-1 and prints
-`OBJECT READ OID` with type, size and prefix.
+`SEEK OBJECT OID` with type, size and prefix.
 Absent OID returns RC4; invalid OID grammar
 returns RC4; no verified generation returns RC8.
 
