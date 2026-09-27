@@ -2518,3 +2518,52 @@ backup has been performed. Guarded M21
 runtime does no persistent writes and never
 touches M12ATLS ASSEMBLE or any obsolete
 TLS cleanup source.
+
+## September 27 18:32–18:35 — M21 TARGET CMS PASSED
+
+User uploaded latest source and standard GITRUN.EXEC to
+live z/VM CMS, actually ran CMSCLNK GITREC PLAIN:
+ASSEMBLER (XF) DONE / NO STATEMENTS FLAGGED /
+CMSCLNK: built GITREC MODULE mode PLAIN (5.68 CPU /
+5.91 elapsed). Executed GITRUN M21 read-only native
+Git suite to completion, real CMS output:
+GITRUN M21 ALL READ ONLY NATIVE GIT TESTS PASSED,
+Ready; T=150.70/151.97 18:35:46.
+
+Live M21 independent full GITCIDX GENCHECK on both
+existing sealed GITFIX and M15NEW stage/index/seek/GEN2
+passed FAST AUDIT 1808 UNIQUE 1808, PAIR VERIFIED
+1808 and GENERATION VERIFIED 1808 (RC0 each). Actual
+GITREC SELECT chose seq52 M15NEW digest
+493F0896884B28AC4836B88328629B7E95404B46.
+GITREC GET of actual first commit OID
+00D8D63229305230C8D37F884CE87F9E1A89468C
+succeeded (type1, 270 bytes, RC0); CATHEX of its
+entire canonical binary contents produced 9 HEX lines
+and OBJECT DATA END (RC0). Deliberately FILEDEF
+newer manifest to nonexistent M15BAD GEN A and full
+CATHEX recovered seq51 GITFIX with full GENCHECK
+and RC0. Both generation manifests rebound to
+same nonexistent filename correctly printed NO FULLY
+VERIFIED GENERATION RC8. Restored two valid mappings
+fully reverified and selected seq52 M15NEW,
+CATHEX complete RC0. Final all protected generation
+and pointer slots STATE checks passed. CMS
+DMSSTT002E M15BAD not found and DMSSOP036E
+C1GEN/C0GEN open error 4 are intentional NEGATIVE
+fixture messages. User pasted console output in
+interleaved order; final PASS and all required
+outcomes verified. M21 live CMS full read-only
+feature is now TARGET PROVEN. User explicitly
+requires *standard GITRUN* for every new CMS
+test, one upload/run per batch; no new driver
+name as user-facing command. User's earlier
+rule: do not pause until genuinely CMS work needed.
+Continue independent GitHub-native client
+engineering and host regression until next
+meaningful target batch, then modify/upload
+src/GITRUN.EXEC only. Prior TRKDE4 cleanup
+failure remains relevant to destructive
+maintenance but do not derail native Git
+functional development with repeated backup
+discussion; no cleanup in current GITRUN.
