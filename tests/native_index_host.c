@@ -59,6 +59,29 @@ int main(void) {
  if(idx_read()!=0||idx_unique!=8||idx_audit()!=0) return 7;
  if(!reject_v1("dd:IDXIN",3,0)) return 48;
  if(idx_pair()!=0) return 50;
+ if(gen_write()!=0||
+    rename("dd:GENOUT","dd:GENIN")!=0||
+    gen_check()!=0) return 70;
+ /* A header mutation is rejected; restoring it passes. */
+ f=fopen("dd:GENIN","r+b");
+ if(!f||!fgets(line,sizeof line,f)) return 71;
+ start=ftell(f);old=fgetc(f);
+ if(old!='D'||fseek(f,start,SEEK_SET)!=0||
+    fputc('X',f)==EOF||fclose(f)!=0) return 72;
+ if(gen_check()==0) return 73;
+ f=fopen("dd:GENIN","r+b");
+ if(!f||fseek(f,start,SEEK_SET)!=0||
+    fputc(old,f)==EOF||fclose(f)!=0) return 74;
+ if(gen_check()!=0) return 75;
+ /* Missing final manifest bytes cannot authorize a generation. */
+ f=fopen("dd:GENIN","r+b");
+ if(!f||fseek(f,0,SEEK_END)!=0) return 76;
+ end=ftell(f);
+ if(end<16||ftruncate(fileno(f),end-2)!=0) return 77;
+ if(fclose(f)!=0||gen_check()==0) return 78;
+ if(gen_write()!=0||
+    rename("dd:GENOUT","dd:GENIN")!=0||
+    gen_check()!=0) return 79;
  stage_opens=0;
  if(sidx_fast_audit()!=0||stage_opens!=1) return 62;
  stage_opens=0;
@@ -84,11 +107,12 @@ int main(void) {
     fputc(old=='0'?'1':'0',f)==EOF||
     fclose(f)!=0) return 56;
  if(sidx_read()!=0||idx_pair()==0||
-    sidx_fast_audit()==0) return 57;
+    sidx_fast_audit()==0||gen_check()==0) return 57;
  f=fopen("dd:FIDXIN","r+b");
  if(!f||fseek(f,start,SEEK_SET)!=0||
     fputc(old,f)==EOF||fclose(f)!=0) return 58;
- if(idx_pair()!=0||sidx_fast_audit()!=0) return 59;
+ if(idx_pair()!=0||sidx_fast_audit()!=0||
+    gen_check()!=0) return 59;
 
  for(k=0;k<20;k++) needle[k]=objoid[0][k];
  if(idx_find(needle)!=0||idx_get(needle)!=0) return 8;
@@ -135,7 +159,7 @@ int main(void) {
  if(idx_get(needle)!=8||idx_audit()!=8||
     sidx_get(needle)!=8||sidx_audit()!=8||
     sidx_fast_audit()!=8||
-    idx_pair()!=8) return 36;
+    idx_pair()!=8||gen_check()!=8) return 36;
  f=fopen("dd:STGIN","r+b");
  if(!f||fseek(f,start,SEEK_SET)!=0||
     fputc(old,f)==EOF||fclose(f)!=0) return 37;
@@ -168,6 +192,7 @@ int main(void) {
     sidx_read()!=0||sidx_get(objoid[1807])!=0||
     sidx_audit()!=0||sidx_fast_audit()!=0)
   return 45;
+ if(remove("dd:GENIN")!=0) return 80;
  if(remove("dd:FIDXIN")!=0) return 46;
  if(remove("dd:IDXIN")!=0||
     remove("dd:STGIN")!=0||
