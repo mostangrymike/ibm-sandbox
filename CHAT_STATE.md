@@ -1903,3 +1903,24 @@ authorized logon or reboot. Next independent engineering
 may build an isolated new-generation writer/recovery lab
 using freshly allocated disposable data/slot filenames,
 with capacity/lock assumptions explicit.
+
+## M15 next real CMS gate committed: independent disposable generation
+
+No waiting for reboot. src/GITRUN.EXEC is now reused for
+a guarded one-command CMS candidate-build gate. Mac
+from ibm-sandbox/src: git pull; ./cms-upload.sh GITRUN.EXEC.
+CMS: GITRUN. It requires all four original protected
+GITFIX files present and all four M15NEW STAGE/INDEX/
+SEEK/GEN A filenames, plus M15SL0 and M15SL1 PTR A,
+confirmed absent with CMS REXX STATE RC28 before any
+copy. Reports QUERY DISK A. Copies original STAGE and
+INDEX to fresh M15NEW (does not alter originals),
+runs GITCIDX SBUILD against copied stage to write
+fresh M15NEW SEEK ftell cookies, runs GITCIDX GENWRITE
+to a newly created M15NEW GEN A, then reopens and runs
+full GITCIDX GENCHECK. Expect 1808 unique objects
+through every full audit and RC0. All step failures
+abort and NO selector is written in this gate.
+The CMS candidate-build gate is PENDING user output;
+the host native GITREC interrupted-promotion test suite
+previously PASSED at run 36337600946.
