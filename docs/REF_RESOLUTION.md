@@ -151,3 +151,17 @@ receive-pack implementation.
 Full canonical stage/index consistency is target-proven. A
 transactional commit marker, restart/reboot readback and safe
 generation recovery remain separate work under GitHub issue #2.
+
+### Latest consolidated host evidence
+
+The expanded host suite passed after adding strict short-OID rejection,
+a structurally valid later-record external base, duplicate-record
+rejection and a real-target first-commit copy fixture. The latest
+complete run is
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36282493293 .
+Only the updated GITCWALK C source and newly generated small
+fixture files need CMS transfer. No new network PACK or rebuilding
+of the existing 1,808-object GITFIX generation is necessary.
+The optional malformed short-OID stage fixture is EXTSHORT DATA A;
+when bound to EXTIN with XPACK PACK A, XPACK must return RC 8 and
+print INVALID EXTERNAL STAGE RECORD 1.
