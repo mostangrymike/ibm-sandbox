@@ -1,40 +1,16 @@
-/* GITRUN: reusable CMS milestone test batch; replace in GitHub each gate. */
-/* M14: REXX STATE-gated first selector, then read-only recovery. */
+/* GITRUN: reused per CMS gate; M14 bad-newer-slot recovery. */
 address cms
-say 'GITRUN M14 FIRST VERIFIED SELECTOR'
-'CMSCLNK GITSEL PLAIN'
-if rc \= 0 then do
- say 'GITRUN STOP: GITSEL compile RC' rc
- exit rc
-end
-'CMSCLNK GITREC PLAIN'
-if rc \= 0 then do
- say 'GITRUN STOP: GITREC compile RC' rc
- exit rc
-end
+say 'GITRUN M14 INVALID NEWER SELECTOR FALLBACK'
 'STATE GITSEL0 PTR A'
-checkrc=rc
-say 'GITRUN SELECTOR STATE RC' checkrc
-if checkrc \= 28 then do
- say 'GITRUN STOP: selector not confirmed absent'
+if rc \= 0 then do
+ say 'GITRUN STOP: verified older selector missing RC' rc
  exit 8
 end
-'FILEDEF GENIN DISK GITFIX GEN A'
-if rc \= 0 then exit rc
-'FILEDEF SELOUT CLEAR'
-if rc \= 0 then exit rc
-'FILEDEF SELOUT DISK GITSEL0 PTR A (RECFM V LRECL 80'
-if rc \= 0 then exit rc
-'GITSEL WRITEGEN 41 GITFIX GITSEL0 ABSENT28'
-writerc=rc
-say 'GITRUN WRITEGEN RC' writerc
-if writerc \= 0 then do
- say 'GITRUN STOP: no recovery selection attempted'
- exit writerc
+'STATE GITSEL1 PTR A'
+if rc \= 28 then do
+ say 'GITRUN STOP: new selector not confirmed absent RC' rc
+ exit 8
 end
-'STATE GITSEL0 PTR A'
-say 'GITRUN CREATED SELECTOR STATE RC' rc
-if rc \= 0 then exit 8
 'FILEDEF SEL0 DISK GITSEL0 PTR A'
 if rc \= 0 then exit rc
 'FILEDEF C0STG DISK GITFIX STAGE A'
@@ -45,6 +21,34 @@ if rc \= 0 then exit rc
 if rc \= 0 then exit rc
 'FILEDEF C0GEN DISK GITFIX GEN A'
 if rc \= 0 then exit rc
+/* A newer generation must NOT inherit stale working DD mappings. */
+'FILEDEF C1STG CLEAR'
+if rc \= 0 then exit rc
+'FILEDEF C1IDX CLEAR'
+if rc \= 0 then exit rc
+'FILEDEF C1SEEK CLEAR'
+if rc \= 0 then exit rc
+'FILEDEF C1GEN CLEAR'
+if rc \= 0 then exit rc
+'FILEDEF GENIN DISK GITFIX GEN A'
+if rc \= 0 then exit rc
+'FILEDEF SELOUT CLEAR'
+if rc \= 0 then exit rc
+'FILEDEF SELOUT DISK GITSEL1 PTR A (RECFM V LRECL 80'
+if rc \= 0 then exit rc
+'GITSEL WRITEGEN 42 GITBAD GITSEL1 ABSENT28'
+writerc=rc
+say 'GITRUN BAD NEWER WRITE RC' writerc
+if writerc \= 0 then do
+ say 'GITRUN STOP: no recovery attempt'
+ exit writerc
+end
+'STATE GITSEL1 PTR A'
+say 'GITRUN NEWER SELECTOR STATE RC' rc
+if rc \= 0 then exit 8
+'FILEDEF SEL1 DISK GITSEL1 PTR A'
+if rc \= 0 then exit rc
+say 'GITRUN EXPECT RECOVERED 41 GITFIX'
 'GITREC SELECT GITFIX GITBAD'
 selectrc=rc
 say 'GITRUN RECOVERY RC' selectrc
