@@ -51,6 +51,29 @@ def main():
              str(verifier_source)],
             check=True,
         )
+        # Native WRITE must exactly match Python's ASCII/CRC protocol.
+        output = folder / "dd:SELOUT"
+        result = subprocess.run(
+            [str(binary), "WRITE", "43", "GENNEW", NEW],
+            cwd=folder, capture_output=True, text=True,
+        )
+        check(result, 0, "SELECTOR WRITTEN 43 GENNEW")
+        assert output.read_text(encoding="ascii") == encode(
+            43, "GENNEW", NEW
+        )
+        for seq, name, digest in [
+            ("0", "GENNEW", NEW), ("00", "GENNEW", NEW),
+            ("043", "GENNEW", NEW), ("4294967296", "GENNEW", NEW),
+            ("43", "GEN-NEW", NEW), ("43", "NINEDIGIT", NEW),
+            ("43", "GENNEW", "f" * 40),
+        ]:
+            check(subprocess.run(
+                [str(binary), "WRITE", seq, name, digest],
+                cwd=folder, capture_output=True, text=True,
+            ), 4)
+            assert output.read_text(encoding="ascii") == encode(
+                43, "GENNEW", NEW
+            )
         old = encode(41, "GITOLD", OLD)
         new = encode(42, "GITNEW", NEW)
         check(invoke(folder, binary, old, new), 0,
