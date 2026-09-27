@@ -9,6 +9,10 @@ struct slot {
  char gen[9],digest[41];
  int valid;
 };
+/* Use arithmetic XOR: CMS source translation does not preserve '^'. */
+static unsigned long xor32(unsigned long a,unsigned long b) {
+ return a+b-2UL*(a&b);
+}
 static unsigned long crc32_ascii(const char *s) {
  static const char alphabet[]="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
  static const char digits[]="0123456789";
@@ -24,12 +28,12 @@ static unsigned long crc32_ascii(const char *s) {
    if(*p==*s) c=0x30+(int)(p-digits);
   if(*s==' ') c=0x20;
   if(c<0) return 0xffffffffUL;
-  b=(crc^(unsigned long)c)&0xffUL;
+  b=xor32(crc,(unsigned long)c)&0xffUL;
   for(i=0;i<8;i++)
-   b=(b&1UL)?(b>>1)^0xedb88320UL:b>>1;
-  crc=(crc>>8)^b;
+   b=(b&1UL)?xor32(b>>1,0xedb88320UL):b>>1;
+  crc=xor32(crc>>8,b);
  }
- return crc^0xffffffffUL;
+ return 0xffffffffUL-crc;
 }
 static int proper_name(const char *s) {
  const char *p;
