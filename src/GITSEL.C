@@ -57,7 +57,10 @@ static int slot_read(const char *dd,struct slot *out) {
  if(!fgets(line,sizeof line,f)) {
   fclose(f);return 0;
  }
- if(strchr(line,'\n')) *strchr(line,'\n')=0;
+ if(!strchr(line,'\n')) {
+  fclose(f);return 0;
+ }
+ *strchr(line,'\n')=0;
  n=(int)strlen(line);
  while(n&&line[n-1]==' ') line[--n]=0;
  if(fgets(check,sizeof check,f)) {
