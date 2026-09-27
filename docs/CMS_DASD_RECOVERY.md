@@ -96,3 +96,35 @@ digest `493F0896884B28AC4836B88328629B7E95404B46`
 damaged). Reboot survival, concurrency and atomic
 promotion are still separately unproved. Do not erase
 old generations or selectors during restoration.
+
+## Optional offline Linux backup helper
+
+The repository now includes `scripts/backup-offline-dasd.sh`,
+which operates on an explicitly identified ordinary *regular
+file* backing a Hercules DASD image. It does not discover
+or guess any real device path and does not create a live
+snapshot. After the affected VM and Hercules are offline,
+identify all dependent backing images and overlays, choose
+backup storage with adequate capacity, and back up each
+required image individually, or use a coordinated volume
+snapshot for a multi-image setup. Example **using illustrative
+paths only**, not this installation's real layout:
+
+```sh
+OFFLINE_CONFIRMED=YES bash scripts/backup-offline-dasd.sh \
+  /verified/path/to/cms-191-backing-file \
+  /safe/offline/volume/cms-191-preserved-image
+```
+
+It refuses overwrite, missing/symlink source, unconfirmed
+offline operation, and a source reported open by `fuser`
+if installed; it uses a new destination file, compares
+every byte with `cmp`, records SHA-256 of both copies
+and leaves incomplete output marked for inspection on
+error. `fuser` is only a secondary safeguard and cannot
+prove the guest is offline or discover all overlays.
+The test `tests/test-offline-dasd-backup.sh` exercises
+these gates on small, synthetic files in CI. Use
+operator judgment and provider-specific storage snapshots
+rather than this utility for live systems or non-regular
+block/CKD volume devices.
