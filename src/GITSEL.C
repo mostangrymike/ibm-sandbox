@@ -122,6 +122,57 @@ static int selector_write(const char *sequence,const char *name,
  printf("SELECTOR WRITTEN %lu %s (UNTRUSTED)\n",seq,name);
  return 0;
 }
+/* Read GEN2 DIGEST only for an untrusted, disposable selector. */
+static int sel_line(FILE *f,char *line) {
+ char *p;
+ int n;
+ if(!fgets(line,128,f)) return 0;
+ n=(int)strlen(line);
+ if(n&&line[n-1]=='\n') line[--n]=0;
+ if(n&&line[n-1]=='\r') line[--n]=0;
+ while(n&&line[n-1]==' ') line[--n]=0;
+ p=line;
+ if(n>80||!n) return 0;
+ for(;*p;p++) if(*p=='\n'||*p=='\r') return 0;
+ return 1;
+}
+static int selector_writegen(const char *sequence,const char *name) {
+ FILE *f;
+ char line[128],digest[41],minoid[41],maxoid[41],extra;
+ unsigned long total,unique,endtotal,endunique;
+ int ok=0;
+ f=fopen("dd:GENIN","r");
+ if(!f) {perror("GENIN");return 8;}
+ if(!sel_line(f,line)||
+    sscanf(line,"GEN2 %lu %lu %c",
+           &total,&unique,&extra)!=2||
+    total!=1808UL||unique<1||unique>1808UL)
+  goto done;
+ if(!sel_line(f,line)||
+    sscanf(line,"DIGEST %40s %c",digest,&extra)!=1||
+    !proper_hex(digest)) goto done;
+ if(!sel_line(f,line)||
+    sscanf(line,"MINOID %40s %c",minoid,&extra)!=1||
+    !proper_hex(minoid)) goto done;
+ if(!sel_line(f,line)||
+    sscanf(line,"MAXOID %40s %c",maxoid,&extra)!=1||
+    !proper_hex(maxoid)) goto done;
+ if(!sel_line(f,line)||
+    sscanf(line,"GEND2 %lu %lu %c",
+           &endtotal,&endunique,&extra)!=2||
+    endtotal!=total||endunique!=unique)
+  goto done;
+ if(fgets(line,sizeof line,f)||ferror(f)) goto done;
+ ok=1;
+done:
+ if(fclose(f)!=0) return 8;
+ if(!ok) {
+  puts("GEN2 MANIFEST INVALID FOR SELECTOR");
+  return 8;
+ }
+ /* The SELECT verifier must still perform the FULL GENCHECK. */
+ return selector_write(sequence,name,digest);
+}
 /* Callback must fully rehash candidate and validate its GEN2 seal. */
 #ifdef GITSEL_VERIFY
 extern int git_sel_verify(const char *gen,const char *digest);
@@ -156,6 +207,8 @@ int main(int argc,char **argv) {
  struct slot a,b;
  if(argc==5&&strcmp(argv[1],"WRITE")==0)
   return selector_write(argv[2],argv[3],argv[4]);
+ if(argc==4&&strcmp(argv[1],"WRITEGEN")==0)
+  return selector_writegen(argv[2],argv[3]);
  if(argc!=2) {
   puts("Usage: GITSEL CHECK (candidates only)");
   return 4;
