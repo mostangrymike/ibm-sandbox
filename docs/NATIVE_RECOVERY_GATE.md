@@ -259,3 +259,28 @@ after an ordinary future CMS logoff/logon; a further
 read-only check after an authorized system reboot would
 establish system restart persistence. Neither proves atomic
 promotion or concurrent-writer exclusion.
+
+## September 27 completed CMS matrix: selector rejection
+
+Additional read-only target tests passed:
+(1) Both slot identities incorrectly mapped to GITBAD/GITFIX
+were rejected with two mismatch diagnostics and RC8;
+correct mapping recovered seq41 GITFIX with full 1808
+audit and RC0. (2) With C0GEN temporarily mapped to
+missing GITBAD GEN A, both generations were rejected,
+RC8; restoring C0GEN recovered the full protected
+generation. (3) Mapping SEL0 to a non-SEL1 GEN2
+manifest rejected the old slot and bad-new-only
+selection failed RC8; restoration recovered.
+(4) A valid older slot with absent SEL1 selected
+seq41 GITFIX with full audit RC0; missing SEL0 plus
+unverifiable newer slot failed RC8; restoring both
+recovered seq41 GITFIX RC0. No protected data or
+existing selector records were modified.
+
+These establish native single-slot recovery, invalid
+newer fallback, name mismatch rejection, missing manifest,
+malformed selector and bad-only fail-closed behavior.
+They do not prove cross-reboot persistence, exclusive
+writer locking, atomic file promotion or true interrupted
+generation write recovery.
