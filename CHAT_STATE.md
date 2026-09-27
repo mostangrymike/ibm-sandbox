@@ -2378,3 +2378,74 @@ offline backup or post-crash file integrity was reported.
 Continue useful native Git source and host tests on GitHub
 without reintroducing native SSL/TLS or risk of A-disk
 writes until safe to resume.
+
+## Latest operating rule and M19/M20 completed host work
+
+USER'S EXPLICIT NEW RULE: "do not pause till cms work needed".
+Continue advancing the active Git project autonomously on GitHub,
+combining material source changes and associated tests per run,
+fixing CI failures and committing stable results without requiring
+repeated "proceed" prompts. Pause for user input only when the next
+meaningful gate genuinely requires CMS or other unavailable target
+data; do not disguise host proof as target CMS proof.
+
+M18's native GITREC GET printed verified object type, size and
+16-byte prefix. M19 extended production src/GITREC.C with
+`CATHEX C0NAME C1NAME OID40`: after full GEN2 native audit,
+use actual selected candidate's SIDX2 direct seek and rehash the
+requested body, then print exact complete content as framed
+`OBJECT DATA BEGIN` / 32-byte `HEX ` lines / `OBJECT DATA END`.
+Empty body produces no HEX lines. Standalone GET unchanged.
+Native host test ran the actual compiled C89 GITREC against
+two independent complete 1808-record generations, positive
+whole CATHEX, empty content, newer manifest fallback and
+fail-closed both manifests unavailable.
+
+M20 additionally created tests/test-native-cathex-large.py:
+it independently assembles a 1808-object Git blob stage
+including a 65536-byte binary body (MAX), empty body,
+257-byte binary with NUL/high bytes and abc; native
+GITCIDX BUILD/SBUILD/GENWRITE/GENCHECK generates sealed
+artifacts; two separate candidate copies and CRC32
+selector records are created; actual compiled GITREC
+CATHEX output is byte-for-byte reconstructed and
+compared with Python's independent Git canonical SHA1.
+It also tests corruption of new stage, verified old
+fallback, no data disclosure when both candidates
+cannot verify, and restoration. Complete native
+GitHub CI PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36356523315 .
+
+A future CMS-only read-only batch is committed as
+src/GITRCHK.EXEC (NOT GITRUN). It gates existence of
+both full generations and four protected selectors,
+captured GITPBUF PACK A and newly compiled GITREC
+MODULE A. It uses canonical first commit OID
+00D8D63229305230C8D37F884CE87F9E1A89468C,
+then GET and CATHEX from real seq52 M15NEW; simulates
+unavailable newer GEN2 to require seq51 GITFIX
+fallback CATHEX; withholding both GEN2s must RC8,
+and restoration must CATHEX from seq52 again. No
+ERASE/COPYFILE/GENWRITE/SELOUT/GENMOD or persistent
+output FILEDEF commands. tests/check-readonly-gitrchk.sh
+enforces this and preserves src/GITRUN.EXEC's
+post-TRKDE safety hold. Full integrated CI PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36356602355 .
+
+**CMS NEXT GATE**: genuine target compile/upload of
+the new src/GITREC.C and read-only src/GITRCHK.EXEC,
+then single `GITRCHK` batch ONLY after the M01RES
+actual dasd1 disk has an independently verified
+forensic backup and verified healthy/reconstructed
+CMS A filesystem. On actual Hercules host, the
+confirmed original image is
+/home/admin/vm630/dasd1, size 768999817, mounted
+by Hercules PID879 FD12 at prior observation;
+user has NOT supplied proof of its offline backup,
+integrity recovery or safe CMS write capability.
+Don't upload/compile new CMS sources or execute
+the stale, unsafe CMS GITRUN cleanup while pending.
+GitHub GITRUN remains RC12 safety hold. No more
+independent changes are required for the M20
+functional CATHEX gate; native CMS execution is
+the next genuine proof, once storage is safe.
