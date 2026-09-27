@@ -138,7 +138,7 @@ int main(void) {
           " > recovery.log",oidhex);
   if(system(command)!=0||
      !selected_output("SELECTED 42 GENNEW")||
-     !selected_output("OBJECT READ OID")) return 127;
+     !selected_output("SEEK OBJECT OID")) return 127;
   sprintf(command,"./native_recovery GET GENOLD GENNEW %s"
           " > recovery.log",missinghex);
   if(system(command)==0||
@@ -151,18 +151,18 @@ int main(void) {
           " > recovery.log",oidhex);
   if(system(command)!=0||
      !selected_output("RECOVERED 41 GENOLD")||
-     !selected_output("OBJECT READ OID")) return 131;
+     !selected_output("SEEK OBJECT OID")) return 131;
   if(rename("held-lookup-gen","dd:C1GEN")!=0) return 132;
   if(rename("dd:C0GEN","held-old-lookup-gen")!=0||
      rename("dd:C1GEN","held-new-lookup-gen")!=0) return 133;
   if(system(command)==0||
      !selected_output("NO FULLY VERIFIED GENERATION")||
-     selected_output("OBJECT READ OID")) return 134;
+     selected_output("SEEK OBJECT OID")) return 134;
   if(rename("held-old-lookup-gen","dd:C0GEN")!=0||
      rename("held-new-lookup-gen","dd:C1GEN")!=0) return 135;
   if(system(command)!=0||
      !selected_output("SELECTED 42 GENNEW")||
-     !selected_output("OBJECT READ OID")) return 136;
+     !selected_output("SEEK OBJECT OID")) return 136;
  }
  {
   char x[41];
