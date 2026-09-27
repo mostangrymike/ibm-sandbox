@@ -155,7 +155,6 @@ static const unsigned char typascii[5][7]={
  {0x62,0x6c,0x6f,0x62,0,0,0},
  {0x74,0x61,0x67,0,0,0,0}
 };
-static const char *typenames[5]={"","commit","tree","blob","tag"};
 /* Return byte count including binary NUL. No sprintf/native charset. */
 static int canonical_head(int type,unsigned long n,
                           unsigned char *dst) {
@@ -418,7 +417,7 @@ static int ext_lookup(const unsigned char *want) {
    if(hi<0||lo<0) goto bad;
    oid[k]=(unsigned char)((hi<<4)|lo);
   }
-  if(hexid[40]) goto bad;
+  if(strlen(hexid)!=40) goto bad;
   if(n==0) {
    if(!stage_line(f,line,sizeof line)||line[0]) goto bad;
   }
