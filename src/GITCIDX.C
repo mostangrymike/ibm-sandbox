@@ -653,6 +653,62 @@ static int sidx_audit(void) {
  printf("SEEK AUDIT VERIFIED UNIQUE %lu\n",sidx_count);
  return 0;
 }
+/* One sequential pass: rehash all bodies and validate seek cookies. */
+static int sidx_fast_audit(void) {
+ FILE *f;
+ char line[128],oidtext[41],extra;
+ unsigned char oid[20],digest[20],seen[1808];
+ unsigned long j,num,n,k,take,m,matched=0;
+ long cookie;
+ int typ,fields,hi,lo,pos;
+ if(sidx_read()!=0) return 8;
+ memset(seen,0,sizeof seen);
+ f=fopen("dd:STGIN","r");
+ if(!f) {perror("STGIN");return 8;}
+ for(j=1;j<=IDXCAP;j++) {
+  cookie=ftell(f);
+  if(cookie<0||!idx_line(f,line,sizeof line)) goto bad;
+  fields=sscanf(line,"OBJ %lu %d %lu %40s %c",
+                &num,&typ,&n,oidtext,&extra);
+  if(fields!=4||num!=j||typ<1||typ>4||
+     n>IDXSIZE||!idx_hex(oidtext,oid)) goto bad;
+  pos=sidx_locate(oid);
+  if(pos<0||sidx[pos].type!=typ||
+     sidx[pos].size!=n||sidx[pos].number>j) goto bad;
+  if(sidx[pos].number==j) {
+   if(seen[pos]||sidx[pos].offset!=cookie) goto bad;
+   seen[pos]=1;matched++;
+  }
+  if(n==0) {
+   if(!idx_line(f,line,sizeof line)||line[0]) goto bad;
+  }
+  for(k=0;k<n;k+=take) {
+   take=n-k;if(take>32) take=32;
+   if(!idx_line(f,line,sizeof line)||
+      strlen(line)!=2*take) goto bad;
+   for(m=0;m<take;m++) {
+    hi=idx_nib((unsigned char)line[2*m]);
+    lo=idx_nib((unsigned char)line[2*m+1]);
+    if(hi<0||lo<0) goto bad;
+    idx_body[k+m]=(unsigned char)((hi<<4)|lo);
+   }
+  }
+  if(!idx_hash(typ,idx_body,n,digest)||
+     memcmp(digest,oid,20)!=0) goto bad;
+  if(j%256==0) printf("FAST AUDIT PROGRESS %lu\n",j);
+ }
+ if(idx_line(f,line,sizeof line)||ferror(f)) goto bad;
+ if(fclose(f)!=0) return 8;
+ if(matched!=sidx_count) {
+  puts("FAST AUDIT COVERAGE FAIL");return 8;
+ }
+ printf("FAST AUDIT VERIFIED 1808 UNIQUE %lu\n",matched);
+ return 0;
+bad:
+ printf("FAST AUDIT FAIL OBJ %lu\n",j);
+ fclose(f);
+ return 8;
+}
 /* Confirm both independent index formats name the same objects. */
 static int idx_pair(void) {
  unsigned long j;
@@ -670,7 +726,7 @@ static int idx_pair(void) {
   }
  }
  /* SVAUDIT reopens STGIN and hashes each selected body. */
- if(sidx_audit()!=0) return 8;
+ if(sidx_fast_audit()!=0) return 8;
  printf("PAIR VERIFIED UNIQUE %lu\n",idx_unique);
  return 0;
 }
@@ -680,6 +736,8 @@ int main(int argc,char **argv) {
   return idx_self();
  if(argc==2&&strcmp(argv[1],"PAIR")==0)
   return idx_pair();
+ if(argc==2&&strcmp(argv[1],"SFAST")==0)
+  return sidx_fast_audit();
  if(argc==2&&strcmp(argv[1],"SVAUDIT")==0)
   return sidx_audit();
  if(argc==2&&strcmp(argv[1],"SBUILD")==0)
@@ -713,6 +771,6 @@ int main(int argc,char **argv) {
   return idx_find(query);
  }
  puts("GITCIDX SELF BUILD CHECK AUDIT FIND GET");
- puts("GITCIDX SBUILD SCHECK SGET SVAUDIT PAIR");
+ puts("GITCIDX SBUILD SCHECK SGET SVAUDIT SFAST PAIR");
  return 4;
 }
