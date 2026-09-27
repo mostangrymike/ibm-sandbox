@@ -60,6 +60,8 @@ def main():
     forward = make_pack((second, first))
     wrong_size = make_pack((first, refdelta(oid(b"abc"),
                             bytes((4, 4, 0x90, 3, 1, ord("d"))))))
+    external = make_pack((second,))
+    external_missing = make_pack((refdelta(oid(b"missing"), delta1),))
     wrong_sha = good[:-1] + bytes((good[-1] ^ 1,))
     for name, pack in (
         ("REFPACK.PACK", good),
@@ -67,11 +69,24 @@ def main():
         ("REFFWD.PACK", forward),
         ("REFSIZE.PACK", wrong_size),
         ("REFSHA.PACK", wrong_sha),
+        ("XPACK.PACK", external),
+        ("XBAD.PACK", external_missing),
     ):
         write_records(folder / name, pack)
         if name == "REFPACK.PACK":
             (folder / "REFPACK.bin").write_bytes(pack)
         print(name, len(pack), "bytes")
+    abc_hex = oid(b"abc").hex().upper()
+    (folder / "EXTBASE.DATA").write_text(
+        "OBJ 1 3 3 " + abc_hex + "\\n616263\\n", encoding="ascii"
+    )
+    (folder / "EXTBAD.DATA").write_text(
+        "OBJ 1 3 3 " + abc_hex + "\\n616264\\n", encoding="ascii"
+    )
+    (folder / "EXTMISS.DATA").write_text(
+        "OBJ 1 3 3 " + oid(b"other").hex().upper()
+        + "\\n6F74686572\\n", encoding="ascii"
+    )
     print("OID ABC", oid(b"abc").hex().upper())
     print("OID ABCD", oid(b"abcd").hex().upper())
     print("OID ABCDE", oid(b"abcde").hex().upper())
