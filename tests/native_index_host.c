@@ -185,7 +185,7 @@ int main(void) {
   /* An interrupted manifest write cannot authorize a new gen. */
   if(rename("dd:C1GEN","held-new-gen")!=0) return 114;
   f=fopen("dd:C1GEN","w");
-  if(!f||fputs("GEN2 1808 8\\nDIGEST ",f)==EOF||
+  if(!f||fputs("GEN2 1808 8\nDIGEST ",f)==EOF||
      fclose(f)!=0) return 115;
   if(system("./native_recovery SELECT GENOLD GENNEW"
             " > recovery.log")!=0||
