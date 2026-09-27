@@ -108,9 +108,9 @@ int main(void) {
     link("dd:IDXIN","dd:C0IDX")!=0||
     link("dd:FIDXIN","dd:C0SEEK")!=0||
     link("dd:GENIN","dd:C0GEN")!=0||
-    link("dd:STGIN","dd:C1STG")!=0||
-    link("dd:IDXIN","dd:C1IDX")!=0||
-    link("dd:FIDXIN","dd:C1SEEK")!=0||
+    !copy_host_file("dd:STGIN","dd:C1STG")||
+    !copy_host_file("dd:IDXIN","dd:C1IDX")||
+    !copy_host_file("dd:FIDXIN","dd:C1SEEK")||
     !copy_host_file("dd:GENIN","dd:C1GEN")) return 81;
  if(!gen_digest(digest)) return 82;
  {
@@ -134,6 +134,32 @@ int main(void) {
            " > recovery.log")==0||
     !selected_output("NO FULLY VERIFIED GENERATION")) return 88;
  if(link("dd:GENIN","dd:C0GEN")!=0) return 89;
+ /* A newer copy with changed object bytes must never be selected. */
+ if(!copy_host_file("dd:GENIN","dd:C1GEN")) return 90;
+ f=fopen("dd:C1STG","r+b");
+ if(!f||!fgets(line,sizeof line,f)) return 91;
+ start=ftell(f);old=fgetc(f);
+ if(old==EOF||fseek(f,start,SEEK_SET)!=0||
+    fputc(old=='0'?'1':'0',f)==EOF||
+    fclose(f)!=0) return 92;
+ if(system("./native_recovery SELECT GENOLD GENNEW"
+           " > recovery.log")!=0||
+    !selected_output("RECOVERED 41 GENOLD")) return 93;
+ if(!copy_host_file("dd:STGIN","dd:C1STG")) return 94;
+ /* Truncated newer seek index fails full GENCHECK, not just parsing. */
+ if(remove("dd:C1SEEK")!=0) return 95;
+ f=fopen("dd:C1SEEK","wb");
+ if(!f||fputs("SIDX2 1808 8\n",f)==EOF||
+    fclose(f)!=0) return 96;
+ if(system("./native_recovery SELECT GENOLD GENNEW"
+           " > recovery.log")!=0||
+    !selected_output("RECOVERED 41 GENOLD")) return 97;
+ if(!copy_host_file("dd:FIDXIN","dd:C1SEEK")) return 98;
+ if(remove("dd:C1IDX")!=0) return 99;
+ if(system("./native_recovery SELECT GENOLD GENNEW"
+           " > recovery.log")!=0||
+    !selected_output("RECOVERED 41 GENOLD")) return 100;
+
 
  /* A header mutation is rejected; restoring it passes. */
  f=fopen("dd:GENIN","r+b");
