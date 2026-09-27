@@ -44,6 +44,14 @@ done
 # Native full PACK integration (host zlib only, not CMS inflater).
 python3 "$root/tests/make-native-ref-pack.py" "$tmp" > "$tmp/ref-fixtures.log"
 # Independently ask Git to index and reconstruct the same REF PACK.
+git init -q "$tmp/forwardrepo"
+git -C "$tmp/forwardrepo" index-pack --stdin < "$tmp/FCHAIN.bin" \
+    > "$tmp/git-index-forward.log"
+for blob in abc abcd abcde; do
+ oid=$(printf %s "$blob" | git hash-object --stdin)
+ git -C "$tmp/forwardrepo" cat-file blob "$oid" > "$tmp/from-forward"
+ printf %s "$blob" | cmp - "$tmp/from-forward"
+done
 git init -q "$tmp/packrepo"
 git -C "$tmp/packrepo" index-pack --stdin < "$tmp/REFPACK.bin" \
     > "$tmp/git-index-ref.log"
@@ -86,6 +94,21 @@ ${CC:-cc} -x c -std=c89 -O2 -Wall -Wextra \
   exit 1
  fi
  grep -q '^FAIL NATIVE PACK SHA1$' ref-negative.log
+ cp FCHAIN.PACK 'dd:PACKIN'
+ ./native_ref_pack_host FPACK > f-positive.log
+ grep -q '^PASS 3 OBJECTS NEXT OFFSET ' f-positive.log
+ grep -q '^REF DELTAS APPLIED 2$' f-positive.log
+ grep -q '^FORWARD REF OBJ 2 TYPE 3 SIZE 4 OID ' f-positive.log
+ grep -q '^FORWARD REF OBJ 1 TYPE 3 SIZE 5 OID ' f-positive.log
+ cp REFFWD.PACK 'dd:PACKIN'
+ ./native_ref_pack_host FPACK > f-short.log
+ grep -q '^REF DELTAS APPLIED 1$' f-short.log
+ cp REFBAD.PACK 'dd:PACKIN'
+ if ./native_ref_pack_host FPACK > f-negative.log; then
+  echo 'Unexpected forward acceptance without required base' >&2
+  exit 1
+ fi
+ grep -q '^UNRESOLVED FORWARD REF COUNT 2$' f-negative.log
  cp XPACK.PACK 'dd:PACKIN'
  cp EXTBASE.DATA 'dd:EXTIN'
  ./native_ref_pack_host XPACK > x-positive.log
@@ -132,6 +155,15 @@ external_oid=$(sed -n 's/^OID OBJ 1 TYPE 3 SIZE 4 //p' \
 expected_external=$(printf abcd | git hash-object --stdin)
 test "$(printf %s "$external_oid" | tr 'A-F' 'a-f')" = \
     "$expected_external"
+for pair in '1:abcde' '2:abcd'; do
+ number=${pair%%:*}; body=${pair##*:}
+ expected=$(printf %s "$body" | git hash-object --stdin)
+ got=$(sed -n "s/^FORWARD REF OBJ $number TYPE 3 SIZE [0-9]* OID //p" \
+     "$tmp/f-positive.log")
+ test "$(printf %s "$got" | tr 'A-F' 'a-f')" = "$expected"
+done
+cat "$tmp/f-positive.log"
+echo 'HOST FORWARD SAME-PACK REF CHAIN PASSED'
 cat "$tmp/x-positive.log"
 echo 'HOST EXTERNAL REF BASE POSITIVE AND NEGATIVE GATES PASSED'
 cat "$tmp/ref-positive.log"
