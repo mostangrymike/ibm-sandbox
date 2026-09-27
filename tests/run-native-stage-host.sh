@@ -24,7 +24,12 @@ ${CC:-cc} -x c -std=c89 -D_POSIX_C_SOURCE=200809L \
     "$root/tests/native_index_host.c"
 (
  cd "$tmp"
- ./native_index_host > index.log
+ ./native_index_host > index.log 2>&1 || {
+  status=$?
+  cat index.log
+  echo "native_index_host failed RC $status" >&2
+  exit "$status"
+ }
 )
 for type in commit tree blob tag; do
  for fixture in ABC EMPTY; do
