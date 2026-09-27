@@ -1495,3 +1495,51 @@ uploaded before the new CMS test; do not confuse host CI success
 with CMS proof or modify existing GITFIX files.
 Mandatory rule: keep autonomous work maximal; stop only when
 real CMS target validation is required, with exact commands.
+
+## 2026-09-26 19:36–19:40 CDT: FORWARD/EXTERNAL REF AND GEN2 PASSED ON CMS
+
+User supplied real target logs. CMSCLNK GITCWALK NAPI compiled cleanly
+(6.06/6.33 s CPU/elapsed); CMSCLNK GITCIDX PLAIN compiled cleanly
+(4.49/4.65 s). FCHAIN PACK A: verified SHA-1
+0F5F312E5E584C32B83488C4AEDF9D2786806884, 114 bytes, 3
+objects. GITCWALK FPACK reconstructed #3 abc OID
+F2BA8F84AB5C1BCE84A7B441CB1959CFC7093B7F, resolved chained
+forward REF #2 abcd OID 85DF50785D62D3B05AB03D9CBF7E4A0B49449730
+then #1 abcde OID 6A8165460570531A1247BD99A73B53A5A6E500D5.
+PASS 3 OBJECTS NEXT OFFSET 94; REF DELTAS APPLIED 2; 0.01/0.04 s.
+XPACK PACK A with EXTBASE DATA A: raw PACK SHA
+0E8A9DC1EE44EF42AC26CE3B81B4CC5519BA9A98, 67 bytes, 1
+object; verified external blob type3 3 bytes, applied 1 REF to abcd
+canonical OID 85DF50785D62D3B05AB03D9CBF7E4A0B49449730,
+0.01/0.02 s. XREAL PACK A with EXTIN GITFIX STAGE A: PACK SHA
+0D53A7E7F292475203B4E6F0C5E3D66837686B19, 68 bytes, 1
+object; independently verified external *actual persisted* first
+commit type1 270 bytes and delta-copy reconstructed the same canonical
+OID 00D8D63229305230C8D37F884CE87F9E1A89468C; 8.05/8.17 s
+(full stage scan). In this user log, standalone XAPPLY and EXTMULT and
+four negative fixture tests were NOT included: do not label those
+individual cases CMS-proven; host suite covers them.
+
+GITCIDX GENWRITE against existing, unchanged 1,808-object GITFIX
+STAGE A, INDEX A (IDX2) and SEEK A (SIDX2): full SFAST verified all
+1,808 unique OIDs and cookies; PAIR verified both indexes, then
+GENERATION SEALED 1808 UNIQUE 1808, total 21.41/21.56 s.
+GENCHECK reopened the manifest through GENIN GITFIX GEN A and
+repeated complete SFAST/PAIR audit with 1,808 unique objects,
+then GENERATION VERIFIED 1808 UNIQUE 1808, 21.42/21.57 s.
+This proves a sealed, self-consistent candidate-generation manifest
+reopened in a separate program invocation in one CMS session, NOT
+across logoff/reboot and NOT atomic active-generation promotion.
+**Preserve existing GITFIX STAGE/INDEX/SEEK/GEN A and historical
+legacy noncanonical GITSTAGE DATA/GITINDEX DATA/GITSEEK INDEX A.**
+No more PACK capture or index rebuild. Issue #2 remains open for
+cross-logon/reboot proof, atomic active-pointer/recovery, combined
+forward OFS-on-unresolved-REF and higher-level native Git integration.
+
+Next useful autonomous performance work: XREAL required 8.17 s to
+scan all external staged records to independently reject duplicate
+OIDs. Existing target-proven SIDX2 cookies enable a separately scoped
+optional direct-seek external REF mode with cryptographic body
+verification, leaving XPACK's conservative full scan intact.
+Mandatory user max-autonomy rule: implement and host-test as much
+as possible; stop only at actual CMS validation with exact commands.
