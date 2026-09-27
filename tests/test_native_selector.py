@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build and test CMS C89 selector parser against the Python protocol."""
 from pathlib import Path
+import os
 import subprocess
 import sys
 import tempfile
@@ -116,6 +117,35 @@ def main():
             ), 8, "GEN2 MANIFEST INVALID FOR SELECTOR")
             assert not output.exists()
         genfile.write_text(manifest, encoding="ascii")
+        # CMS safe path uses explicit STATE, not a lazy dd:SELOUT fopen.
+        state = folder / "STATE"
+        state.write_text(
+            "#!/bin/sh\\n"
+            "if [ -e dd:SELOUT ]; then exit 0; fi\\n"
+            "exit 28\\n",
+            encoding="ascii",
+        )
+        state.chmod(0o755)
+        env = dict(os.environ)
+        env["PATH"] = str(folder) + os.pathsep + env.get("PATH", "")
+        check(subprocess.run(
+            [str(binary), "WRITEGEN", "46", "GENNEW", "GITSEL0"],
+            cwd=folder, env=env, capture_output=True, text=True,
+        ), 0, "SELECTOR WRITTEN 46 GENNEW")
+        assert output.read_text(encoding="ascii") == encode(
+            46, "GENNEW", NEW
+        )
+        check(subprocess.run(
+            [str(binary), "WRITEGEN", "47", "GENNEW", "GITSEL0"],
+            cwd=folder, env=env, capture_output=True, text=True,
+        ), 8, "SELECTOR OUTPUT EXISTS")
+        output.unlink()
+        state.write_text("#!/bin/sh\\nexit 9\\n", encoding="ascii")
+        check(subprocess.run(
+            [str(binary), "WRITEGEN", "47", "GENNEW", "GITSEL0"],
+            cwd=folder, env=env, capture_output=True, text=True,
+        ), 8, "SELECTOR STATE FAILED")
+        assert not output.exists()
         old = encode(41, "GITOLD", OLD)
         new = encode(42, "GITNEW", NEW)
         check(invoke(folder, binary, old, new), 0,
