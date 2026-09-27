@@ -2069,3 +2069,30 @@ generations and rollback selectors. The CMS cleanup is
 PENDING actual output: do not claim deletion before
 GITRUN is run successfully. Mac from src: git pull,
 ./cms-upload.sh GITRUN.EXEC; CMS: GITRUN.
+
+## September 27 13:01 guarded legacy CMS cleanup PASSED
+
+Actual CMS GITRUN completed each prerequisite and final safety
+check. Independent full GITCIDX GENCHECK on both GITFIX and
+M15NEW returned FAST AUDIT VERIFIED 1808 UNIQUE 1808,
+PAIR VERIFIED UNIQUE 1808, GENERATION VERIFIED 1808
+UNIQUE 1808, RC0. GITREC rejected swapped disposable
+M15SL1/M15SL0 slots with two identity mismatch messages,
+NO FULLY VERIFIED GENERATION RC8, then correctly selected
+seq52 M15NEW with digest
+493F0896884B28AC4836B88328629B7E95404B46
+after full 1808-object audit and RC0. The guarded cleanup
+erased the old obsolete noncanonical CMS A-disk files
+GITSTAGE DATA, GITINDEX DATA, GITSEEK INDEX, each
+post-STATE confirmed absent RC28. The runner's final
+STATE checks confirmed all four protected GITFIX files,
+all four M15NEW files, both original GITSEL0/GITSEL1
+PTR files, and both disposable M15SL0/M15SL1 PTR
+files still exist. CPU 64.34s, elapsed 64.82s.
+The original GITPBUF PACK A is also to be preserved;
+it was not touched by the cleanup.
+
+Next continue independent selector protocol hardening
+in one high-density CMS batch against ONLY newly
+allocated temporary pointer fixtures. Never recreate
+old incompatible stage/index/seek or rerun M15 build.
