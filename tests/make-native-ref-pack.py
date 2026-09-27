@@ -78,6 +78,8 @@ def main():
         write_records(folder / name, pack)
         if name == "REFPACK.PACK":
             (folder / "REFPACK.bin").write_bytes(pack)
+        if name == "FCHAIN.PACK":
+            (folder / "FCHAIN.bin").write_bytes(pack)
         print(name, len(pack), "bytes")
     abc_hex = oid(b"abc").hex().upper()
     (folder / "EXTBASE.DATA").write_text(
