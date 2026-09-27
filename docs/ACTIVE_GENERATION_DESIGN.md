@@ -71,3 +71,11 @@ manifest header. The next implementation step is a CMS C89 parser,
 then an explicit read-only candidate verification and controlled
 promotion test using separate disposable generations. Never
 introduce promotion writes against GITFIX during development.
+
+## Native C89 selector reader now committed
+
+`src/GITSEL.C` is a new bounded native C89 reader for the proposed two-slot `SEL1` records. `GITSEL CHECK` reads FILEDEF `SEL0` and `SEL1`, validates the exact record grammar, unsigned 32-bit sequence, CMS-safe generation basename, uppercase 40-digit digest, record length and CRC32. It computes CRC32 over canonical ASCII bytes even when built on EBCDIC CMS. It rejects conflicting slot records with identical sequence numbers.
+
+**CHECK deliberately prints candidates as UNTRUSTED; it does not select an active generation.** The actual generation must independently pass full `GENCHECK` before selection or promotion. This prevents the parser from becoming an unsafe shortcut around the complete 1,808-object audit. Never connect the parser to the protected current GITFIX data as a writer.
+
+`tests/test_native_selector.py` compiles production `src/GITSEL.C` as strict C89 with all warnings as errors, generates records with the independent Python protocol, tests every truncated prefix and checksum/grammar corruption and verifies same-sequence conflict rejection. The complete native staging CI passed: https://github.com/mostangrymike/ibm-sandbox/actions/runs/36329974642 . This is **host-compiled only**; the native reader still needs CMS compilation and its full GENCHECK integration before it can safely select any active generation.
