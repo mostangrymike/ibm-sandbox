@@ -2449,3 +2449,72 @@ GitHub GITRUN remains RC12 safety hold. No more
 independent changes are required for the M20
 functional CATHEX gate; native CMS execution is
 the next genuine proof, once storage is safe.
+
+## September 27 M21 user workflow rule: ALWAYS USE GITRUN
+
+User explicitly resumed CMS testing and reiterated
+"use gitrun remember". For **every CMS test batch**
+use the existing reusable `src/GITRUN.EXEC` name,
+uploading a replacement after each approved GitHub
+edit, then execute `GITRUN` in CMS. DO NOT create
+additional alternate driver names such as GITRCHK
+as the user-facing invocation and DO NOT require
+manual repetition of separate CMS FILEDEF/audit
+commands when they can be combined into GITRUN.
+Continue autonomously with host source and regression
+work until CMS is genuinely required.
+
+To honor this rule, main `src/GITRUN.EXEC` now
+contains M21's read-only, one-upload/one-run CMS
+gate: STATE of both protected GITFIX/M15NEW
+generations, four original selectors, PACK and
+required compiled modules, require fixture
+M15BAD GEN A absent; independently bind and
+GENCHECK both sealed generations (1808 objects
+each); bind existing M15 selector slots and both
+generations, full `GITREC SELECT` seq52; first
+commit canonical OID
+00D8D63229305230C8D37F884CE87F9E1A89468C
+native GET then full CATHEX; simulate missing
+new GEN2 and require fallback older; both
+GEN2s missing require RC8; restore both and
+require full CATHEX again; STATE final protected
+objects and print final success. All file
+operations within M21 GITRUN are reads or
+FILEDEF rebindings. No ERASE, COPYFILE,
+GENWRITE, pointer creation or cleanup.
+Old dangerous M17 cleanup is gone from GitHub.
+The previously prepared alternate GITRCHK.EXEC
+remains historical source but should NOT be
+offered as user's execution name. The companion
+CI guard tests both scripts read-only and all
+required M21 stages. Full native GitHub CI
+passed at
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36358843927 .
+
+Exact next user Mac workflow from local
+ibm-sandbox/src:
+git pull
+./cms-upload.sh GITCIDX.C
+./cms-upload.sh GITREC.C
+./cms-upload.sh GITRUN.EXEC
+Then CMS, with real installed CMSCLNK:
+CMSCLNK GITREC PLAIN
+GITRUN
+Only tell user CMS compile succeeded after
+their actual returned output; host CI cannot
+prove CMS target. The GitHub GET/CATHEX
+features need current GITCIDX.C because
+GITREC.C directly includes that source.
+If CMSCLNK is not installed, diagnose against
+known target GITCLNK EXEC A; do not assume a
+compiler/linker path without actual result.
+Uploading source/EXEC and compilation DO write
+CMS A; the user explicitly requested resumed
+target testing, but do not casually claim
+the prior TRKDE incident has been repaired
+or the /home/admin/vm630/dasd1 forensic
+backup has been performed. Guarded M21
+runtime does no persistent writes and never
+touches M12ATLS ASSEMBLE or any obsolete
+TLS cleanup source.
