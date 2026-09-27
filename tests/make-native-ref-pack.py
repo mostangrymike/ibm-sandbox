@@ -60,6 +60,8 @@ def main():
     forward = make_pack((second, first))
     wrong_size = make_pack((first, refdelta(oid(b"abc"),
                             bytes((4, 4, 0x90, 3, 1, ord("d"))))))
+    forward_chain = make_pack((refdelta(oid(b"abcd"), delta2),
+                               second, first))
     external = make_pack((second,))
     external_missing = make_pack((refdelta(oid(b"missing"), delta1),))
     wrong_sha = good[:-1] + bytes((good[-1] ^ 1,))
@@ -71,6 +73,7 @@ def main():
         ("REFSHA.PACK", wrong_sha),
         ("XPACK.PACK", external),
         ("XBAD.PACK", external_missing),
+        ("FCHAIN.PACK", forward_chain),
     ):
         write_records(folder / name, pack)
         if name == "REFPACK.PACK":
