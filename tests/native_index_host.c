@@ -124,6 +124,19 @@ int main(void) {
  if(system("./native_recovery SELECT GENOLD GENNEW"
            " > recovery.log")!=0||
     !selected_output("SELECTED 42 GENNEW")) return 84;
+ {
+  char x[41];
+  for(k=0;k<20;k++) sprintf(x+2*k,"%02X",digest[k]);
+  if(!write_slot("dd:SEL1",43,"GENOLD",x)) return 101;
+  if(system("./native_recovery SELECT GENOLD GENNEW"
+            " > recovery.log")!=0||
+     !selected_output("SELECTOR SLOT 1 NAME MISMATCH")||
+     !selected_output("SELECTED 41 GENOLD")) return 102;
+  if(!write_slot("dd:SEL1",42,"GENNEW",x)) return 103;
+ }
+ if(system("./native_recovery SELECT GENOLD GENOLD"
+           " > recovery.log")==0) return 104;
+
  f=fopen("dd:C1GEN","r+b");
  if(!f||fputc('X',f)==EOF||fclose(f)!=0) return 85;
  if(system("./native_recovery SELECT GENOLD GENNEW"
