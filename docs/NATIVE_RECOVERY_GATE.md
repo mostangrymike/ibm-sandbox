@@ -210,3 +210,26 @@ confirms STATE RC 0, binds SEL0 and all four C0 input DDs,
 and invokes read-only `GITREC SELECT GITFIX GITBAD`.
 If any gate fails, it stops. Reuse this exact GITRUN filename
 for later milestone batches by editing it on GitHub first.
+
+## September 27 native CMS: first valid selector target-proven
+
+GITRUN ran the REXX RC-28 existence check and successfully issued
+GITSEL WRITEGEN 41 GITFIX GITSEL0 ABSENT28, then checked
+STATE GITSEL0 PTR A RC 0. GITREC SELECT GITFIX GITBAD
+ran the real complete audit:
+FAST AUDIT VERIFIED 1808 UNIQUE 1808,
+PAIR VERIFIED UNIQUE 1808, GENERATION VERIFIED 1808 UNIQUE 1808.
+It returned SELECTED 41 GITFIX with DIGEST
+493F0896884B28AC4836B88328629B7E95404B46 and RC 0.
+The SEL1 open diagnostic was expected because slot one was absent.
+The protected GITFIX stage, IDX2, SIDX2 and GEN2 were not modified.
+
+The reused src/GITRUN.EXEC now performs the second target gate:
+check old selector exists and GITSEL1 PTR A is absent;
+clear every C1 candidate FILEDEF; write only disposable
+GITSEL1 PTR A with sequence 42 and nonexistent GITBAD name
+using WRITEGEN ... GITSEL1 ABSENT28; then bind SEL1 and
+invoke full GITREC SELECT GITFIX GITBAD. Expected result
+is RECOVERED 41 GITFIX with the same digest and RC 0.
+The second target gate has not yet been observed on CMS.
+No active promotion, writer locking or reboot atomicity is claimed.
