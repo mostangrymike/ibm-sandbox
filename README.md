@@ -218,3 +218,20 @@ forward PACK interoperability. **These new modes still require
 actual CMS validation and are not yet a transactional object store.**
 The exact nondestructive target gates are in
 `docs/REF_RESOLUTION.md` and `docs/GENERATION_RECOVERY.md`.
+
+## Real CMS forward/external REF and GEN2 passed
+
+The optional new source is now target-proven for chained forward
+same-PACK REF_DELTA (`FPACK`, two resolved forward references);
+external REF base lookup from both a synthetic three-byte blob and
+actual persisted `GITFIX STAGE A` (a 270-byte commit), both producing
+Git's correct canonical OIDs; and GEN2 sealed generation creation
+and independent revalidation in a separate invocation. Both GENWRITE
+and GENCHECK fully hashed all 1,808 objects and reconciled both
+canonical indexes with the stored seek cookies. They each completed
+in about 21.6 seconds elapsed on CMS. The stage and indexes remained
+unchanged. GEN2 is a candidate completion proof, not atomic promotion
+or reboot recovery. Future work includes faster indexed external REF
+lookup, cross-logon/reboot durability tests and safe active-generation
+selection; see docs/REF_RESOLUTION.md and
+ docs/GENERATION_RECOVERY.md.
