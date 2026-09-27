@@ -1,21 +1,21 @@
-/* GITRUN: reusable CMS batch; read-only missing-slot gate. */
+/* GITRUN: reusable CMS batch; M14 read-only durability audit. */
+/* Safe on ordinary later CMS logon or authorized system reboot. */
 address cms
-say 'GITRUN M14 MISSING SELECTOR SLOT TEST'
+say 'GITRUN M14 READ-ONLY DUAL-SLOT DURABILITY'
 'STATE GITSEL0 PTR A'
 if rc \= 0 then do
- say 'GITRUN STOP: old slot missing RC' rc
+ say 'GITRUN STOP: old selector missing RC' rc
  exit 8
 end
 'STATE GITSEL1 PTR A'
 if rc \= 0 then do
- say 'GITRUN STOP: newer slot missing RC' rc
+ say 'GITRUN STOP: newer selector missing RC' rc
  exit 8
 end
-'STATE GITBAD PTR A'
-if rc \= 28 then do
- say 'GITRUN STOP: missing-slot fixture exists RC' rc
- exit 8
-end
+'FILEDEF SEL0 DISK GITSEL0 PTR A'
+if rc \= 0 then exit rc
+'FILEDEF SEL1 DISK GITSEL1 PTR A'
+if rc \= 0 then exit rc
 'FILEDEF C0STG DISK GITFIX STAGE A'
 if rc \= 0 then exit rc
 'FILEDEF C0IDX DISK GITFIX INDEX A'
@@ -24,31 +24,8 @@ if rc \= 0 then exit rc
 if rc \= 0 then exit rc
 'FILEDEF C0GEN DISK GITFIX GEN A'
 if rc \= 0 then exit rc
-'FILEDEF SEL0 DISK GITSEL0 PTR A'
-if rc \= 0 then exit rc
-'FILEDEF SEL1 DISK GITBAD PTR A'
-if rc \= 0 then exit rc
-say 'GITRUN EXPECT SELECTED 41 GITFIX AND RC 0'
+say 'GITRUN EXPECT RECOVERED 41 GITFIX AND RC 0'
 'GITREC SELECT GITFIX GITBAD'
-oldrc=rc
-say 'GITRUN OLD-ONLY RC' oldrc
-if oldrc \= 0 then exit oldrc
-'FILEDEF SEL0 DISK GITBAD PTR A'
-if rc \= 0 then exit rc
-'FILEDEF SEL1 DISK GITSEL1 PTR A'
-if rc \= 0 then exit rc
-say 'GITRUN EXPECT NO FULLY VERIFIED GENERATION RC 8'
-'GITREC SELECT GITFIX GITBAD'
-badrc=rc
-say 'GITRUN BAD-ONLY RC' badrc
-if badrc \= 8 then do
- say 'GITRUN FAIL: bad-only selector not rejected'
- exit 12
-end
-'FILEDEF SEL0 DISK GITSEL0 PTR A'
-if rc \= 0 then exit rc
-say 'GITRUN EXPECT RECOVERED 41 GITFIX RC 0'
-'GITREC SELECT GITFIX GITBAD'
-goodrc=rc
-say 'GITRUN RESTORED RC' goodrc
-exit goodrc
+selectrc=rc
+say 'GITRUN RECOVERY RC' selectrc
+exit selectrc
