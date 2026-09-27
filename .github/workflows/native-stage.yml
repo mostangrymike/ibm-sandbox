@@ -17,6 +17,7 @@ on:
       - 'tests/test_active_generation_selector.py'
       - 'src/GITSEL.C'
       - 'tests/test_native_selector.py'
+      - 'tests/native_selector_verify_host.c'
       - 'tests/run-native-stage-host.sh'
       - '.github/workflows/native-stage.yml'
   pull_request:
@@ -35,6 +36,7 @@ on:
       - 'tests/test_active_generation_selector.py'
       - 'src/GITSEL.C'
       - 'tests/test_native_selector.py'
+      - 'tests/native_selector_verify_host.c'
       - 'tests/run-native-stage-host.sh'
       - '.github/workflows/native-stage.yml'
 
