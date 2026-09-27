@@ -186,3 +186,27 @@ missing for each new selector before binding SELOUT.
 For slot zero, define all four inputs including C0IDX;
 none of STAGE/INDEX/SEEK/GEN may be output FILEDEFs.
 Do not rerun GENWRITE or any index build.
+
+## September 27 CMS runtime correction: REXX owns the STATE gate
+
+The target showed that GCCCMS C `system("STATE GITSEL0 PTR A")`
+returns 0 even when interactive CMS and REXX `STATE` report
+RC 28. Calling `fopen("dd:SELOUT","r")` before creating a file
+also falsely reports an existing file. Thus neither C-level
+probe can safely guard selector creation on this runtime.
+
+The new CMS test path requires `GITRUN.EXEC`, which executes
+`STATE GITSEL0 PTR A` with `ADDRESS CMS` and accepts only
+RC 28. It then binds SELOUT to that same new filename and calls
+`GITSEL WRITEGEN 41 GITFIX GITSEL0 ABSENT28`. The final
+argument is an explicit attestation of the REXX-side check;
+GITSEL rejects the named-slot form without it. This is only
+a guarded single-writer test, NOT an independent atomic
+create-if-absent guarantee. Never run it concurrently and
+never run it against the existing verified GITFIX data files.
+
+After fresh compilation, GITRUN first creates the new slot,
+confirms STATE RC 0, binds SEL0 and all four C0 input DDs,
+and invokes read-only `GITREC SELECT GITFIX GITBAD`.
+If any gate fails, it stops. Reuse this exact GITRUN filename
+for later milestone batches by editing it on GitHub first.
