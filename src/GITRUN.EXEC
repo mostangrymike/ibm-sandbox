@@ -1,15 +1,14 @@
-/* GITRUN: reusable CMS batch; read-only M14 persistence audit. */
-/* Run after ordinary logoff/logon or authorized future reboot. */
+/* GITRUN: reusable CMS batch; M14 fail-closed identity gate. */
 address cms
-say 'GITRUN M14 READ-ONLY DUAL-SLOT RECOVERY'
+say 'GITRUN M14 SELECTOR IDENTITY NEGATIVE TEST'
 'STATE GITSEL0 PTR A'
 if rc \= 0 then do
- say 'GITRUN STOP: old selector missing RC' rc
+ say 'GITRUN STOP: slot zero missing RC' rc
  exit 8
 end
 'STATE GITSEL1 PTR A'
 if rc \= 0 then do
- say 'GITRUN STOP: newer selector missing RC' rc
+ say 'GITRUN STOP: slot one missing RC' rc
  exit 8
 end
 'FILEDEF SEL0 DISK GITSEL0 PTR A'
@@ -24,8 +23,16 @@ if rc \= 0 then exit rc
 if rc \= 0 then exit rc
 'FILEDEF C0GEN DISK GITFIX GEN A'
 if rc \= 0 then exit rc
-say 'GITRUN EXPECT RECOVERED 41 GITFIX'
+say 'GITRUN EXPECT TWO NAME MISMATCHES AND RC 8'
+'GITREC SELECT GITBAD GITFIX'
+badrc=rc
+say 'GITRUN NEGATIVE RC' badrc
+if badrc \= 8 then do
+ say 'GITRUN FAIL: incorrect mapping was not rejected'
+ exit 12
+end
+say 'GITRUN EXPECT RECOVERED 41 GITFIX AND RC 0'
 'GITREC SELECT GITFIX GITBAD'
-selectrc=rc
-say 'GITRUN RECOVERY RC' selectrc
-exit selectrc
+goodrc=rc
+say 'GITRUN POSITIVE RC' goodrc
+exit goodrc
