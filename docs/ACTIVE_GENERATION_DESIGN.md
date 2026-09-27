@@ -113,3 +113,42 @@ See [the exact next target gate](NATIVE_RECOVERY_GATE.md), which
 uses the actual GEN2 DIGEST from the protected GITFIX generation
 and only two disposable selector files. No original stage, index,
 seek or manifest file is modified.
+
+## M14 CMS-proven recovery and M15 host interruption matrix
+
+September 27 native CMS tests completed the real GITREC
+selector recovery gate on GITFIX: valid older seq41, invalid
+newer seq42, full 1808-object SFAST/PAIR/GENCHECK,
+failed name matching, absent old GEN2, invalid SEL1
+content and both single-slot absence cases. A correct
+restored mapping recovered GITFIX and its canonical
+DIGEST 493F0896884B28AC4836B88328629B7E95404B46.
+All target tests were nondestructive to GITFIX and
+existing selector records. Cross-logon durability for
+the selectors themselves still requires confirmation,
+although GITFIX GEN2 independently survived logoff/logon.
+
+M15 host regression extends tests/native_index_host.c,
+which compiles and runs the **actual production GITREC.C**
+against separately generated full indexed fixture files.
+A valid old candidate stays present. Simulated interrupted
+promotion probes five shortened candidate selector prefixes,
+then independently withholds each of the four new candidate
+files (stage, index, seek, GEN2), and simulates an incomplete
+new GEN2 manifest. Every incomplete new candidate must
+fall back through actual full GENCHECK to the old verified
+candidate. Only the fully restored candidate with an intact
+selector can be selected as new. Fixture names, staged data
+and slot records are host disposable; this is not a CMS
+file-write atomicity or concurrent writer proof.
+
+**Promotion remains disabled.** The currently tested
+REXX STATE RC28 / ABSENT28 gate only protects the
+controlled single-writer first creation of a new selector.
+It is not an atomic create-if-absent or lock. True active
+promotion needs an exclusively owned writer protocol,
+immutable staged generations, a verified independent
+second candidate, new unused slot storage and
+interrupted-write testing on CMS before production use.
+Never reuse or overwrite GITSEL0/GITSEL1 PTR A or the
+four protected GITFIX generation files.
