@@ -1340,3 +1340,77 @@ original CMS modules and GITPBUF PACK A are already present. Docs:
 docs/CANONICAL_OIDS.md and docs/NATIVE_INDEX.md. Issue #2 remains
 open until corrected full real-PACK migration and later external/
 forward REF plus generation recovery are target-proven.
+
+## 2026-09-26 18:50–18:54 CDT: full canonical GITFIX rebuild passed except slow SVAUDIT
+
+User supplied actual corrected 1,808-object offline migration output.
+`GITCWALK STAGE` read unchanged GITPBUF PACK A: SHA-1
+8C92E274ECA84B797F8925A6082915DD6CCDE196, 340,027 bytes,
+1,808 objects, 1,117 OFS_DELTA applied, zero REF_DELTA, final
+offset 340007, 1,808 Git-canonical OIDs computed; wrote new
+GITFIX STAGE A. 25.16/25.58 seconds CPU/elapsed.
+Canonical first commit #1 OID
+00D8D63229305230C8D37F884CE87F9E1A89468C, type 1/270 bytes.
+Object #2 blob 1841 OID
+01FC0AF6E08B17016283D86F94320EE91CDEF0E0.
+Object #3 tree 139 OID
+039DFF056096A2239B7D7839DE12200104BADE33.
+Last tree #1808 OID
+EB37E3F23FF4FC137D715D71A711D3B7632D75F2,
+type 2/5224 bytes. `GITCWALK VERIFY` independently read back
+and rehashed all 1,808 new GITFIX stage records, including the
+correct first/last OIDs, in 22.37/22.57 CPU/elapsed.
+
+`GITCIDX BUILD` wrote GITFIX INDEX A, 1,808 UNIQUE in
+6.86/6.94 seconds. CHECK twice verified 1,808 UNIQUE,
+0.13/0.14 and 0.15/0.16. AUDIT independently verified
+all staged bodies and 1,808 unique index entries in
+20.86/20.99 seconds. `SBUILD` wrote the new SIDX2
+GITFIX SEEK A, 1,808 UNIQUE in 7.29/7.39 seconds.
+`SCHECK` verified all 1,808 UNIQUE in 0.14/0.15.
+`SVAUDIT` printed `SEEK AUDIT PROGRESS 256` and
+user reported stalled/slow. The transcript contains NO completion
+marker/return code for SVAUDIT; do NOT claim target SVAUDIT passed.
+There is no evidence of stage or index corruption: everything
+up to the SVAUDIT invocation passed.
+
+Source inspection diagnosed slow audit: old SVAUDIT invoked
+sidx_get 1,808 times, each reopening/closing STGIN; this is
+unnecessary and especially expensive on CMS variable records.
+Independent fixes made in GitHub source after user's installed build:
+1. Reusable sidx_read_at(FILE*,OID) primitive: normal SGET still
+opens/closes its own stream, and SVAUDIT opens STGIN only ONCE,
+then fseeks and rehashes all unique objects.
+2. New `GITCIDX SFAST` reads STGIN sequentially once, rehashes
+all 1,808 objects, cross-checks descriptor metadata and compares
+each unique entry's saved ftell cookie to the actual reopened
+stream position, requiring full SIDX2 coverage. This removes
+both 1,808 repeated opens and 1,808 repeated random fseeks
+while checking the real seek-cookie values.
+3. `GITCIDX PAIR` compares complete IDX2 vs SIDX2 descriptor
+sets then invokes SFAST, avoiding the expensive old SVAUDIT path.
+Original separate SGET remains intact. Host regression asserts
+SFAST, SVAUDIT and PAIR use only ONE STGIN fopen each, tests
+1,808 synthetic staged entries, stale/mismatched indexes,
+corrupted contents and recovery. Full CI PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36281295118 .
+All new audit code is HOST-tested, NOT CMS target-validated yet.
+
+For current user execution: If old SVAUDIT is still active,
+CMS PA1 can interrupt its READ-ONLY work. The already complete
+GITFIX STAGE/INDEX/SEEK files are unaffected; do not rerun
+PACK STAGE or index BUILD. Next actual CMS gate is Mac git pull,
+upload current absolute-path src/GITCIDX.C using the existing
+single c3270 cms-upload.sh. CMS `CMSCLNK GITCIDX PLAIN` before
+reissuing FILEDEFs. Define STGIN GITFIX STAGE A, IDXIN
+GITFIX INDEX A, FIDXIN GITFIX SEEK A; run
+`GITCIDX SFAST` (expected FAST AUDIT VERIFIED 1808 UNIQUE 1808),
+`GITCIDX PAIR` (expected PAIR VERIFIED UNIQUE 1808),
+`GITCIDX SGET 00D8D63229305230C8D37F884CE87F9E1A89468C`
+and `GITCIDX SGET EB37E3F23FF4FC137D715D71A711D3B7632D75F2`.
+Observe actual CMS elapsed for SFAST/PAIR; do not predict.
+Keep old GITSTAGE DATA A, GITINDEX DATA A (IDX1), GITSEEK
+INDEX A (SIDX1) as legacy snapshots. Preserve correct new
+GITFIX files. After SFAST/PAIR target proof, continue with
+external/forward REF and safe generation/reboot recovery;
+issue #2 remains open. Mandatory max-work-per-turn rule active.
