@@ -13,6 +13,9 @@ int gitcapi(unsigned long *p) {
  (void)p;
  return 8; /* Inflater is unused by isolated staging tests. */
 }
+static const char *host_types[5]={
+ "","commit","tree","blob","tag"
+};
 int STAGE_HOST_ENTRY(void) {
  static unsigned char abc[]={'a','b','c'};
  static unsigned char xyz[]={'x','y','z'};
@@ -29,11 +32,11 @@ int STAGE_HOST_ENTRY(void) {
  putchar('\n');
  for(i=1;i<=4;i++) {
   if(!object_oid((int)i,abc,3,abc_oid)) return 20;
-  printf("HOST OID %s ABC ",typenames[i]);
+  printf("HOST OID %s ABC ",host_types[i]);
   for(j=0;j<20;j++) printf("%02x",abc_oid[j]);
   putchar('\n');
   if(!object_oid((int)i,abc,0,abc_oid)) return 21;
-  printf("HOST OID %s EMPTY ",typenames[i]);
+  printf("HOST OID %s EMPTY ",host_types[i]);
   for(j=0;j<20;j++) printf("%02x",abc_oid[j]);
   putchar('\n');
  }
