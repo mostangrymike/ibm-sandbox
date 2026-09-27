@@ -59,12 +59,17 @@ int git_sel_verify(const char *name,const char *digest) {
  */
 static int rec_tree_mode(const unsigned char *mode,
                          unsigned long n) {
- static const char *valid[]={
-  "100644","100755","120000","160000","40000"
+ static const unsigned char valid[5][6]={
+  {0x31,0x30,0x30,0x36,0x34,0x34},
+  {0x31,0x30,0x30,0x37,0x35,0x35},
+  {0x31,0x32,0x30,0x30,0x30,0x30},
+  {0x31,0x36,0x30,0x30,0x30,0x30},
+  {0x34,0x30,0x30,0x30,0x30,0x00}
  };
+ static const unsigned long lengths[5]={6,6,6,6,5};
  unsigned int i;
  for(i=0;i<sizeof valid/sizeof valid[0];i++)
-  if(strlen(valid[i])==(size_t)n&&
+  if(lengths[i]==n&&
      memcmp(mode,valid[i],(size_t)n)==0) return 1;
  return 0;
 }
@@ -73,16 +78,17 @@ static int rec_tree_walk(unsigned long n,int emit) {
  char modes[7];
  while(at<n) {
   mstart=at;
-  while(at<n&&idx_body[at]!=' '&&at-mstart<=6) at++;
+  while(at<n&&idx_body[at]!=0x20&&at-mstart<=6) at++;
   mlen=at-mstart;
   if(mlen<5||mlen>6||at==n||
      !rec_tree_mode(idx_body+mstart,mlen)) return 0;
-  memcpy(modes,idx_body+mstart,(size_t)mlen);
+  for(j=0;j<mlen;j++)
+   modes[j]=(char)('0'+idx_body[mstart+j]-0x30);
   modes[mlen]=0;
   at++;
   nstart=at;
   while(at<n&&idx_body[at]!=0) {
-   if(idx_body[at]=='/') return 0;
+   if(idx_body[at]==0x2f) return 0;
    at++;
   }
   nlen=at-nstart;
