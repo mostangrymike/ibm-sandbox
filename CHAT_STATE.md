@@ -2328,3 +2328,53 @@ No real CMS or Hercules DASD contents have
 been modified by this work. GitHub GITRUN
 remains deliberately safety-disabled,
 and the old CMS-uploaded GITRUN must not run.
+
+## M18 production-facing selected-generation GET — GitHub CI GREEN
+
+User explicitly said "don't get sidetracked on this, continue
+with project follow all rules." Developed actual native
+Git functionality independently of live CMS storage and
+without attempting any CMS A writes. Current main source
+`src/GITREC.C` implements
+`GITREC GET C0NAME C1NAME OID40`, extending existing
+real-CMS-proven read-only SELECT. GET validates the OID
+hex before any verification, applies identical identity,
+sequence/conflict and fallback rules, full-audits the
+selected candidate's GEN2 via existing native gen_check,
+then opens only that verified candidate's bound SIDX2
+seek index and stage through sidx_read/sidx_get. It
+independently rehashes the requested object, returning
+`SEEK OBJECT OID ... TYPE ... SIZE ... PREFIX ...`.
+Missing OID returns RC4, invalid OID returns RC4 and
+no complete verified generation returns RC8. It is
+READ-ONLY and prints only 16-byte prefix, not yet a
+complete object materialization/API.
+
+Extended `tests/native_index_host.c` using real compiled
+production GITREC against both fully independent 1808-
+record host fixtures. Positive seq42 new GET; missing
+OID and invalid hex rejection; new manifest missing
+falls back old seq41 and GET; both manifests absent
+must fail closed and not print object bytes; restored
+new manifest selects seq42 and GET. Fixed test
+expectations to the actual pre-existing SIDX2 output
+`SEEK OBJECT OID` / `SEEK OID NOT FOUND`.
+Full native-stage and all other GitHub CI PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36356300751 .
+Improved native runner to print host output and exact RC
+on regression failure. docs/ACTIVE_GENERATION_DESIGN.md
+records this integration.
+
+Do NOT ask user to CMS-upload or execute GET while the
+M01RES/dasd1 post-TRKDE filesystem integrity is unresolved:
+the old unsafe CMS GITRUN cleanup EXEC is still in user's
+CMS A disk, and GitHub src/GITRUN.EXEC remains the RC12
+safety hold. The user provided host evidence real 0123
+M01RES file /home/admin/vm630/dasd1, open by Hercules
+PID 879 FD12, file size 768999817, no observed shadows.
+GitHub docs/CMS_DASD_RECOVERY.md has precise verified
+path and offline backup prerequisites. No verified
+offline backup or post-crash file integrity was reported.
+Continue useful native Git source and host tests on GitHub
+without reintroducing native SSL/TLS or risk of A-disk
+writes until safe to resume.
