@@ -124,6 +124,46 @@ int main(void) {
  if(system("./native_recovery SELECT GENOLD GENNEW"
            " > recovery.log")!=0||
     !selected_output("SELECTED 42 GENNEW")) return 84;
+ /* M18: production GET must reverify the selected complete
+  * candidate before using its direct SIDX2 read position.
+  * Neither an untrusted selector nor an unavailable generation
+  * may authorize staged object bytes.
+  */
+ {
+  char oidhex[41],missinghex[41],command[180];
+  for(k=0;k<20;k++)
+   sprintf(oidhex+2*k,"%02X",objoid[0][k]);
+  memset(missinghex,'F',40);missinghex[40]=0;
+  sprintf(command,"./native_recovery GET GENOLD GENNEW %s"
+          " > recovery.log",oidhex);
+  if(system(command)!=0||
+     !selected_output("SELECTED 42 GENNEW")||
+     !selected_output("OBJECT READ OID")) return 127;
+  sprintf(command,"./native_recovery GET GENOLD GENNEW %s"
+          " > recovery.log",missinghex);
+  if(system(command)==0||
+     !selected_output("INDEX OID NOT FOUND")) return 128;
+  if(system("./native_recovery GET GENOLD GENNEW NOTANID"
+            " > recovery.log")==0||
+     !selected_output("GET REQUIRES 40 HEX DIGITS")) return 129;
+  if(rename("dd:C1GEN","held-lookup-gen")!=0) return 130;
+  sprintf(command,"./native_recovery GET GENOLD GENNEW %s"
+          " > recovery.log",oidhex);
+  if(system(command)!=0||
+     !selected_output("RECOVERED 41 GENOLD")||
+     !selected_output("OBJECT READ OID")) return 131;
+  if(rename("held-lookup-gen","dd:C1GEN")!=0) return 132;
+  if(rename("dd:C0GEN","held-old-lookup-gen")!=0||
+     rename("dd:C1GEN","held-new-lookup-gen")!=0) return 133;
+  if(system(command)==0||
+     !selected_output("NO FULLY VERIFIED GENERATION")||
+     selected_output("OBJECT READ OID")) return 134;
+  if(rename("held-old-lookup-gen","dd:C0GEN")!=0||
+     rename("held-new-lookup-gen","dd:C1GEN")!=0) return 135;
+  if(system(command)!=0||
+     !selected_output("SELECTED 42 GENNEW")||
+     !selected_output("OBJECT READ OID")) return 136;
+ }
  {
   char x[41];
   for(k=0;k<20;k++) sprintf(x+2*k,"%02X",digest[k]);
