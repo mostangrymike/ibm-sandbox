@@ -1,0 +1,39 @@
+/* GITRUN: reusable CMS milestone test batch; replace in GitHub each gate. */
+/* M14: compile and diagnose safe selector creation only. */
+address command
+say 'GITRUN M14 SELECTOR DIAGNOSTIC'
+'CMSCLNK GITSEL PLAIN'
+if rc \= 0 then do
+ say 'GITRUN STOP: GITSEL compile RC' rc
+ exit rc
+end
+'CMSCLNK GITREC PLAIN'
+if rc \= 0 then do
+ say 'GITRUN STOP: GITREC compile RC' rc
+ exit rc
+end
+'STATE GITSEL0 PTR A'
+checkrc=rc
+say 'GITRUN SELECTOR STATE RC' checkrc
+if checkrc \= 28 then do
+ say 'GITRUN STOP: selector not confirmed absent'
+ exit 8
+end
+'FILEDEF GENIN DISK GITFIX GEN A'
+if rc \= 0 then exit rc
+'FILEDEF SELOUT CLEAR'
+if rc \= 0 then exit rc
+'FILEDEF SELOUT DISK GITSEL0 PTR A (RECFM V LRECL 80'
+if rc \= 0 then exit rc
+'GITSEL WRITEGEN 41 GITFIX GITSEL0'
+writerc=rc
+say 'GITRUN WRITEGEN RC' writerc
+if writerc \= 0 then do
+ say 'GITRUN STOP: no recovery selection attempted'
+ exit writerc
+end
+'STATE GITSEL0 PTR A'
+say 'GITRUN CREATED SELECTOR STATE RC' rc
+if rc \= 0 then exit 8
+say 'GITRUN SELECTOR CREATED; full recovery next gate'
+exit 0
