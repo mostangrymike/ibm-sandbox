@@ -78,14 +78,14 @@ def main():
         print(name, len(pack), "bytes")
     abc_hex = oid(b"abc").hex().upper()
     (folder / "EXTBASE.DATA").write_text(
-        "OBJ 1 3 3 " + abc_hex + "\\n616263\\n", encoding="ascii"
+        "OBJ 1 3 3 " + abc_hex + "\n616263\n", encoding="ascii"
     )
     (folder / "EXTBAD.DATA").write_text(
-        "OBJ 1 3 3 " + abc_hex + "\\n616264\\n", encoding="ascii"
+        "OBJ 1 3 3 " + abc_hex + "\n616264\n", encoding="ascii"
     )
     (folder / "EXTMISS.DATA").write_text(
         "OBJ 1 3 5 " + oid(b"other").hex().upper()
-        + "\\n6F74686572\\n", encoding="ascii"
+        + "\n6F74686572\n", encoding="ascii"
     )
     print("OID ABC", oid(b"abc").hex().upper())
     print("OID ABCD", oid(b"abcd").hex().upper())
