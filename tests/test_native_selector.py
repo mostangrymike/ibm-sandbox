@@ -82,6 +82,40 @@ def main():
             assert output.read_text(encoding="ascii") == encode(
                 43, "GENNEW", NEW
             )
+        # WRITEGEN derives selector digest from existing GEN2 input,
+        # never from a copied commit/tree/PACK OID.
+        genfile = folder / "dd:GENIN"
+        manifest = ("GEN2 1808 8\\nDIGEST " + NEW
+                    + "\\nMINOID " + OLD + "\\nMAXOID " + NEW
+                    + "\\nGEND2 1808 8\\n")
+        genfile.write_text(manifest, encoding="ascii")
+        output.unlink()
+        check(subprocess.run(
+            [str(binary), "WRITEGEN", "44", "GENNEW"],
+            cwd=folder, capture_output=True, text=True,
+        ), 0, "SELECTOR WRITTEN 44 GENNEW")
+        assert output.read_text(encoding="ascii") == encode(
+            44, "GENNEW", NEW
+        )
+        # An existing output slot is immutable, even if GENIN is valid.
+        check(subprocess.run(
+            [str(binary), "WRITEGEN", "45", "GENNEW"],
+            cwd=folder, capture_output=True, text=True,
+        ), 8, "SELECTOR OUTPUT EXISTS")
+        output.unlink()
+        for invalid_manifest in [
+            manifest[:-2], manifest + "EXTRA\\n",
+            manifest.replace("GEND2 1808 8", "GEND2 1808 7"),
+            manifest.replace("DIGEST " + NEW, "DIGEST DEAD"),
+            manifest.replace("GEN2 1808 8", "GEN2 1807 8"),
+        ]:
+            genfile.write_text(invalid_manifest, encoding="ascii")
+            check(subprocess.run(
+                [str(binary), "WRITEGEN", "45", "GENNEW"],
+                cwd=folder, capture_output=True, text=True,
+            ), 8, "GEN2 MANIFEST INVALID FOR SELECTOR")
+            assert not output.exists()
+        genfile.write_text(manifest, encoding="ascii")
         old = encode(41, "GITOLD", OLD)
         new = encode(42, "GITNEW", NEW)
         check(invoke(folder, binary, old, new), 0,
