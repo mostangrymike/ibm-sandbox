@@ -282,3 +282,32 @@ binding STGIN, IDXIN and FIDXIN to the three new GITFIX files,
 regarding the two indexes as a mutually attested candidate. The
 original IDX1/SIDX1 files must remain historical, not be mixed with
 new IDX2/SIDX2 files.
+
+## Canonical 1,808-object target result and faster full audit
+
+The corrected, Git-compatible GITFIX STAGE A and GITFIX INDEX A
+now passed complete target reconstruction, independent readback
+and full IDX2 AUDIT. GITFIX SEEK A was built and SCHECK-verified
+with 1,808 unique SIDX2 entries. Canonical first commit:
+00D8D63229305230C8D37F884CE87F9E1A89468C; canonical
+last tree: EB37E3F23FF4FC137D715D71A711D3B7632D75F2.
+Original SVAUDIT reached progress 256 but was reported very slow,
+with no completion evidence in the supplied transcript.
+
+The implementation reopened and closed dd:STGIN separately for
+every seek entry. In current GitHub code, SVAUDIT reuses one
+open file instead; new GITCIDX SFAST avoids random seeks as
+well, hashes every object while reading the stage once in
+ordinal order and compares saved ftell cookies to positions
+in the reopened stream. Optional PAIR compares all IDX2/SIDX2
+descriptors and calls SFAST. Both require no new output files
+and preserve the original stage/index/seek files.
+
+Host CI passed all synthetic readback, 1,808-object and tamper
+tests including stale index descriptors and one-open assertions:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36281295118 .
+
+For exact CMS transfer, build, FILEDEFs and SFAST/PAIR tests
+against the already-created canonical GITFIX datasets, use the
+latest section of docs/CANONICAL_OIDS.md. No further PACK
+download, restaging or rebuilding of either index is needed.
