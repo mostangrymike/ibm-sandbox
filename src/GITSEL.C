@@ -126,7 +126,7 @@ static int selector_choose(struct slot *a,struct slot *b) {
   puts("CONFLICTING SELECTOR SEQUENCE");return 8;
  }
  first=a;second=b;
- if(b->seq>a->seq) {
+ if(b->valid&&(!a->valid||b->seq>a->seq)) {
   tmp=first;first=second;second=tmp;
  }
  if(first->valid&&
