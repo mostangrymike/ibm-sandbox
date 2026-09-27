@@ -108,3 +108,15 @@ not an atomic multi-file rename, lock, active-generation selector,
 concurrent writer protocol or automatic rollback. Those need
 separate design and recovery tests before claiming a durable
 transactional Git object database. GitHub issue #2 remains open.
+
+### Latest consolidated CI
+
+The host suite including GEN2 writes, fresh readback, malformed
+and truncated manifest rejection, stage-body tampering and seek-index
+descriptor mismatches passed again together with forward/external
+REF tests:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36282493293 .
+The synthetic fixture has 1,808 records but 8 unique OIDs;
+the real target generation has 1,808 unique OIDs and is not yet
+GEN2-sealed on CMS. Only the target can establish cross-logon and
+reboot durability; the manifest is not an atomic promotion scheme.
