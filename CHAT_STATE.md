@@ -2096,3 +2096,43 @@ Next continue independent selector protocol hardening
 in one high-density CMS batch against ONLY newly
 allocated temporary pointer fixtures. Never recreate
 old incompatible stage/index/seek or rerun M15 build.
+
+## M16 latest committed work, September 27 after M15 cleanup
+
+M15 full three-audit and guarded CMS legacy cleanup COMPLETED
+and recorded above. Existing valid original seq41/invalid
+seq42 GITSEL0/GITSEL1, independent true seq51 GITFIX /
+seq52 M15NEW M15SL0/M15SL1 and all eight canonical
+sealed GITFIX/M15NEW files must be preserved. The
+original GITPBUF PACK A remains the forensic source.
+All three old obsolete GITSTAGE DATA A, GITINDEX DATA A,
+GITSEEK INDEX A were erased with absent STATE RC28.
+
+The next single GITRUN.EXEC packs the M16 adversarial
+selector tests and immediate disposable cleanup. Before
+any writes it checks both complete generations and all
+four preserved selector records exist and all three
+M16BAD/M16LOW/M16CON PTR A filenames are unused (STATE
+RC28). It binds real C0 GITFIX and C1 M15NEW inputs
+and writes only the following disposable selector records:
+M16BAD seq60 M15NEW with valid CRC32 but deliberately
+wrong all-zero manifest digest (must RECOVER 51 GITFIX);
+M16LOW seq50 M15NEW with authentic M15NEW digest (must
+SELECT 51 GITFIX because it is a lower sequence);
+M16CON seq51 M15NEW with authentic digest (must reject
+same-sequence different generation conflict RC8).
+It then restores M15SL1 seq52 M15NEW and requires a
+complete full 1808-object audit and SELECTED 52 M15NEW
+RC0. Only after this, it ERASEs and STATE-confirms
+absent the three M16 temporary PTR files; it finally
+checks all eight canonical data files and all four
+preserved pointers still exist. NO original data or
+pointer writes. This CMS test is pending.
+
+The host native_index_host.c now independently tests
+the actual production GITREC binary with forged-valid
+CRC32, authentic low sequence, conflicting same
+sequence and final restoration. Latest native CI
+is https://github.com/mostangrymike/ibm-sandbox/actions/runs/36339171710 .
+Mac: from ibm-sandbox/src run git pull and
+./cms-upload.sh GITRUN.EXEC; CMS: GITRUN.
