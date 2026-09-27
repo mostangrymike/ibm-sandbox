@@ -743,7 +743,7 @@ int main(int argc,char **argv) {
      printf("UNRESOLVED REF BASE OBJ %lu\n",idx+1);
      return 8;
     }
-    ref_count++;
+    if(baseidx!=-3) ref_count++;
    }
   } else if(type<1||type>4) {
    puts("BAD OBJECT TYPE");return 8;
