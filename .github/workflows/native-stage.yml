@@ -14,6 +14,7 @@ on:
       - 'tests/native_stage_host.c'
       - 'tests/native_index_host.c'
       - 'tests/test-native-cathex-large.py'
+      - 'tests/test-native-tree.py'
       - 'src/GITRCHK.EXEC'
       - 'src/GITRUN.EXEC'
       - 'tests/check-readonly-gitrchk.sh'
@@ -42,6 +43,7 @@ on:
       - 'tests/native_stage_host.c'
       - 'tests/native_index_host.c'
       - 'tests/test-native-cathex-large.py'
+      - 'tests/test-native-tree.py'
       - 'src/GITRCHK.EXEC'
       - 'src/GITRUN.EXEC'
       - 'tests/check-readonly-gitrchk.sh'
@@ -79,5 +81,7 @@ jobs:
         run: python3 tests/test_native_selector.py
       - name: Check full 64-KiB binary CATHEX output and verified fallback
         run: python3 tests/test-native-cathex-large.py
+      - name: Verify complete binary Git tree parsing and recovery
+        run: python3 tests/test-native-tree.py
       - name: Compile and test staging, OID index and native REF PACK on host
         run: sh tests/run-native-stage-host.sh
