@@ -99,6 +99,9 @@ def main():
         "OBJ 1 3 5 " + oid(b"other").hex().upper()
         + "\n6F74686572\n", encoding="ascii"
     )
+    (folder / "EXTSHORT.DATA").write_text(
+        "OBJ 1 3 3 ABCD\n616263\n", encoding="ascii"
+    )
     (folder / "EXTMULT.DATA").write_text(
         "OBJ 1 3 5 " + oid(b"other").hex().upper()
         + "\n6F74686572\nOBJ 2 3 3 " + abc_hex
