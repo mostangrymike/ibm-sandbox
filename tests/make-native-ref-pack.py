@@ -112,6 +112,30 @@ def main():
         + "OBJ 2 3 3 " + abc_hex + "\n616263\n",
         encoding="ascii"
     )
+    # SIDX2 records are sorted by OID, not stage ordinal.
+    (folder / "EXSEEK.DATA").write_text(
+        "SIDX2 1808 1\nOID " + abc_hex
+        + " 1 3 3 0\nSEND2 1808 1\n",
+        encoding="ascii",
+    )
+    later = "OBJ 1 3 5 " + oid(b"other").hex().upper()
+    later += "\n6F74686572\n"
+    later_offset = len(later.encode("ascii"))
+    (folder / "EXMULT.IDX").write_text(
+        "SIDX2 1808 2\n"
+        + "OID " + abc_hex + " 2 3 3 " + str(later_offset)
+        + "\nOID " + oid(b"other").hex().upper()
+        + " 1 3 5 0\nSEND2 1808 2\n", encoding="ascii"
+    )
+    (folder / "EXWRONG.IDX").write_text(
+        "SIDX2 1808 1\nOID " + abc_hex
+        + " 1 3 3 999999\nSEND2 1808 1\n",
+        encoding="ascii",
+    )
+    (folder / "EXSHORT.IDX").write_text(
+        "SIDX2 1808 1\nOID " + abc_hex
+        + " 1 3 3 0\n", encoding="ascii",
+    )
     print("OID ABC", oid(b"abc").hex().upper())
     print("OID ABCD", oid(b"abcd").hex().upper())
     print("OID ABCDE", oid(b"abcde").hex().upper())
