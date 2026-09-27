@@ -1,34 +1,43 @@
-/* M16: poison digest, sequence ordering, conflict and cleanup. */
-/* Only M16 temporary selector files can be created or erased. */
+/* M17: guarded cleanup of abandoned native TLS test files. */
 address cms
-say 'GITRUN M16 ADVERSARIAL SELECTOR MATRIX'
-say 'GITRUN REQUIRE FOUR TRUSTED SELECTOR FILES'
-do i=0 to 1
- name='M15SL'||i
- 'STATE' name 'PTR A'
- if rc \= 0 then exit 8
- name='GITSEL'||i
- 'STATE' name 'PTR A'
- if rc \= 0 then exit 8
-end
-say 'GITRUN REQUIRE TWO SEALED GENERATIONS'
+say 'GITRUN M17 NATIVE TLS CLEANUP'
+say 'VERIFY SEALED GENERATIONS AND SELECTOR FILES'
 do i=1 to 4
  typ=word('STAGE INDEX SEEK GEN',i)
  'STATE GITFIX' typ 'A'
- if rc \= 0 then exit 8
+ if rc \= 0 then exit 12
  'STATE M15NEW' typ 'A'
- if rc \= 0 then exit 8
+ if rc \= 0 then exit 12
 end
-say 'GITRUN REQUIRE THREE UNUSED TEMPORARY NAMES'
-do i=1 to 3
- name=word('M16BAD M16LOW M16CON',i)
+do i=0 to 1
+ name='GITSEL'||i
  'STATE' name 'PTR A'
- if rc \= 28 then do
-  say 'GITRUN STOP: temporary name exists' name 'RC' rc
-  exit 8
- end
+ if rc \= 0 then exit 12
+ name='M15SL'||i
+ 'STATE' name 'PTR A'
+ if rc \= 0 then exit 12
 end
-say 'GITRUN BIND BOTH SEALED CANDIDATES'
+'STATE GITPBUF PACK A'
+if rc \= 0 then exit 12
+say 'AUDIT ORIGINAL AND SECOND GENERATIONS'
+do i=1 to 2
+ name=word('GITFIX M15NEW',i)
+ 'FILEDEF STGIN DISK' name 'STAGE A'
+ if rc \= 0 then exit rc
+ 'FILEDEF IDXIN DISK' name 'INDEX A'
+ if rc \= 0 then exit rc
+ 'FILEDEF FIDXIN DISK' name 'SEEK A'
+ if rc \= 0 then exit rc
+ 'FILEDEF GENIN DISK' name 'GEN A'
+ if rc \= 0 then exit rc
+ 'GITCIDX GENCHECK'
+ if rc \= 0 then exit 12
+end
+say 'VERIFY NORMAL TWO-SLOT SELECTION'
+'FILEDEF SEL0 DISK M15SL0 PTR A'
+if rc \= 0 then exit rc
+'FILEDEF SEL1 DISK M15SL1 PTR A'
+if rc \= 0 then exit rc
 do i=1 to 4
  typ=word('STAGE INDEX SEEK GEN',i)
  dd=word('C0STG C0IDX C0SEEK C0GEN',i)
@@ -38,78 +47,25 @@ do i=1 to 4
  'FILEDEF' dd 'DISK M15NEW' typ 'A'
  if rc \= 0 then exit rc
 end
-'FILEDEF SEL0 DISK M15SL0 PTR A'
-if rc \= 0 then exit rc
-say 'GITRUN CREATE FRESH POISON-DIGEST SELECTOR'
-'FILEDEF SELOUT CLEAR'
-'FILEDEF SELOUT DISK M16BAD PTR A (RECFM V LRECL 80'
-if rc \= 0 then exit rc
-zeros=copies('0',40)
-'GITSEL WRITE 60 M15NEW' zeros 'M16BAD ABSENT28'
-if rc \= 0 then exit 12
-'STATE M16BAD PTR A'
-if rc \= 0 then exit 12
-'FILEDEF SEL1 DISK M16BAD PTR A'
-if rc \= 0 then exit rc
-say 'GITRUN EXPECT RECOVERED 51 GITFIX WITH POISON DIGEST'
 'GITREC SELECT GITFIX M15NEW'
-test=rc
-say 'GITRUN POISON-DIGEST FALLBACK RC' test
-if test \= 0 then exit 12
-say 'GITRUN CREATE FRESH LOWER-SEQUENCE VALID SELECTOR'
-'STATE M16LOW PTR A'
-if rc \= 28 then exit 12
-'FILEDEF GENIN DISK M15NEW GEN A'
-if rc \= 0 then exit rc
-'FILEDEF SELOUT CLEAR'
-if rc \= 0 then exit rc
-'FILEDEF SELOUT DISK M16LOW PTR A (RECFM V LRECL 80'
-if rc \= 0 then exit rc
-'GITSEL WRITEGEN 50 M15NEW M16LOW ABSENT28'
 if rc \= 0 then exit 12
-'FILEDEF SEL1 DISK M16LOW PTR A'
-if rc \= 0 then exit rc
-say 'GITRUN EXPECT SELECTED 51 GITFIX: LOWER NEWER SLOT'
-'GITREC SELECT GITFIX M15NEW'
-test=rc
-say 'GITRUN LOW SEQUENCE RC' test
-if test \= 0 then exit 12
-say 'GITRUN CREATE DISTINCT CANDIDATE AT SAME SEQUENCE'
-'STATE M16CON PTR A'
-if rc \= 28 then exit 12
-'FILEDEF SELOUT CLEAR'
-if rc \= 0 then exit rc
-'FILEDEF SELOUT DISK M16CON PTR A (RECFM V LRECL 80'
-if rc \= 0 then exit rc
-'GITSEL WRITEGEN 51 M15NEW M16CON ABSENT28'
-if rc \= 0 then exit 12
-'FILEDEF SEL1 DISK M16CON PTR A'
-if rc \= 0 then exit rc
-say 'GITRUN EXPECT CONFLICTING SELECTOR SEQUENCE RC 8'
-'GITREC SELECT GITFIX M15NEW'
-test=rc
-say 'GITRUN SAME-SEQUENCE CONFLICT RC' test
-if test \= 8 then exit 12
-say 'GITRUN RESTORE ORIGINAL HIGHER SEQUENCE 52'
-'FILEDEF SEL1 DISK M15SL1 PTR A'
-if rc \= 0 then exit rc
-say 'GITRUN EXPECT SELECTED 52 M15NEW FULL AUDIT'
-'GITREC SELECT GITFIX M15NEW'
-test=rc
-say 'GITRUN FINAL VERIFIED SELECTOR RC' test
-if test \= 0 then exit 12
-say 'GITRUN ERASE ONLY THREE M16 TEMPORARY FILES'
-do i=1 to 3
- name=word('M16BAD M16LOW M16CON',i)
- 'STATE' name 'PTR A'
- if rc \= 0 then exit 12
- 'ERASE' name 'PTR A'
- if rc \= 0 then exit 12
- 'STATE' name 'PTR A'
- if rc \= 28 then exit 12
- say 'GITRUN TEMPORARY ERASED' name
+say 'CLEAN UP ABANDONED NATIVE TLS TESTS'
+names='M12ATLS M12TLS2 M12TLS3 M12TLS4'
+types='ASSEMBLE LISTING MODULE TEXT'
+do i=1 to words(names)
+ name=word(names,i)
+ do j=1 to words(types)
+  typ=word(types,j)
+  call clean name,typ
+  if result \= 0 then exit 12
+ end
 end
-say 'GITRUN CONFIRM ALL SEALED DATA AND SELECTORS REMAIN'
+do i=1 to 3
+ name=word('TLSQTEST SSLTEST SSLTEST2',i)
+ call clean name,'C'
+ if result \= 0 then exit 12
+end
+say 'VERIFY PROTECTED FILES AFTER CLEANUP'
 do i=1 to 4
  typ=word('STAGE INDEX SEEK GEN',i)
  'STATE GITFIX' typ 'A'
@@ -117,13 +73,27 @@ do i=1 to 4
  'STATE M15NEW' typ 'A'
  if rc \= 0 then exit 12
 end
+'STATE GITPBUF PACK A'
+if rc \= 0 then exit 12
 do i=0 to 1
- name='M15SL'||i
- 'STATE' name 'PTR A'
- if rc \= 0 then exit 12
  name='GITSEL'||i
  'STATE' name 'PTR A'
  if rc \= 0 then exit 12
+ name='M15SL'||i
+ 'STATE' name 'PTR A'
+ if rc \= 0 then exit 12
 end
-say 'GITRUN M16 COMPLETE: SELECTOR CASES AND CLEANUP'
+say 'GITRUN M17 CLEANUP COMPLETE'
 exit 0
+clean: procedure
+ parse upper arg name,typ
+ address cms
+ 'STATE' name typ 'A'
+ if rc=28 then return 0
+ if rc \= 0 then return 12
+ 'ERASE' name typ 'A'
+ if rc \= 0 then return 12
+ 'STATE' name typ 'A'
+ if rc \= 28 then return 12
+ say 'RETIRED' name typ
+ return 0
