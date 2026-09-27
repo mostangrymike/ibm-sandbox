@@ -73,7 +73,7 @@ exist, create two disposable selectors using that input manifest:
 ```text
 FILEDEF GENIN DISK GITFIX GEN A
 FILEDEF SELOUT DISK GITSEL0 PTR A (RECFM V LRECL 80
-GITSEL WRITEGEN 41 GITFIX
+GITSEL WRITEGEN 41 GITFIX GITSEL0
 FILEDEF SEL0 DISK GITSEL0 PTR A
 FILEDEF C0STG DISK GITFIX STAGE A
 FILEDEF C0IDX DISK GITFIX INDEX A
@@ -93,7 +93,7 @@ without creating or modifying any new generation's data:
 ```text
 FILEDEF SELOUT CLEAR
 FILEDEF SELOUT DISK GITSEL1 PTR A (RECFM V LRECL 80
-GITSEL WRITEGEN 42 GITBAD
+GITSEL WRITEGEN 42 GITBAD GITSEL1
 FILEDEF SEL1 DISK GITSEL1 PTR A
 GITREC SELECT GITFIX GITBAD
 ```
@@ -158,3 +158,31 @@ validate staged content itself; the separate GITREC SELECT full
 GENCHECK remains mandatory. Never bind SELOUT to an existing GITFIX
 file. If either disposable selector filename already exists, choose
 new unused 8-character names rather than overwrite it.
+
+## Actual target compiler and first-runtime recovery finding
+
+Both `CMSCLNK GITSEL PLAIN` and `CMSCLNK GITREC PLAIN`
+compiled successfully on native CMS September 27, 2026 after
+replacing literal C XOR operators incompatible with this DFT
+source translation. The first `WRITEGEN` operation did not
+create a selector: its read-only fopen existence probe returned
+a non-null stream on an absent CMS DD, triggering
+`SELECTOR OUTPUT EXISTS`. Recovery therefore could not
+read SEL0/SEL1. This is a target-discovered runtime defect;
+it is not evidence that the original GEN2 seal is damaged.
+
+The updated `WRITEGEN SEQUENCE BASENAME OUTPUTNAME`
+uses CMS `STATE OUTPUTNAME PTR A` instead of the lazy
+read-only DD probe. It proceeds only if STATE reports missing
+with RC 28; RC 0 refuses an existing file, and every other
+return code fails closed. The operator must bind SELOUT to
+the same OUTPUTNAME PTR A on a write-accessible minidisk.
+The extra argument is mandatory for this CMS gate. It is
+not an atomic concurrent-writer lock; STATE and write
+remain separate operations.
+
+After the revised code compiles, require STATE to report
+missing for each new selector before binding SELOUT.
+For slot zero, define all four inputs including C0IDX;
+none of STAGE/INDEX/SEEK/GEN may be output FILEDEFs.
+Do not rerun GENWRITE or any index build.
