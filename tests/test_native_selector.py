@@ -41,6 +41,16 @@ def main():
              "-Wextra", "-Werror", "-o", str(binary), str(SOURCE)],
             check=True
         )
+        verifier_source = SOURCE.parents[0].parent / "tests" / (
+            "native_selector_verify_host.c"
+        )
+        verify_binary = folder / "native_verify"
+        subprocess.run(
+            ["cc", "-x", "c", "-std=c89", "-O2", "-Wall",
+             "-Wextra", "-Werror", "-o", str(verify_binary),
+             str(verifier_source)],
+            check=True,
+        )
         old = encode(41, "GITOLD", OLD)
         new = encode(42, "GITNEW", NEW)
         check(invoke(folder, binary, old, new), 0,
@@ -73,6 +83,36 @@ def main():
         for case in invalid:
             check(invoke(folder, binary, case, None), 8,
                   "NO VALID SELECTOR SLOT")
+        # SELECT uses a replaceable full-verification callback. The
+        # host simulator uses marker files, NOT actual CMS GENCHECK.
+        (folder / "verified_GITOLD.txt").write_text(OLD + "\\n")
+        (folder / "verified_GITNEW.txt").write_text(NEW + "\\n")
+
+        def select(slot0, slot1):
+            for name, data in (("dd:SEL0", slot0), ("dd:SEL1", slot1)):
+                path = folder / name
+                if data is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    path.write_text(data, encoding="ascii")
+            return subprocess.run(
+                [str(verify_binary), "SELECT"], cwd=folder,
+                capture_output=True, text=True,
+            )
+
+        check(select(old, new), 0, "SELECTED 42 GITNEW")
+        (folder / "verified_GITNEW.txt").unlink()
+        check(select(old, new), 0, "RECOVERED 41 GITOLD")
+        (folder / "verified_GITOLD.txt").unlink()
+        check(select(old, new), 8, "NO FULLY VERIFIED GENERATION")
+        (folder / "verified_GITOLD.txt").write_text(OLD + "\\n")
+        for length in range(len(new)):
+            check(select(old, new[:length]), 0,
+                  "SELECTED 41 GITOLD")
+        check(select(old, encode(41, "GITNEW", NEW)), 8,
+              "CONFLICTING SELECTOR SEQUENCE")
+        check(select(None, None), 8,
+              "NO FULLY VERIFIED GENERATION")
     print("NATIVE C89 SELECTOR PARSER REGRESSION PASSED")
 
 
