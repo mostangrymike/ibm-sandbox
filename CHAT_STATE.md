@@ -1924,3 +1924,35 @@ abort and NO selector is written in this gate.
 The CMS candidate-build gate is PENDING user output;
 the host native GITREC interrupted-promotion test suite
 previously PASSED at run 36337600946.
+
+## September 27 12:43 M15 independent native candidate PASSED
+
+User ran reusable GITRUN on CMS. Before writing, REXX STATE
+reported all M15NEW STAGE/INDEX/SEEK/GEN A and new M15SL0/
+M15SL1 PTR A unused (RC28). MNT191 A R/W 22393 free 4096
+blocks reported. GITRUN copied only protected GITFIX STAGE
+and IDX2 INDEX to new M15NEW files; rebuilt SIDX2 seek index
+against the copied stage: SEEK INDEX WRITTEN 1808 UNIQUE
+1808; GENWRITE reran complete 1808-object SFAST/PAIR and
+sealed M15NEW GEN A. A fresh GENCHECK reran full SFAST/PAIR,
+GENERATION VERIFIED 1808 UNIQUE 1808 and RC0, 51.20s total.
+Existing GITFIX and GITSEL0/GITSEL1 are unchanged.
+All four M15NEW candidate files now exist. DO NOT rerun
+the copy/build batch or overwrite any M15NEW file.
+
+GITRUN.EXEC now advances to a safe disposable two-slot
+test using previously confirmed unused M15SL0/M15SL1 PTR A.
+It first checks both candidates' four existing files and
+both new pointer filenames. Binds complete C0 GITFIX and
+C1 M15NEW read-only inputs. Creates new seq51 GITFIX
+selector M15SL0 by WRITEGEN with REXX STATE RC28 and
+ABSENT28 attestation, verifies old-only via real GITREC
+(full GENCHECK). Then, only if M15SL1 remains absent,
+creates seq52 M15NEW M15SL1 using GENIN M15NEW GEN A,
+verifies newly selected M15NEW through full GITREC
+GENCHECK. No original selectors or GITFIX files written.
+Next user commands from ibm-sandbox/src: git pull;
+./cms-upload.sh GITRUN.EXEC. On CMS: GITRUN.
+If a selector creation fails halfway, preserve any partially
+created file and stop; do NOT blindly rerun WRITEGEN.
+This M15 selector test awaits native CMS results.
