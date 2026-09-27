@@ -1,9 +1,121 @@
-/* M17 emergency safety gate after CMS TRKDE 4 disabled wait. */
-/* READ ONLY: NO ERASE, COPYFILE, GENWRITE OR POINTER WRITES. */
+/* M21: read-only post-incident native Git CMS regression batch. */
+/* No erase, copy, index write, manifest write or pointer write. */
 address cms
-say 'GITRUN SAFETY HOLD: M17 CMS DISK ERROR'
-say 'TRKDE CODE 4 DURING M12ATLS ASSEMBLE ERASE'
-say 'STOP ALL A-DISK CLEANUP UNTIL DASD IMAGE BACKED UP'
-say 'PRESERVE GITFIX M15NEW GITSEL0/1 M15SL0/1 AND PACK'
-say 'NO FILE SYSTEM WRITES WILL BE ATTEMPTED'
-exit 12
+say 'GITRUN M21 READ ONLY NATIVE GIT REGRESSION'
+say 'VERIFY ALL PROTECTED ORIGINAL FILES'
+do i=1 to 4
+ typ=word('STAGE INDEX SEEK GEN',i)
+ 'STATE GITFIX' typ 'A'
+ if rc \= 0 then exit 12
+ 'STATE M15NEW' typ 'A'
+ if rc \= 0 then exit 12
+end
+do i=0 to 1
+ name='GITSEL'||i
+ 'STATE' name 'PTR A'
+ if rc \= 0 then exit 12
+ name='M15SL'||i
+ 'STATE' name 'PTR A'
+ if rc \= 0 then exit 12
+end
+'STATE GITPBUF PACK A'
+if rc \= 0 then exit 12
+'STATE GITCIDX MODULE A'
+if rc \= 0 then exit 12
+'STATE GITREC MODULE A'
+if rc \= 0 then exit 12
+'STATE M15BAD GEN A'
+if rc \= 28 then do
+ say 'STOP: M15BAD GEN EXISTS; DO NOT REBIND IT'
+ exit 12
+end
+say 'INDEPENDENT POST-INCIDENT SEALED GENERATION AUDITS'
+do i=1 to 2
+ name=word('GITFIX M15NEW',i)
+ 'FILEDEF STGIN DISK' name 'STAGE A'
+ if rc \= 0 then exit rc
+ 'FILEDEF IDXIN DISK' name 'INDEX A'
+ if rc \= 0 then exit rc
+ 'FILEDEF FIDXIN DISK' name 'SEEK A'
+ if rc \= 0 then exit rc
+ 'FILEDEF GENIN DISK' name 'GEN A'
+ if rc \= 0 then exit rc
+ say 'GENCHECK' name
+ 'GITCIDX GENCHECK'
+ test=rc
+ say 'GENCHECK RC' test
+ if test \= 0 then exit 12
+end
+say 'BIND TWO EXISTING SELECTORS AND GENERATIONS'
+'FILEDEF SEL0 DISK M15SL0 PTR A'
+if rc \= 0 then exit rc
+'FILEDEF SEL1 DISK M15SL1 PTR A'
+if rc \= 0 then exit rc
+do i=1 to 4
+ typ=word('STAGE INDEX SEEK GEN',i)
+ dd=word('C0STG C0IDX C0SEEK C0GEN',i)
+ 'FILEDEF' dd 'DISK GITFIX' typ 'A'
+ if rc \= 0 then exit rc
+ dd=word('C1STG C1IDX C1SEEK C1GEN',i)
+ 'FILEDEF' dd 'DISK M15NEW' typ 'A'
+ if rc \= 0 then exit rc
+end
+say 'CASE 1: SELECT FULLY VERIFIED GENERATION'
+'GITREC SELECT GITFIX M15NEW'
+test=rc
+say 'SELECT RC' test
+if test \= 0 then exit 12
+oid='00D8D63229305230C8D37F884CE87F9E1A89468C'
+say 'CASE 2: VERIFIED NATIVE GET OF FIRST COMMIT'
+'GITREC GET GITFIX M15NEW' oid
+test=rc
+say 'GET RC' test
+if test \= 0 then exit 12
+say 'CASE 3: VERIFIED NATIVE FULL COMMIT CATHEX'
+'GITREC CATHEX GITFIX M15NEW' oid
+test=rc
+say 'CATHEX RC' test
+if test \= 0 then exit 12
+say 'CASE 4: NEWER GEN MISSING; FALL BACK TO OLDER'
+'FILEDEF C1GEN DISK M15BAD GEN A'
+if rc \= 0 then exit rc
+'GITREC CATHEX GITFIX M15NEW' oid
+test=rc
+say 'FALLBACK CATHEX RC' test
+if test \= 0 then exit 12
+say 'CASE 5: BOTH GEN MISSING MUST FAIL CLOSED'
+'FILEDEF C0GEN DISK M15BAD GEN A'
+if rc \= 0 then exit rc
+'GITREC CATHEX GITFIX M15NEW' oid
+test=rc
+say 'BOTH MISSING RC' test
+if test \= 8 then exit 12
+say 'CASE 6: RESTORE BOTH READ ONLY MANIFEST INPUTS'
+'FILEDEF C0GEN DISK GITFIX GEN A'
+if rc \= 0 then exit rc
+'FILEDEF C1GEN DISK M15NEW GEN A'
+if rc \= 0 then exit rc
+'GITREC CATHEX GITFIX M15NEW' oid
+test=rc
+say 'RESTORED CATHEX RC' test
+if test \= 0 then exit 12
+say 'FINAL VERIFY PROTECTED GENERATIONS AND SELECTORS'
+do i=1 to 4
+ typ=word('STAGE INDEX SEEK GEN',i)
+ 'STATE GITFIX' typ 'A'
+ if rc \= 0 then exit 12
+ 'STATE M15NEW' typ 'A'
+ if rc \= 0 then exit 12
+end
+do i=0 to 1
+ name='GITSEL'||i
+ 'STATE' name 'PTR A'
+ if rc \= 0 then exit 12
+ name='M15SL'||i
+ 'STATE' name 'PTR A'
+ if rc \= 0 then exit 12
+end
+'STATE GITPBUF PACK A'
+if rc \= 0 then exit 12
+say 'GITRUN M21 ALL READ ONLY NATIVE GIT TESTS PASSED'
+exit 0
