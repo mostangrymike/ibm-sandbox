@@ -252,3 +252,50 @@ matrix prove atomic CMS file replacement or exclusive
 writer ownership. Retain both complete sealed generations
 and their current selector records until real cross-logon
 and normal reboot survival are explicitly established.
+
+## M18 production-facing, read-only selected-generation object GET
+
+`src/GITREC.C` now supports a second command:
+
+```text
+GITREC GET C0NAME C1NAME OID40
+```
+
+It uses the same explicit read-only `SEL0`/`SEL1`
+and independent `C0STG/C0IDX/C0SEEK/C0GEN`,
+`C1STG/C1IDX/C1SEEK/C1GEN` file bindings as
+`GITREC SELECT`. It validates the 40-hex input
+OID before any selector reads, refuses identical
+candidate names, evaluates both selector records
+including identity and seq conflict rules, and
+performs the **complete native GEN2 stage/index/
+seek/manifest audit** before permitting a lookup.
+Only the successful verified candidate's mapped
+seek index and stage are opened by `sidx_read`/
+`sidx_get`; a newer unverified generation cannot
+leak object bytes. The existing `SGET` independently
+rehashes the selected body's Git SHA-1 and prints
+`OBJECT READ OID` with type, size and prefix.
+Absent OID returns RC4; invalid OID grammar
+returns RC4; no verified generation returns RC8.
+
+Host regression uses the actual production
+`GITREC.C` against independent complete synthetic
+1808-record generations: positive new-generation
+GET, missing OID and malformed OID rejection,
+missing new GEN2 old-generation fallback GET,
+both GEN2 files missing with no object disclosure,
+and restoration to new-generation GET.
+This is the first usable read-only operation
+*through* the independently verified generation
+selector rather than only displaying its name.
+
+Native CMS execution of this new GET mode is
+**on hold** until the documented M01RES/DASD1
+filesystem TRKDE-4 incident is preserved and
+resolved. No GitHub source change was uploaded
+to the possibly damaged CMS A disk, no cleanup
+was resumed, and `src/GITRUN.EXEC` remains
+an RC12 safety hold. Full OID output, atomic
+promotion and exclusive writes are separate
+future milestones.
