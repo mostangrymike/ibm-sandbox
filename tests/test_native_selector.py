@@ -13,8 +13,8 @@ def encode(sequence, name, digest):
     assert re.fullmatch(r"[0-9A-F]{40}", digest)
     payload = f"SEL1 {sequence} {name} {digest}"
     crc = zlib.crc32(payload.encode("ascii")) & 0xffffffff
-    line = f"{payload} {crc:08X}\\n"
-    assert len(line.rstrip("\\n")) <= 80
+    line = f"{payload} {crc:08X}\n"
+    assert len(line.rstrip("\n")) <= 80
     return line
 
 SOURCE = Path(__file__).resolve().parents[1] / "src" / "GITSEL.C"
