@@ -128,3 +128,32 @@ these gates on small, synthetic files in CI. Use
 operator judgment and provider-specific storage snapshots
 rather than this utility for live systems or non-regular
 block/CKD volume devices.
+
+## Read-only host inventory and stronger forensic copy finalization
+
+A host-side helper `scripts/inspect-hercules-config.sh` can list
+simple CKD device records from the **operator-confirmed active**
+Hercules configuration file without starting or changing Hercules,
+reading disk images, or dumping unrelated configuration settings.
+Supply the actual configuration path as its only argument:
+
+```sh
+bash scripts/inspect-hercules-config.sh /actual/path/hercules.cnf
+```
+
+The reported channel address, device type and filename are only
+an inventory. Hercules `INCLUDE` files, dynamically attached
+devices, DASD shadows/overlays and the VM directory's MDISK
+mapping must still be checked. In particular, a VM's virtual
+`0191` is not necessarily the same as a Hercules hardware
+address `0191`, nor does a CKD volume automatically map to
+the user's `MNT191` CMS minidisk without corroboration.
+
+The optional offline file-backup helper now finalizes with
+an atomic hard-link create rather than `mv -n`; the destination
+cannot be silently replaced by another process racing to use
+the same name. It retains an incomplete copy if another
+destination appears and does not delete either the source
+or the pre-existing destination. This is *not* a substitute
+for confirming the guest and emulator are offline and that
+the entire backing storage set is preserved.
