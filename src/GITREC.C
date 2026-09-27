@@ -61,16 +61,19 @@ int git_sel_verify(const char *name,const char *digest) {
 int main(int argc,char **argv) {
  struct slot a,b;
  unsigned char oid[20];
- int get,rc;
+ int get,full,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
- if((!get&&(argc!=4||strcmp(argv[1],"SELECT")!=0))||
+ full=argc==5&&strcmp(argv[1],"CATHEX")==0;
+ if((!get&&!full&&(argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
   puts("GITREC SELECT C0NAME C1NAME");
   puts("GITREC GET C0NAME C1NAME OID40");
+  puts("GITREC CATHEX C0NAME C1NAME OID40");
   return 4;
  }
- if(get&&(strlen(argv[4])!=40||!idx_hex(argv[4],oid))) {
+ if((get||full)&&(strlen(argv[4])!=40||
+    !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
   return 4;
  }
@@ -84,8 +87,9 @@ int main(int argc,char **argv) {
   puts("SELECTOR SLOT 1 NAME MISMATCH");b.valid=0;
  }
  rc=selector_choose(&a,&b);
- if(rc!=0||!get) return rc;
+ if(rc!=0||(!get&&!full)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(sidx_read()!=0) return 8;
+ sidx_emit_full=full;
  return sidx_get(oid);
 }
