@@ -1708,3 +1708,20 @@ LATEST CHAT REQUEST: user asked to save project state before
 opening a new chat; this handoff is now committed. In new
 chat pick up directly using these refs, re-fetch latest
 GitHub status and proceed without asking to repeat past logs.
+
+## M14 CMS checkpoint: September 27
+
+GITSEL and GITREC both compiled PLAIN on CMS. Initial GITSEL WRITEGEN failed
+with SELECTOR OUTPUT EXISTS despite absent PTR files: CMS lazy read-open
+made the fopen guard unsuitable. GITREC could not select an unwritten slot.
+The initial pasted commands also missed C0IDX definition. The existing
+GITFIX stage/index/seek/GEN files remain the protected baseline.
+
+GitHub adds WRITEGEN 41 GITFIX GITSEL0: explicit CMS STATE for a new PTR A
+selector. Only missing RC 28 allows writing; existing RC 0 and every
+other error fail closed. CMS runtime verification of this change is pending.
+Recompile both GITSEL and GITREC after upload. Check STATE GITSEL0 PTR A;
+if absent, write selector zero with the revised command, then bind SEL0
+and every C0 input including C0IDX to the old canonical GITFIX data.
+Require the full 1808-object GENCHECK and SELECTED 41 GITFIX. Do not
+run GENWRITE or rebuild either canonical index.
