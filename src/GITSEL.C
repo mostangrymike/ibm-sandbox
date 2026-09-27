@@ -93,31 +93,13 @@ static int slot_read(const char *dd,struct slot *out) {
  out->valid=1;
  return 1;
 }
-/* CMS STATE avoids lazy fopen("dd:SELOUT","r") false positives.
- * The optional explicit output basename enables this safe CMS gate.
- * The caller must bind SELOUT to the same basename, PTR, mode A.
+/* CMS executes STATE from the REXX wrapper, which sees its real RC.
+ * GCCCMS system() was observed returning zero for a missing file.
+ * ABSENT28 is an explicit caller attestation, never an atomic lock.
  */
-static int selector_state(const char *name) {
- char command[32];
- int rc;
- if(!proper_name(name)) return 4;
- sprintf(command,"STATE %s PTR A",name);
- rc=system(command);
- printf("SELECTOR STATE RETURN %d\n",rc);
- if(rc==0) {
-  puts("SELECTOR OUTPUT EXISTS");
-  return 8;
- }
- /* CMS returns 28 for missing. Unix test shells encode it as 28<<8. */
- if(rc!=28&&rc!=7168) {
-  printf("SELECTOR STATE FAILED RC %d\n",rc);
-  return 8;
- }
- return 0;
-}
 /* Write an untrusted SEL1 record to a caller-created output FILEDEF. */
 static int selector_write(const char *sequence,const char *name,
-                          const char *digest,const char *slotname) {
+                          const char *digest,const char *slotname,\n                          const char *attestation) {
  FILE *f;
  char payload[90],*end;
  unsigned long seq,crc;
@@ -132,10 +114,15 @@ static int selector_write(const char *sequence,const char *name,
  sprintf(payload,"SEL1 %lu %s %s",seq,name,digest);
  crc=crc32_ascii(payload);
  if(strlen(payload)+10>80) return 4;
- /* Prefer the explicit CMS STATE probe for lazy DD open runtimes. */
+ /* On CMS only GITRUN should supply its freshly checked RC 28.
+  * Without that attestation, refuse the unreliable STATE system().
+  */
  if(slotname) {
-  int status=selector_state(slotname);
-  if(status) return status;
+  if(!proper_name(slotname)||!attestation||
+     strcmp(attestation,"ABSENT28")!=0) {
+   puts("SELECTOR REQUIRES REXX STATE RC 28");
+   return 8;
+  }
  } else {
   f=fopen("dd:SELOUT","r");
   if(f) {
@@ -203,7 +190,7 @@ done:
   return 8;
  }
  /* The SELECT verifier must still perform the FULL GENCHECK. */
- return selector_write(sequence,name,digest,slotname);
+ return selector_write(sequence,name,digest,slotname,attestation);
 }
 /* Callback must fully rehash candidate and validate its GEN2 seal. */
 #ifdef GITSEL_VERIFY
@@ -237,15 +224,14 @@ static int selector_choose(struct slot *a,struct slot *b) {
 #endif
 int main(int argc,char **argv) {
  struct slot a,b;
- if((argc==5||argc==6)&&strcmp(argv[1],"WRITE")==0)
+ if((argc==5||argc==7)&&strcmp(argv[1],"WRITE")==0)
   return selector_write(argv[2],argv[3],argv[4],
-                        argc==6?argv[5]:(const char *)0);
- if((argc==4||argc==5)&&strcmp(argv[1],"WRITEGEN")==0) {
-  printf("WRITEGEN ARGUMENT COUNT %d SLOT %s\n",
-         argc,argc==5?argv[4]:"(none)");
+                        argc==7?argv[5]:(const char *)0,
+                        argc==7?argv[6]:(const char *)0);
+ if((argc==4||argc==6)&&strcmp(argv[1],"WRITEGEN")==0)
   return selector_writegen(argv[2],argv[3],
-                           argc==5?argv[4]:(const char *)0);
- }
+                           argc==6?argv[4]:(const char *)0,
+                           argc==6?argv[5]:(const char *)0);
  if(argc!=2) {
   puts("Usage: GITSEL CHECK (candidates only)");
   return 4;
