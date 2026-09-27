@@ -53,6 +53,81 @@ int git_sel_verify(const char *name,const char *digest) {
  }
  return 0;
 }
+/* M22: validate the complete binary Git tree before emitting entries.
+ * Display names as ASCII HEX to avoid CMS code-page ambiguity and
+ * unsafe terminals. Never print partially parsed tree records.
+ */
+static int rec_tree_mode(const unsigned char *mode,
+                         unsigned long n) {
+ static const char *valid[]={
+  "100644","100755","120000","160000","40000"
+ };
+ unsigned int i;
+ for(i=0;i<sizeof valid/sizeof valid[0];i++)
+  if(strlen(valid[i])==(size_t)n&&
+     memcmp(mode,valid[i],(size_t)n)==0) return 1;
+ return 0;
+}
+static int rec_tree_walk(unsigned long n,int emit) {
+ unsigned long at=0,mstart,mlen,nstart,nlen,j,count=0;
+ char modes[7];
+ while(at<n) {
+  mstart=at;
+  while(at<n&&idx_body[at]!=' '&&at-mstart<=6) at++;
+  mlen=at-mstart;
+  if(mlen<5||mlen>6||at==n||
+     !rec_tree_mode(idx_body+mstart,mlen)) return 0;
+  memcpy(modes,idx_body+mstart,(size_t)mlen);
+  modes[mlen]=0;
+  at++;
+  nstart=at;
+  while(at<n&&idx_body[at]!=0) {
+   if(idx_body[at]=='/') return 0;
+   at++;
+  }
+  nlen=at-nstart;
+  if(!nlen||at==n||n-at-1<20) return 0;
+  at++;
+  if(emit) {
+   printf("TREE ENTRY MODE %s NAMELEN %lu OID ",
+          modes,nlen);
+   idx_print(stdout,idx_body+at);
+   putchar('\n');
+   for(j=0;j<nlen;j++) {
+    if(j%32==0) fputs("TREE NAMEHEX ",stdout);
+    printf("%02X",idx_body[nstart+j]);
+    if(j%32==31||j+1==nlen) putchar('\n');
+   }
+  }
+  at+=20;
+  count++;
+ }
+ if(!count) return 0;
+ if(emit) printf("TREE ENTRIES %lu\n",count);
+ return 1;
+}
+static int rec_tree(const unsigned char *oid) {
+ int pos,rc;
+ if(sidx_read()!=0) return 8;
+ pos=sidx_locate(oid);
+ if(pos<0) {puts("SEEK OID NOT FOUND");return 4;}
+ if(sidx[pos].type!=2) {
+  puts("OBJECT IS NOT A TREE");
+  return 8;
+ }
+ sidx_silent=1;
+ rc=sidx_get(oid);
+ sidx_silent=0;
+ if(rc!=0) return rc;
+ if(!rec_tree_walk(sidx[pos].size,0)) {
+  puts("TREE STRUCTURE INVALID");
+  return 8;
+ }
+ puts("TREE DATA BEGIN");
+ if(!rec_tree_walk(sidx[pos].size,1)) return 8;
+ puts("TREE DATA END");
+ return 0;
+}
 /* SELECT stays read-only. GET adds a verified indexed object
  * lookup only after a complete native GENCHECK has selected a slot.
  * Never call SGET on an unverified candidate or infer an active
@@ -61,18 +136,21 @@ int git_sel_verify(const char *name,const char *digest) {
 int main(int argc,char **argv) {
  struct slot a,b;
  unsigned char oid[20];
- int get,full,rc;
+ int get,full,tree,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
- if((!get&&!full&&(argc!=4||strcmp(argv[1],"SELECT")!=0))||
+ tree=argc==5&&strcmp(argv[1],"TREE")==0;
+ if((!get&&!full&&!tree&&
+     (argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
   puts("GITREC SELECT C0NAME C1NAME");
   puts("GITREC GET C0NAME C1NAME OID40");
   puts("GITREC CATHEX C0NAME C1NAME OID40");
+  puts("GITREC TREE C0NAME C1NAME OID40");
   return 4;
  }
- if((get||full)&&(strlen(argv[4])!=40||
+ if((get||full||tree)&&(strlen(argv[4])!=40||
     !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
   return 4;
@@ -87,8 +165,9 @@ int main(int argc,char **argv) {
   puts("SELECTOR SLOT 1 NAME MISMATCH");b.valid=0;
  }
  rc=selector_choose(&a,&b);
- if(rc!=0||(!get&&!full)) return rc;
+ if(rc!=0||(!get&&!full&&!tree)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
+ if(tree) return rec_tree(oid);
  if(sidx_read()!=0) return 8;
  sidx_emit_full=full;
  return sidx_get(oid);
