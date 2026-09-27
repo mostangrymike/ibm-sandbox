@@ -237,6 +237,50 @@ static int find_ref_base(const unsigned char *oid,unsigned long prior) {
  }
  return -1;
 }
+/* Deferred forward same-PACK REF chains, isolated FPACK mode. */
+static unsigned char forward_oid[1808][20];
+static unsigned char *forward_delta[1808];
+static unsigned long forward_len[1808];
+static int resolve_forward(unsigned long count,
+                           unsigned long *refs,unsigned long *applied) {
+ unsigned long pass,j,n,pending=0;
+ unsigned char *body;
+ int base,k,progress;
+ for(j=0;j<count;j++) if(forward_delta[j]) pending++;
+ for(pass=0;pass<count&&pending;pass++) {
+  progress=0;
+  for(j=0;j<count;j++) {
+   if(!forward_delta[j]) continue;
+   base=find_ref_base(forward_oid[j],count);
+   if(base<0||(unsigned long)base==j) continue;
+   body=(unsigned char *)malloc(OUTCAP);
+   if(!body) return 0;
+   if(!dapply(forward_delta[j],forward_len[j],
+              objdata[base],objlen[base],body,&n)) {
+    free(body);puts("FORWARD DELTA APPLY FAIL");return 0;
+   }
+   objtype[j]=objtype[base];objlen[j]=n;
+   objdata[j]=(unsigned char *)malloc(n?n:1);
+   if(!objdata[j]) {free(body);return 0;}
+   memcpy(objdata[j],body,(size_t)n);
+   free(body);
+   if(!object_oid(objtype[j],objdata[j],n,objoid[j]))
+    return 0;
+   free(forward_delta[j]);forward_delta[j]=0;
+   (*refs)++;(*applied)++;pending--;progress++;
+   printf("FORWARD REF OBJ %lu TYPE %d SIZE %lu OID ",
+          j+1,objtype[j],n);
+   for(k=0;k<20;k++) printf("%02X",objoid[j][k]);
+   putchar('\n');
+  }
+  if(!progress) break;
+ }
+ if(pending) {
+  printf("UNRESOLVED FORWARD REF COUNT %lu\n",pending);
+  return 0;
+ }
+ return 1;
+}
 /* No inflater or PACK file needed: isolate REF OID/delta gates. */
 /* Compare known Git wire bytes and known Git SHA-1 test vectors. */
 static int ref_selftest(void) {
@@ -482,6 +526,7 @@ int main(int argc,char **argv) {
  unsigned char *tmp;
  int baseidx=-1,doapply=0,dooid=0,profile=0,fastmode=0;
  int fastonly=0,optmode=0,optcheck=0,stage=0,rpack=0,xpack=0;
+ int fpack=0;
  unsigned char reference[20],refbase[20];
  clock_t t0,hash_ticks=0,delta_ticks=0;
  unsigned long hash_bytes=0,delta_bytes=0;
@@ -500,7 +545,9 @@ int main(int argc,char **argv) {
   if(argc!=2) {
    puts("Usage: GITCWALK [20|100|ALL|BADSHA]");return 4;
   }
-  if(strcmp(argv[1],"XPACK")==0||
+  if(strcmp(argv[1],"FPACK")==0) {
+   doapply=1;dooid=1;rpack=1;fpack=1;limit=PACKCAP;
+  } else if(strcmp(argv[1],"XPACK")==0||
      strcmp(argv[1],"XAPPLY")==0) {
    doapply=1;dooid=strcmp(argv[1],"XPACK")==0;
    rpack=1;xpack=1;limit=PACKCAP;
@@ -689,7 +736,10 @@ int main(int argc,char **argv) {
     }
     baseidx=find_ref_base(refbase,idx);
     if(baseidx<0&&xpack&&ext_lookup(refbase)) baseidx=-2;
-    if(baseidx<0&&baseidx!=-2) {
+    if(baseidx<0&&fpack) {
+     baseidx=-3;memcpy(forward_oid[idx],refbase,20);
+    }
+    if(baseidx<0&&baseidx!=-2&&baseidx!=-3) {
      printf("UNRESOLVED REF BASE OBJ %lu\n",idx+1);
      return 8;
     }
@@ -701,7 +751,8 @@ int main(int argc,char **argv) {
   objpos[idx]=start;
   if(type>=1&&type<=4) objtype[idx]=type;
   else if((type==6||type==7)&&doapply) {
-   if(baseidx==-2&&type==7&&xpack)
+   if(baseidx==-3&&type==7&&fpack) objtype[idx]=0;
+   else if(baseidx==-2&&type==7&&xpack)
     objtype[idx]=ext_type;
    else {
     if(baseidx<0||baseidx>=(int)idx) {
@@ -737,6 +788,13 @@ int main(int argc,char **argv) {
     rs=size;
     tmp=output;
    } else if(type==6||type==7) {
+    if(baseidx==-3&&type==7&&fpack) {
+     forward_delta[idx]=(unsigned char *)malloc(size?size:1);
+     if(!forward_delta[idx]) return 8;
+     memcpy(forward_delta[idx],output,(size_t)size);
+     forward_len[idx]=size;
+     goto advance;
+    }
     if(baseidx!=-2&&!objdata[baseidx]) {
      puts("MISSING RECONSTRUCTED BASE");return 8;
     }
@@ -807,9 +865,12 @@ int main(int argc,char **argv) {
     }
    }
   }
+ advance:
   used=api[5];
   pos+=used;
  }
+ if(fpack&&!resolve_forward(count,&ref_count,&applied))
+  return 8;
  if(idx==count && pos!=n-20) {
   printf("PACK END MISMATCH %lu EXPECT %lu\n",pos,n-20);
   return 8;
