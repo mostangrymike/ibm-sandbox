@@ -84,7 +84,7 @@ def main():
         "OBJ 1 3 3 " + abc_hex + "\\n616264\\n", encoding="ascii"
     )
     (folder / "EXTMISS.DATA").write_text(
-        "OBJ 1 3 3 " + oid(b"other").hex().upper()
+        "OBJ 1 3 5 " + oid(b"other").hex().upper()
         + "\\n6F74686572\\n", encoding="ascii"
     )
     print("OID ABC", oid(b"abc").hex().upper())
