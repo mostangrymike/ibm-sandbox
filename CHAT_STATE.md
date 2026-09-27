@@ -1956,3 +1956,30 @@ Next user commands from ibm-sandbox/src: git pull;
 If a selector creation fails halfway, preserve any partially
 created file and stop; do NOT blindly rerun WRITEGEN.
 This M15 selector test awaits native CMS results.
+
+## September 27 12:46 M15 two genuine native generations selected
+
+M15 isolated CMS selection test PASSED: the existing protected
+GITFIX candidate was bound C0, and independently copied,
+reindexed and sealed M15NEW candidate C1. Newly allocated
+M15SL0 PTR A was written with seq 51 GITFIX and after full
+1808-object GENCHECK selected RC0 with digest
+493F0896884B28AC4836B88328629B7E95404B46.
+Newly allocated M15SL1 PTR A was then written with seq52
+M15NEW, whose independently produced GEN2 had the same
+descriptor digest. Native GITREC SELECT GITFIX M15NEW
+fully rehashed 1808 objects and SELECTED 52 M15NEW RC0.
+Elapsed 43.01s. Existing GITSEL0/GITSEL1 and protected
+GITFIX files remain unchanged. M15SL0/M15SL1 and all
+M15NEW files now EXIST: never repeat that creation batch.
+
+Next reused GITRUN.EXEC is a read-only M15 fallback gate:
+bind the two existing M15SL selector files, complete old
+GITFIX and new M15NEW candidate files except C1GEN, which
+is deliberately mapped to nonexistent M15BAD GEN A only
+after verifying absent RC28. Require RECOVERED 51 GITFIX
+RC0 after full audit. Then restore C1GEN mapping to intact
+M15NEW GEN A and require SELECTED 52 M15NEW RC0 after
+fresh full audit. No selectors or data are modified.
+Mac: git pull; ./cms-upload.sh GITRUN.EXEC.
+CMS: GITRUN.
