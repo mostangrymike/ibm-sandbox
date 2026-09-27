@@ -2,9 +2,17 @@
 #define STAGE_HOST_ENTRY native_stage_entry
 #include "native_stage_host.c"
 #undef STAGE_HOST_ENTRY
+/* Count native indexer STGIN opens, not fixture/setup opens. */
+static unsigned long stage_opens=0;
+static FILE *tracked_open(const char *name,const char *mode) {
+ if(strcmp(name,"dd:STGIN")==0) stage_opens++;
+ return fopen(name,mode);
+}
+#define fopen tracked_open
 #define main gitcidx_entry
 #include "../src/GITCIDX.C"
 #undef main
+#undef fopen
 #include <unistd.h>
 /* Refuse indexes generated with the legacy EBCDIC-hash code. */
 static int reject_v1(const char *filename,long at,int seek) {
@@ -50,6 +58,10 @@ int main(void) {
  if(idx_read()!=0||idx_unique!=8||idx_audit()!=0) return 7;
  if(!reject_v1("dd:IDXIN",3,0)) return 48;
  if(idx_pair()!=0) return 50;
+ stage_opens=0;
+ if(sidx_audit()!=0||stage_opens!=1) return 60;
+ stage_opens=0;
+ if(idx_pair()!=0||stage_opens!=1) return 61;
  /* A structurally valid stale SIDX2 descriptor must fail PAIR. */
  f=fopen("dd:FIDXIN","r+b");
  if(!f||!fgets(line,sizeof line,f)) return 51;
