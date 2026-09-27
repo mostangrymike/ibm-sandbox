@@ -136,6 +136,67 @@ int main(void) {
  }
  if(system("./native_recovery SELECT GENOLD GENOLD"
            " > recovery.log")==0) return 104;
+ /* M15 host interrupted-promotion gates use disposable copies.
+  * A valid older slot must survive each partial new-slot write
+  * and each missing new-generation component. The real compiled
+  * GITREC must execute full GENCHECK on every surviving candidate.
+  */
+ {
+  const char *components[4]={
+   "dd:C1STG","dd:C1IDX","dd:C1SEEK","dd:C1GEN"
+  };
+  const char *held[4]={
+   "held-new-stage","held-new-index",
+   "held-new-seek","held-new-gen"
+  };
+  char digesthex[41];
+  long slotlen;
+  long cut[5];
+  int j;
+  f=fopen("dd:SEL1","rb");
+  if(!f||fseek(f,0,SEEK_END)!=0) return 105;
+  slotlen=ftell(f);
+  if(fclose(f)!=0||slotlen<32) return 106;
+  for(j=0;j<20;j++)
+   sprintf(digesthex+2*j,"%02X",digest[j]);
+  cut[0]=0;cut[1]=1;cut[2]=8;
+  cut[3]=slotlen/2;cut[4]=slotlen-1;
+  for(j=0;j<5;j++) {
+   if(!write_slot("dd:SEL1",42,"GENNEW",digesthex))
+    return 107;
+   f=fopen("dd:SEL1","r+b");
+   if(!f||ftruncate(fileno(f),cut[j])!=0||
+      fclose(f)!=0) return 108;
+   if(system("./native_recovery SELECT GENOLD GENNEW"
+             " > recovery.log")!=0||
+      !selected_output("SELECTED 41 GENOLD"))
+    return 109;
+  }
+  if(!write_slot("dd:SEL1",42,"GENNEW",digesthex))
+   return 110;
+  for(j=0;j<4;j++) {
+   if(rename(components[j],held[j])!=0) return 111;
+   if(system("./native_recovery SELECT GENOLD GENNEW"
+             " > recovery.log")!=0||
+      !selected_output("RECOVERED 41 GENOLD"))
+    return 112;
+   if(rename(held[j],components[j])!=0) return 113;
+  }
+  /* An interrupted manifest write cannot authorize a new gen. */
+  if(rename("dd:C1GEN","held-new-gen")!=0) return 114;
+  f=fopen("dd:C1GEN","w");
+  if(!f||fputs(GEN2 1808 8\nDIGEST ,f)==EOF||
+     fclose(f)!=0) return 115;
+  if(system("./native_recovery SELECT GENOLD GENNEW"
+            " > recovery.log")!=0||
+     !selected_output("RECOVERED 41 GENOLD"))
+   return 116;
+  if(remove("dd:C1GEN")!=0||
+     rename("held-new-gen","dd:C1GEN")!=0) return 117;
+  if(system("./native_recovery SELECT GENOLD GENNEW"
+            " > recovery.log")!=0||
+     !selected_output("SELECTED 42 GENNEW")) return 118;
+ }
 
  f=fopen("dd:C1GEN","r+b");
  if(!f||fputc('X',f)==EOF||fclose(f)!=0) return 85;
