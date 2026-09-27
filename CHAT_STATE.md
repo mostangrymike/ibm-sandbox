@@ -1872,3 +1872,34 @@ system reboot is not needed to continue independent
 next-milestone development. Future GITRUN should
 remain a reusable read-only dual-slot re-verification
 gate until a genuinely new target test is engineered.
+
+## M15 development resumed: September 27, host interruption CI green
+
+M14 on-target matrix is completed through the missing-slot
+triple gate (valid-old-only SELECTED 41 RC0, invalid-new-only
+NO FULLY VERIFIED GENERATION RC8, both restored RECOVERED 41
+RC0, full 1808-object audit in each accepted branch).
+Original GITFIX STAGE/INDEX/SEEK/GEN A and selector GITSEL0,
+GITSEL1 PTR A remain protected; no new CMS action needed.
+
+M15 independent GitHub work has started rather than waiting
+for reboot. Expanded tests/native_index_host.c runs the
+**actual compiled native GITREC**, not just the Python
+prototype, against disposable independent 1808-record
+host candidate fixtures. It tests five interrupted writes
+at different SEL1 prefix lengths; withholding stage, index,
+seek and GEN2 candidate components separately; incomplete
+new GEN2 write; fallback to the original full verified
+candidate for each failure and selection of newer only
+once restored. Complete integrated native-stage workflow
+at f3445ada7dbcc4cc5a84b0c6b7be0786e30d488b PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36337600946 .
+Additional design discussion in docs/ACTIVE_GENERATION_DESIGN.md.
+This is host proof, not real CMS atomic writes, promotion
+transaction safety or writer locking. Do not promote or
+mutate any protected files. src/GITRUN.EXEC remains the
+read-only dual-slot durability audit for the next ordinary
+authorized logon or reboot. Next independent engineering
+may build an isolated new-generation writer/recovery lab
+using freshly allocated disposable data/slot filenames,
+with capacity/lock assumptions explicit.
