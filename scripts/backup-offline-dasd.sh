@@ -57,6 +57,7 @@ cleanup() {
   fi
 }
 trap cleanup EXIT
+# Copy only an offline regular image, never overwrite an existing file.
 cp --reflink=never --sparse=never -- "$src" "$tmp"
 sync -- "$tmp"
 destbytes=$(stat -c %s -- "$tmp")
@@ -71,7 +72,13 @@ echo 'SOURCE SHA256:'
 sha256sum -- "$src"
 echo 'BACKUP SHA256:'
 sha256sum -- "$tmp"
-mv -n -- "$tmp" "$dest"
+# A hard link gives atomic create-if-absent behavior on the same
+# destination filesystem; mv -n is unsafe against competing creators.
+if ! ln -- "$tmp" "$dest"; then
+  echo 'STOP: backup destination appeared; preserve incomplete copy' >&2
+  exit 4
+fi
+rm -- "$tmp"
 [[ -f $dest && ! -e $tmp ]] || {
   echo 'STOP: could not finalize backup' >&2; exit 4;
 }
