@@ -126,6 +126,12 @@ ${CC:-cc} -x c -std=c89 -O2 -Wall -Wextra \
   exit 1
  fi
  grep -q '^INVALID EXTERNAL STAGE RECORD 2$' x-negative.log
+ cp EXTSHORT.DATA 'dd:EXTIN'
+ if ./native_ref_pack_host XPACK > x-negative.log; then
+  echo 'Accepted short external OID' >&2
+  exit 1
+ fi
+ grep -q '^INVALID EXTERNAL STAGE RECORD 1$' x-negative.log
  cp EXTBAD.DATA 'dd:EXTIN'
  if ./native_ref_pack_host XPACK > x-negative.log; then
   echo 'Accepted corrupted external stage base' >&2
