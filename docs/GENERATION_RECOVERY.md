@@ -120,3 +120,41 @@ The synthetic fixture has 1,808 records but 8 unique OIDs;
 the real target generation has 1,808 unique OIDs and is not yet
 GEN2-sealed on CMS. Only the target can establish cross-logon and
 reboot durability; the manifest is not an atomic promotion scheme.
+
+## Actual CMS GEN2 candidate sealing and rechecking: PASSED
+
+At 19:39–19:40 CDT September 26, 2026, the user compiled the updated
+GITCIDX under `CMSCLNK GITCIDX PLAIN` without assembler flags.
+GENOUT and GENIN were bound to newly created `GITFIX GEN A`,
+with the existing untouched canonical GITFIX STAGE, INDEX and SEEK
+files as inputs. `GENWRITE` performed a complete SFAST and PAIR
+(1,808 unique objects, all canonical SHA and seek cookies rechecked),
+then printed `GENERATION SEALED 1808 UNIQUE 1808` in 21.56 s
+elapsed. The separate `GENCHECK` invocation reread the manifest,
+independently reran all SFAST/PAIR checks, and printed
+`GENERATION VERIFIED 1808 UNIQUE 1808` in 21.57 s elapsed.
+
+This demonstrates completed-manifest validation across separate
+invocations on the same current CMS session. The manifest itself and
+all three canonical datasets must be preserved unchanged for a
+subsequent logoff/logon test. Neither cross-logon nor reboot survival
+has yet been demonstrated. These tests are also not an atomic
+multi-file commit, concurrent-writer lock or active-generation switch.
+
+### Read-only cross-logon check (next durability gate)
+
+After an ordinary user-initiated CMS logoff and logon, check that
+the same A disk is accessed read/write, then reissue only the four
+input definitions if absent:
+
+```text
+FILEDEF STGIN DISK GITFIX STAGE A
+FILEDEF IDXIN DISK GITFIX INDEX A
+FILEDEF FIDXIN DISK GITFIX SEEK A
+FILEDEF GENIN DISK GITFIX GEN A
+GITCIDX GENCHECK
+```
+
+Require the full `GENERATION VERIFIED 1808 UNIQUE 1808` result;
+do not run GENWRITE or recreate GITFIX GEN. This is a separate
+user-controlled test, not a reason to disrupt the current system.
