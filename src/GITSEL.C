@@ -89,6 +89,32 @@ static int slot_read(const char *dd,struct slot *out) {
  out->valid=1;
  return 1;
 }
+/* Write an untrusted SEL1 record to a caller-created output FILEDEF. */
+static int selector_write(const char *sequence,const char *name,
+                          const char *digest) {
+ FILE *f;
+ char payload[90],*end;
+ unsigned long seq,crc;
+ const char *p;
+ if(!*sequence||strlen(sequence)>10||
+    (sequence[0]=='0'&&sequence[1])||
+    !proper_name(name)||!proper_hex(digest)) return 4;
+ for(p=sequence;*p;p++)
+  if(*p<'0'||*p>'9') return 4;
+ seq=strtoul(sequence,&end,10);
+ if(*end||seq==0||seq>4294967295UL) return 4;
+ sprintf(payload,"SEL1 %lu %s %s",seq,name,digest);
+ crc=crc32_ascii(payload);
+ if(strlen(payload)+10>80) return 4;
+ f=fopen("dd:SELOUT","w");
+ if(!f) {perror("SELOUT");return 8;}
+ if(fprintf(f,"%s %08lX\n",payload,crc)<0) {
+  fclose(f);return 8;
+ }
+ if(fclose(f)!=0) return 8;
+ printf("SELECTOR WRITTEN %lu %s (UNTRUSTED)\n",seq,name);
+ return 0;
+}
 /* Callback must fully rehash candidate and validate its GEN2 seal. */
 #ifdef GITSEL_VERIFY
 extern int git_sel_verify(const char *gen,const char *digest);
@@ -121,6 +147,8 @@ static int selector_choose(struct slot *a,struct slot *b) {
 #endif
 int main(int argc,char **argv) {
  struct slot a,b;
+ if(argc==5&&strcmp(argv[1],"WRITE")==0)
+  return selector_write(argv[2],argv[3],argv[4]);
  if(argc!=2) {
   puts("Usage: GITSEL CHECK (candidates only)");
   return 4;
