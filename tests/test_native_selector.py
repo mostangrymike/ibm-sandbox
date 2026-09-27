@@ -123,6 +123,11 @@ def main():
                 capture_output=True, text=True,
             )
 
+        probe = select(old, new)
+        assert probe.returncode == 0, (
+            probe.stdout, probe.stderr,
+            (folder / "verified_GITNEW.txt").read_text(),
+        )
         check(select(old, new), 0, "SELECTED 42 GITNEW")
         (folder / "verified_GITNEW.txt").unlink()
         check(select(old, new), 0, "RECOVERED 41 GITOLD")
