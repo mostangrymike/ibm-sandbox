@@ -2,11 +2,20 @@
 """Build and test CMS C89 selector parser against the Python protocol."""
 from pathlib import Path
 import subprocess
-import sys
 import tempfile
+import re
+import zlib
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from active_generation_selector import encode  # noqa: E402
+# Independent ASCII/CRC32 oracle, not imported from the retired prototype.
+def encode(sequence, name, digest):
+    assert isinstance(sequence, int) and 0 < sequence <= 4294967295
+    assert re.fullmatch(r"[A-Z0-9]{1,8}", name)
+    assert re.fullmatch(r"[0-9A-F]{40}", digest)
+    payload = f"SEL1 {sequence} {name} {digest}"
+    crc = zlib.crc32(payload.encode("ascii")) & 0xffffffff
+    line = f"{payload} {crc:08X}\\n"
+    assert len(line.rstrip("\\n")) <= 80
+    return line
 
 SOURCE = Path(__file__).resolve().parents[1] / "src" / "GITSEL.C"
 OLD = "A" * 40
