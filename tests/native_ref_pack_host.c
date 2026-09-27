@@ -28,6 +28,8 @@ int main(int argc,char **argv) {
   if(strcmp(argv[1],"RAPPLY")==0||
      strcmp(argv[1],"XPACK")==0||
      strcmp(argv[1],"XAPPLY")==0||
+     strcmp(argv[1],"XSEEK")==0||
+     strcmp(argv[1],"XSAPPLY")==0||
      strcmp(argv[1],"FPACK")==0)
    args[1]=argv[1];
   else return 4;
