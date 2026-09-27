@@ -48,7 +48,7 @@ static int proper_hex(const char *s) {
 static int slot_read(const char *dd,struct slot *out) {
  FILE *f;
  char line[128],tag[5],name[9],hash[41],sum[9];
- char extra,payload[90],check[90],suffix[9];
+ char extra,payload[90],check[128],suffix[16];
  unsigned long seq,crc,provided;
  int n,fields;
  memset(out,0,sizeof *out);
