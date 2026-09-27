@@ -1,7 +1,7 @@
 /* GITRUN: reusable CMS milestone test batch; replace in GitHub each gate. */
-/* M14: compile and diagnose safe selector creation only. */
+/* M14: REXX STATE-gated first selector, then read-only recovery. */
 address cms
-say 'GITRUN M14 SELECTOR DIAGNOSTIC'
+say 'GITRUN M14 FIRST VERIFIED SELECTOR'
 'CMSCLNK GITSEL PLAIN'
 if rc \= 0 then do
  say 'GITRUN STOP: GITSEL compile RC' rc
@@ -25,7 +25,7 @@ if rc \= 0 then exit rc
 if rc \= 0 then exit rc
 'FILEDEF SELOUT DISK GITSEL0 PTR A (RECFM V LRECL 80'
 if rc \= 0 then exit rc
-'GITSEL WRITEGEN 41 GITFIX GITSEL0'
+'GITSEL WRITEGEN 41 GITFIX GITSEL0 ABSENT28'
 writerc=rc
 say 'GITRUN WRITEGEN RC' writerc
 if writerc \= 0 then do
@@ -35,5 +35,17 @@ end
 'STATE GITSEL0 PTR A'
 say 'GITRUN CREATED SELECTOR STATE RC' rc
 if rc \= 0 then exit 8
-say 'GITRUN SELECTOR CREATED; full recovery next gate'
-exit 0
+'FILEDEF SEL0 DISK GITSEL0 PTR A'
+if rc \= 0 then exit rc
+'FILEDEF C0STG DISK GITFIX STAGE A'
+if rc \= 0 then exit rc
+'FILEDEF C0IDX DISK GITFIX INDEX A'
+if rc \= 0 then exit rc
+'FILEDEF C0SEEK DISK GITFIX SEEK A'
+if rc \= 0 then exit rc
+'FILEDEF C0GEN DISK GITFIX GEN A'
+if rc \= 0 then exit rc
+'GITREC SELECT GITFIX GITBAD'
+selectrc=rc
+say 'GITRUN RECOVERY RC' selectrc
+exit selectrc
