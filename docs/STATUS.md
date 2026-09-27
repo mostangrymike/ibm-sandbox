@@ -1131,3 +1131,110 @@ The user correctly challenged another unnecessary pause. Reboot validation is se
 Native read-only GITREC recovery integration already landed and passed host CI: https://github.com/mostangrymike/ibm-sandbox/actions/runs/36330993480 . It invokes actual full GITCIDX GENCHECK for each candidate using per-slot input FILEDEFs rather than trusting a selector checksum; it falls back to a separate fully verified old generation if new fails. The latest complete source was checked before further edits. The follow-up `src/GITSEL.C` selector writer now rejects an existing `dd:SELOUT` file before opening it for writing and returns RC 8 `SELECTOR OUTPUT EXISTS`, preventing accidental sequential overwrites of any existing slot. Native strict C89 tests confirm attempted rewrite leaves original selector bytes unchanged; full host integration CI green: https://github.com/mostangrymike/ibm-sandbox/actions/runs/36331581650 . This is a best-effort existence guard, NOT atomic create-if-absent or a concurrency lock. `docs/NATIVE_RECOVERY_GATE.md` updated with safeguard and exact next isolated CMS test. Existing canonical GITFIX STAGE/INDEX/SEEK/GEN A are still protected, with 1,808-object full integrity, indexed external REF and cross-logon GEN2 proof already target-complete. Actual GITREC CMS compile and read-only SEL0 valid old/SEL1 invalid new fallback is the next genuine target gate; original PACK/rebuild and an unnecessary reboot are not prerequisites.
 
 2026-09-27 resumed autonomous M14 development: native `GITSEL.C` now has `WRITEGEN SEQUENCE BASENAME`, a safe untrusted selector creation path reading GEN2 DIGEST from existing `dd:GENIN` instead of requiring manual copy of a 40-hex digest. It validates complete five-record GEN2/DIGEST/MINOID/MAXOID/GEND2 syntax, matching completion counts, uppercase 40-hex fields and no trailing records, then uses the existing best-effort immutable new `dd:SELOUT` check and ASCII CRC32 SEL1 writer. THIS DOES NOT ATTEST DATA; read-only `GITREC SELECT` still requires actual full candidate `gen_check()` with SFAST/PAIR. `tests/test_native_selector.py` now runs positive generated-manifest derivation against independent Python SEL1 bytes, existing slot nonoverwrite and malformed/truncated/extra GEN2 rejection. Entire CI passed https://github.com/mostangrymike/ibm-sandbox/actions/runs/36332001510 . `docs/NATIVE_RECOVERY_GATE.md` now gives the simpler target commands: upload current GITSEL.C, GITREC.C and GITCIDX.C; compile GITSEL/GITREC PLAIN before FILEDEF; FILEDEF GENIN DISK GITFIX GEN A; create only new disposable GITSEL0/1 PTR A using GITSEL WRITEGEN 41 GITFIX and WRITEGEN 42 GITBAD; run GITREC SELECT GITFIX GITBAD. Preserve all protected original GITFIX files. The target CMS integrated recovery compilation and fallback remains outstanding: host CI cannot replace that genuine CMS runtime gate. Do not ask for user to copy DIGEST manually now. Continue independent code/host work where available; reboot validation is independent and does not block M14.
+
+# NEW CHAT HANDOFF — 2026-09-27 (verified current repository)
+
+When a new chat begins, read THIS LAST SECTION of CHAT_STATE.md,
+docs/STATUS.md, docs/NATIVE_RECOVERY_GATE.md and project rules on
+GitHub before touching code. Repo: mostangrymike/ibm-sandbox,
+default main. Continue maximizing independent development; do not
+pause to await reboot or ask to redo already successful CMS tests.
+
+TARGET-PROVEN, PRESERVE UNCHANGED: In actual IBM z/VM 6.3 CMS under
+Hercules, original 340,027-byte PACK SHA
+8C92E274ECA84B797F8925A6082915DD6CCDE196 reconstructed
+all 1,808 objects (1,117 OFS deltas) with correct ASCII Git OIDs.
+Persistent files on CMS A: GITFIX STAGE A, GITFIX INDEX A (IDX2),
+GITFIX SEEK A (SIDX2), GITFIX GEN A (GEN2). STAGE/VERIFY,
+BUILD/CHECK/AUDIT, SBUILD/SCHECK, SFAST, PAIR and full GENWRITE/
+GENCHECK all passed on real CMS. On September 27, after a
+genuine logoff/new logon, existing GITFIX files were rebound and
+read-only GITCIDX GENCHECK again returned
+FAST AUDIT VERIFIED 1808 UNIQUE 1808,
+PAIR VERIFIED UNIQUE 1808,
+GENERATION VERIFIED 1808 UNIQUE 1808, RC0
+(21.47 CPU/21.68 elapsed). Cross-logon persistence PROVEN;
+power-cycle/reboot persistence NOT TESTED. Protect all GITFIX
+files; never run GENWRITE again on existing GITFIX GEN A or
+overwrite the stage/indexes. Old GITSTAGE DATA A, GITINDEX DATA A
+(IDX1), GITSEEK INDEX A (SIDX1) are historical noncanonical.
+Canonical first commit OID
+00D8D63229305230C8D37F884CE87F9E1A89468C (270 bytes);
+last tree EB37E3F23FF4FC137D715D71A711D3B7632D75F2
+(5,224 bytes). FPACK forward chained REF, XPACK synthetic and
+real external REF, XSEEK and XSAPPLY indexed actual external REF
+all target-proven. XSEEK real commit 0.19 s vs old XPACK scan
+8.17 s in separate runs. More recent optional XSEEK sorted-OID
+hardening host-tested, not target-retested.
+
+CURRENT M14 INDEPENDENT IMPLEMENTATION (HOST-PROVEN,
+CMS VALIDATION STILL PENDING):
+src/GITSEL.C: strict C89 EBCDIC-safe ASCII CRC32 SEL1 selector
+reader, fail-closed two slots, WRITE and WRITEGEN SEQ BASENAME.
+WRITEGEN derives the exact GEN2 DIGEST from input dd:GENIN,
+validates full GEN2 manifest grammar, and writes a NEW disposable
+record to dd:SELOUT; existing output nonoverwrite is a
+best-effort guard, NOT atomic create-if-absent or writer lock.
+src/GITREC.C: links actual GITSEL.C and GITCIDX.C directly,
+uses real gen_check() with full SFAST/PAIR for each candidate,
+maps independent four-file sets C0STG/C0IDX/C0SEEK/C0GEN and
+C1STG/C1IDX/C1SEEK/C1GEN, confirms candidate identity/manifest
+DIGEST before accepting, falls back to older verified candidate
+on damaged newer slot. It is READ-ONLY recovery, NOT active
+pointer promotion, atomic transaction or a reboot proof.
+Current last complete main host CI PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36332001510
+HEAD e3046c83467e6b91b54df20d49c78da81ea31d5e
+(full native C89 selector, generated-manifest digest,
+nonoverwrite/malformed/truncated extra-record rejection,
+real GITREC and 1,808 synthetic object pair fallback,
+native Git PACK stages). The actual source state in GitHub
+supersedes older in-chat fragments; fetch before editing.
+Issue #2 remains OPEN.
+
+NEXT GENUINELY TARGET-DEPENDENT CMS TEST:
+Docs docs/NATIVE_RECOVERY_GATE.md fully specify read-only
+valid-old/invalid-new gate using only NEW disposable
+GITSEL0 PTR A/GITSEL1 PTR A and protected GITFIX inputs.
+On Mac in ibm-sandbox/src, git pull, upload latest
+GITSEL.C, GITREC.C, GITCIDX.C using existing cms-upload.sh
+and ONE existing c3270 (no second instance, no nc/socat).
+On CMS compile BEFORE FILEDEF:
+CMSCLNK GITSEL PLAIN
+CMSCLNK GITREC PLAIN
+TYPE GITFIX GEN A
+Use FILEDEF GENIN DISK GITFIX GEN A and
+FILEDEF SELOUT DISK GITSEL0 PTR A (RECFM V LRECL 80
+GITSEL WRITEGEN 41 GITFIX
+FILEDEF SEL0 DISK GITSEL0 PTR A
+C0STG GITFIX STAGE A, C0IDX GITFIX INDEX A,
+C0SEEK GITFIX SEEK A, C0GEN GITFIX GEN A.
+GITREC SELECT GITFIX GITBAD should rehash every object
+and print SELECTED 41 GITFIX with identical selector digest.
+Then clear SELOUT ONLY IF ACTUALLY DEFINED, rebind to NEW
+GITSEL1 PTR A and run GITSEL WRITEGEN 42 GITBAD using
+the same GENIN GITFIX GEN A solely to create syntactically
+valid but unverifiable newer selector. Define SEL1;
+DO NOT define valid C1STG/C1IDX/C1SEEK/C1GEN.
+GITREC SELECT GITFIX GITBAD must full-verify and print
+RECOVERED 41 GITFIX (never SELECTED 42 GITBAD).
+Detailed exact commands in docs/NATIVE_RECOVERY_GATE.md.
+Before creating either selector ensure that file does not
+already exist: if it exists use unused alternative names
+and update FILEDEFs. If current main changes or a target
+bug is discovered, fix source on GitHub, run CI, and
+document accurately rather than declaring false target pass.
+
+REMAINING INDEPENDENT WORK: native CMS target compile and
+fallback gate above when user provides results; meanwhile
+continue standalone GitHub engineering on disposable
+interrupted-promotion tests and fail-closed selector hardening.
+No need to reboot just for test; system reboot durability
+later, with read-only GENCHECK only after an ordinary
+authorized reboot. Do not claim atomic rename, locking
+or concurrent write safety without actual proof.
+
+LATEST CHAT REQUEST: user asked to save project state before
+opening a new chat; this handoff is now committed. In new
+chat pick up directly using these refs, re-fetch latest
+GitHub status and proceed without asking to repeat past logs.
