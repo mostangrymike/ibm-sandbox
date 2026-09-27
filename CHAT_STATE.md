@@ -1786,3 +1786,23 @@ GITBAD, expecting complete 1808-object audit and RECOVERED
 RC 0. This gate is pending actual CMS output, and no
 source rebuild or selector write is necessary. Mac pull
 and upload only GITRUN.EXEC, then run GITRUN once on CMS.
+
+## September 27 12:26 M14 target identity gate PASSED
+
+CMS GITRUN first invoked GITREC SELECT GITBAD GITFIX against
+existing GITSEL0 seq41 GITFIX and GITSEL1 seq42 GITBAD.
+It printed SELECTOR SLOT 0 NAME MISMATCH, SELECTOR SLOT 1
+NAME MISMATCH, NO FULLY VERIFIED GENERATION, expected RC 8.
+The same run then invoked proper GITREC SELECT GITFIX GITBAD,
+reverified 1808 objects through full SFAST/PAIR/GENCHECK,
+returned RECOVERED 41 GITFIX with digest
+493F0896884B28AC4836B88328629B7E95404B46 and RC 0
+(elapsed 21.84 seconds). Both selectors and protected GITFIX
+stage/index/seek/GEN remain unmodified.
+
+Reusable GITRUN.EXEC is now updated for the next independent
+read-only negative gate: verify GITBAD GEN A is missing, bind
+C0GEN to that missing input, require GITREC SELECT to fail
+closed with RC 8, rebind C0GEN to protected GITFIX GEN A
+and require full recovery with RC 0. Upload only the updated
+GITRUN.EXEC after git pull; no C source change or rebuild.
