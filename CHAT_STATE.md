@@ -2136,3 +2136,38 @@ sequence and final restoration. Latest native CI
 is https://github.com/mostangrymike/ibm-sandbox/actions/runs/36339171710 .
 Mac: from ibm-sandbox/src run git pull and
 ./cms-upload.sh GITRUN.EXEC; CMS: GITRUN.
+
+## M17 pending CMS cleanup batch
+
+M16 target run PASSED on September 27 at 13:05: forged CRC-correct
+seq60 M15NEW digest fell back to verified seq51 GITFIX,
+genuine lower seq50 M15NEW lost to seq51 GITFIX, conflicting
+same seq51 candidates failed closed RC8, and restoring
+seq52 M15NEW reverified the entire 1808-object generation,
+RC0. All three M16 disposable selector files M16BAD,
+M16LOW and M16CON PTR A were erased and STATE-confirmed
+absent. Both sealed generations and all four long-lived
+selector records remained present.
+
+User asked to embed exact previously enumerated abandoned
+native TLS ERASE commands in the NEXT reused GITRUN.EXEC.
+Current GitHub src/GITRUN.EXEC is that M17 batch. It first
+STATE-checks all eight GITFIX/M15NEW sealed files, the
+four GITSEL0/GITSEL1/M15SL0/M15SL1 PTR A selectors and
+captured original GITPBUF PACK A. It independently runs
+full GITCIDX GENCHECK on both sealed generations and
+GITREC SELECT GITFIX M15NEW on existing M15 slots.
+Only if all pass, it retires on CMS A the listed obsolete
+native TLS research files M12ATLS/M12TLS2/M12TLS3/
+M12TLS4 with ASSEMBLE/LISTING/MODULE/TEXT types where
+present, and TLSQTEST/SSLTEST/SSLTEST2 C. Each file is
+STATE-checked and, when present, ERASEd and STATE-
+confirmed absent. Missing files are skipped, unexpected
+RCs abort. It rechecks all protected files afterward.
+This cleanup is PENDING target CMS output, not yet done.
+Native TLS research sources were already removed from
+GitHub main; stunnel transport and ordinary TCP/HTTP
+are preserved. SSLPOOL service logs and historical
+SSL trace DATA are NOT in this M17 deletion batch.
+Mac from ibm-sandbox/src: git pull;
+./cms-upload.sh GITRUN.EXEC. CMS: GITRUN.
