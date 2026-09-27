@@ -24,8 +24,12 @@ int gitcapi(unsigned long *p) {
 }
 int main(int argc,char **argv) {
  char *args[2]={"GITCWALK","RPACK"};
- if(argc==2&&strcmp(argv[1],"RAPPLY")==0)
-  args[1]="RAPPLY";
- else if(argc!=1) return 4;
+ if(argc==2) {
+  if(strcmp(argv[1],"RAPPLY")==0||
+     strcmp(argv[1],"XPACK")==0||
+     strcmp(argv[1],"XAPPLY")==0)
+   args[1]=argv[1];
+  else return 4;
+ } else if(argc!=1) return 4;
  return gitcwalk_entry(2,args);
 }
