@@ -17,6 +17,8 @@ if [ "$actual" != "$expected" ]; then
  echo "Native Git OID:   $actual" >&2
  exit 1
 fi
+${CC:-cc} -x c -std=c89 -O2 -Wall -Wextra -Werror \
+    -o "$tmp/native_recovery" "$root/src/GITREC.C"
 ${CC:-cc} -x c -std=c89 -D_POSIX_C_SOURCE=200809L \
     -O2 -Wall -Wextra -o "$tmp/native_index_host" \
     "$root/tests/native_index_host.c"
