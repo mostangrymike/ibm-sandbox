@@ -42,3 +42,32 @@ Next existing-target durability test, only after a normal
 authorized VM reboot, is read-only GENCHECK against the original
 GITFIX STAGE, INDEX, SEEK and GEN files. Cross-logon survival
 has already passed; reboot persistence is not yet demonstrated.
+
+## First implemented host-only selector prototype
+
+The repository now contains `tests/active_generation_selector.py`,
+a strict, versioned two-slot prototype. It encodes the selector
+sequence, uppercase 1–8-character CMS basename, canonical 40-hex
+GEN2 digest and CRC32 over explicit ASCII bytes. Its parser
+requires exactly one newline-terminated record, valid checksum,
+strict grammar and sequence within an unsigned 32-bit range.
+Recovery calls an **injected full-generation-verification callback**
+for each candidate in descending sequence order. It fails closed if
+two different slots claim the same sequence, returns the prior
+verified slot if a newer selector is corrupt or its generation fails
+full verification, and returns no selection if neither is valid.
+
+`tests/test_active_generation_selector.py` checks every truncated
+prefix of the newer slot, checksum corruption, wrong/missing candidate
+validation, ambiguous duplicate sequences, identical slots, missing
+slots and invalid grammar. Full host regression CI passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36329760231 .
+
+**This is a host-only executable specification, not deployed CMS
+selector code.** The callback contract is deliberately strict: it
+must be backed by real GENCHECK against the candidate's four files.
+It cannot be replaced by a filename-exists check or a matching
+manifest header. The next implementation step is a CMS C89 parser,
+then an explicit read-only candidate verification and controlled
+promotion test using separate disposable generations. Never
+introduce promotion writes against GITFIX during development.
