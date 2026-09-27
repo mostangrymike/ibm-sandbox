@@ -1,6 +1,6 @@
 /* GITRUN: reusable CMS milestone test batch; replace in GitHub each gate. */
 /* M14: compile and diagnose safe selector creation only. */
-address command
+address cms
 say 'GITRUN M14 SELECTOR DIAGNOSTIC'
 'CMSCLNK GITSEL PLAIN'
 if rc \= 0 then do
