@@ -1750,3 +1750,22 @@ four C0 data files, leave C1 absent, run GITREC SELECT.
 Use after a normal fresh CMS logon, and optionally after
 an authorized ordinary system reboot. Host-only interrupted
 promotion design and atomicity/writer exclusion remain open.
+
+## September 27 12:21 read-only dual-slot repeat audit
+
+User ran the already-uploaded read-only GITRUN on CMS. Both STATE
+checks passed for GITSEL0 and GITSEL1 PTR A. GITREC could not open
+C1GEN for intentionally absent GITBAD, then fully audited the
+original protected generation. Output: FAST AUDIT VERIFIED 1808
+UNIQUE 1808; PAIR VERIFIED UNIQUE 1808; GENERATION VERIFIED
+1808 UNIQUE 1808; RECOVERED 41 GITFIX
+493F0896884B28AC4836B88328629B7E95404B46; GITRUN
+RECOVERY RC 0. CPU 21.44s, elapsed 21.59s. User did not
+explicitly confirm a logoff between the prior run and this
+run; count this as read-only repeatability, not yet proof
+of cross-logon selector survival. The original protected
+GITFIX files and both selectors remain unchanged by GITRUN.
+Next independent target durability gate is the same
+read-only GITRUN after a confirmed ordinary logoff/logon,
+or subsequently after an authorized normal VM reboot.
+Do not force a reboot, rewrite selectors, or rerun GENWRITE.
