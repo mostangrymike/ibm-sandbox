@@ -49,7 +49,8 @@ int main(void) {
  if(sidx_build()!=0||sidx_count!=8) return 39;
  if(rename("dd:FIDXOUT","dd:FIDXIN")!=0||
     sidx_read()!=0||sidx_count!=8) return 40;
- if(!reject_v1("dd:FIDXIN",4,1)||sidx_audit()!=0)
+ if(!reject_v1("dd:FIDXIN",4,1)||
+    sidx_audit()!=0||sidx_fast_audit()!=0)
   return 47;
  if(sidx_get(objoid[0])!=0||
     sidx_get(objoid[1807])!=0) return 41;
@@ -58,6 +59,8 @@ int main(void) {
  if(idx_read()!=0||idx_unique!=8||idx_audit()!=0) return 7;
  if(!reject_v1("dd:IDXIN",3,0)) return 48;
  if(idx_pair()!=0) return 50;
+ stage_opens=0;
+ if(sidx_fast_audit()!=0||stage_opens!=1) return 62;
  stage_opens=0;
  if(sidx_audit()!=0||stage_opens!=1) return 60;
  stage_opens=0;
@@ -80,11 +83,12 @@ int main(void) {
  if(old==EOF||fseek(f,start,SEEK_SET)!=0||
     fputc(old=='0'?'1':'0',f)==EOF||
     fclose(f)!=0) return 56;
- if(sidx_read()!=0||idx_pair()==0) return 57;
+ if(sidx_read()!=0||idx_pair()==0||
+    sidx_fast_audit()==0) return 57;
  f=fopen("dd:FIDXIN","r+b");
  if(!f||fseek(f,start,SEEK_SET)!=0||
     fputc(old,f)==EOF||fclose(f)!=0) return 58;
- if(idx_pair()!=0) return 59;
+ if(idx_pair()!=0||sidx_fast_audit()!=0) return 59;
 
  for(k=0;k<20;k++) needle[k]=objoid[0][k];
  if(idx_find(needle)!=0||idx_get(needle)!=0) return 8;
@@ -130,12 +134,14 @@ int main(void) {
     fclose(f)!=0) return 35;
  if(idx_get(needle)!=8||idx_audit()!=8||
     sidx_get(needle)!=8||sidx_audit()!=8||
+    sidx_fast_audit()!=8||
     idx_pair()!=8) return 36;
  f=fopen("dd:STGIN","r+b");
  if(!f||fseek(f,start,SEEK_SET)!=0||
     fputc(old,f)==EOF||fclose(f)!=0) return 37;
  if(idx_get(needle)!=0||idx_audit()!=0||
     sidx_get(needle)!=0||sidx_audit()!=0||
+    sidx_fast_audit()!=0||
     idx_pair()!=0) return 38;
  /* Reject malformed staged hex, then restore the verified source. */
  f=fopen("dd:STGIN","r+b");
@@ -154,12 +160,13 @@ int main(void) {
  if(!f||fseek(f,0,SEEK_END)!=0) return 42;
  end=ftell(f);
  if(end<16||ftruncate(fileno(f),end-2)!=0) return 43;
- if(fclose(f)!=0||sidx_read()==0||sidx_audit()==0)
+ if(fclose(f)!=0||sidx_read()==0||
+    sidx_audit()==0||sidx_fast_audit()==0)
   return 44;
  if(sidx_build()!=0||
     rename("dd:FIDXOUT","dd:FIDXIN")!=0||
     sidx_read()!=0||sidx_get(objoid[1807])!=0||
-    sidx_audit()!=0)
+    sidx_audit()!=0||sidx_fast_audit()!=0)
   return 45;
  if(remove("dd:FIDXIN")!=0) return 46;
  if(remove("dd:IDXIN")!=0||
