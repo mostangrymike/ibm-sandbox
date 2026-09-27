@@ -56,12 +56,19 @@ int git_sel_verify(const char *name,const char *digest) {
 int main(int argc,char **argv) {
  struct slot a,b;
  if(argc!=4||strcmp(argv[1],"SELECT")!=0||
-    !proper_name(argv[2])||!proper_name(argv[3])) {
+    !proper_name(argv[2])||!proper_name(argv[3])||
+    strcmp(argv[2],argv[3])==0) {
   puts("GITREC SELECT C0NAME C1NAME");
   return 4;
  }
  rec_expected[0]=argv[2];rec_expected[1]=argv[3];
  slot_read("dd:SEL0",&a);
  slot_read("dd:SEL1",&b);
+ if(a.valid&&strcmp(a.gen,argv[2])!=0) {
+  puts("SELECTOR SLOT 0 NAME MISMATCH");a.valid=0;
+ }
+ if(b.valid&&strcmp(b.gen,argv[3])!=0) {
+  puts("SELECTOR SLOT 1 NAME MISMATCH");b.valid=0;
+ }
  return selector_choose(&a,&b);
 }
