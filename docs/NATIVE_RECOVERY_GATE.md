@@ -233,3 +233,29 @@ invoke full GITREC SELECT GITFIX GITBAD. Expected result
 is RECOVERED 41 GITFIX with the same digest and RC 0.
 The second target gate has not yet been observed on CMS.
 No active promotion, writer locking or reboot atomicity is claimed.
+
+## September 27 target result: invalid-newer-slot recovery PASSED
+
+The second CMS GITRUN run confirmed GITSEL0 PTR A present and
+GITSEL1 PTR A absent (STATE RC 28), then created only the
+disposable GITSEL1 PTR A with sequence 42, name GITBAD and
+DIGEST 493F0896884B28AC4836B88328629B7E95404B46.
+GITREC SELECT GITFIX GITBAD could not open C1GEN, as expected,
+and ran complete SFAST/PAIR/GENCHECK on the older GITFIX
+generation. It reported FAST AUDIT VERIFIED 1808 UNIQUE 1808,
+PAIR VERIFIED UNIQUE 1808, GENERATION VERIFIED 1808 UNIQUE
+1808, and RECOVERED 41 GITFIX with exactly the existing
+manifest digest and RC 0. Both native first-selection and
+invalid-newer fallback gates are now target-proven.
+
+FILEDEF CLEAR on four undefined C1 DDs emitted harmless
+DMSFLD704I diagnostics; subsequent GITRUN batches omit
+these unnecessary CLEAR operations. Never repeat the selector
+creation batch now that GITSEL1 PTR A exists: preserve both
+selector records and all four original GITFIX data files.
+
+The next separate durability gate is read-only GITREC SELECT
+after an ordinary future CMS logoff/logon; a further
+read-only check after an authorized system reboot would
+establish system restart persistence. Neither proves atomic
+promotion or concurrent-writer exclusion.
