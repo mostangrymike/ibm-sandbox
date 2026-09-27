@@ -85,9 +85,9 @@ def main():
         # WRITEGEN derives selector digest from existing GEN2 input,
         # never from a copied commit/tree/PACK OID.
         genfile = folder / "dd:GENIN"
-        manifest = ("GEN2 1808 8\\nDIGEST " + NEW
-                    + "\\nMINOID " + OLD + "\\nMAXOID " + NEW
-                    + "\\nGEND2 1808 8\\n")
+        manifest = ("GEN2 1808 8\nDIGEST " + NEW
+                    + "\nMINOID " + OLD + "\nMAXOID " + NEW
+                    + "\nGEND2 1808 8\n")
         genfile.write_text(manifest, encoding="ascii")
         output.unlink()
         check(subprocess.run(
@@ -104,7 +104,7 @@ def main():
         ), 8, "SELECTOR OUTPUT EXISTS")
         output.unlink()
         for invalid_manifest in [
-            manifest[:-2], manifest + "EXTRA\\n",
+            manifest[:-2], manifest + "EXTRA\n",
             manifest.replace("GEND2 1808 8", "GEND2 1808 7"),
             manifest.replace("DIGEST " + NEW, "DIGEST DEAD"),
             manifest.replace("GEN2 1808 8", "GEN2 1807 8"),
