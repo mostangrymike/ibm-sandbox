@@ -2567,3 +2567,78 @@ failure remains relevant to destructive
 maintenance but do not derail native Git
 functional development with repeated backup
 discussion; no cleanup in current GITRUN.
+
+## M22 NEXT TARGET GATE — GitHub host CI passed
+
+M21 actually passed on real z/VM 6.3 CMS at 18:35:
+the current native GITREC was compiled using
+CMSCLNK GITREC PLAIN with no assembler warnings,
+the standard GITRUN independently audited both
+GITFIX and M15NEW 1808-object generations,
+selected seq52 M15NEW, GET and CATHEX read the
+real 270-byte first commit with canonical Git OID
+00D8D63229305230C8D37F884CE87F9E1A89468C,
+seq51 GITFIX fallback succeeded after deliberately
+missing C1GEN, both missing manifests RC8, and
+restoration selected seq52 with full CATHEX;
+final protected file checks passed. User pasted
+interleaved output but unambiguous final line:
+GITRUN M21 ALL READ ONLY NATIVE GIT TESTS PASSED.
+Target CPU/elapsed 150.70/151.97. The
+deliberately missing M15BAD GEN emitted expected
+DMSSTT002E and DMSSOP036E messages.
+
+Acting on user's ongoing rule "do not pause till
+cms work needed", autonomously implemented M22
+native Git tree reader in src/GITREC.C:
+GITREC TREE C0NAME C1NAME OID40; validates
+complete GEN2/SFAST/PAIR before selecting a
+candidate; uses verified candidate's SIDX2
+to retrieve and rehash requested binary type-2
+object; first validates entire tree entry grammar
+and modes then emits `TREE DATA BEGIN`,
+`TREE ENTRY MODE <mode> NAMELEN <n> OID <40hex>`
+and `TREE NAMEHEX <up to 32 raw bytes>`
+records, `TREE ENTRIES n`, `TREE DATA END`.
+Supports empty trees, five standard Git modes,
+arbitrary non-NUL/non-slash raw name bytes
+(hex output to avoid EBCDIC issues). Rejects
+corrupt/non-tree types with RC8 and no TREE
+content emission. Host new
+tests/test-native-tree.py compiles real
+GITCIDX.C/GITREC.C C89 with strict -Werror,
+builds/seals 1808-object stage including valid
+6-entry tree, empty tree, malformed tree, blob,
+and full selector fallback and restore tests.
+CI PASS
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36359383185 .
+
+Standard src/GITRUN.EXEC is now M22's one-upload
+read-only CMS test batch, never GITRCHK. It
+checks protected files, full independent audit
+on both generations, verifies selected seq52,
+GETs actual first commit, TREE-decodes its
+actual tree OID
+204E1D6968FB81C35BF830D63A611AC64C072945,
+tests commit passed as TREE fails RC8, simulates
+missing new GEN2 to recover old seq51 TREE,
+simulates both missing RC8, restores both
+and decodes tree again, checks all protected
+files. CI read-only guard is updated and green.
+This latest M22 source has NOT yet been compiled
+or run on CMS. To target-validate, Mac from
+ibm-sandbox/src:
+git pull
+./cms-upload.sh GITREC.C
+./cms-upload.sh GITRUN.EXEC
+On CMS:
+CMSCLNK GITREC PLAIN
+GITRUN
+Do not upload GITCIDX.C again unless needed:
+M22 did not change it; GITREC source directly
+includes already uploaded current GITCIDX.C
+and GITSEL.C. No native TLS/SSL experiments,
+no filesystem cleanup, no pointer/file writes
+from the M22 runtime batch. Next gate genuinely
+requires user-provided live CMS M22 output;
+do not report target proof until it arrives.
