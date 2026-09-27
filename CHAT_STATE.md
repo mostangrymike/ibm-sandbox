@@ -1571,3 +1571,7 @@ requested read-only durability test, GITCIDX GENCHECK after user
 logoff/logon must re-open and independently validate existing
 GITFIX GEN A without GENWRITE. No such cross-logon/reboot result
 yet exists.
+
+## 2026-09-27 10:09–10:10 CDT: XSEEK / XSAPPLY target proof PASSED
+
+User's CMS transcript: CMSCLNK GITCWALK compiled NAPI successfully with 3 clean Assembler XF passes (6.44 CPU/6.72 elapsed sec). With PACKIN XREAL PACK A, EXTIN GITFIX STAGE A and EXIDX GITFIX SEEK A, GITCWALK XSEEK verified PACK SHA-1 0D53A7E7F292475203B4E6F0C5E3D66837686B19 (68 bytes, 1 object); printed EXTERNAL SEEK VERIFIED TYPE 1 SIZE 270; applied one external REF_DELTA to reproduce canonical first commit 00D8D63229305230C8D37F884CE87F9E1A89468C, PASS 1 OBJECTS NEXT OFFSET 48, REF DELTAS APPLIED 1, OBJECT OIDS COMPUTED 1. Runtime 0.17/0.19 sec CPU/elapsed. Independent GITCWALK XSAPPLY repeated verified external type 1 size 270 and applied one REF without ordinary object-OID output; PASS 1 OBJECTS NEXT OFFSET 48, 0.17/0.18 sec. Prior sequential XPACK on same real-stage commit took 8.05/8.17 sec in a separate run; these are observed runs, not a controlled benchmark. Existing validated GITFIX STAGE/IDX2/SIDX2/GEN2 unchanged. No user output for cross-logon or reboot durability yet; do NOT claim. New independent host source hardening/CI and active-generation work may proceed without re-running original PACK or existing CMS milestones.
