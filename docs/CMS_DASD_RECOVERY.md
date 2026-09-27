@@ -294,3 +294,52 @@ that captures all backing files atomically. The
 original user-facing CMS cleanup EXEC remains unsafe
 until disk integrity and a verified backup are
 established; the GitHub runner is an RC12 safety hold.
+
+## September 27 17:43 — actual DASD file identity VERIFIED
+
+The operator performed read-only Linux inspection as root on
+host `ip-172-31-14-90` and verified:
+
+- Actual running Hercules process: PID `879`, command
+  `hercules -f hercules.cnf`.
+- Its kernel-reported working directory:
+  `/home/admin/vm630`.
+- `/proc/879/cwd/dasd1` resolves to actual base image
+  `/home/admin/vm630/dasd1`, a regular file owned by
+  admin:admin, size **768,999,817 bytes** (734 MiB),
+  underlying Linux st_dev hexadecimal `10301`, inode
+  `407213`. The file was timestamped Sep 27 17:43
+  during inspection; it was still live and writable.
+- Hercules open descriptors FD12–17 point respectively
+  to `/home/admin/vm630/dasd1` … `dasd6`.
+- A `grep -niE 'sf=|shadow|include'` of actual
+  `/home/admin/vm630/hercules.cnf` returned no
+  matching records, and FD listing showed no additional
+  obvious open `shadow`, `ckd` or deleted files.
+  No shadow overlays were observed in these checks,
+  but dynamic state or unusual file names still
+  require independent operator review.
+
+This completes the path chain from actual CMS
+`CP QUERY MDISK 191 LOCATION` to host:
+MAINT virtual 0191, CP volume M01RES, real Rdev 0123,
+start cylinder 494, 175 cylinders; Hercules config
+real 0123 -> dasd1; actual active process cwd resolves
+that to **/home/admin/vm630/dasd1**, FD12.
+
+**Do not copy dasd1 while PID 879 still has it open.**
+Preserve crash evidence (Hercules console logs,
+z/VM dump, EREP, relevant Linux storage errors)
+before shutting down. If taking a coordinated
+crash-consistent EBS/storage snapshot of live backing
+storage, use the host's authorized provider tooling,
+not a plain `cp` against an open file. For a regular
+verified offline image, stop/quiesce guest and Hercules,
+verify FD12 no longer exists / source is no longer
+open, use the repo's offline backup helper with an
+operator-chosen independent destination, then record
+source/dest SHA-256 and `cmp` results. Avoid forcing
+filesystem cleanup/repair during guest shutdown; do
+not overwrite or truncate dasd1 or the affected CMS
+A minidisk. The stop/snapshot itself has **not yet
+been performed**, and there is **no verified backup**.
