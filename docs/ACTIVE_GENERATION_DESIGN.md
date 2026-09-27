@@ -343,3 +343,41 @@ exclusive writer lock, production binary transport
 or reboot recovery proof. No new CMS code has
 been uploaded after the M01RES TRKDE incident;
 the old CMS A-disk copy of GITRUN must not run.
+
+## M20 next native CMS gate is assembled but safety-held
+
+The full selected-generation `CATHEX` implementation and
+separately generated 65,536-byte/binary/empty-object
+byte-for-byte host integration are complete. All tests
+passed in GitHub Actions run
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36356523315 .
+The CMS smoke batch `src/GITRCHK.EXEC` is already
+committed. It checks both generations, all four
+protected selector files and the original captured
+PACK; then exercises the real canonical 270-byte
+first commit via current selected-generation GET,
+complete CATHEX, newer-manifest absence fallback,
+both manifests unavailable RC8, and final complete
+restoration. It neither generates indexes/manifests
+nor creates/deletes any persistent CMS file; a
+separate CI source guard rejects such commands.
+The entire expanded native suite, including this
+guard, passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36356602355 .
+
+**Prerequisite for any target invocation**: preserve
+and verify the operator-identified actual
+`/home/admin/vm630/dasd1` volume M01RES offline,
+then repair or reconstruct the CMS A filesystem
+after its TRKDE 4 corruption incident and verify
+that the target is safe for uploads/compilation.
+At that point transfer `src/GITREC.C` and
+`src/GITRCHK.EXEC` through the existing single
+c3270 uploader, rebuild `GITREC` using the proven
+`CMSCLNK GITREC PLAIN` path, and run one
+`GITRCHK` batch. Do **not** execute the
+previous unsafe CMS-uploaded `GITRUN`; the
+repository's current GITRUN is an RC12 safety
+hold. Full native CMS CATHEX operation is not
+yet target-proven; only its compiled-host output
+and native C89 protocol have been tested.
