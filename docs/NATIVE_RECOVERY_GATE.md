@@ -61,19 +61,19 @@ CMSCLNK GITREC PLAIN
 TYPE GITFIX GEN A
 ```
 
-From the existing GEN2 manifest, copy the 40 uppercase
-hexadecimal characters following the `DIGEST` record.
-This is the GEN2 descriptor digest, **not** the first commit
-OID, final tree OID or PACK trailer checksum.
+The new `GITSEL WRITEGEN` can read the completed `GEN2` manifest
+from the input FILEDEF `GENIN` and derive its DIGEST without
+copying a 40-character value by hand. The record it writes
+remains **untrusted** until GITREC performs complete GENCHECK.
+Use the existing GITFIX GEN A; do not regenerate the manifest.
 
 Only if `GITSEL0 PTR A` and `GITSEL1 PTR A` do not already
-exist, create two new disposable selector records. Replace
-`YOUR40CHARACTERGEN2DIGEST` in the following commands with
-the actual 40-digit DIGEST value you just read:
+exist, create two disposable selectors using that input manifest:
 
 ```text
+FILEDEF GENIN DISK GITFIX GEN A
 FILEDEF SELOUT DISK GITSEL0 PTR A (RECFM V LRECL 80
-GITSEL WRITE 41 GITFIX YOUR40CHARACTERGEN2DIGEST
+GITSEL WRITEGEN 41 GITFIX
 FILEDEF SEL0 DISK GITSEL0 PTR A
 FILEDEF C0STG DISK GITFIX STAGE A
 FILEDEF C0IDX DISK GITFIX INDEX A
@@ -93,7 +93,7 @@ without creating or modifying any new generation's data:
 ```text
 FILEDEF SELOUT CLEAR
 FILEDEF SELOUT DISK GITSEL1 PTR A (RECFM V LRECL 80
-GITSEL WRITE 42 GITBAD YOUR40CHARACTERGEN2DIGEST
+GITSEL WRITEGEN 42 GITBAD
 FILEDEF SEL1 DISK GITSEL1 PTR A
 GITREC SELECT GITFIX GITBAD
 ```
@@ -138,3 +138,23 @@ it is **not** an atomic create-if-absent operation or concurrent
 writer lock. The test above must still use only previously unused
 disposable selector filenames. Never bind SELOUT to a protected
 existing selector or any GITFIX stage/index/seek/GEN data file.
+
+## Host-proven digest-safe selector creation
+
+The latest `src/GITSEL.C` also supports `WRITEGEN SEQUENCE BASENAME`.
+It reads the existing completed GEN2 manifest through `GENIN`,
+requires the complete five-record GEN2/DIGEST/MINOID/MAXOID/GEND2
+grammar and matching counts, and uses its exact 40-hex DIGEST to
+create a new untrusted selector through `SELOUT`. No user-supplied
+digest is required. The existing best-effort output-exists guard
+still refuses to overwrite an existing selector file. This avoids
+confusing a commit, PACK checksum or min/max OID with the descriptor
+digest and reduces error-prone manual copying. The host suite tests
+correct byte-for-byte output, malformed/truncated/extra GEN2 records
+and attempted overwrite. Complete CI passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36332001510 .
+`WRITEGEN` has not yet been compiled or tested on CMS. It does not
+validate staged content itself; the separate GITREC SELECT full
+GENCHECK remains mandatory. Never bind SELOUT to an existing GITFIX
+file. If either disposable selector filename already exists, choose
+new unused 8-character names rather than overwrite it.
