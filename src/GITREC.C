@@ -53,12 +53,25 @@ int git_sel_verify(const char *name,const char *digest) {
  }
  return 0;
 }
+/* SELECT stays read-only. GET adds a verified indexed object
+ * lookup only after a complete native GENCHECK has selected a slot.
+ * Never call SGET on an unverified candidate or infer an active
+ * generation from a selector's unchecked contents.
+ */
 int main(int argc,char **argv) {
  struct slot a,b;
- if(argc!=4||strcmp(argv[1],"SELECT")!=0||
+ unsigned char oid[20];
+ int get,rc;
+ get=argc==5&&strcmp(argv[1],"GET")==0;
+ if((!get&&(argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
   puts("GITREC SELECT C0NAME C1NAME");
+  puts("GITREC GET C0NAME C1NAME OID40");
+  return 4;
+ }
+ if(get&&(strlen(argv[4])!=40||!idx_hex(argv[4],oid))) {
+  puts("GET REQUIRES 40 HEX DIGITS");
   return 4;
  }
  rec_expected[0]=argv[2];rec_expected[1]=argv[3];
@@ -70,5 +83,9 @@ int main(int argc,char **argv) {
  if(b.valid&&strcmp(b.gen,argv[3])!=0) {
   puts("SELECTOR SLOT 1 NAME MISMATCH");b.valid=0;
  }
- return selector_choose(&a,&b);
+ rc=selector_choose(&a,&b);
+ if(rc!=0||!get) return rc;
+ /* rec_active is set ONLY by the successful full-GEN2 callback. */
+ if(sidx_read()!=0) return 8;
+ return sidx_get(oid);
 }
