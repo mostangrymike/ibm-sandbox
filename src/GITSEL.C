@@ -86,14 +86,52 @@ static int slot_read(const char *dd,struct slot *out) {
  out->valid=1;
  return 1;
 }
+/* Callback must fully rehash candidate and validate its GEN2 seal. */
+#ifdef GITSEL_VERIFY
+extern int git_sel_verify(const char *gen,const char *digest);
+static int selector_choose(struct slot *a,struct slot *b) {
+ struct slot *first,*second,*tmp;
+ if(a->valid&&b->valid&&a->seq==b->seq&&
+    (strcmp(a->gen,b->gen)!=0||
+     strcmp(a->digest,b->digest)!=0)) {
+  puts("CONFLICTING SELECTOR SEQUENCE");return 8;
+ }
+ first=a;second=b;
+ if(b->seq>a->seq) {
+  tmp=first;first=second;second=tmp;
+ }
+ if(first->valid&&
+    git_sel_verify(first->gen,first->digest)==1) {
+  printf("SELECTED %lu %s %s\n",first->seq,
+         first->gen,first->digest);
+  return 0;
+ }
+ if(second->valid&&
+    git_sel_verify(second->gen,second->digest)==1) {
+  printf("RECOVERED %lu %s %s\n",second->seq,
+         second->gen,second->digest);
+  return 0;
+ }
+ puts("NO FULLY VERIFIED GENERATION");
+ return 8;
+}
+#endif
 int main(int argc,char **argv) {
  struct slot a,b;
- if(argc!=2||strcmp(argv[1],"CHECK")!=0) {
+ if(argc!=2) {
   puts("Usage: GITSEL CHECK (candidates only)");
   return 4;
  }
  slot_read("dd:SEL0",&a);
  slot_read("dd:SEL1",&b);
+#ifdef GITSEL_VERIFY
+ if(strcmp(argv[1],"SELECT")==0)
+  return selector_choose(&a,&b);
+#endif
+ if(strcmp(argv[1],"CHECK")!=0) {
+  puts("Usage: GITSEL CHECK (candidates only)");
+  return 4;
+ }
  if(a.valid&&b.valid&&a.seq==b.seq&&
     (strcmp(a.gen,b.gen)!=0||
      strcmp(a.digest,b.digest)!=0)) {
