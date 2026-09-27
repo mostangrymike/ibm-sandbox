@@ -61,6 +61,14 @@ def main():
         assert output.read_text(encoding="ascii") == encode(
             43, "GENNEW", NEW
         )
+        # Never overwrite a previously created selector slot.
+        check(subprocess.run(
+            [str(binary), "WRITE", "44", "GENNEW", NEW],
+            cwd=folder, capture_output=True, text=True,
+        ), 8, "SELECTOR OUTPUT EXISTS")
+        assert output.read_text(encoding="ascii") == encode(
+            43, "GENNEW", NEW
+        )
         for seq, name, digest in [
             ("0", "GENNEW", NEW), ("00", "GENNEW", NEW),
             ("043", "GENNEW", NEW), ("4294967296", "GENNEW", NEW),
