@@ -454,7 +454,7 @@ bad:
 static int ext_seek(const unsigned char *want) {
  FILE *ix,*st;
  char line[256],hexid[41],extra;
- unsigned char oid[20],digest[20];
+ unsigned char oid[20],prior[20],digest[20];
  unsigned long j,total,unique,et,eu,num,n,k,take,m;
  unsigned long selected_num=0,selected_size=0;
  long cookie=-1,off,selected_off=-1;
@@ -478,6 +478,8 @@ static int ext_seek(const unsigned char *want) {
    if(hi<0||lo<0) goto badidx;
    oid[k]=(unsigned char)((hi<<4)|lo);
   }
+  if(j&&memcmp(prior,oid,20)>=0) goto badidx;
+  memcpy(prior,oid,20);
   if(memcmp(oid,want,20)==0) {
    if(found) goto badidx;
    found=1;selected_num=num;selected_type=typ;
