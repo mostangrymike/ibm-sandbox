@@ -960,3 +960,68 @@ The original SVAUDIT was slow due to reopening every target. Current SFAST and P
 User supplied full target result: CMSCLNK GITCIDX PLAIN built successfully (4.07/4.23 sec CPU/elapsed). The three GITFIX input FILEDEFs succeeded; invalid CLEAR requests simply indicated no earlier definitions to remove. `GITCIDX SFAST` completed every checkpoint and `FAST AUDIT VERIFIED 1808 UNIQUE 1808` (20.85/20.99 s). `GITCIDX PAIR` repeated SFAST, compared all 1,808 canonical IDX2/SIDX2 descriptors and printed `PAIR VERIFIED UNIQUE 1808` (21.24/21.38 s). Direct SGET returned corrected first commit 00D8D63229305230C8D37F884CE87F9E1A89468C, OBJ 1 TYPE 1 SIZE 270 (0.15/0.15 s), and last tree EB37E3F23FF4FC137D715D71A711D3B7632D75F2 OBJ 1808 TYPE 2 SIZE 5224 (1.76/1.81 s). Both target GITFIX canonical stage and IDX2/SIDX2 indexes therefore fully reconciled across separate invocation/seek and SHA-1 rehash of all objects. This proves contents in the existing CMS generation, not atomic commit/reboot recovery. Historical IDX1/SIDX1 files remain noncanonical and separate. No more target validation needed for the original 1,808-object stage/index full audit.
 
 Independent next code after this milestone: isolated GITCWALK XPACK/XAPPLY modes resolve an external REF_DELTA base from a separately FILEDEF'd CMS staged-object stream dd:EXTIN. It scans up to 1,808 bounded stage records, validates hex record grammar and rehashes the selected external object using canonical Git SHA before application, failing closed on absent or corrupt bases. Normal RPACK/RAPPLY/STAGE and existing GITFIX artifacts remain untouched. New deterministic generator creates positive XPACK.PACK + EXTBASE.DATA and missing/corrupt negative fixtures. Native host zlib adapter tests external resolution both in XPACK and XAPPLY plus absent/corrupt/unmatched base cases against Git hash-object. Latest CI success: https://github.com/mostangrymike/ibm-sandbox/actions/runs/36281897291 . THIS NEW FEATURE IS HOST-PROVEN ONLY, NOT RUN ON CMS. User's previous RPACK backward REF and the canonical GITFIX stage/index remain target-proven; issue #2 still open for new external/forward REF gate and durable generations. Mandatory max-work-per-turn rule remains in force.
+
+## 2026-09-26 final target-proven IDX2/SIDX2 gate; host follow-on
+
+Actual latest user CMS result: `CMSCLNK GITCIDX PLAIN` built
+without assembler errors (4.07/4.23 s CPU/elapsed). STGIN,
+IDXIN and FIDXIN were bound to GITFIX STAGE/INDEX/SEEK A.
+An invalid CLEAR request on previously undefined names was
+harmless; the three DISK definitions all succeeded.
+`GITCIDX SFAST` completed full canonical SHA and ftell-cookie
+validation: 1,808 unique entries, 20.85/20.99 s.
+`GITCIDX PAIR` cross-checked all IDX2/SIDX2 descriptors
+and repeated the full body audit: 1,808 unique, 21.24/21.38 s.
+`SGET` independently retrieved correct canonical first commit
+`00D8D63229305230C8D37F884CE87F9E1A89468C`
+(OBJ1, TYPE1, 270 bytes, 0.15/0.15 s) and last tree
+`EB37E3F23FF4FC137D715D71A711D3B7632D75F2`
+(OBJ1808, TYPE2, 5,224 bytes, 1.76/1.81 s).
+GITFIX canonical stage + both indexes are therefore fully
+target-proven for this unmodified generation, including complete
+readback, reciprocal descriptor agreement, and seek-cookie validation.
+Do NOT repeat existing full PACK download, STAGE, BUILD or SBUILD.
+Keep historical noncanonical GITSTAGE/IDX1/SIDX1 separate.
+
+Following mandatory maximum autonomous work, GitHub gained:
+(1) isolated GITCWALK XPACK/XAPPLY modes which scan FILEDEF EXTIN
+CMS stage records (up to 1,808 bounded objects), locate an
+external REF base by 20-byte canonical OID, strictly validate
+hex grammar and independently recompute its canonical Git
+SHA-1 before applying the delta. Short, duplicate, missing,
+altered and mismatched bases are rejected;
+(2) isolated GITCWALK FPACK which buffers unresolved forward
+same-PACK REF deltas and resolves chained dependencies in
+bounded passes after all objects have been inflated;
+(3) separate GITCIDX GENWRITE/GENCHECK which runs full IDX2/SIDX2
+PAIR and writes a versioned GEN2 manifest LAST, binding sorted
+OID + ordinal + type + length + ftell cookies in a deterministic
+canonical SHA digest. On later GENCHECK, a fresh read of GENIN
+rejects malformed/truncated/extra records, reruns full PAIR,
+and confirms every descriptor plus digest matches.
+GEN2 is a candidate completion proof, NOT atomic promotion or
+active-generation pointer. Reboot/logoff recovery not yet tested.
+
+Host CI independently proved forward PACK through actual Git
+index-pack and Git cat-file, external REF with one and multiple
+stage records, full canonical SHA checks, tamper/duplicate/missing
+negative gates, and the GEN2 synthetic 1,808-entry seal/reopen,
+manifest corruption/truncation and stage/index tamper rejection.
+LATEST GREEN:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36282493293 .
+No new features above are yet target-validated on CMS.
+Docs: docs/REF_RESOLUTION.md and docs/GENERATION_RECOVERY.md.
+They provide exact Mac single-existing-c3270 uploader commands and
+isolated CMS FILEDEF tests. Fixtures include XREAL.PACK, a thin
+no-op copy of the known canonical first commit in GITFIX STAGE A
+to prove lookup from the actual 1,808-object persisted store.
+
+Remaining issue #2: target validation of new modes, thin PACK
+external actual stage, cross-logon/reboot GEN2 verification,
+atomic active-generation pointer and multi-file recovery, broader
+OFS-on-unresolved-forward dependency support and production Git
+client object-store integration. New source/fixtures must be
+uploaded before the new CMS test; do not confuse host CI success
+with CMS proof or modify existing GITFIX files.
+Mandatory rule: keep autonomous work maximal; stop only when
+real CMS target validation is required, with exact commands.
