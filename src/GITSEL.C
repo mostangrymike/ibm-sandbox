@@ -109,7 +109,7 @@ static int selector_state(const char *name) {
  }
  /* CMS returns 28 for missing. Unix test shells encode it as 28<<8. */
  if(rc!=28&&rc!=7168) {
-  printf("SELECTOR STATE FAILED RC %d\\n",rc);
+  printf("SELECTOR STATE FAILED RC %d\n",rc);
   return 8;
  }
  return 0;
