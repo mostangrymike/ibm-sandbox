@@ -9,7 +9,7 @@ if [[ $# -ne 1 || ! -f $1 || -L $1 ]]; then
 fi
 cfg=$(realpath -- "$1")
 echo "CONFIGURATION: $cfg"
-echo "HER CULES DEVICE DECLARATIONS (inventory ONLY):"
+echo "HERCULES DEVICE DECLARATIONS (inventory ONLY):"
 # Print CKD/CCKD filenames only. Do NOT dump arbitrary configuration
 # records, which may embed network credentials or access tokens.
 awk '
