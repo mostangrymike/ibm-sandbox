@@ -152,3 +152,32 @@ second candidate, new unused slot storage and
 interrupted-write testing on CMS before production use.
 Never reuse or overwrite GITSEL0/GITSEL1 PTR A or the
 four protected GITFIX generation files.
+
+## M15 next native CMS test: disposable independently sealed candidate
+
+The current reusable `src/GITRUN.EXEC` is committed as the
+first isolated CMS candidate-build gate. It guards all four
+new `M15NEW STAGE/INDEX/SEEK/GEN A` filenames and both
+`M15SL0/M15SL1 PTR A` names with real REXX STATE
+RC 28 checks **before writing**. It checks all four
+protected GITFIX source files, reports A-disk space,
+copies only the existing verified GITFIX STAGE and
+IDX2 INDEX into never-before-used M15NEW files, builds a
+fresh SIDX2 seek index against the new stage (since
+CMS ftell cookies may change when copied), then creates
+an independent M15NEW GEN2 manifest **last**.
+Afterward GITCIDX GENCHECK must independently reopen
+and rehash all 1,808 stored objects, pair both indexes,
+check stage seek cookies and verify the seal. Any
+failed step exits immediately with no selector writes.
+
+This test is a **disposable candidate build**, not
+active promotion and not the host interruption test.
+The next separate target gate after successful verification
+will use only new unused M15SL0/M15SL1 selector files,
+fully verify both candidates with GITREC before and after
+a deliberately invalid newer-selector case, and never
+write to the existing GITSEL0/GITSEL1 files. The new
+candidate should not be called durable or active until
+its independent CMS verification and subsequent
+persistence/recovery checks pass.
