@@ -2283,3 +2283,48 @@ to independent storage. Do NOT run user CMS's old uploaded
 cleanup GITRUN. GitHub src/GITRUN.EXEC remains fail-fast
 safety hold (RC12). Actual host file names, verified image
 backup and post-crash disk integrity are still UNKNOWN.
+
+## September 27 onward — confirmed six Hercules devices; mapping tool ready
+
+Operator actually ran configuration inventory:
+`/home/admin/vm630/hercules.cnf` device declarations
+`0123 3390 dasd1`, `0124 3390 dasd2`,
+`0125 3390 dasd3`, `0126 3390 dasd4`,
+`0127 3390 dasd5`, `0128 3390 dasd6`.
+A subsequent CMS `QUERY DISK` showed affected
+`MNT191` virtual 191 A R/W 175 cylinders,
+239 files, 9110/31500 4K blocks used, 22390 free.
+This read-only listing does NOT establish disk
+health after TRKDE 4. The CP physical `Rdev`,
+real volser, StartLoc, Size and actual Hercules
+process cwd remain UNKNOWN; do not assume 0123
+just because older projects happened to use 0123.
+
+IBM CP documentation confirms `CP QUERY MDISK 191 LOCATION`
+is a class-G read-only way to obtain OwnerID,
+Odev, real volume ID, Rdev, StartLoc and Size.
+After obtaining genuine output, match its Rdev
+to the active Hercules channel, corroborate
+the volser and 175-cylinder extent, inspect
+dynamic attachments/includes/shadows, and
+confirm emulator process cwd before any copy.
+
+To avoid guesses, a new read-only
+`scripts/map-cms-minidisk.sh` takes confirmed
+CP-Rdev, actual active Hercules config and
+verified process cwd; fails closed on missing/
+ambiguous simple CKD declarations, missing
+or symlink backing image; prints candidate
+absolute base path but explicitly does NOT
+certify quiescence or overlay completeness.
+`tests/test-map-cms-minidisk.sh` exercises
+unique success, missing image, invalid Rdev,
+duplicate address; integrated full native
+CI succeeded:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36355860458 .
+The recovery runbook was updated with
+the actual operator-supplied inventory.
+No real CMS or Hercules DASD contents have
+been modified by this work. GitHub GITRUN
+remains deliberately safety-disabled,
+and the old CMS-uploaded GITRUN must not run.
