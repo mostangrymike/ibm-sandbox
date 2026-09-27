@@ -175,3 +175,26 @@ Do not overwrite the original stage or indexes. Full commands and
 success criteria: docs/CANONICAL_OIDS.md. A later optional GITCIDX
 PAIR mode is host-tested to compare both new indexes and independently
 rehash each indexed body; it may require one new compiler transfer.
+
+## Canonical native stage complete; full seek audit optimization
+
+The full original 1,808-object captured PACK has now been rebuilt
+on CMS with the corrected ASCII Git hashing implementation into
+a new GITFIX STAGE A. Independent VERIFY passed every object,
+and the new GITFIX INDEX A passed complete IDX2 AUDIT with
+1,808 unique canonical Git object IDs. The separate GITFIX
+SEEK A SIDX2 index was built and structurally checked successfully.
+First canonical commit ID:
+00D8D63229305230C8D37F884CE87F9E1A89468C.
+Last canonical tree ID:
+EB37E3F23FF4FC137D715D71A711D3B7632D75F2.
+
+The initial SVAUDIT became very slow after progress 256 because
+it reopened the staging file per object. Current GITCIDX source
+avoids repeated opens and adds a one-pass SFAST hash/seek-cookie
+verification. Optional PAIR compares both canonical index
+generations and invokes SFAST. Host regression passed; actual
+CMS execution of these updated audit modes remains the next
+validation gate. See docs/CANONICAL_OIDS.md for the minimal
+GITCIDX-only transfer and test commands. Preserve all existing
+canonical and historical datasets.
