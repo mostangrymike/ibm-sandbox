@@ -181,3 +181,37 @@ write to the existing GITSEL0/GITSEL1 files. The new
 candidate should not be called durable or active until
 its independent CMS verification and subsequent
 persistence/recovery checks pass.
+
+## September 27 superseding status: actual CMS M15 matrix
+
+The complete 10-case M15 native CMS recovery matrix has
+now passed. Independently verified seq51 GITFIX and
+seq52 M15NEW survived each missing newer component, a
+missing older GEN2, both missing GEN2s, one or both
+malformed selectors and complete restoration. All selected
+generations underwent the full native 1808-object audit
+and returned the expected generation name/sequence. The
+two independent CMS generations, all four native selector
+records, and the captured original PACK remain protected.
+
+The older Python-only selector proof-of-concept files
+`tests/active_generation_selector.py` and
+`tests/test_active_generation_selector.py` were retired
+from current GitHub main after the independent ASCII/CRC
+encoder was embedded into `tests/test_native_selector.py`.
+Native C89 selector fuzz tests and full native GITREC
+integration are the maintained host CI paths; historical
+commits preserve the original Python-only prototype.
+Latest native CI green:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36338727815 .
+
+The next read-only CMS runner independently rechecks both
+GEN2 candidates and the native dual-slot selector. Only
+upon success does it optionally remove three explicitly
+named historic NONCANONICAL CMS copies: GITSTAGE DATA A,
+GITINDEX DATA A and GITSEEK INDEX A. It does not erase
+GITPBUF PACK A, GITFIX, M15NEW, GITSEL0/1 or M15SL0/1.
+Cleanup remains target-pending until the CMS transcript
+shows the expected success. Full CMS interrupted write,
+exclusive lock and reboot persistence remain distinct
+unproven production requirements.
