@@ -13,7 +13,48 @@ static FILE *tracked_open(const char *name,const char *mode) {
 #include "../src/GITCIDX.C"
 #undef main
 #undef fopen
+#define main selector_unused
+#include "../src/GITSEL.C"
+#undef main
 #include <unistd.h>
+static int write_slot(const char *path,unsigned long seq,
+                      const char *gen,const char *digest) {
+ FILE *f;
+ char payload[90];
+ unsigned long crc;
+ sprintf(payload,"SEL1 %lu %s %s",seq,gen,digest);
+ crc=crc32_ascii(payload);
+ f=fopen(path,"w");
+ if(!f) return 0;
+ if(fprintf(f,"%s %08lX\n",payload,crc)<0)
+  return 0;
+ return fclose(f)==0;
+}
+static int copy_host_file(const char *source,
+                          const char *dest) {
+ FILE *src,*dst;
+ int c;
+ src=fopen(source,"rb");
+ if(!src) return 0;
+ dst=fopen(dest,"wb");
+ if(!dst) {fclose(src);return 0;}
+ while((c=fgetc(src))!=EOF)
+  if(fputc(c,dst)==EOF) return 0;
+ if(ferror(src)||fclose(src)!=0) return 0;
+ return fclose(dst)==0;
+}
+static int selected_output(const char *expected) {
+ FILE *f;
+ char line[256];
+ f=fopen("recovery.log","r");
+ if(!f) return 0;
+ while(fgets(line,sizeof line,f))
+  if(strstr(line,expected)) {
+   fclose(f);return 1;
+  }
+ fclose(f);
+ return 0;
+}
 /* Refuse indexes generated with the legacy EBCDIC-hash code. */
 static int reject_v1(const char *filename,long at,int seek) {
  FILE *f;
@@ -62,6 +103,38 @@ int main(void) {
  if(gen_write()!=0||
     rename("dd:GENOUT","dd:GENIN")!=0||
     gen_check()!=0) return 70;
+ /* Exercise actual GITREC with two complete, independent GEN2 inputs. */
+ if(link("dd:STGIN","dd:C0STG")!=0||
+    link("dd:IDXIN","dd:C0IDX")!=0||
+    link("dd:FIDXIN","dd:C0SEEK")!=0||
+    link("dd:GENIN","dd:C0GEN")!=0||
+    link("dd:STGIN","dd:C1STG")!=0||
+    link("dd:IDXIN","dd:C1IDX")!=0||
+    link("dd:FIDXIN","dd:C1SEEK")!=0||
+    !copy_host_file("dd:GENIN","dd:C1GEN")) return 81;
+ if(!gen_digest(digest)) return 82;
+ {
+  char digesthex[41];
+  for(k=0;k<20;k++)
+   sprintf(digesthex+2*k,"%02X",digest[k]);
+  if(!write_slot("dd:SEL0",41,"GENOLD",digesthex)||
+     !write_slot("dd:SEL1",42,"GENNEW",digesthex))
+   return 83;
+ }
+ if(system("./native_recovery SELECT GENOLD GENNEW"
+           " > recovery.log")!=0||
+    !selected_output("SELECTED 42 GENNEW")) return 84;
+ f=fopen("dd:C1GEN","r+b");
+ if(!f||fputc('X',f)==EOF||fclose(f)!=0) return 85;
+ if(system("./native_recovery SELECT GENOLD GENNEW"
+           " > recovery.log")!=0||
+    !selected_output("RECOVERED 41 GENOLD")) return 86;
+ if(remove("dd:C0GEN")!=0) return 87;
+ if(system("./native_recovery SELECT GENOLD GENNEW"
+           " > recovery.log")==0||
+    !selected_output("NO FULLY VERIFIED GENERATION")) return 88;
+ if(link("dd:GENIN","dd:C0GEN")!=0) return 89;
+
  /* A header mutation is rejected; restoring it passes. */
  f=fopen("dd:GENIN","r+b");
  if(!f||!fgets(line,sizeof line,f)) return 71;
