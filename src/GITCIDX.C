@@ -567,18 +567,16 @@ static int sidx_locate(const unsigned char *oid) {
  return (int)lo;
 }
 /* Verify direct-seek metadata and all object bytes before success. */
-static int sidx_get(const unsigned char *target) {
- FILE *f;
+static int sidx_read_at(FILE *f,
+                        const unsigned char *target) {
  char line[128],oidtext[41],extra;
  unsigned char head_oid[20],digest[20];
  unsigned long num,n,k,take,m,at;
  int pos,typ,fields,hi,lo;
  pos=sidx_locate(target);
  if(pos<0) {puts("SEEK OID NOT FOUND");return 4;}
- f=fopen("dd:STGIN","r");
- if(!f) {perror("STGIN");return 8;}
  if(fseek(f,sidx[pos].offset,SEEK_SET)!=0) {
-  puts("SEEK UNAVAILABLE ON CMS STAGE");fclose(f);
+  puts("SEEK UNAVAILABLE ON CMS STAGE");
   return 8;
  }
  if(!idx_line(f,line,sizeof line)) goto bad;
@@ -603,7 +601,6 @@ static int sidx_get(const unsigned char *target) {
    idx_body[k+m]=(unsigned char)((hi<<4)|lo);
   }
  }
- if(fclose(f)!=0) return 8;
  if(!idx_hash(typ,idx_body,n,digest)||
     memcmp(digest,target,20)!=0) {
   puts("SEEK OBJECT CONTENT OID MISMATCH");
@@ -622,17 +619,29 @@ static int sidx_get(const unsigned char *target) {
  return 0;
 bad:
  puts("SEEK STAGE HEADER/BODY MISMATCH");
- fclose(f);
  return 8;
+}
+static int sidx_get(const unsigned char *target) {
+ FILE *f;
+ int rc;
+ f=fopen("dd:STGIN","r");
+ if(!f) {perror("STGIN");return 8;}
+ rc=sidx_read_at(f,target);
+ if(fclose(f)!=0) return 8;
+ return rc;
 }
 /* Revalidate every persistent direct-seek cookie by fresh open. */
 static int sidx_audit(void) {
  unsigned long i;
+ FILE *f;
  if(sidx_read()!=0) return 8;
+ f=fopen("dd:STGIN","r");
+ if(!f) {perror("STGIN");return 8;}
  sidx_silent=1;
  for(i=0;i<sidx_count;i++) {
-  if(sidx_get(sidx[i].oid)!=0) {
+  if(sidx_read_at(f,sidx[i].oid)!=0) {
    sidx_silent=0;
+   fclose(f);
    printf("SEEK AUDIT FAIL ENTRY %lu\n",i+1);
    return 8;
   }
@@ -640,6 +649,7 @@ static int sidx_audit(void) {
    printf("SEEK AUDIT PROGRESS %lu\n",i+1);
  }
  sidx_silent=0;
+ if(fclose(f)!=0) return 8;
  printf("SEEK AUDIT VERIFIED UNIQUE %lu\n",sidx_count);
  return 0;
 }
