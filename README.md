@@ -198,3 +198,23 @@ CMS execution of these updated audit modes remains the next
 validation gate. See docs/CANONICAL_OIDS.md for the minimal
 GITCIDX-only transfer and test commands. Preserve all existing
 canonical and historical datasets.
+
+## Native M13 follow-on: external/forward REF and GEN2 seal
+
+The corrected full 1,808-object GITFIX stage plus canonical IDX2
+and SIDX2 indexes are now target-validated. Actual CMS SFAST
+verified all 1,808 unique Git object OIDs in 20.99 seconds elapsed;
+PAIR independently reconciled both indexes and every staged body
+in 21.38 seconds. The first canonical commit and last tree were
+retrieved by direct SGET in 0.15 and 1.81 seconds elapsed.
+
+Independent subsequent C89 host development adds optional
+`GITCWALK FPACK` for chained forward same-PACK REF_DELTA,
+`XPACK/XAPPLY` for canonical-SHA-verified external CMS staged
+bases, and `GITCIDX GENWRITE/GENCHECK` for a sealed GEN2
+candidate-generation manifest. Host CI passes positive, malformed,
+missing, duplicate and stale-data gates plus independent Git
+forward PACK interoperability. **These new modes still require
+actual CMS validation and are not yet a transactional object store.**
+The exact nondestructive target gates are in
+`docs/REF_RESOLUTION.md` and `docs/GENERATION_RECOVERY.md`.
