@@ -381,3 +381,74 @@ repository's current GITRUN is an RC12 safety
 hold. Full native CMS CATHEX operation is not
 yet target-proven; only its compiled-host output
 and native C89 protocol have been tested.
+
+## M21 native CMS result and M22 host-complete binary tree parsing
+
+**M21 passed on actual IBM z/VM 6.3 CMS on September 27**
+after `CMSCLNK GITREC PLAIN` compiled the new native module
+with no assembler warnings. Standard `GITRUN` verified
+both existing GITFIX and M15NEW generations independently
+(1,808 unique each); selected seq52 M15NEW with digest
+493F0896884B28AC4836B88328629B7E95404B46;
+read the real 270-byte commit with GET and full CATHEX;
+recovered seq51 GITFIX when the newer manifest was
+temporarily rebound to an absent fixture; rejected
+both absent manifests RC8; restored seq52 and
+full CATHEX; and checked all protected files afterward.
+Final user output: `GITRUN M21 ALL READ ONLY NATIVE
+GIT TESTS PASSED`, CMS Ready T=150.70/151.97.
+Deliberately missing M15BAD GEN and associated
+open-error messages are expected negative tests,
+not unexpected errors.
+
+**M22 host-complete, CMS pending:** native
+`GITREC TREE C0NAME C1NAME OID40` adds a
+read-only structured Git binary-tree decode after
+full native GEN2/SFAST/PAIR verification and a
+second independent full requested object's Git
+SHA-1 verification via the selected generation's
+SIDX2 direct seek. Only Git type-2 objects are
+accepted. Complete records are structurally
+validated *before* any TREE data is printed.
+Supported Git modes: 100644, 100755, 120000,
+160000, and 40000. Tree names, which are raw
+Git bytes rather than CMS-native text, are
+reported in 32-byte `TREE NAMEHEX` chunks.
+Each entry prints mode, name length, and full
+40-digit object ID. Empty Git trees correctly
+produce `TREE ENTRIES 0`. Truncated/invalid
+records, unsupported modes, missing/not-tree
+objects and unverified generations fail closed.
+These constraints retain existing C89 and
+65,536-byte native Git object bounds.
+
+The new host integration `tests/test-native-tree.py`
+compiles the actual production native C89 index
+and recovery modules against independently
+constructed 1,808-object binary tree, empty tree,
+malformed tree and blob fixtures. It verifies
+all five supported modes, raw non-ASCII name
+bytes, exact OIDs/name reconstruction, empty
+tree, non-tree and truncated-tree rejection,
+seq51 verified old fallback, both manifests
+invalid (no TREE data emission), then seq52
+restoration. Full GitHub native workflow PASS:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36359383185 .
+
+The **standard `src/GITRUN.EXEC`**, as explicitly
+required by the user, is now M22's combined
+read-only CMS batch: checks every protected
+generation, selector and PACK; independently
+audits two full generations; verifies seq52;
+GET of the known first commit; TREE decode of
+that actual commit's tree OID
+204E1D6968FB81C35BF830D63A611AC64C072945;
+refuses to treat the commit itself as a tree
+(RC8); deliberately makes newer/both
+manifests unavailable through read-only
+FILEDEF rebindings, verifies fallback/fail-closed,
+restores original mappings, and rechecks
+protected files. No ERASE/COPYFILE, persistent
+index/manifest writes or selector writes.
+This new batch's native CMS target execution
+is PENDING, not yet claimed passed.
