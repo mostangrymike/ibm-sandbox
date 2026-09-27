@@ -165,3 +165,33 @@ of the existing 1,808-object GITFIX generation is necessary.
 The optional malformed short-OID stage fixture is EXTSHORT DATA A;
 when bound to EXTIN with XPACK PACK A, XPACK must return RC 8 and
 print INVALID EXTERNAL STAGE RECORD 1.
+
+## Actual CMS forward/external REF validation: PASSED
+
+At 19:36–19:38 CDT September 26, 2026, the updated GITCWALK NAPI
+module compiled with three clean Assembler XF passes. FPACK validated
+FCHAIN PACK A (SHA-1 `0F5F312E5E584C32B83488C4AEDF9D2786806884`,
+114 bytes, three objects), reconstructed ordinary object #3 blob abc,
+then resolved both forward dependencies: #2 abcd, Git OID
+`85DF50785D62D3B05AB03D9CBF7E4A0B49449730`; #1 abcde,
+Git OID `6A8165460570531A1247BD99A73B53A5A6E500D5`.
+All three objects completed and both REF deltas applied, 0.04 s
+elapsed.
+
+XPACK with the separate EXTBASE DATA A verified a 3-byte blob
+external base, applied one REF and reconstructed abcd with the
+correct Git OID in 0.02 s elapsed. XPACK with the **actual existing
+GITFIX STAGE A** verified the canonical persisted 270-byte first
+commit, then applied XREAL's thin copy delta and produced the same
+Git OID `00D8D63229305230C8D37F884CE87F9E1A89468C`,
+8.17 s elapsed. This verifies a real stored external base, not just
+a synthetic in-memory fixture. It takes longer because XPACK scans
+all 1,808 external stage records before accepting a base so that
+malformed or duplicate matching records cannot be silently ignored.
+
+The current transcript does not show standalone XAPPLY, EXTMULT or
+the four optional negative fixture executions on CMS; those remain
+host tested. The already validated GITFIX stage and both canonical
+indexes were unchanged. This experimental lookup is sequential,
+not indexed. Full GEN2 sealing and reopening also passed on CMS;
+see [generation recovery](GENERATION_RECOVERY.md).
