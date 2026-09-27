@@ -157,3 +157,42 @@ destination appears and does not delete either the source
 or the pre-existing destination. This is *not* a substitute
 for confirming the guest and emulator are offline and that
 the entire backing storage set is preserved.
+
+## September 27 17:34 — actual device inventory, mapping pending
+
+The operator ran the read-only Hercules configuration
+inventory against `/home/admin/vm630/hercules.cnf` and reported:
+- Hercules `0123 3390 dasd1`
+- Hercules `0124 3390 dasd2`
+- Hercules `0125 3390 dasd3`
+- Hercules `0126 3390 dasd4`
+- Hercules `0127 3390 dasd5`
+- Hercules `0128 3390 dasd6`
+
+Immediately afterward, CMS `QUERY DISK` showed its
+affected A disk as `MNT191`, virtual `191`, R/W,
+175 cylinders, 239 files, 9110/31500 4-KiB blocks used,
+22390 free. This is a post-failure inventory only;
+it does **not** establish filesystem integrity. The
+Hercules filenames are relative to Hercules' effective
+working directory, which has not been independently
+verified. The CP real-device mapping and starting
+cylinder for the 175-cylinder virtual 191 disk remain
+UNKNOWN; do not assume that Hercules address 0123 is
+the relevant image merely from a historical resemblance.
+
+Read-only next steps:
+- On CMS: `CP QUERY MDISK 191 LOCATION`, obtaining
+  physical real device, disk volume label, minidisk
+  offset and size. Compare actual returned real device
+  with the six active Hercules addresses above.
+- On host: `cd /home/admin/vm630 && pwd && ls -lah
+  dasd*` and inspect `hercules.cnf` for `sf=`,
+  `shadow`, `INCLUDE`, and working-directory changes.
+  Corroborate the active Hercules process's cwd and
+  configuration; relative image paths do not guarantee
+  residence beside the config.
+- No CMS ERASE/COPYFILE/GITRUN and no host backup of a
+  guessed disk. Once the actual volume/image/dependencies
+  and quiescence are verified, preserve crash dump and
+  create an independently verified forensic backup.
