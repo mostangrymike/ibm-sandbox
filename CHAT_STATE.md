@@ -2020,3 +2020,52 @@ generation or M15NEW files are rewritten.
 Mac: git pull, ./cms-upload.sh GITRUN.EXEC.
 CMS: GITRUN. Ten cases may run several complete
 ~21-second full audits in a single invocation.
+
+## September 27 12:53 comprehensive 10-case native matrix PASSED
+
+User ran GITRUN on real CMS. All 10 cases returned expected
+results, total CPU 170.88 s / elapsed 172.08 s.
+Missing newer stage, index, seek and GEN separately each
+triggered full verified recovery through older seq51
+GITFIX with the exact digest
+493F0896884B28AC4836B88328629B7E95404B46 and RC0.
+An absent old GEN correctly selected new seq52 M15NEW
+after full 1808-object audit, RC0. Both manifests missing
+failed closed RC8. Individually malformed newer/older
+selector inputs chose the remaining fully verified candidate
+seq51/seq52 respectively; both invalid selector inputs
+failed closed RC8. Restoring both selectors selected
+seq52 M15NEW with full audit RC0. The error messages
+for missing DDs were expected. No generation or slot
+content was rewritten.
+
+User explicitly requests maximal useful work per CMS
+run plus cleanup on BOTH CMS and GitHub. Retired GitHub
+host-only Python selector prototype and its test after
+moving independent CRC32 encoder into
+tests/test_native_selector.py, updating native-stage
+workflow, and observing reworked native CI PASS
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36338727815 .
+Retained production C89 selector/recovery source,
+real native regression suites and historical docs.
+
+New reusable GITRUN.EXEC performs three full real-CMS
+audits and guarded cleanup in one run:
+(1) independent GITCIDX GENCHECK original GITFIX,
+(2) independent GENCHECK M15NEW,
+(3) deliberately swap the two disposable M15SL selector
+input bindings and require GITREC RC8, restore them and
+require full GITREC selection of seq52 M15NEW RC0,
+(4) only after all verifications erase exactly three
+old NONCANONICAL, already superseded CMS files if they
+exist: GITSTAGE DATA A, GITINDEX DATA A, GITSEEK INDEX A.
+Each deletion requires STATE RC0, ERASE RC0, and
+post-STATE RC28. If already absent RC28 it skips.
+It finally confirms all four GITFIX and M15NEW
+generation components and both pairs of selector
+records GITSEL0/GITSEL1 and M15SL0/M15SL1 still exist.
+Preserve captured original GITPBUF PACK A, all canonical
+generations and rollback selectors. The CMS cleanup is
+PENDING actual output: do not claim deletion before
+GITRUN is run successfully. Mac from src: git pull,
+./cms-upload.sh GITRUN.EXEC; CMS: GITRUN.
