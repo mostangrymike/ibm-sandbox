@@ -158,3 +158,7 @@ GITCIDX GENCHECK
 Require the full `GENERATION VERIFIED 1808 UNIQUE 1808` result;
 do not run GENWRITE or recreate GITFIX GEN. This is a separate
 user-controlled test, not a reason to disrupt the current system.
+
+### September 27: indexed external REF separately passed
+
+XSEEK and XSAPPLY both passed on actual CMS against the real GITFIX generation, verifying/reconstructing the 270-byte first commit via SIDX2 direct seek in 0.19 and 0.18 seconds elapsed respectively. The original 1,808-object stage, both indexes and the GEN2 seal remain intact. Cross-logon GENCHECK has not been run yet and should remain a read-only user-controlled next durability gate; avoid GENWRITE or reinitializing any protected files.
