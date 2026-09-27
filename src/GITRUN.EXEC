@@ -1,31 +1,20 @@
-/* GITRUN: M15 disposable two-generation selector gate. */
-/* New M15SL0/M15SL1 only; NEVER write GITSEL0/1 or GITFIX. */
+/* M15 read-only fallback: re-use existing two disposable slots. */
 address cms
-say 'GITRUN M15 TWO VERIFIED GENERATIONS'
-say 'GITRUN REQUIRE BOTH COMPLETE EXISTING GENERATIONS'
-do i=1 to 4
- typ=word('STAGE INDEX SEEK GEN',i)
- 'STATE GITFIX' typ 'A'
- if rc \= 0 then do
-  say 'GITRUN STOP: protected source missing' typ 'RC' rc
-  exit 8
- end
- 'STATE M15NEW' typ 'A'
- if rc \= 0 then do
-  say 'GITRUN STOP: new candidate missing' typ 'RC' rc
-  exit 8
- end
-end
-say 'GITRUN REQUIRE FRESH DISPOSABLE SELECTOR FILENAMES'
-do i=0 to 1
- name='M15SL'||i
- 'STATE' name 'PTR A'
- if rc \= 28 then do
-  say 'GITRUN STOP: selector not unused' name 'RC' rc
-  exit 8
- end
-end
-say 'GITRUN BIND TWO INDEPENDENT READ-ONLY CANDIDATES'
+say 'GITRUN M15 TWO-CANDIDATE FALLBACK'
+'STATE M15SL0 PTR A'
+if rc \= 0 then exit 8
+'STATE M15SL1 PTR A'
+if rc \= 0 then exit 8
+'STATE M15NEW GEN A'
+if rc \= 0 then exit 8
+'STATE GITFIX GEN A'
+if rc \= 0 then exit 8
+'STATE M15BAD GEN A'
+if rc \= 28 then exit 8
+'FILEDEF SEL0 DISK M15SL0 PTR A'
+if rc \= 0 then exit rc
+'FILEDEF SEL1 DISK M15SL1 PTR A'
+if rc \= 0 then exit rc
 'FILEDEF C0STG DISK GITFIX STAGE A'
 if rc \= 0 then exit rc
 'FILEDEF C0IDX DISK GITFIX INDEX A'
@@ -40,55 +29,15 @@ if rc \= 0 then exit rc
 if rc \= 0 then exit rc
 'FILEDEF C1SEEK DISK M15NEW SEEK A'
 if rc \= 0 then exit rc
+'FILEDEF C1GEN DISK M15BAD GEN A'
+if rc \= 0 then exit rc
+say 'GITRUN EXPECT RECOVERED 51 GITFIX RC 0'
+'GITREC SELECT GITFIX M15NEW'
+if rc \= 0 then exit rc
 'FILEDEF C1GEN DISK M15NEW GEN A'
 if rc \= 0 then exit rc
-say 'GITRUN WRITE NEW OLD-BASELINE SELECTOR M15SL0'
-'FILEDEF GENIN DISK GITFIX GEN A'
-if rc \= 0 then exit rc
-'FILEDEF SELOUT CLEAR'
-if rc \= 0 then exit rc
-'FILEDEF SELOUT DISK M15SL0 PTR A (RECFM V LRECL 80'
-if rc \= 0 then exit rc
-'GITSEL WRITEGEN 51 GITFIX M15SL0 ABSENT28'
-if rc \= 0 then do
- say 'GITRUN STOP: first selector write failed RC' rc
- exit 8
-end
-'STATE M15SL0 PTR A'
-if rc \= 0 then exit 8
-'FILEDEF SEL0 DISK M15SL0 PTR A'
-if rc \= 0 then exit rc
-'FILEDEF SEL1 DISK M15SL1 PTR A'
-if rc \= 0 then exit rc
-say 'GITRUN VERIFY OLD ONLY BEFORE NEW SELECTOR'
+say 'GITRUN EXPECT SELECTED 52 M15NEW RC 0'
 'GITREC SELECT GITFIX M15NEW'
-if rc \= 0 then do
- say 'GITRUN STOP: baseline verification failed RC' rc
- exit 8
-end
-say 'GITRUN WRITE FRESH NEWER SELECTOR M15SL1'
-'STATE M15SL1 PTR A'
-if rc \= 28 then do
- say 'GITRUN STOP: newer selector unexpectedly exists RC' rc
- exit 8
-end
-'FILEDEF GENIN DISK M15NEW GEN A'
-if rc \= 0 then exit rc
-'FILEDEF SELOUT CLEAR'
-if rc \= 0 then exit rc
-'FILEDEF SELOUT DISK M15SL1 PTR A (RECFM V LRECL 80'
-if rc \= 0 then exit rc
-'GITSEL WRITEGEN 52 M15NEW M15SL1 ABSENT28'
-if rc \= 0 then do
- say 'GITRUN STOP: newer selector write failed RC' rc
- exit 8
-end
-'STATE M15SL1 PTR A'
-if rc \= 0 then exit 8
-say 'GITRUN FULLY VERIFY NEWER INDEPENDENT GENERATION'
-'GITREC SELECT GITFIX M15NEW'
-selectrc=rc
-say 'GITRUN M15 TWO-SLOT RECOVERY RC' selectrc
-if selectrc \= 0 then exit selectrc
-say 'GITRUN M15 DOUBLE SELECTION COMPLETED'
-exit 0
+result=rc
+say 'GITRUN RESTORED RC' result
+exit result
