@@ -350,6 +350,62 @@ static int stage_line(FILE *f,char *line,int cap) {
  while(n>0&&line[n-1]==' ') line[--n]=0;
  return 1;
 }
+/* Resolve external REF from bounded staged CMS text by Git OID. */
+static unsigned char ext_body[65536];
+static unsigned long ext_len;
+static int ext_type;
+static int ext_lookup(const unsigned char *want) {
+ FILE *f;
+ char line[256],hexid[41],extra;
+ unsigned char oid[20],digest[20];
+ unsigned long j=0,num,n,k,take,m;
+ int typ,fields,hi,lo,found=0;
+ f=fopen("dd:EXTIN","r");
+ if(!f) {perror("EXTIN");return 0;}
+ while(stage_line(f,line,sizeof line)) {
+  j++;
+  fields=sscanf(line,"OBJ %lu %d %lu %40s %c",
+                &num,&typ,&n,hexid,&extra);
+  if(j>1808UL||fields!=4||num!=j||
+     typ<1||typ>4||n>OUTCAP) goto bad;
+  for(k=0;k<20;k++) {
+   hi=nib((unsigned char)hexid[2*k]);
+   lo=nib((unsigned char)hexid[2*k+1]);
+   if(hi<0||lo<0) goto bad;
+   oid[k]=(unsigned char)((hi<<4)|lo);
+  }
+  if(hexid[40]) goto bad;
+  if(n==0) {
+   if(!stage_line(f,line,sizeof line)||line[0]) goto bad;
+  }
+  for(k=0;k<n;k+=take) {
+   take=n-k;if(take>32) take=32;
+   if(!stage_line(f,line,sizeof line)||
+      strlen(line)!=2*take) goto bad;
+   for(m=0;m<take;m++) {
+    hi=nib((unsigned char)line[2*m]);
+    lo=nib((unsigned char)line[2*m+1]);
+    if(hi<0||lo<0) goto bad;
+    if(memcmp(oid,want,20)==0)
+     ext_body[k+m]=(unsigned char)((hi<<4)|lo);
+   }
+  }
+  if(memcmp(oid,want,20)!=0) continue;
+  if(found||!object_oid(typ,ext_body,n,digest)||
+     memcmp(digest,want,20)!=0) goto bad;
+  found=1;ext_len=n;ext_type=typ;
+ }
+ if(ferror(f)) goto bad;
+ if(fclose(f)!=0) return 0;
+ if(found) printf("EXTERNAL REF BASE VERIFIED TYPE %d SIZE %lu\n",
+                  ext_type,ext_len);
+ return found;
+bad:
+ printf("INVALID EXTERNAL STAGE RECORD %lu\n",j);
+ fclose(f);
+ return 0;
+}
+
 static int verify_stage(int tamper) {
  static unsigned char body[65536];
  unsigned char stored[20],computed[20];
@@ -425,7 +481,7 @@ int main(int argc,char **argv) {
  unsigned long ofs_count=0,applied=0,rs=0,ref_count=0;
  unsigned char *tmp;
  int baseidx=-1,doapply=0,dooid=0,profile=0,fastmode=0;
- int fastonly=0,optmode=0,optcheck=0,stage=0,rpack=0;
+ int fastonly=0,optmode=0,optcheck=0,stage=0,rpack=0,xpack=0;
  unsigned char reference[20],refbase[20];
  clock_t t0,hash_ticks=0,delta_ticks=0;
  unsigned long hash_bytes=0,delta_bytes=0;
@@ -444,7 +500,11 @@ int main(int argc,char **argv) {
   if(argc!=2) {
    puts("Usage: GITCWALK [20|100|ALL|BADSHA]");return 4;
   }
-  if(strcmp(argv[1],"RPACK")==0||
+  if(strcmp(argv[1],"XPACK")==0||
+     strcmp(argv[1],"XAPPLY")==0) {
+   doapply=1;dooid=strcmp(argv[1],"XPACK")==0;
+   rpack=1;xpack=1;limit=PACKCAP;
+  } else if(strcmp(argv[1],"RPACK")==0||
      strcmp(argv[1],"RAPPLY")==0) {
    doapply=1;
    dooid=strcmp(argv[1],"RPACK")==0;
@@ -628,7 +688,8 @@ int main(int argc,char **argv) {
      }
     }
     baseidx=find_ref_base(refbase,idx);
-    if(baseidx<0) {
+    if(baseidx<0&&xpack&&ext_lookup(refbase)) baseidx=-2;
+    if(baseidx<0&&baseidx!=-2) {
      printf("UNRESOLVED REF BASE OBJ %lu\n",idx+1);
      return 8;
     }
@@ -640,10 +701,14 @@ int main(int argc,char **argv) {
   objpos[idx]=start;
   if(type>=1&&type<=4) objtype[idx]=type;
   else if((type==6||type==7)&&doapply) {
-   if(baseidx<0||baseidx>=(int)idx) {
-    puts("INVALID NATIVE DELTA BASE");return 8;
+   if(baseidx==-2&&type==7&&xpack)
+    objtype[idx]=ext_type;
+   else {
+    if(baseidx<0||baseidx>=(int)idx) {
+     puts("INVALID NATIVE DELTA BASE");return 8;
+    }
+    objtype[idx]=objtype[baseidx];
    }
-   objtype[idx]=objtype[baseidx];
   }
   if(pos>=n-20) return 8;
   if(size>OUTCAP) {
@@ -672,14 +737,16 @@ int main(int argc,char **argv) {
     rs=size;
     tmp=output;
    } else if(type==6||type==7) {
-    if(!objdata[baseidx]) {
+    if(baseidx!=-2&&!objdata[baseidx]) {
      puts("MISSING RECONSTRUCTED BASE");return 8;
     }
     tmp=(unsigned char *)malloc(OUTCAP);
     if(!tmp) {puts("DELTA ALLOC FAIL");return 8;}
     if(profile) t0=clock();
-    if(!dapply(output,size,objdata[baseidx],
-               objlen[baseidx],tmp,&rs)) {
+    if(!dapply(output,size,
+               baseidx==-2?ext_body:objdata[baseidx],
+               baseidx==-2?ext_len:objlen[baseidx],
+               tmp,&rs)) {
      puts("FAIL NATIVE DELTA APPLY");free(tmp);return 8;
     }
     if(profile) {
