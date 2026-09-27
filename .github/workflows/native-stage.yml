@@ -13,6 +13,8 @@ on:
       - 'tests/check-cmsclnk-source.sh'
       - 'tests/native_stage_host.c'
       - 'tests/native_index_host.c'
+      - 'scripts/backup-offline-dasd.sh'
+      - 'tests/test-offline-dasd-backup.sh'
       - 'src/GITSEL.C'
       - 'src/GITREC.C'
       - 'tests/test_native_selector.py'
@@ -31,6 +33,8 @@ on:
       - 'tests/check-cmsclnk-source.sh'
       - 'tests/native_stage_host.c'
       - 'tests/native_index_host.c'
+      - 'scripts/backup-offline-dasd.sh'
+      - 'tests/test-offline-dasd-backup.sh'
       - 'src/GITSEL.C'
       - 'src/GITREC.C'
       - 'tests/test_native_selector.py'
@@ -43,6 +47,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Test offline-only DASD backup safeguards
+        run: sh tests/test-offline-dasd-backup.sh
       - name: Check neutral compiler EXEC source and F-disk setup
         run: sh tests/check-cmsclnk-source.sh
       - name: Reject native-text Git object headers in CMS C source
