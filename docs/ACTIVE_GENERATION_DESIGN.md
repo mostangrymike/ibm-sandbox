@@ -299,3 +299,47 @@ was resumed, and `src/GITRUN.EXEC` remains
 an RC12 safety hold. Full OID output, atomic
 promotion and exclusive writes are separate
 future milestones.
+
+## M19/M20 complete native object output and boundary verification
+
+Production `GITREC CATHEX C0NAME C1NAME OID40` extends
+the same full-GEN2-verified and dual-slot-recovered
+read-only pathway as `GITREC GET`. It validates the
+OID first, verifies the actual selected generation,
+seeks through the verified candidate's own SIDX2
+index, independently rehashes the entire Git object
+body, and **only then** prints the complete body
+between `OBJECT DATA BEGIN` and `OBJECT DATA END`.
+Each `HEX ` line contains at most 32 body bytes
+(64 hex digits), fits within CMS's 80-column output,
+and an empty object has no HEX lines. Normal GET
+retains its bounded 16-byte prefix behavior, without
+the full output. The existing 65,536-byte maximum
+is preserved; the native C89 implementation does not
+need a malloc or unbounded CMS REXX string.
+
+A second, independently built full-size host fixture
+compiles the actual `src/GITCIDX.C` and
+`src/GITREC.C` separately, builds and seals a
+fresh indexed generation with exactly 1,808
+staged objects including a full 65,536-byte
+binary object, a zero-length object, a 257-byte
+binary object containing NUL and high bytes,
+and an ASCII `abc` object. Python independently
+computes Git blob object hashes, selector ASCII
+CRC32 and verifies every byte reconstructed
+from production CATHEX lines. It also tests
+the corrupt newer generation's fallback,
+both generations invalid with **no** object-body
+output, and restoration to intact newer
+generation. This complements the original
+native-index integration fixture's independent
+small-object GET tests. All M19/M20 native
+host CI PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36356523315
+
+GITREC still has no atomic multi-writer promotion,
+exclusive writer lock, production binary transport
+or reboot recovery proof. No new CMS code has
+been uploaded after the M01RES TRKDE incident;
+the old CMS A-disk copy of GITRUN must not run.
