@@ -106,6 +106,13 @@ static int selector_write(const char *sequence,const char *name,
  sprintf(payload,"SEL1 %lu %s %s",seq,name,digest);
  crc=crc32_ascii(payload);
  if(strlen(payload)+10>80) return 4;
+ /* Prevent accidental overwrite of an existing active slot. */
+ f=fopen("dd:SELOUT","r");
+ if(f) {
+  fclose(f);
+  puts("SELECTOR OUTPUT EXISTS");
+  return 8;
+ }
  f=fopen("dd:SELOUT","w");
  if(!f) {perror("SELOUT");return 8;}
  if(fprintf(f,"%s %08lX\n",payload,crc)<0) {
