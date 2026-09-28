@@ -718,6 +718,7 @@ static int rec_path(const unsigned char *commit_oid,
  unsigned long start=0,end,at,mode_start,mode_len,name_start;
  unsigned long name_len,object_size;
  int pos,rc,expected_type=0,is_gitlink=0;
+ unsigned int budget=1024;
  if(sidx_read()!=0) return 8;
  pos=sidx_locate(commit_oid);
  if(pos<0) {puts("SEEK OID NOT FOUND");return 4;}
@@ -782,7 +783,7 @@ static int rec_path(const unsigned char *commit_oid,
   }
   if(is_gitlink) {
    if(contents) {
-    puts(contents==2?"LSDIR REQUIRES A TREE":
+    puts(contents>=2?"LSDIR REQUIRES A TREE":
          "PATHCAT REQUIRES A LOCAL BLOB");return 8;
    }
    puts("PATH GITLINK (EXTERNAL COMMIT)");
@@ -798,7 +799,7 @@ static int rec_path(const unsigned char *commit_oid,
   if(contents==1&&expected_type!=3) {
    puts("PATHCAT REQUIRES A BLOB");return 8;
   }
-  if(contents==2&&expected_type!=2) {
+  if(contents>=2&&expected_type!=2) {
    puts("LSDIR REQUIRES A TREE");return 8;
   }
   object_size=sidx[pos].size;
@@ -807,13 +808,18 @@ static int rec_path(const unsigned char *commit_oid,
   sidx_silent=0;
   if(rc!=0) return rc;
   /* M40: fully parse returned trees before ANY path output. */
-  if(expected_type==2&&!rec_tree_walk(object_size,0)) {
+  if(expected_type==2&&contents==3) {
+   rc=rec_root_links(found,0,&budget);
+   if(rc!=0) return rc;
+  } else if(expected_type==2&&
+            !rec_tree_walk(object_size,0)) {
    puts("DIRECTORY TREE STRUCTURE INVALID");return 8;
   }
-  printf("PATH OBJECT TYPE %d SIZE %lu OID ",
+  if(contents==3) puts("DIRECTORY LINKS VERIFIED");
+  printf("PATH OBJECT TYPE %d SIZE %lu OID "
          expected_type,object_size);
   idx_print(stdout,found);putchar('\n');
-  if(contents==2) {
+  if(contents>=2) {
    puts("TREE DATA BEGIN");
    if(!rec_tree_walk(object_size,1)) return 8;
    puts("TREE DATA END");
@@ -864,7 +870,8 @@ int main(int argc,char **argv) {
  unsigned int depth=0;
  unsigned long d;
  int get,full,tree,commit,root,path_command,pathcat;
- int lsdir,firstpar,ancestor,history,parent_cmd,parents_cmd;
+ int lsdir,lsdirv,firstpar,ancestor,history;
+ int parent_cmd,parents_cmd;
  int roots_cmd,commitroots_cmd,linkroots_cmd;
  int nestedlinks_cmd,deeplinks_cmd,depthlinks_cmd;
  int linkbatch_cmd,rc;
@@ -876,6 +883,7 @@ int main(int argc,char **argv) {
  path_command=argc==6&&strcmp(argv[1],"PATH")==0;
  pathcat=argc==6&&strcmp(argv[1],"PATHCAT")==0;
  lsdir=argc==6&&strcmp(argv[1],"LSDIR")==0;
+ lsdirv=argc==6&&strcmp(argv[1],"LSDIRV")==0;
  firstpar=argc==5&&strcmp(argv[1],"FIRSTPAR")==0;
  ancestor=argc==6&&strcmp(argv[1],"ANCESTOR")==0;
  history=argc==6&&strcmp(argv[1],"HISTORY")==0;
@@ -889,7 +897,7 @@ int main(int argc,char **argv) {
  depthlinks_cmd=argc==6&&strcmp(argv[1],"DEPTHLINKS")==0;
  linkbatch_cmd=argc==5&&strcmp(argv[1],"LINKBATCH")==0;
  if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
-     !pathcat&&!lsdir&&!firstpar&&!ancestor&&
+     !pathcat&&!lsdir&&!lsdirv&&!firstpar&&!ancestor&&
      !history&&!parent_cmd&&!parents_cmd&&
      !roots_cmd&&!commitroots_cmd&&!linkroots_cmd&&
      !nestedlinks_cmd&&!deeplinks_cmd&&
@@ -906,6 +914,7 @@ int main(int argc,char **argv) {
   puts("GITREC PATH C0NAME C1NAME COMMIT_OID40 PATHHEX");
   puts("GITREC PATHCAT C0NAME C1NAME COMMIT_OID40 PATHHEX");
   puts("GITREC LSDIR C0NAME C1NAME COMMIT_OID40 DIRHEX");
+  puts("GITREC LSDIRV C0 C1 COMMIT_OID40 DIRHEX");
   puts("GITREC FIRSTPAR C0NAME C1NAME COMMIT_OID40");
   puts("GITREC ANCESTOR C0NAME C1NAME COMMIT_OID40 DEPTH");
   puts("GITREC HISTORY C0NAME C1NAME COMMIT_OID40 DEPTH");
@@ -921,7 +930,7 @@ int main(int argc,char **argv) {
   return 4;
  }
  if((get||full||tree||commit||root||path_command||
-     pathcat||lsdir||firstpar||ancestor||history||
+     pathcat||lsdir||lsdirv||firstpar||ancestor||history||
      parent_cmd||parents_cmd||roots_cmd||
      commitroots_cmd||linkroots_cmd||nestedlinks_cmd||
      deeplinks_cmd||depthlinks_cmd||linkbatch_cmd)&&
@@ -953,7 +962,7 @@ int main(int argc,char **argv) {
   }
   depth=(unsigned int)(argv[5][0]-'0');
  }
- if((path_command||pathcat||lsdir)&&
+ if((path_command||pathcat||lsdir||lsdirv)&&
     !rec_path_hex(argv[5],path,&pathlen)) {
   puts("PATH REQUIRES VALID NONEMPTY HEX");return 4;
  }
@@ -968,7 +977,7 @@ int main(int argc,char **argv) {
  }
  rc=selector_choose(&a,&b);
  if(rc!=0||(!get&&!full&&!tree&&!commit&&!root&&
-             !path_command&&!pathcat&&!lsdir&&
+             !path_command&&!pathcat&&!lsdir&&!lsdirv&&
              !firstpar&&!ancestor&&!history&&
              !parent_cmd&&!parents_cmd&&!roots_cmd&&
              !commitroots_cmd&&!linkroots_cmd&&
@@ -981,6 +990,7 @@ int main(int argc,char **argv) {
  if(path_command) return rec_path(oid,path,pathlen,0);
  if(pathcat) return rec_path(oid,path,pathlen,1);
  if(lsdir) return rec_path(oid,path,pathlen,2);
+ if(lsdirv) return rec_path(oid,path,pathlen,3);
  if(firstpar) return rec_firstpar(oid);
  if(ancestor) return rec_ancestor(oid,depth);
  if(history) return rec_history(oid,depth);
