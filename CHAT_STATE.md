@@ -4623,3 +4623,7 @@ If target error, diagnose compact FAIL/RC/marker lines
 and correct source on GitHub before repeating only
 the affected standard target batch. Continue autonomous
 GitHub engineering instead of seeking repeated permission.
+
+## M42 latest CI verification
+
+PR #16 added independent full-host recovery coverage for LSDIRV and LSDIRDEPTH: older seq51 fallback, both manifests invalid and seq52 restored. The full strict native-stage integration suite succeeded: https://github.com/mostangrymike/ibm-sandbox/actions/runs/36484323610 . Squash merged main as a4e46c100fb9816e261c9ac94ce1a08c1113db29. Native C and the standard M42 GITRUN were unchanged by PR #16. M40-M42 are host CI-proven, but still require the single real CMS M42 compile and standard compact GITRUN specified immediately above.
