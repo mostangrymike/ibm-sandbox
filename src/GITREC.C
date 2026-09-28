@@ -191,8 +191,9 @@ static int rec_commit_walk(unsigned long n,int emit) {
   while(at<n&&idx_body[at]!=0x0a) at++;
   if(at==n) return 0;
   len=at-begin;
-  if(!rec_ascii_key(idx_body+begin,len,"parent"))
-   break;
+  if(!rec_ascii_key(idx_body+begin,len,"parent")) {
+   at=begin;break;
+  }
   if(len!=47||!rec_ascii_oid(idx_body+begin+7,binary))
    return 0;
   parents++;
