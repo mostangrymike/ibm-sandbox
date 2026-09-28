@@ -3087,7 +3087,7 @@ markers, and emit only compact PASS/FAIL lines.
 Expected test absent M15BAD STATE is also
 captured in-memory. On any failure print
 stage name, actual/expected RC, marker hits and
-at most first four captured diagnostic lines;
+at most last four captured diagnostic lines;
 fail closed RC12. Positive docs LSDIR checks
 exact selected seq52, exactly two entries and
 both historical BUILD.md/STATUS.md OIDs;
@@ -3100,7 +3100,7 @@ The successful report is about 15 short lines,
 not hundreds of progress/HEX lines.
 Source read-only/summary checks updated and
 full GitHub CI PASSED:
-https://github.com/mostangrymike/ibm-sandbox/actions/runs/36445919537
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36446263848
 M26Q source is host/CI-guarded; its CMS PIPE
 integration still requires one real target
 test. Do not claim CMS one-page output proven
