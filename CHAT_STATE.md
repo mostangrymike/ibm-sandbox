@@ -2756,3 +2756,34 @@ Do not upload/rebuild originals or run historical
 TLS cleanup; no changed GITCIDX.C needed.
 M23 has not yet been target executed. Await
 actual CMS output before claiming target proof.
+
+## M23 stronger independent real-first-commit fixture — final green
+
+Before requesting next CMS run, M23 host tests also
+incorporated the EXACT nine HEX records of the
+270-byte real first-commit CATHEX body previously
+obtained on live CMS. The synthetic harness
+independently asserts that its canonical Git
+commit SHA1 is
+00D8D63229305230C8D37F884CE87F9E1A89468C,
+then uses production C89 GITREC COMMIT to parse
+that real body and assert its tree
+204E1D6968FB81C35BF830D63A611AC64C072945,
+parent 2D5038C551318997B865497E04CF4C037DE4135E,
+parent count 1 and exact message length.
+The expanded full native GitHub CI PASS:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36437316442 .
+This is host-proven fixture replay, NOT a substitute
+for actual CMS M23 command execution.
+
+NEXT REAL CMS M23 TEST: from Mac shell currently
+ibm-sandbox/src, git pull, upload GITREC.C and
+GITRUN.EXEC with existing cms-upload.sh using
+single c3270 instance; on real CMS invoke
+CMSCLNK GITREC PLAIN, then standard GITRUN.
+Expect case 2 COMMIT of known first commit to
+report tree, one parent, and message length,
+along with ordinary full audits, non-commit
+RC8, old generation fallback, both invalid
+RC8, and restored full selection. Only mark
+target PASS on actual returned GITRUN ending.
