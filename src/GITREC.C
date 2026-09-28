@@ -532,6 +532,11 @@ static int rec_root_links(const unsigned char *root,
   if(sidx[pos].type!=types[j]) {
    puts("ROOT ENTRY TYPE MISMATCH");return 8;
   }
+  /* M39: a subtree at positive depth will be rehashed
+   * and parsed by the recursive call below. Avoid doing
+   * the same indexed read and parse twice.
+   */
+  if(types[j]==2&&depth>0) continue;
   n=sidx[pos].size;
   sidx_silent=1;
   rc=sidx_get(refs[j]);

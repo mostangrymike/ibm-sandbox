@@ -585,6 +585,22 @@ def main():
             broken = run(rec, "LINKBATCH", "GENOLD", "GENNEW",
                          bad, cwd=d, expected=code)
             assert "LINK DEPTH 2 VERIFIED" not in broken
+        # M39: when a subtree read is deferred to recursion,
+        # errors in child and parent subtrees must still fail.
+        for bad, code, reason in (
+                (NEST_MISSING_COMMIT, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND"),
+                (NEST_WRONG_COMMIT, 8,
+                 "ROOT ENTRY TYPE MISMATCH"),
+                (NEST_PARENT_MERGE, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND")):
+            corrupt_nested = run(
+                rec, "LINKBATCH", "GENOLD", "GENNEW",
+                git_oid("commit", bad), cwd=d, expected=code)
+            assert reason in corrupt_nested
+            assert "NESTED ROOT LINKS VERIFIED" not in corrupt_nested
+            assert "DEEP ROOT LINKS VERIFIED" not in corrupt_nested
+            assert "PARENTS DATA BEGIN" not in corrupt_nested
         # A 257-entry root must fail without partial batch output.
         over_limit = run(rec, "LINKBATCH", "GENOLD", "GENNEW",
                          git_oid("commit", LARGE_ROOT_COMMIT),
