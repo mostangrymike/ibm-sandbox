@@ -483,7 +483,7 @@ static int rec_root_links(const unsigned char *root,
                           unsigned int *budget) {
  unsigned char refs[256][20],types[256];
  unsigned long at=0,ms,ml,n,sz;
- unsigned int count=0,j;
+ unsigned int count=0,entries=0,j;
  int pos,rc;
  static const unsigned char gitlink[6]={
   0x31,0x36,0x30,0x30,0x30,0x30
@@ -512,12 +512,14 @@ static int rec_root_links(const unsigned char *root,
   at++;
   while(at<sz&&idx_body[at]!=0) at++;
   at++;
+  /* M43: external Gitlinks consume the entry budget too. */
+  if(entries==256) {
+   puts("ROOT LINK LIMIT EXCEEDED");return 8;
+  }
+  entries++;
   if(ml==6&&memcmp(idx_body+ms,gitlink,6)==0) {
    at+=20;
    continue;
-  }
-  if(count==256) {
-   puts("ROOT LINK LIMIT EXCEEDED");return 8;
   }
   types[count]=(idx_body[ms]==0x34)?2:3;
   memcpy(refs[count],idx_body+at,20);
