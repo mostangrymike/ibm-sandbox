@@ -1144,3 +1144,60 @@ https://github.com/mostangrymike/ibm-sandbox/actions/runs/36472033887 .
 Actual target M33 compilation and regression
 are still pending. No protected originals
 or unchanged GITCIDX/GITSEL sources change.
+
+## M33 native CMS PASS; M34 authenticated direct root entries
+
+M33 successfully compiled on the real z/VM CMS
+at 14:48:08 on September 28, with zero flagged
+assembler statements. The standard one-page
+`GITRUN M33` completed at 14:51:04 with
+T=172.95/174.07. The historical commit's
+own root and every parent's root tree all
+authenticated, both immutable 1808-object
+generations passed independent GENCHECK,
+seq52 selected, wrong-type and missing child
+returned RC8/4, seq51 fallback passed,
+both absent failed closed RC8, seq52 restored,
+and all original protected files were present.
+M33 is actual CMS TARGET-PROVEN.
+
+M34 adds
+`GITREC ROOTLINKS C0NAME C1NAME COMMIT_OID40`.
+After a full selected GEN2 audit, it validates
+the specified child commit, each parent
+commit (up to sixteen) and all respective
+root-tree objects. It additionally parses
+every *direct* entry of the child's and
+parents' root trees, locates its referenced
+staged object in that SAME sealed generation,
+checks the Git mode's expected blob/tree type,
+SHA1-authenticates the referenced object, and
+structurally parses directly linked subtrees.
+Gitlink (160000) entries refer to external
+repositories and deliberately do not require
+a local object. The check limits direct entries
+per root to 256 to bound CMS memory. It is
+not a recursive traversal of all nested
+subtrees and does not verify external Gitlinks.
+No success marker or parent-list data appears
+until every required direct link authenticates.
+
+The production C89 host test fixture is still
+1808 staged objects, now with 34 unique Git
+objects including dedicated malformed-reference
+trees and commits. It exercises missing direct
+entry RC4, wrong-type direct entry RC8,
+malformed direct subtree RC8, missing direct
+entry in a merge parent, a zero-parent root,
+seq51 fallback, both unavailable fail closed,
+and seq52 restoration. All prior native Git
+regressions remain enabled. Standard M34
+one-page read-only `GITRUN` retains independent
+original 1808-object audits, seq52 selection,
+actual historic root direct-link checks,
+negative wrong-type and missing child checks,
+seq51 fallback, both invalid fail-closed,
+seq52 restoration and original file
+integrity. GitHub native host CI passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36475668731 .
+M34 remains unproven on actual CMS.
