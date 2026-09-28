@@ -4217,3 +4217,83 @@ one-page GITRUN, no auxiliary CMS runner.
 If M35 fails due to missing original
 historical nested references, diagnose
 without weakening fail-closed rules.
+
+## September 28 — MAX-WORK TURN: M36+M37 host complete; batch M35-M37
+
+User explicitly requested "please do max work per turn".
+Continue proactively through multiple fully host-tested milestones,
+run full CI and source guards, batch compatible live CMS gates into
+ONE transfer/compile/standard one-page GITRUN, preserve protected
+originals and avoid stopping merely to request permission.
+
+M34 remains actual-CMS target-proven. M35 NESTLINKS was
+full host green but NOT yet tested on CMS (run
+36476834575), so it must NOT be called target-proven.
+
+Following the user preference, independently completed M36
+and M37 in GitHub main and expanded the same standard compact
+target gate to cover M35, M36 and M37 in one user run:
+
+M36: `GITREC DEEPLINKS C0 C1 COMMIT_OID40`
+extends M35 immediate child/parent subtree entry validation
+to two consecutive nested subtree levels, within the same
+fully audited selected GEN2 generation, rehashing all
+referenced mode-appropriate staged objects and structurally
+parsing each linked tree; external Gitlinks skipped.
+Per-tree max 256 direct entries; shared 1024-tree visit budget.
+Only after the entire request passes emits
+`DEEP ROOT LINKS VERIFIED` plus safe short parent records.
+
+M37: `GITREC DEPTHLINKS C0 C1 COMMIT_OID40 DEPTH`
+parameterizes depth as exactly one digit 0..4, where
+0=direct root links/M34, 1=M35, 2=M36, 3/4 descend
+further. Strict invalid depth RC4, missing reference
+RC4, wrong type/structure/exceeded budgets RC8.
+Only on complete success emits `LINK DEPTH N VERIFIED`
+and complete parent records. Child, parents, every root
+all SHA1-authenticated independently in same selected seal.
+Original M34/M35 command outputs preserved, no data writes.
+
+Strict native C89 integration host fixture remains 1808 staged
+objects but 63 unique synthetic Git contents, with three
+successive nested levels and wrong/missing deepest blobs,
+corruption in a second merge parent, a 257-entry over-limit
+root, five valid depth values, invalid strings, missing/
+noncommit child, seq51 recovery, both generation manifests
+invalid RC8, restored seq52 and every previous regression.
+No source record in GITREC.C exceeds CMS 72-column safety.
+Full GitHub CI, native C89 -Werror, and read-only GITRUN
+source guards ALL PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36478127516
+
+Standard src/GITRUN.EXEC now `M37 COMPACT REPORT`,
+ONE-PAGE target batch: protected originals/absent M15BAD,
+independent original 1808-object GITFIX and M15NEW full
+GENCHECK audits, seq52 select, three positive stages
+M35 NESTLINKS / M36 DEEPLINKS / M37 DEPTHLINKS 2 on
+historical first commit 00D8D63229305230C8D37F884CE87F9E1A89468C
+with known parent
+2D5038C551318997B865497E04CF4C037DE4135E and
+parent tree F3EF36AAD778D5DA84857D8DED46495C75F4CAB0,
+invalid M37 depth RC4, noncommit child RC8,
+missing child RC4, seq51 recovered M37 depth2 RC0,
+both unavailable RC8 fail closed, seq52 restored
+M37 depth2 RC0 and final full protected originals.
+All detailed command logs captured only in-memory with
+PIPE CMS ... | STEM out.; at most four diagnostics on failure.
+No auxiliary CMS test EXECs; no protected changes.
+
+NEXT user Mac from ibm-sandbox/src:
+ git pull
+ ./cms-upload.sh GITREC.C
+ ./cms-upload.sh GITRUN.EXEC
+Then real z/VM CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+ONLY these two CMS uploads; GITCIDX and GITSEL unchanged.
+M35, M36 and M37 are host-proven ONLY. Do not declare any
+actual CMS pass until user shares successful compact M37 output.
+If failed, diagnose using compact failure markers and fix
+proactively in GitHub; retain fail-closed integrity and
+the protected immutable original stage/index/seek/GEN,
+selector PTR and GITPBUF PACK files.
