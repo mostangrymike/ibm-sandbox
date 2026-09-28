@@ -811,6 +811,14 @@ static int rec_path(const unsigned char *commit_oid,
   if(expected_type==2&&contents==3) {
    rc=rec_root_links(found,0,&budget);
    if(rc!=0) return rc;
+   /* The walker reuses idx_body for linked children.
+    * Reload the authenticated directory before listing.
+    */
+   sidx_silent=1;
+   rc=sidx_get(found);
+   sidx_silent=0;
+   if(rc!=0) return rc;
+   if(!rec_tree_walk(object_size,0)) return 8;
   } else if(expected_type==2&&
             !rec_tree_walk(object_size,0)) {
    puts("DIRECTORY TREE STRUCTURE INVALID");return 8;
