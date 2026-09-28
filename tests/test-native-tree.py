@@ -21,7 +21,7 @@ def git_oid(typ, data):
 
 BLOB = b"abc"
 BLOB_OID = bytes.fromhex(git_oid("blob", BLOB))
-SUBTREE = b"100644 nested.txt\\x00" + BLOB_OID
+SUBTREE = b"100644 nested.txt\x00" + BLOB_OID
 ENTRIES = [
     (b"100644", b"README.md", BLOB_OID),
     (b"100755", b"shell.sh", BLOB_OID),
