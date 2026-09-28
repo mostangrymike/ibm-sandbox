@@ -2787,3 +2787,98 @@ along with ordinary full audits, non-commit
 RC8, old generation fallback, both invalid
 RC8, and restored full selection. Only mark
 target PASS on actual returned GITRUN ending.
+
+## September 28 — M23 live CMS PASS; M24 next target gate
+
+User ran live CMSCLNK GITREC PLAIN: ASSEMBLER
+(XF) DONE; no statements flagged, module built
+T=6.50/6.80. They ran standard GITRUN M23
+READ ONLY NATIVE GIT REGRESSION, independently
+GENCHECKed both 1808-object original GITFIX
+and M15NEW (both FAST/PAIR/GEN RC0), selected
+seq52 M15NEW digest
+493F0896884B28AC4836B88328629B7E95404B46,
+COMMIT-decoded the actual first commit
+00D8D63229305230C8D37F884CE87F9E1A89468C:
+tree 204E1D6968FB81C35BF830D63A611AC64C072945,
+parent 2D5038C551318997B865497E04CF4C037DE4135E,
+parents1, message 44 bytes. Its linked tree
+separately decoded four entries, TREE RC0;
+non-commit input was correctly rejected RC8;
+new manifest unavailable recovered old seq51
+with same commit metadata RC0; both unavailable
+failed closed RC8; restored seq52 COMMIT RC0;
+final all protected files checks passed. Exact:
+GITRUN M23 ALL READ ONLY NATIVE GIT TESTS PASSED,
+CMS Ready T=172.06/173.45 at 09:41:52.
+Expected absent M15BAD GEN / DMSSOP036E messages
+are negative-test fixtures, not incident recurrence.
+
+Following user's rules (direct GitHub edits and
+keep progressing without asking until actual CMS
+needed, all target tests via standard GITRUN),
+implemented M24 production native Git functionality
+in src/GITREC.C:
+ LSROOT C0 C1 COMMIT_OID40 — verifies commit's
+ binary Git ASCII tree header and follows that
+ actual tree reference to independently verify
+ and decode its binary tree within the selected
+ immutable generation; no intermediate output
+ unless linked object is fully verified.
+ PATH C0 C1 COMMIT_OID40 PATHHEX — parses raw
+ path bytes from hex CMS CLI; follows each
+ required tree mode and authenticated 20-byte
+ OID through nested subtrees, verifies and
+ rehashes final blob/tree before emitting
+ PATH OBJECT TYPE, SIZE and full OID; gitlink
+ mode160000 prints external commit OID without
+ assuming local availability. Rejects missing,
+ corrupt or wrong-type links, malformed hex,
+ absolute and empty path segments, non-tree
+ intermediate, both-invalid generations.
+ No permanent CMS file writes in these commands.
+
+tests/test-native-tree.py now has 1808-record
+sealed synthetic generation with nested tree,
+zero tree, multiple Git modes, bad linked
+tree/type, missing trees (real commit's
+external historic root not in fixture),
+missing/invalid path, 160000 gitlink and
+fallback/fail-closed/restored cases. Real
+M23 fixture remains asserted for canonical
+270-byte SHA1, tree, parent, count & message.
+Production C89 compiled with -Wall/-Wextra/
+-Werror and full host GitHub CI PASS:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36438588523 .
+
+Standard reusable src/GITRUN.EXEC is now M24
+read-only CMS batch with both full existing
+generation GENCHECKs, sequence52 verification,
+actual first commit LSROOT, real README.md
+PATH (524541444D452E6D64) and nested
+docs/STATUS.md PATH
+(646F63732F5354415455532E6D64), wrong-type
+LSROOT RC8, missing path RC4, non-tree
+intermediate RC8, newer-manifest unavailable
+older verified fallback, both manifests absent
+RC8 and seq52 restored nested path, final
+all protected generation/selector/PACK checks.
+All current host suite including GITRUN
+source read-only guard PASSED. This source
+requires NEW actual CMS M24 compilation/test.
+DO NOT claim target M24 proof yet.
+
+User Mac prompt normally inside
+ibm-sandbox/src. For next actual CMS gate:
+ git pull
+ ./cms-upload.sh GITREC.C
+ ./cms-upload.sh GITRUN.EXEC
+Actual CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+Do not upload unchanged GITCIDX.C, GITSEL.C,
+or rebuild the eight sealed stage/index/
+seek/gen or selectors. GitHub M24 does not
+run obsolete TLS cleanup or disk repairs.
+Always test through GITRUN, no GITRCHK
+or separate manual FILEDEF command wall.
