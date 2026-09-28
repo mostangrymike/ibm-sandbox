@@ -1066,6 +1066,19 @@ def main():
                               cwd=d)
         assert "RECOVERED 51 GENOLD" in batch_recovered
         assert "LINK DEPTH 2 VERIFIED" in batch_recovered
+        # M41/M42: the same strict local-directory proof must
+        # operate against an independently verified older slot.
+        for cmd, marker, extra in (
+                ("LSDIRV", "DIRECTORY LINKS VERIFIED", []),
+                ("LSDIRDEPTH", "DIRECTORY LINK DEPTH 1 VERIFIED",
+                 ["1"])):
+            check = run(
+                rec, cmd, "GENOLD", "GENNEW",
+                git_oid("commit", FIRST_COMMIT),
+                b"subdir".hex().upper(), *extra, cwd=d)
+            assert "RECOVERED 51 GENOLD" in check
+            assert marker in check
+            assert "TREE DATA END" in check
         (d / "dd:C0GEN").rename(d / "held-old")
         failed = run(rec, "TREE", "GENOLD", "GENNEW", tree_oid,
                      cwd=d, expected=8)
@@ -1150,6 +1163,18 @@ def main():
         assert "NO FULLY VERIFIED GENERATION" in batch_failed
         assert "NESTED ROOT LINKS VERIFIED" not in batch_failed
         assert "PARENTS DATA BEGIN" not in batch_failed
+        for cmd, extra in (("LSDIRV", []),
+                           ("LSDIRDEPTH", ["1"])):
+            check = run(
+                rec, cmd, "GENOLD", "GENNEW",
+                git_oid("commit", FIRST_COMMIT),
+                b"subdir".hex().upper(), *extra,
+                cwd=d, expected=8)
+            assert "NO FULLY VERIFIED GENERATION" in check
+            assert "DIRECTORY LINKS VERIFIED" not in check
+            assert "DIRECTORY LINK DEPTH" not in check
+            assert "PATH OBJECT TYPE" not in check
+            assert "TREE DATA BEGIN" not in check
         (d / "held-old").rename(d / "dd:C0GEN")
         (d / "held-new").rename(d / "dd:C1GEN")
         restored = run(rec, "TREE", "GENOLD", "GENNEW", tree_oid, cwd=d)
@@ -1218,6 +1243,17 @@ def main():
                         b"subdir".hex().upper(), cwd=d)
         verify_tree(final_dir, "SELECTED 52 GENNEW",
                     [(b"100644", b"nested.txt", BLOB_OID)])
+        for cmd, marker, extra in (
+                ("LSDIRV", "DIRECTORY LINKS VERIFIED", []),
+                ("LSDIRDEPTH", "DIRECTORY LINK DEPTH 1 VERIFIED",
+                 ["1"])):
+            check = run(
+                rec, cmd, "GENOLD", "GENNEW",
+                git_oid("commit", FIRST_COMMIT),
+                b"subdir".hex().upper(), *extra, cwd=d)
+            assert "SELECTED 52 GENNEW" in check
+            assert marker in check
+            assert "TREE DATA END" in check
         restored_full = run(rec, "PATHCAT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             b"big.bin".hex().upper(), cwd=d)
