@@ -1298,6 +1298,13 @@ def main():
         assert "COMMIT PARENTS 2" in commit_recovered
         recovered = run(rec, "TREE", "GENOLD", "GENNEW", tree_oid, cwd=d)
         verify_tree(recovered, "RECOVERED 51 GENOLD", ENTRIES)
+        # M46: direct tree closure must recover independently.
+        direct_recovered = run(
+            rec, "TREECLOSURE", "GENOLD", "GENNEW",
+            git_oid("tree", TREE), cwd=d)
+        assert "RECOVERED 51 GENOLD" in direct_recovered
+        assert "TREE FULL CLOSURE VERIFIED" in direct_recovered
+        assert "TREE DATA END" in direct_recovered
         batch_recovered = run(rec, "LINKBATCH", "GENOLD",
                               "GENNEW", git_oid("commit", MERGE2),
                               cwd=d)
@@ -1396,6 +1403,12 @@ def main():
                           git_oid("commit", FIRST_COMMIT),
                           b"README.md".hex().upper(), cwd=d, expected=8)
         assert "PATH DATA BEGIN" not in full_failed
+        direct_failed = run(
+            rec, "TREECLOSURE", "GENOLD", "GENNEW",
+            git_oid("tree", TREE), cwd=d, expected=8)
+        assert "NO FULLY VERIFIED GENERATION" in direct_failed
+        assert "TREE FULL CLOSURE VERIFIED" not in direct_failed
+        assert "TREE DATA BEGIN" not in direct_failed
         batch_failed = run(rec, "LINKBATCH", "GENOLD",
                            "GENNEW", git_oid("commit", MERGE2),
                            cwd=d, expected=8)
@@ -1497,6 +1510,12 @@ def main():
             assert "SELECTED 52 GENNEW" in check
             assert marker in check
             assert "TREE DATA END" in check
+        direct_restored = run(
+            rec, "TREECLOSURE", "GENOLD", "GENNEW",
+            git_oid("tree", TREE), cwd=d)
+        assert "SELECTED 52 GENNEW" in direct_restored
+        assert "TREE FULL CLOSURE VERIFIED" in direct_restored
+        assert "TREE DATA END" in direct_restored
         restored_full = run(rec, "PATHCAT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             b"big.bin".hex().upper(), cwd=d)
