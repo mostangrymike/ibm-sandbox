@@ -4404,3 +4404,75 @@ the subsequent single target batch in docs/LINK_BATCH.md.
 Do not pause independent GitHub development while waiting
 on an ordinary target test; never overwrite protected CMS
 originals or create an auxiliary target runner.
+
+## September 28 — M38 and M39 full host CI success, one CMS gate
+
+User explicitly requested "do not pause": continue independent GitHub
+development, fix test or CI failures immediately, run complete CI
+when possible, merge green PRs, and batch compatible real CMS gates.
+
+M38 initial main implementation and source guards are described
+above. To obtain verifiable full Actions proof, created PR #10 with
+an additional 257-entry-root over-limit fail-closed LINKBATCH
+regression. Initial Actions run 36481822225 found a bad new TEST
+assumption: the synthetic fixture contains 1808 staged records
+but fewer distinct Git objects. Revised the new test to count a
+strictly matching GENERATION VERIFIED N UNIQUE M marker rather
+than hardcode 1808 unique. Retest FULL host workflow PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36481882687 .
+PR #10 squash merged to main at
+61ffe1f1479bca4bebd26d25de81e6571a88de75.
+M38 is COMPLETE FULL-HOST-CI PROVEN, CMS not yet tested.
+
+M39 native optimization then committed via PR #11: in
+src/GITREC.C rec_root_links, when remaining recursion
+depth is positive, do NOT read/hash/parse a referenced
+subtree twice. The recursive call performs full indexed
+OID lookup, rehash, strict type and full binary-tree
+validation anyway; blobs still validated at existing
+level, and depth-zero tree leaves still validated.
+All root and all parent subtrees are still validated;
+same 256-entry/tree and shared 1024-tree-visit limits.
+Added specific LINKBATCH missing child subtree,
+wrong-type child subtree and corrupted merge-parent
+nested subtree regressions. Full host native-stage
+workflow PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36482019995 .
+PR #11 squash merged at
+a359c9c4f72486bf2b69454286d83b1b57123419.
+No CMS runtime improvement claimed until measured.
+
+Finally PR #12 labels the ONE standard src/GITRUN.EXEC
+as M39, updates existing mandatory read-only source guard
+to expect M39 and documents combined M38/M39 first CMS
+gate in docs/LINK_BATCH.md. Complete full native-stage
+workflow PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36482128273 .
+PR #12 squash merged main
+e55c473bf7a56d0932b697ab80a5a7b0bdfa75b3.
+M39 current HEAD source and runner supersede old M38
+files; no separate M38 target test needed.
+
+NEXT GENUINELY TARGET-DEPENDENT GATE (exact):
+On Mac from ibm-sandbox/src:
+ git pull
+ ./cms-upload.sh GITREC.C
+ ./cms-upload.sh GITRUN.EXEC
+On real CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+Only these two transfers. GITCIDX/GITSEL unchanged.
+GITRUN M39 single standard one-page compact report
+retains both independent original GITFIX and M15NEW
+1808-object GENCHECK audits, seq52 SELECT, one
+LINKBATCH positive verifying ALL M35/M36/M37 markers,
+bad depth/noncommit/missing child negatives,
+seq51 fallback, both unavailable fail-closed,
+restored seq52 and pre/post protected originals.
+Expected marker ONLY if actual target succeeds:
+ GITRUN M39 ALL READ ONLY NATIVE GIT TESTS PASSED
+Do not rewrite original GITFIX/M15NEW stage/index/
+seek/GEN, selector PTRs, GITPBUF PACK or legacy data.
+Do not claim M38/M39 target proven from host success.
+Proceed with further GitHub-only work rather than
+needlessly rebooting or redoing original pack captures.
