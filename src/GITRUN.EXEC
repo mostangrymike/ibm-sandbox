@@ -109,7 +109,8 @@ gate:
  if got \= expected|\hits1|\hits2|\hits3|\hits4 then do
   say 'FAIL' label 'RC' got 'EXPECTED' expected
   say 'MARKERS' hits1 hits2 hits3 hits4
-  do n=1 to min(out.0,4)
+  first=max(1,out.0-3)
+  do n=first to out.0
    say 'DIAG' out.n
   end
   if out.0>4 then say 'DIAG' out.0 'LINES CAPTURED'
