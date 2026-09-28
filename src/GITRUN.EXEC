@@ -7,6 +7,7 @@ fast='FAST AUDIT VERIFIED 1808 UNIQUE 1808'
 pair='PAIR VERIFIED UNIQUE 1808'
 gen='GENERATION VERIFIED 1808 UNIQUE 1808'
 sel='SELECTED 52 M15NEW'
+hop2='HISTORY HOPS 2'
 call protected
 if result \= 0 then exit 12
 'PIPE CMS STATE M15BAD GEN A | STEM out.'
@@ -48,7 +49,7 @@ parent='2D5038C551318997B865497E04CF4C037DE4135E'
 grand='C67A53164ADFC6FDEB708F13F1822E2CF24C060C'
 grandtree='B8A987847912D6B67C1064D5361F5A9E5868DC18'
 cmd='GITREC HISTORY GITFIX M15NEW' commit '2'
-call gate 'VERIFIED HISTORY TWO HOPS',cmd,0,'HISTORY HOPS 2',parent,grand,grandtree
+call gate 'VERIFIED HISTORY TWO HOPS',cmd,0 ,hop2,parent,grand,grandtree
 if result \= 0 then exit 12
 cmd='GITREC HISTORY GITFIX M15NEW' commit '0'
 call gate 'INVALID DEPTH',cmd,4,'ANCESTOR DEPTH MUST BE 1 THROUGH 16'
@@ -60,7 +61,7 @@ if result \= 0 then exit 12
 'FILEDEF C1GEN DISK M15BAD GEN A'
 if rc \= 0 then exit rc
 cmd='GITREC HISTORY GITFIX M15NEW' commit '2'
-call gate 'RECOVERED HISTORY',cmd,0,'RECOVERED 51 GITFIX',grand,'HISTORY HOPS 2'
+call gate 'RECOVERED HISTORY',cmd,0,'RECOVERED 51 GITFIX',grand ,hop2
 if result \= 0 then exit 12
 'FILEDEF C0GEN DISK M15BAD GEN A'
 if rc \= 0 then exit rc
@@ -70,7 +71,7 @@ if result \= 0 then exit 12
 if rc \= 0 then exit rc
 'FILEDEF C1GEN DISK M15NEW GEN A'
 if rc \= 0 then exit rc
-call gate 'RESTORED HISTORY',cmd,0,sel,grand,'HISTORY HOPS 2'
+call gate 'RESTORED HISTORY',cmd,0,sel,grand ,hop2
 if result \= 0 then exit 12
 call protected
 if result \= 0 then exit 12
