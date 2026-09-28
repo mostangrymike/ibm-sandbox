@@ -251,3 +251,7 @@ GITRUN
 The real target final marker must be
 `GITRUN M42 ALL READ ONLY NATIVE GIT TESTS PASSED`
 before M40-M42 can be described as target-proven.
+
+## M43: enforce tree-entry budget across external Gitlinks
+
+The bounded recursive walker previously counted only *local* blob/tree references against its 256-entry-per-tree limit. Gitlinks (`160000`) were correctly skipped for local object resolution but also skipped the entry counter; 257 or more external Gitlinks could evade the published bound. M43 separates the total entry count from the local object-array count, rejects the 257th entry of **any** supported mode with `ROOT LINK LIMIT EXCEEDED` RC8, and continues to skip external Gitlink object lookups. Original 1,024-tree visit budget and all fail-closed behavior are unchanged. Tests exercise exactly 256 Gitlinks (success), 257 Gitlinks in a commit root (RC8 without parent or success markers), and 257 Gitlinks in a commit-relative directory via LSDIRDEPTH (RC8 without metadata or partial listing). Both original 1,808-object generation audits and all recovery/protection gates remain in one M43 standard compact runner. The real positive historical directory case is unchanged. M43 requires only GITREC.C and GITRUN.EXEC on the next actual CMS gate; GITCIDX and GITSEL remain unchanged. Expected terminal marker: `GITRUN M43 ALL READ ONLY NATIVE GIT TESTS PASSED`.
