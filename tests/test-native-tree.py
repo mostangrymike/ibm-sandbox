@@ -121,8 +121,8 @@ MISSING_ENTRY_MERGE = MERGE2.replace(
     git_oid("commit", SECOND_PARENT).lower().encode("ascii"),
     git_oid("commit", MISSING_ENTRY_COMMIT).lower().encode("ascii"))
 # M35: structurally valid subtrees with invalid *nested* Git links.
-NEST_MISSING = b"100644 nested.txt\\x00" + b"\\x04"*20
-NEST_WRONG = (b"100644 nested.txt\\x00"
+NEST_MISSING = b"100644 nested.txt\x00" + b"\x04"*20
+NEST_WRONG = (b"100644 nested.txt\x00"
               + bytes.fromhex(git_oid("tree", TREE)))
 NEST_MISSING_TREE = TREE.replace(
     bytes.fromhex(git_oid("tree", SUBTREE)),
