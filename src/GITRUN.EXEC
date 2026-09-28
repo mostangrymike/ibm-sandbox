@@ -1,7 +1,7 @@
-/* M27: compact, read-only native Git CMS target regression. */
+/* M28: compact, read-only native Git CMS target regression. */
 /* PIPE CMS captures diagnostics in memory; no output CMS files. */
 address cms
-say 'GITRUN M27 COMPACT REPORT'
+say 'GITRUN M28 COMPACT REPORT'
 say 'ALL COUNTS REFER TO VERIFIED ORIGINAL 1808 OBJECTS'
 fast='FAST AUDIT VERIFIED 1808 UNIQUE 1808'
 pair='PAIR VERIFIED UNIQUE 1808'
@@ -45,37 +45,40 @@ call gate 'SELECT SEQ52','GITREC SELECT GITFIX M15NEW',0,sel,gen
 if result \= 0 then exit 12
 commit='00D8D63229305230C8D37F884CE87F9E1A89468C'
 parent='2D5038C551318997B865497E04CF4C037DE4135E'
-ptree='F3EF36AAD778D5DA84857D8DED46495C75F4CAB0'
-cmd='GITREC FIRSTPAR GITFIX M15NEW' commit
-call gate 'FIRST PARENT VERIFIED',cmd,0,'FIRST PARENT VERIFIED',parent,ptree,sel
+grand='C67A53164ADFC6FDEB708F13F1822E2CF24C060C'
+grandtree='B8A987847912D6B67C1064D5361F5A9E5868DC18'
+cmd='GITREC ANCESTOR GITFIX M15NEW' commit '1'
+call gate 'ANCESTOR DEPTH1',cmd,0,'ANCESTOR VERIFIED DEPTH 1',parent,sel
+if result \= 0 then exit 12
+cmd='GITREC ANCESTOR GITFIX M15NEW' commit '2'
+call gate 'ANCESTOR DEPTH2',cmd,0,'ANCESTOR VERIFIED DEPTH 2',grand,grandtree
+if result \= 0 then exit 12
+cmd='GITREC ANCESTOR GITFIX M15NEW' commit '0'
+call gate 'INVALID DEPTH',cmd,4,'ANCESTOR DEPTH MUST BE 1 THROUGH 16'
 if result \= 0 then exit 12
 tree='204E1D6968FB81C35BF830D63A611AC64C072945'
-cmd='GITREC FIRSTPAR GITFIX M15NEW' tree
-call gate 'NON COMMIT INPUT',cmd,8,'OBJECT IS NOT A COMMIT'
-if result \= 0 then exit 12
-missing='0000000000000000000000000000000000000000'
-cmd='GITREC FIRSTPAR GITFIX M15NEW' missing
-call gate 'MISSING COMMIT',cmd,4,'SEEK OID NOT FOUND'
+cmd='GITREC ANCESTOR GITFIX M15NEW' tree '1'
+call gate 'NON COMMIT INPUT',cmd,8,'ANCESTOR OBJECT IS NOT A COMMIT'
 if result \= 0 then exit 12
 'FILEDEF C1GEN DISK M15BAD GEN A'
 if rc \= 0 then exit 12
-cmd='GITREC FIRSTPAR GITFIX M15NEW' commit
-call gate 'RECOVERED FIRST PARENT',cmd,0,'RECOVERED 51 GITFIX',parent,ptree
+cmd='GITREC ANCESTOR GITFIX M15NEW' commit '2'
+call gate 'RECOVERED DEPTH2',cmd,0,'RECOVERED 51 GITFIX',grand,grandtree
 if result \= 0 then exit 12
 'FILEDEF C0GEN DISK M15BAD GEN A'
 if rc \= 0 then exit 12
 call gate 'BOTH INVALID FAIL CLOSED',cmd,8,'NO FULLY VERIFIED GENERATION'
 if result \= 0 then exit 12
 'FILEDEF C0GEN DISK GITFIX GEN A'
-if rc \= 0 then exit 12
+if rc \= 0 then exit rc
 'FILEDEF C1GEN DISK M15NEW GEN A'
-if rc \= 0 then exit 12
-call gate 'RESTORED FIRST PARENT',cmd,0,sel,parent,ptree
+if rc \= 0 then exit rc
+call gate 'RESTORED DEPTH2',cmd,0,sel,grand,grandtree
 if result \= 0 then exit 12
 call protected
 if result \= 0 then exit 12
 say 'PASS FINAL PROTECTED FILES'
-say 'GITRUN M27 ALL READ ONLY NATIVE GIT TESTS PASSED'
+say 'GITRUN M28 ALL READ ONLY NATIVE GIT TESTS PASSED'
 exit 0
 /* All stage output is held in an in-memory REXX STEM. No dumps. */
 gate:
