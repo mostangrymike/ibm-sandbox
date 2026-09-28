@@ -1,5 +1,5 @@
 #!/bin/sh
-# Protect historical M20 and compact M45 Git CMS regressions.
+# Protect historical M20 and compact M46 Git CMS regressions.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 f="$root/src/GITRCHK.EXEC"
@@ -9,16 +9,18 @@ test -s "$run"
 grep -q "^say 'GITRCHK M20 READ-ONLY" "$f"
 grep -Fq "'GITREC CATHEX GITFIX M15NEW' oid" "$f"
 grep -Fq "'GITREC GET GITFIX M15NEW' oid" "$f"
-grep -q "^say 'GITRUN M45 COMPACT REPORT'$" "$run"
+grep -q "^say 'GITRUN M46 COMPACT REPORT'$" "$run"
 grep -Fq "'PIPE CMS' cmd '| STEM out.'" "$run"
 grep -Fq "'PIPE CMS STATE M15BAD GEN A | STEM out.'" "$run"
 grep -Fq "call gate name 'FULL AUDIT','GITCIDX GENCHECK',0,fast,pair,gen" "$run"
 # One audited depth-two LINKBATCH replaces three positive audits.
-grep -Fq "call gate 'M45 SINGLE AUDIT M35-M37',cmd,0," "$run"
-grep -Fq "call gate 'M45 SRC DEPTH1',cmd,0," "$run"
-grep -Fq "call gate 'M45 SRC FULL',cmd,0," "$run"
+grep -Fq "call gate 'M46 SINGLE AUDIT M35-M37',cmd,0," "$run"
+grep -Fq "call gate 'M46 SRC DEPTH1',cmd,0," "$run"
+grep -Fq "call gate 'M46 SRC FULL',cmd,0," "$run"
 grep -Fq "cmd='GITREC LSDIRFULL GITFIX M15NEW' commit '737263'" "$run"
-grep -Fq "call gate 'M45 FULL CLOSURE',cmd,0," "$run"
+grep -Fq "call gate 'M46 FULL CLOSURE',cmd,0," "$run"
+grep -Fq "call gate 'M46 TREE CLOSURE',cmd,0," "$run"
+grep -Fq "cmd='GITREC TREECLOSURE GITFIX M15NEW' tree" "$run"
 grep -Fq "cmd='GITREC CLOSURE GITFIX M15NEW' commit" "$run"
 grep -Fq "cmd='GITREC LSDIRDEPTH GITFIX M15NEW' commit '737263' '1'" "$run"
 grep -Fq "dirv='DIRECTORY LINK DEPTH 1 VERIFIED'" "$run"
@@ -35,7 +37,7 @@ grep -Fq "call gate 'MISSING CHILD',cmd,4," "$run"
 grep -Fq "call gate 'RECOVERED BATCH',cmd,0," "$run"
 grep -Fq "call gate 'BOTH INVALID FAIL CLOSED',cmd,8," "$run"
 grep -Fq "call gate 'RESTORED BATCH',cmd,0," "$run"
-grep -q "^say 'GITRUN M45 ALL READ ONLY NATIVE GIT TESTS PASSED'$" "$run"
+grep -q "^say 'GITRUN M46 ALL READ ONLY NATIVE GIT TESTS PASSED'$" "$run"
 if grep -E '^[[:space:]]*call gate .*,$' "$run"; then
  echo "FAIL: split REXX CALL arguments" >&2
  exit 1
@@ -46,4 +48,4 @@ for file in "$f" "$run"; do
   exit 1
  fi
 done
-echo "READ-ONLY GITRCHK AND COMPACT GITRUN M45 GUARDS PASSED"
+echo "READ-ONLY GITRCHK AND COMPACT GITRUN M46 GUARDS PASSED"
