@@ -4055,3 +4055,75 @@ Original staged generations, selectors,
 pack and unchanged GITCIDX/GITSEL stay
 immutable/read-only. Continue independently
 on next native Git feature.
+
+## September 28 14:47–14:51 — M33 LIVE CMS PASS; M34 HOST GREEN
+
+User ran actual CMSCLNK GITREC PLAIN for M33:
+ASSEMBLER XF DONE, no flagged statements,
+built GITREC PLAIN module T=8.85/9.18
+at 14:48:08. Standard single-page M33 GITRUN
+then passed BOTH independent original 1808-
+object GITFIX/M15NEW audits RC0, seq52 select,
+COMMITROOTS verified supplied commit own root,
+every parent commit/root RC0; negative noncommit
+RC8, missing child RC4, seq51 recovered graph
+RC0, both unavailable failed closed RC8,
+seq52 restored RC0, final protected originals
+PASS. Exact:
+GITRUN M33 ALL READ ONLY NATIVE GIT TESTS PASSED
+Ready T=172.95/174.07 at 14:51:04.
+M33 is ACTUAL CMS TARGET-PROVEN.
+
+Independently implemented native M34 ROOTLINKS
+in GitHub main, adding to M33 auth of child
+commit/own root and each parent commit/root
+verification of ALL directly referenced root
+tree entries, mode-appropriate Git blob/tree
+type, SHA1 rehash, and structure for directly
+linked subtrees. Gitlinks mode 160000 refer
+to external repos and skip local verification.
+Static C89 bound maximum 256 direct entries
+per root prevents excessive CMS memory usage.
+Not recursively walking nested tree contents.
+Atomic output: no ROOT DIRECT LINKS VERIFIED
+or parent listing until every required
+object passes within same selected GEN2.
+Missing referenced entry RC4; wrong-type
+or malformed subtree RC8; no original
+data writes. C source <=72 columns,
+console output <=80; GITCIDX/GITSEL untouched.
+
+Synthetic native host fixture remains
+1808 objects, now 34 unique and includes
+missing direct blob, wrong-type direct
+blob (tree object), invalid direct subtree
+and invalid parent direct entry. Tests
+valid two-parent merge and zero-parent
+root, missing/type/subtree negative cases,
+seq51 fallback, both invalid fail closed,
+restored seq52 and previous M0-M33
+regressions. Standard one-page read-only
+src/GITRUN.EXEC now M34: independent original
+1808-object GENCHECKs, seq52 selected,
+ROOTLINKS on authentic historic commit,
+negative wrong-type and missing child,
+seq51 fallback, both invalid RC8,
+restored seq52 and final original STATE.
+PIPE CMS to STEM captures all diagnostics,
+console prints only brief PASS lines.
+Source guard updated. Full GitHub CI PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36475668731 .
+M34 host-proven ONLY; actual CMS target
+compile and GITRUN still required.
+
+Next real target user Mac from ibm-sandbox/src:
+ git pull
+ ./cms-upload.sh GITREC.C
+ ./cms-upload.sh GITRUN.EXEC
+Actual CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+NEVER touch original GITFIX/M15NEW
+STAGE/INDEX/SEEK/GEN, protected selectors
+or GITPBUF PACK. Single standard compact
+one-page GITRUN only, no manual FILEDEF.
