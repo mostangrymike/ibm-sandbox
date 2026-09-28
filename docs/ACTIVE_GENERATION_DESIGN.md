@@ -1044,3 +1044,51 @@ unavailable fail-closed and restoration.
 Native host regression and read-only guard:
 https://github.com/mostangrymike/ibm-sandbox/actions/runs/36468308462
 M31 is host-proven, not yet target-proven.
+
+## M31 native CMS PASS and M32 parent root-tree verification
+
+M31 compiled on live z/VM CMS on September 28
+with no flagged assembler statements. The standard
+one-page `GITRUN M31` passed at 13:58:09,
+T=172.13/173.25: both 1,808-object original
+generations independently audited, seq52
+selected, atomic PARENTS list authenticated,
+noncommit and missing child rejected, seq51
+recovery and both-absent fail-closed succeeded,
+seq52 restored, and all protected originals
+passed final STATE. M31 is TARGET-PROVEN.
+
+M32 adds
+`GITREC PARENTROOTS C0NAME C1NAME COMMIT_OID40`.
+It extends target-proven `PARENTS` by verifying
+not only ALL parent commit objects, but also
+each parent's referenced root tree object. All
+objects must be in the SAME selected, fully
+audited GEN2 generation. Every parent root
+tree is located, required to be a Git tree,
+SHA1-verified, and fully structurally parsed.
+Only after the entire set passes does the
+command print `PARENT ROOT TREES VERIFIED`
+and the usual individually CMS-safe PARENTS
+framed list with count, parent OIDs and tree
+IDs. Missing root tree returns RC4, wrong
+object type or malformed root tree RC8,
+without emitting partial parent-list results.
+Original sealed data remains read-only.
+
+Native strict-C89 host integration tests
+both valid roots of a real synthetic merge,
+a zero-parent root, an absent parent root
+tree, a parent commit referencing a blob,
+a structurally malformed parent tree and
+missing parent commit. It also tests seq51
+fallback, both missing GEN2 manifests
+failing closed, and seq52 restoration.
+Standard `GITRUN M32` retains the compact
+one-page in-memory PIPE-to-STEM reporting,
+both independent original 1,808-object
+audits and original file STATE checks,
+then verifies the historic commit's
+single parent's root tree, negative input,
+fallback, fail-closed and restoration.
+Native CMS M32 target testing is pending.
