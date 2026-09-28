@@ -163,7 +163,7 @@ def main():
         assert "COMMIT PARENT 2D5038C551318997B865497E04CF4C037DE4135E" in real
         assert "COMMIT PARENTS 1" in real
         assert "COMMIT MESSAGE BYTES " + str(
-            len(REAL_COMMIT.split(b"\\n\\n", 1)[1])
+            len(REAL_COMMIT.split(b"\n\n", 1)[1])
         ) in real
 
         root = run(rec, "COMMIT", "GENOLD", "GENNEW",
