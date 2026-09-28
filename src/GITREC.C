@@ -634,7 +634,7 @@ int main(int argc,char **argv) {
  }
  if(ancestor||history) {
   if(!argv[5][0]||strlen(argv[5])>2) {
-   puts("HOP DEPTH MUST BE 1 THROUGH 16");return 4;
+   puts("ANCESTOR DEPTH MUST BE 1 THROUGH 16");return 4;
   }
   d=0;
   for(rc=0;argv[5][rc];rc++) {
