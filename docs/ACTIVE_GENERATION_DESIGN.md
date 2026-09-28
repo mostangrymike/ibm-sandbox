@@ -516,3 +516,87 @@ and intact restoration. No stage, index,
 manifest, selector or PACK files are written.
 This new COMMIT mode is HOST-PROVEN, awaiting
 real CMS execution via standard GITRUN.
+
+## September 28 — M23 CMS pass; M24 native linked read-only paths
+
+M23's new native `GITREC COMMIT` and standard `GITRUN`
+PASSED on actual CMS, with `CMSCLNK GITREC PLAIN`
+reporting no assembler issues. The target verified
+both immutable 1,808-object sealed generations,
+selected M15NEW seq52, decoded the actual
+270-byte first commit to tree
+204E1D6968FB81C35BF830D63A611AC64C072945,
+parent 2D5038C551318997B865497E04CF4C037DE4135E
+and message length 44 bytes. A tree passed to
+COMMIT was correctly rejected RC8. Simulated
+newer GEN2 absence recovered seq51 GITFIX and
+returned the same commit metadata; both absent
+rejected RC8; restoring both reselected seq52
+and decoded the commit again. Final all-original
+protected-file checks passed. Actual target end:
+`GITRUN M23 ALL READ ONLY NATIVE GIT TESTS PASSED`,
+T=172.06/173.45 at 09:41:52.
+
+M24 advances from manual independent tree IDs to
+**linked, native commit-relative object access**,
+with two new production C89 commands:
+
+```text
+GITREC LSROOT C0NAME C1NAME COMMIT_OID40
+GITREC PATH C0NAME C1NAME COMMIT_OID40 PATHHEX
+```
+
+LSROOT validates and rehashes the commit, reads
+its canonical first ASCII tree header, then
+verifies and decodes the linked tree using the
+**same full GEN2-selected generation**, without
+trusting the caller to supply the tree OID.
+It emits tree entries only after independently
+verifying both linked objects and the tree's
+complete binary structure.
+
+PATH accepts the relative path encoded as Git
+raw-byte hex, not CMS-native text. It resolves
+each component in a fully verified type-2 tree,
+checks the required mode and referenced object
+type, recursively follows nested subtrees and
+rehashes the final blob/tree body using its
+selected SIDX2 direct-seek cookie before printing
+the result. A Gitlink (mode 160000) returns
+its external commit OID and does not claim the
+external commit is staged locally. Missing
+paths or unstaged linked targets return RC4;
+invalid hex/absolute/empty path components
+return RC4; invalid linked types/structure and
+non-tree intermediates fail closed RC8. No
+mutable stage or selector operations occur.
+
+Strict C89 host integration now uses a real
+1808-object GEN2 test generation with an
+authenticated commit, six-mode binary tree
+and nested child tree, empty/malformed trees,
+known staged blob and gitlink, wrong-type and
+malformed linked trees, and the captured real
+first-commit fixture. It tests root decoding,
+blob/nested-tree resolution, missing paths,
+invalid path hex, non-tree intermediate,
+external gitlink, both invalid fail-closed,
+verified older fallback and reselected newer
+restoration. All native GitHub host CI passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36438588523 .
+
+The single standard `src/GITRUN.EXEC` now holds
+M24's read-only actual CMS tests, including
+independent dual-generation audit and seq52
+selector validation; LSROOT of the known first
+commit; PATH of its real README.md; nested
+PATH of docs/STATUS.md; non-commit LSROOT RC8;
+missing-path RC4; non-tree intermediate RC8;
+older-generation fallback, both-unavailable
+RC8, and restored nested path; final all
+protected generation/selector/PACK checks.
+The actual GitHub historical first-commit
+root and nested docs trees were checked when
+selecting the names for this batch; the
+new M24 native code has **not yet** executed
+on CMS and is not claimed target-proven.
