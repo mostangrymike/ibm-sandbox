@@ -3203,3 +3203,84 @@ M26Q2 compact console contract is TARGET PROVEN.
 Continue next independent native source/host
 development and use standard GITRUN for next
 one-page CMS target gate.
+
+## September 28 11:05 M26Q2 passed; M27 host-complete next gate
+
+User's actual standard GITRUN M26Q2 produced
+exactly the desired ONE-PAGE compact report.
+PASS protected files, separate GITFIX and
+M15NEW complete 1808-unique GENCHECK, seq52
+M15NEW selection, verified historic docs
+directory two entries, wrong-type RC8, missing
+path RC4, non-tree intermediate RC8, seq51
+GITFIX recovery, both invalid fail-closed RC8,
+restored seq52 and final protected checks.
+Exact final:
+GITRUN M26Q2 ALL READ ONLY NATIVE GIT TESTS PASSED
+Ready T=195.18/196.47 11:05:02.
+CMS PIPE ... | STEM in-memory output capture,
+REXX GATE return codes for both success and
+intentional failure, one-line CALL syntax
+and compact diagnostic behavior are now
+TARGET PROVEN. User will not babysit or
+paste multi-page logs again: ALL FUTURE
+standard GITRUN test suites MUST fit one page
+on success, last four diagnostic lines on
+failure, without dumping raw progress or hex.
+
+Immediately progressed independently to
+M27 production C89 GITREC FIRSTPAR C0NAME
+C1NAME COMMIT_OID40: fully audits selected
+GEN2 generation; validates and rehashes child
+commit; reads first-parent raw Git ASCII OID;
+locates, rehashes and validates first-parent
+commit in SAME sealed generation; outputs
+FIRST PARENT VERIFIED, full parent OID and
+parent tree OID only after BOTH objects are
+verified. Wrong-type/malformed/missing child
+or parent fail closed RC4 or RC8 without
+parent metadata; root commit returns RC4,
+both unavailable RC8. Strict compiled
+production C89 test extended with staged
+two-parent merge, root, missing parent,
+blob as parent, structurally invalid
+parent, wrong-type child, seq51 recovery,
+both invalid and seq52 restoration.
+Previous CATHEX/TREE/COMMIT/PATH/PATHCAT/LSDIR
+and max 65536 binary tests remain passing.
+FULL NATIVE HOST CI:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36450050947
+
+The ONE standard src/GITRUN.EXEC is now M27
+COMPACT REPORT: checks original protected
+objects, two independent full 1808-object
+audits, seq52 selector, FIRSTPAR of actual
+first commit OID
+00D8D63229305230C8D37F884CE87F9E1A89468C
+with exact historical parent
+2D5038C551318997B865497E04CF4C037DE4135E
+and GitHub-verified parent tree
+F3EF36AAD778D5DA84857D8DED46495C75F4CAB0,
+wrong-type and missing-commit negative tests,
+seq51 recovery, both absent RC8, restored
+seq52 and post-protected STATE checks.
+All CMS native outputs captured in REXX STEM
+and GATE verified against exact markers and RC;
+no persistent CMS file writes. The standard
+read-only GITRUN source guard now enforces
+compact M27 stages and no multiline REXX
+CALL GATE lists, and full host CI passed.
+M27 has NOT YET run on live CMS.
+
+User's Mac prompt typically ibm-sandbox/src.
+Next target work requires ONLY Mac:
+ git pull
+ ./cms-upload.sh GITREC.C
+ ./cms-upload.sh GITRUN.EXEC
+Then real CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+Keep response/request compact; no changed
+GITCIDX.C or GITSEL.C. Never run old cleanup,
+rebuild protected original generations, or
+claim target M27 PASS before real console.
