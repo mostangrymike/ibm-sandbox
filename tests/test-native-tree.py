@@ -139,6 +139,40 @@ NEST_WRONG_COMMIT = FIRST_COMMIT.replace(
 NEST_PARENT_MERGE = MERGE2.replace(
     git_oid("commit", SECOND_PARENT).lower().encode("ascii"),
     git_oid("commit", NEST_MISSING_COMMIT).lower().encode("ascii"))
+# M36: the *second* nested level is corrupt, but shallower walks pass.
+DEEP_GOOD = (b"40000 inner\x00"
+             + bytes.fromhex(git_oid("tree", SUBTREE)))
+DEEP_MISSING = (b"40000 inner\x00"
+                + bytes.fromhex(git_oid("tree", NEST_MISSING)))
+DEEP_WRONG = (b"40000 inner\x00"
+              + bytes.fromhex(git_oid("tree", NEST_WRONG)))
+DEEP_ROOT_GOOD = TREE.replace(
+    bytes.fromhex(git_oid("tree", SUBTREE)),
+    bytes.fromhex(git_oid("tree", DEEP_GOOD)), 1)
+DEEP_ROOT_MISSING = TREE.replace(
+    bytes.fromhex(git_oid("tree", SUBTREE)),
+    bytes.fromhex(git_oid("tree", DEEP_MISSING)), 1)
+DEEP_ROOT_WRONG = TREE.replace(
+    bytes.fromhex(git_oid("tree", SUBTREE)),
+    bytes.fromhex(git_oid("tree", DEEP_WRONG)), 1)
+DEEP_COMMIT_GOOD = FIRST_COMMIT.replace(
+    git_oid("tree", TREE).lower().encode("ascii"),
+    git_oid("tree", DEEP_ROOT_GOOD).lower().encode("ascii"))
+DEEP_COMMIT_MISSING = FIRST_COMMIT.replace(
+    git_oid("tree", TREE).lower().encode("ascii"),
+    git_oid("tree", DEEP_ROOT_MISSING).lower().encode("ascii"))
+DEEP_COMMIT_WRONG = FIRST_COMMIT.replace(
+    git_oid("tree", TREE).lower().encode("ascii"),
+    git_oid("tree", DEEP_ROOT_WRONG).lower().encode("ascii"))
+DEEP_PARENT_MERGE = MERGE2.replace(
+    git_oid("commit", SECOND_PARENT).lower().encode("ascii"),
+    git_oid("commit", DEEP_COMMIT_MISSING).lower().encode("ascii"))
+LARGE_ROOT = b"".join(
+    b"100644 f" + ("%03d" % i).encode("ascii") + b"\x00" + BLOB_OID
+    for i in range(257))
+LARGE_ROOT_COMMIT = FIRST_COMMIT.replace(
+    git_oid("tree", TREE).lower().encode("ascii"),
+    git_oid("tree", LARGE_ROOT).lower().encode("ascii"))
 BAD_PARENT = MERGE.replace(b"parent " + b"1"*40,
                            b"parent " + b"Z"*40)
 BAD_COMMIT = FIRST_COMMIT.replace(b"committer ", b"othername ")
@@ -168,7 +202,13 @@ SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
            (2, NEST_MISSING), (2, NEST_WRONG),
            (2, NEST_MISSING_TREE), (2, NEST_WRONG_TREE),
            (1, NEST_MISSING_COMMIT), (1, NEST_WRONG_COMMIT),
-           (1, NEST_PARENT_MERGE)]
+           (1, NEST_PARENT_MERGE),
+           (2, DEEP_GOOD), (2, DEEP_MISSING), (2, DEEP_WRONG),
+           (2, DEEP_ROOT_GOOD), (2, DEEP_ROOT_MISSING),
+           (2, DEEP_ROOT_WRONG), (1, DEEP_COMMIT_GOOD),
+           (1, DEEP_COMMIT_MISSING), (1, DEEP_COMMIT_WRONG),
+           (1, DEEP_PARENT_MERGE), (2, LARGE_ROOT),
+           (1, LARGE_ROOT_COMMIT)]
 OBJECTS = SAMPLES + [(3, BLOB)] * (1808 - len(SAMPLES))
 
 
@@ -253,7 +293,7 @@ def main():
         (d / "dd:FIDXOUT").rename(d / "dd:FIDXIN")
         run(idx, "GENWRITE", cwd=d)
         (d / "dd:GENOUT").rename(d / "dd:GENIN")
-        assert "GENERATION VERIFIED 1808 UNIQUE 41" in run(idx, "GENCHECK", cwd=d)
+        assert "GENERATION VERIFIED 1808 UNIQUE 53" in run(idx, "GENCHECK", cwd=d)
         digest = (d / "dd:GENIN").read_text().splitlines()[1].split()[1]
         for prefix in ("C0", "C1"):
             for kind, name in (("STG", "STGIN"), ("IDX", "IDXIN"),
@@ -434,6 +474,36 @@ def main():
                           tree_oid, cwd=d, expected=8)
         assert "OBJECT IS NOT A COMMIT" in first_wrong
         assert "FIRST PARENT VERIFIED" not in first_wrong
+        # M36: one deeper level: both shallower commands must pass
+        # even when the deepest nested blob is missing or wrong type.
+        deep_valid = run(rec, "DEEPLINKS", "GENOLD", "GENNEW",
+                         git_oid("commit", DEEP_COMMIT_GOOD), cwd=d)
+        assert "DEEP ROOT LINKS VERIFIED" in deep_valid
+        assert "PARENTS COUNT 0" in deep_valid
+        assert all(len(x) <= 80 for x in deep_valid.splitlines())
+        deep_merge = run(rec, "DEEPLINKS", "GENOLD", "GENNEW",
+                         git_oid("commit", MERGE2), cwd=d)
+        assert "DEEP ROOT LINKS VERIFIED" in deep_merge
+        assert "PARENTS COUNT 2" in deep_merge
+        for bad, rc, marker in (
+                (DEEP_COMMIT_MISSING, 4, "ROOT ENTRY OBJECT NOT FOUND"),
+                (DEEP_COMMIT_WRONG, 8, "ROOT ENTRY TYPE MISMATCH"),
+                (DEEP_PARENT_MERGE, 4, "ROOT ENTRY OBJECT NOT FOUND")):
+            for shallow in ("ROOTLINKS", "NESTLINKS"):
+                ok = run(rec, shallow, "GENOLD", "GENNEW",
+                         git_oid("commit", bad), cwd=d)
+                assert "PARENTS DATA BEGIN" in ok
+            bad_deep = run(rec, "DEEPLINKS", "GENOLD", "GENNEW",
+                           git_oid("commit", bad), cwd=d, expected=rc)
+            assert marker in bad_deep
+            assert "DEEP ROOT LINKS VERIFIED" not in bad_deep
+            assert "PARENTS DATA BEGIN" not in bad_deep
+        many = run(rec, "DEEPLINKS", "GENOLD", "GENNEW",
+                   git_oid("commit", LARGE_ROOT_COMMIT),
+                   cwd=d, expected=8)
+        assert "ROOT LINK LIMIT EXCEEDED" in many
+        assert "PARENTS DATA BEGIN" not in many
+
         # M35: authenticate entries inside each direct root subtree.
         nested = run(rec, "NESTLINKS", "GENOLD", "GENNEW",
                      git_oid("commit", MERGE2), cwd=d)
@@ -725,6 +795,10 @@ def main():
                                cwd=d)
         assert "RECOVERED 51 GENOLD" in nested_recovered
         assert "NESTED ROOT LINKS VERIFIED" in nested_recovered
+        deep_recovered = run(rec, "DEEPLINKS", "GENOLD", "GENNEW",
+                             git_oid("commit", DEEP_COMMIT_GOOD), cwd=d)
+        assert "RECOVERED 51 GENOLD" in deep_recovered
+        assert "DEEP ROOT LINKS VERIFIED" in deep_recovered
         assert "HISTORY HOPS 2" in history_recovered
         assert "ANCESTOR OID " + git_oid("commit", FIRST_COMMIT) in ancestor_recovered
         lsroot_recovered = run(rec, "LSROOT", "GENOLD", "GENNEW",
@@ -799,6 +873,11 @@ def main():
                             cwd=d, expected=8)
         assert "NO FULLY VERIFIED GENERATION" in nested_failed
         assert "PARENTS DATA BEGIN" not in nested_failed
+        deep_failed = run(rec, "DEEPLINKS", "GENOLD", "GENNEW",
+                          git_oid("commit", DEEP_COMMIT_GOOD),
+                          cwd=d, expected=8)
+        assert "NO FULLY VERIFIED GENERATION" in deep_failed
+        assert "PARENTS DATA BEGIN" not in deep_failed
         lsroot_failed = run(rec, "LSROOT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             cwd=d, expected=8)
@@ -863,6 +942,10 @@ def main():
                               cwd=d)
         assert "SELECTED 52 GENNEW" in nested_restored
         assert "NESTED ROOT LINKS VERIFIED" in nested_restored
+        deep_restored = run(rec, "DEEPLINKS", "GENOLD", "GENNEW",
+                            git_oid("commit", DEEP_COMMIT_GOOD), cwd=d)
+        assert "SELECTED 52 GENNEW" in deep_restored
+        assert "DEEP ROOT LINKS VERIFIED" in deep_restored
         assert "ANCESTOR OID " + git_oid("commit", FIRST_COMMIT) in ancestor_restored
         final_path = run(rec, "PATH", "GENOLD", "GENNEW",
                          git_oid("commit", FIRST_COMMIT),
