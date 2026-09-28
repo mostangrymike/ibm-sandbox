@@ -295,6 +295,122 @@ static int rec_root(const unsigned char *oid) {
  return rec_tree(tree_oid);
 }
 
+/* M24: follow a raw-byte relative Git path from a commit.
+ * PATHHEX is CLI text; after decoding it, all object content is
+ * binary Git data, including tree names and mode fields.
+ * Authenticate every linked object before printing any path result.
+ */
+static int rec_path(const unsigned char *commit_oid,
+                    const unsigned char *path,unsigned long length) {
+ unsigned char next[20],found[20];
+ unsigned long start=0,end,at,mode_start,mode_len,name_start;
+ unsigned long name_len,object_size;
+ int pos,rc,expected_type=0,is_gitlink=0;
+ if(sidx_read()!=0) return 8;
+ pos=sidx_locate(commit_oid);
+ if(pos<0) {puts("SEEK OID NOT FOUND");return 4;}
+ if(sidx[pos].type!=1) {
+  puts("OBJECT IS NOT A COMMIT");return 8;
+ }
+ sidx_silent=1;
+ rc=sidx_get(commit_oid);
+ sidx_silent=0;
+ if(rc!=0) return rc;
+ if(!rec_commit_walk(sidx[pos].size,0)) {
+  puts("COMMIT STRUCTURE INVALID");return 8;
+ }
+ if(!rec_ascii_oid(idx_body+5,next)) return 8;
+ while(start<length) {
+  end=start;
+  while(end<length&&path[end]!=0x2f) end++;
+  pos=sidx_locate(next);
+  if(pos<0) {puts("PATH TREE NOT FOUND");return 4;}
+  if(sidx[pos].type!=2) {
+   puts("PATH EXPECTED TREE");return 8;
+  }
+  object_size=sidx[pos].size;
+  sidx_silent=1;
+  rc=sidx_get(next);
+  sidx_silent=0;
+  if(rc!=0) return rc;
+  if(!rec_tree_walk(object_size,0)) {
+   puts("PATH TREE STRUCTURE INVALID");return 8;
+  }
+  at=0;pos=-1;
+  while(at<object_size) {
+   mode_start=at;
+   while(idx_body[at]!=0x20) at++;
+   mode_len=at-mode_start;
+   at++;
+   name_start=at;
+   while(idx_body[at]!=0) at++;
+   name_len=at-name_start;
+   at++;
+   if(name_len==end-start&&
+      memcmp(idx_body+name_start,path+start,
+             (size_t)name_len)==0) {
+    is_gitlink=(mode_len==6&&
+      memcmp(idx_body+mode_start,
+             "\x31\x36\x30\x30\x30\x30",6)==0);
+    expected_type=(mode_len==5)?2:
+                  (is_gitlink?1:3);
+    memcpy(found,idx_body+at,20);
+    pos=1;break;
+   }
+   at+=20;
+  }
+  if(pos<0) {puts("PATH NOT FOUND");return 4;}
+  if(end<length) {
+   if(expected_type!=2) {
+    puts("PATH COMPONENT NOT A TREE");return 8;
+   }
+   memcpy(next,found,20);
+   start=end+1;
+   continue;
+  }
+  if(is_gitlink) {
+   puts("PATH GITLINK (EXTERNAL COMMIT)");
+   fputs("PATH OID ",stdout);
+   idx_print(stdout,found);putchar('\n');
+   return 0;
+  }
+  pos=sidx_locate(found);
+  if(pos<0) {puts("PATH OBJECT NOT FOUND");return 4;}
+  if(sidx[pos].type!=expected_type) {
+   puts("PATH OBJECT TYPE MISMATCH");return 8;
+  }
+  object_size=sidx[pos].size;
+  sidx_silent=1;
+  rc=sidx_get(found);
+  sidx_silent=0;
+  if(rc!=0) return rc;
+  printf("PATH OBJECT TYPE %d SIZE %lu OID ",
+         expected_type,object_size);
+  idx_print(stdout,found);putchar('\n');
+  return 0;
+ }
+ return 8;
+}
+static int rec_path_hex(const char *s,unsigned char *dst,
+                        unsigned long *length) {
+ unsigned long j,n;
+ int hi,lo;
+ n=(unsigned long)strlen(s);
+ if(n<2||n>510||n%2) return 0;
+ *length=n/2;
+ for(j=0;j<*length;j++) {
+  hi=idx_nib((unsigned char)s[2*j]);
+  lo=idx_nib((unsigned char)s[2*j+1]);
+  if(hi<0||lo<0) return 0;
+  dst[j]=(unsigned char)((hi<<4)|lo);
+  if(dst[j]==0||(*length>1&&
+     (j==0||j==*length-1)&&dst[j]==0x2f)||
+     (j>0&&dst[j]==0x2f&&dst[j-1]==0x2f))
+   return 0;
+ }
+ return 1;
+}
+
 /* SELECT stays read-only. GET adds a verified indexed object
  * lookup only after a complete native GENCHECK has selected a slot.
  * Never call SGET on an unverified candidate or infer an active
@@ -302,14 +418,16 @@ static int rec_root(const unsigned char *oid) {
  */
 int main(int argc,char **argv) {
  struct slot a,b;
- unsigned char oid[20];
- int get,full,tree,commit,root,rc;
+ unsigned char oid[20],path[255];
+ unsigned long pathlen=0;
+ int get,full,tree,commit,root,path_command,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
  commit=argc==5&&strcmp(argv[1],"COMMIT")==0;
  root=argc==5&&strcmp(argv[1],"LSROOT")==0;
- if((!get&&!full&&!tree&&!commit&&!root&&
+ path_command=argc==6&&strcmp(argv[1],"PATH")==0;
+ if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
      (argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
@@ -319,12 +437,17 @@ int main(int argc,char **argv) {
   puts("GITREC TREE C0NAME C1NAME OID40");
   puts("GITREC COMMIT C0NAME C1NAME OID40");
   puts("GITREC LSROOT C0NAME C1NAME COMMIT_OID40");
+  puts("GITREC PATH C0NAME C1NAME COMMIT_OID40 PATHHEX");
   return 4;
  }
- if((get||full||tree||commit||root)&&(strlen(argv[4])!=40||
+ if((get||full||tree||commit||root||path_command)&&
+    (strlen(argv[4])!=40||
     !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
   return 4;
+ }
+ if(path_command&&!rec_path_hex(argv[5],path,&pathlen)) {
+  puts("PATH REQUIRES VALID NONEMPTY HEX");return 4;
  }
  rec_expected[0]=argv[2];rec_expected[1]=argv[3];
  slot_read("dd:SEL0",&a);
@@ -336,11 +459,12 @@ int main(int argc,char **argv) {
   puts("SELECTOR SLOT 1 NAME MISMATCH");b.valid=0;
  }
  rc=selector_choose(&a,&b);
- if(rc!=0||(!get&&!full&&!tree&&!commit&&!root)) return rc;
+ if(rc!=0||(!get&&!full&&!tree&&!commit&&!root&&!path_command)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(tree) return rec_tree(oid);
  if(commit) return rec_commit(oid);
  if(root) return rec_root(oid);
+ if(path_command) return rec_path(oid,path,pathlen);
  if(sidx_read()!=0) return 8;
  sidx_emit_full=full;
  return sidx_get(oid);
