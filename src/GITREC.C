@@ -478,7 +478,8 @@ static int rec_parent(const unsigned char *child,
  * Every parent must exist and be a valid commit in the SAME
  * fully verified generation; no partial merge-parent lists.
  */
-static int rec_parents(const unsigned char *child) {
+static int rec_parents(const unsigned char *child,
+                       int check_trees) {
  unsigned char parents[16][20],trees[16][20];
  unsigned long at=46,begin,len,sz;
  unsigned int count=0,j;
@@ -526,6 +527,26 @@ static int rec_parents(const unsigned char *child) {
    puts("PARENTS OBJECT INVALID");return 8;
   }
   if(!rec_ascii_oid(idx_body+5,trees[j])) return 8;
+ }
+ if(check_trees) {
+  for(j=0;j<count;j++) {
+   pos=sidx_locate(trees[j]);
+   if(pos<0) {
+    puts("PARENT ROOT TREE NOT FOUND");return 4;
+   }
+   if(sidx[pos].type!=2) {
+    puts("PARENT ROOT OBJECT NOT TREE");return 8;
+   }
+   sz=sidx[pos].size;
+   sidx_silent=1;
+   rc=sidx_get(trees[j]);
+   sidx_silent=0;
+   if(rc!=0) return rc;
+   if(!rec_tree_walk(sz,0)) {
+    puts("PARENT ROOT TREE INVALID");return 8;
+   }
+  }
+  puts("PARENT ROOT TREES VERIFIED");
  }
  puts("PARENTS DATA BEGIN");
  for(j=0;j<count;j++) {
@@ -720,7 +741,8 @@ int main(int argc,char **argv) {
  unsigned int depth=0;
  unsigned long d;
  int get,full,tree,commit,root,path_command,pathcat;
- int lsdir,firstpar,ancestor,history,parent_cmd,parents_cmd,rc;
+ int lsdir,firstpar,ancestor,history,parent_cmd,parents_cmd;
+ int roots_cmd,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
@@ -734,9 +756,11 @@ int main(int argc,char **argv) {
  history=argc==6&&strcmp(argv[1],"HISTORY")==0;
  parent_cmd=argc==6&&strcmp(argv[1],"PARENT")==0;
  parents_cmd=argc==5&&strcmp(argv[1],"PARENTS")==0;
+ roots_cmd=argc==5&&strcmp(argv[1],"PARENTROOTS")==0;
  if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
      !pathcat&&!lsdir&&!firstpar&&!ancestor&&
      !history&&!parent_cmd&&!parents_cmd&&
+     !roots_cmd&&
      (argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
@@ -754,11 +778,12 @@ int main(int argc,char **argv) {
   puts("GITREC HISTORY C0NAME C1NAME COMMIT_OID40 DEPTH");
   puts("GITREC PARENT C0NAME C1NAME COMMIT_OID40 N");
   puts("GITREC PARENTS C0NAME C1NAME COMMIT_OID40");
+  puts("GITREC PARENTROOTS C0NAME C1NAME OID40");
   return 4;
  }
  if((get||full||tree||commit||root||path_command||
      pathcat||lsdir||firstpar||ancestor||history||
-     parent_cmd||parents_cmd)&&
+     parent_cmd||parents_cmd||roots_cmd)&&
     (strlen(argv[4])!=40||
     !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
@@ -797,7 +822,7 @@ int main(int argc,char **argv) {
  if(rc!=0||(!get&&!full&&!tree&&!commit&&!root&&
              !path_command&&!pathcat&&!lsdir&&
              !firstpar&&!ancestor&&!history&&
-             !parent_cmd&&!parents_cmd)) return rc;
+             !parent_cmd&&!parents_cmd&&!roots_cmd)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(tree) return rec_tree(oid);
  if(commit) return rec_commit(oid);
@@ -809,7 +834,8 @@ int main(int argc,char **argv) {
  if(ancestor) return rec_ancestor(oid,depth);
  if(history) return rec_history(oid,depth);
  if(parent_cmd) return rec_parent(oid,depth);
- if(parents_cmd) return rec_parents(oid);
+ if(parents_cmd) return rec_parents(oid,0);
+ if(roots_cmd) return rec_parents(oid,1);
  if(sidx_read()!=0) return 8;
  sidx_emit_full=full;
  return sidx_get(oid);
