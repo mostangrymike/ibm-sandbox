@@ -270,6 +270,31 @@ static int rec_commit(const unsigned char *oid) {
  return 0;
 }
 
+/* M24: follow a commit's authenticated tree in the SAME
+ * fully verified generation. Do not expose tree entries if either
+ * linked object is missing, mis-typed or structurally invalid.
+ */
+static int rec_root(const unsigned char *oid) {
+ unsigned char tree_oid[20];
+ int pos,rc;
+ if(sidx_read()!=0) return 8;
+ pos=sidx_locate(oid);
+ if(pos<0) {puts("SEEK OID NOT FOUND");return 4;}
+ if(sidx[pos].type!=1) {
+  puts("OBJECT IS NOT A COMMIT");return 8;
+ }
+ sidx_silent=1;
+ rc=sidx_get(oid);
+ sidx_silent=0;
+ if(rc!=0) return rc;
+ if(!rec_commit_walk(sidx[pos].size,0)) {
+  puts("COMMIT STRUCTURE INVALID");return 8;
+ }
+ if(!rec_ascii_oid(idx_body+5,tree_oid)) return 8;
+ /* rec_tree reopens only rec_active's already selected inputs. */
+ return rec_tree(tree_oid);
+}
+
 /* SELECT stays read-only. GET adds a verified indexed object
  * lookup only after a complete native GENCHECK has selected a slot.
  * Never call SGET on an unverified candidate or infer an active
@@ -278,12 +303,13 @@ static int rec_commit(const unsigned char *oid) {
 int main(int argc,char **argv) {
  struct slot a,b;
  unsigned char oid[20];
- int get,full,tree,commit,rc;
+ int get,full,tree,commit,root,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
  commit=argc==5&&strcmp(argv[1],"COMMIT")==0;
- if((!get&&!full&&!tree&&!commit&&
+ root=argc==5&&strcmp(argv[1],"LSROOT")==0;
+ if((!get&&!full&&!tree&&!commit&&!root&&
      (argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
@@ -292,9 +318,10 @@ int main(int argc,char **argv) {
   puts("GITREC CATHEX C0NAME C1NAME OID40");
   puts("GITREC TREE C0NAME C1NAME OID40");
   puts("GITREC COMMIT C0NAME C1NAME OID40");
+  puts("GITREC LSROOT C0NAME C1NAME COMMIT_OID40");
   return 4;
  }
- if((get||full||tree||commit)&&(strlen(argv[4])!=40||
+ if((get||full||tree||commit||root)&&(strlen(argv[4])!=40||
     !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
   return 4;
@@ -309,10 +336,11 @@ int main(int argc,char **argv) {
   puts("SELECTOR SLOT 1 NAME MISMATCH");b.valid=0;
  }
  rc=selector_choose(&a,&b);
- if(rc!=0||(!get&&!full&&!tree&&!commit)) return rc;
+ if(rc!=0||(!get&&!full&&!tree&&!commit&&!root)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(tree) return rec_tree(oid);
  if(commit) return rec_commit(oid);
+ if(root) return rec_root(oid);
  if(sidx_read()!=0) return 8;
  sidx_emit_full=full;
  return sidx_get(oid);
