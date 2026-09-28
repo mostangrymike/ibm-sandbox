@@ -3452,3 +3452,89 @@ or less. Keep original 1808-object generation
 files and selectors read-only; no repeated
 manual FILEDEF sequences, no changes to
 unchanged GITCIDX/GITSEL.
+
+## September 28 11:54–11:57 — M28 LIVE CMS PASS, M29 READY
+
+User uploaded the 72-column-corrected M28
+GITREC.C and built using CMSCLNK GITREC PLAIN:
+ASSEMBLER (XF) DONE, no statements flagged;
+GITREC MODULE mode PLAIN built, T=7.78/8.07.
+Standard GITRUN M28 COMPACT REPORT then passed
+on real CMS:
+ PASS protected originals/absent M15BAD GEN
+ PASS GITFIX/M15NEW independent 1808 full audits
+ PASS seq52 M15NEW
+ PASS ANCESTOR DEPTH1 RC0
+ PASS ANCESTOR DEPTH2 RC0
+ PASS invalid depth RC4
+ PASS noncommit RC8
+ PASS recovered depth2 seq51 RC0
+ PASS both missing GEN2 fail closed RC8
+ PASS restored depth2 seq52 RC0
+ PASS final protected originals
+ GITRUN M28 ALL READ ONLY NATIVE GIT TESTS PASSED
+ Ready T=172.80/173.94 11:57 (seconds truncated).
+M28 is NATIVE TARGET-PROVEN. Permanent strict
+72-column CMS GITREC.C source guard and
+one-page GITRUN with PIPE CMS to STEM are
+both target-proven and still required.
+
+Autonomously developed M29 on GitHub main:
+Production native C89 GITREC HISTORY C0 C1
+COMMIT_OID40 DEPTH, where DEPTH=1..16 first-
+parent links. It selects one fully GEN2
+audited generation, SHA1-rehashes and
+structurally validates EVERY traversed commit
+there, stores up to 17 commit/tree IDs in
+fixed arrays, and emits framed HISTORY HOP
+index, OID, TREE, HISTORY HOPS and DATA END
+ONLY after the entire requested chain passes.
+No partial success metadata when reaching
+root early (RC4), missing (RC4), wrong-type
+or malformed parent (RC8), or both invalid
+generations RC8. No persistent writes.
+Earlier M28 ANCESTOR command and error string
+remain backward compatible.
+
+tests/test-native-tree.py native strict C89
+host integration now tests 2-hop history on
+grandchild/merge/root synthetic fixture,
+exact OIDs and trees, no partial output for
+missing/malformed links, root exhaustion,
+invalid depths, old-generation seq51 fallback,
+both-invalid failure and restored seq52.
+Existing M0-M28 tests still pass, including
+binary PATHCAT and full 1808-unique audits.
+Standard src/GITRUN.EXEC is now M29 compact
+one-page gate: full independent GENCHECK for
+GITFIX/M15NEW, exact seq52 selection, real
+original first commit
+00D8D63229305230C8D37F884CE87F9E1A89468C
+HISTORY depth2, matching historical parent
+2D5038C551318997B865497E04CF4C037DE4135E
+and grandparent
+C67A53164ADFC6FDEB708F13F1822E2CF24C060C
+with tree B8A987847912D6B67C1064D5361F5A9E5868DC18,
+invalid depth RC4, noncommit RC8,
+seq51 fallback, both unavailable RC8,
+seq52 restore and final original file checks.
+All output captured in-memory by PIPE-to-STEM;
+only approx 13 short PASS lines printed.
+Both C89 host tests, all native CI and
+read-only source guard PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36463930319 .
+M29 is HOST-PROVEN ONLY, needs actual CMS test.
+
+NEXT actual CMS gate from user's usual Mac
+ibm-sandbox/src:
+ git pull
+ ./cms-upload.sh GITREC.C
+ ./cms-upload.sh GITRUN.EXEC
+Actual CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+No GITCIDX/GITSEL changes, no original
+stage/index/seek/GEN or selector modifications.
+Never regress to multi-page logs or manual
+FILEDEF commands. Only mark M29 target-proven
+once user supplies actual compact PASS output.
