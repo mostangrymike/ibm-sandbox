@@ -3538,3 +3538,57 @@ stage/index/seek/GEN or selector modifications.
 Never regress to multi-page logs or manual
 FILEDEF commands. Only mark M29 target-proven
 once user supplies actual compact PASS output.
+
+## September 28 13:26–13:27 — M29 CMS output truncation; fix green
+
+User compiled M29 GITREC successfully on actual
+CMS with CMSCLNK GITREC PLAIN (ASSEMBLER XF,
+zero flagged statements, T=7.98/8.30 at 13:26:08).
+Standard single-page GITRUN M29 then passed both
+independent 1808-object GITFIX/M15NEW audits,
+seq52 selection, and GITREC HISTORY depth2
+returned RC0. The compact GATE observed
+HISTORY HOPS 2, known parent OID
+2D5038C551318997B865497E04CF4C037DE4135E
+and grandparent OID
+C67A53164ADFC6FDEB708F13F1822E2CF24C060C,
+but fourth marker (complete second ancestor TREE
+B8A987847912D6B67C1064D5361F5A9E5868DC18)
+was absent. CMS PIPE-to-STEM captured truncated
+native lines, for example HISTORY HOP 2 OID
+C67A53164... TREE B8A987847912D6B6,
+because M29 printed OID and tree (2x40 hex)
+on one line exceeding CMS text record width.
+Observed GATE: FAIL VERIFIED HISTORY TWO HOPS
+RC0 EXPECTED0, MARKERS 1 1 1 0; intentional
+abort RC12. This is an output formatting issue,
+NOT a staged Git-data or ancestry verification
+failure. Target M29 full GITRUN PASS is pending.
+
+Fixed production src/GITREC.C to print each
+HISTORY HOP index's OID and TREE on SEPARATE
+short 80-column-safe records, only after
+entire chain is validated. The standard M29
+GITRUN.EXEC is UNCHANGED; its existing exact
+grandparent TREE marker will now match the
+complete short TREE record. The native C89
+host regression tests were updated to
+independently check each OID and TREE line
+and enforce all history output lines <=80
+characters, preventing recurrence. All
+expanded native host CI PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36465703179 .
+This change is read-only and does not touch
+original STAGE/INDEX/SEEK/GEN/selector/PACK.
+
+Next user Mac (usual ibm-sandbox/src):
+ git pull
+ ./cms-upload.sh GITREC.C
+Then real CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+No GITRUN upload, other source upload or
+protected data rebuild needed. Continue
+single-page compact GITRUN CMS reporting,
+and mark M29 actual CMS PASS only if real
+corrected output finishes successfully.
