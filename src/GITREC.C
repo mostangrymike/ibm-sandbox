@@ -806,13 +806,14 @@ static int rec_path(const unsigned char *commit_oid,
   rc=sidx_get(found);
   sidx_silent=0;
   if(rc!=0) return rc;
+  /* M40: fully parse returned trees before ANY path output. */
+  if(expected_type==2&&!rec_tree_walk(object_size,0)) {
+   puts("DIRECTORY TREE STRUCTURE INVALID");return 8;
+  }
   printf("PATH OBJECT TYPE %d SIZE %lu OID ",
          expected_type,object_size);
   idx_print(stdout,found);putchar('\n');
   if(contents==2) {
-   if(!rec_tree_walk(object_size,0)) {
-    puts("DIRECTORY TREE STRUCTURE INVALID");return 8;
-   }
    puts("TREE DATA BEGIN");
    if(!rec_tree_walk(object_size,1)) return 8;
    puts("TREE DATA END");

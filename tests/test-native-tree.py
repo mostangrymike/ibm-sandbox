@@ -394,6 +394,18 @@ def main():
                           git_oid("commit", FIRST_COMMIT), malformed_dir,
                           cwd=d, expected=4)
             assert "TREE DATA BEGIN" not in bad_dir
+        # M40: a canonical OID is insufficient when a terminal
+        # directory is itself malformed. Never expose partial
+        # PATH metadata or a partial directory listing.
+        for command in ("PATH", "LSDIR"):
+            corrupt = run(
+                rec, command, "GENOLD", "GENNEW",
+                git_oid("commit", INVALID_SUBTREE_COMMIT),
+                b"subdir".hex().upper(), cwd=d, expected=8)
+            assert "DIRECTORY TREE STRUCTURE INVALID" in corrupt
+            assert "PATH OBJECT TYPE" not in corrupt
+            assert "TREE DATA BEGIN" not in corrupt
+            assert "TREE ENTRY MODE" not in corrupt
         subtree = run(rec, "PATH", "GENOLD", "GENNEW",
                       git_oid("commit", FIRST_COMMIT),
                       b"subdir".hex().upper(), cwd=d)
