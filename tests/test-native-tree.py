@@ -21,9 +21,15 @@ def git_oid(typ, data):
 
 BLOB = b"abc"
 BLOB_OID = bytes.fromhex(git_oid("blob", BLOB))
+EMPTY = b""
+BINARY = bytes(range(256)) + b"\x00"
+BIG = bytes((n * 17 + 13) % 256 for n in range(65536))
 SUBTREE = b"100644 nested.txt\x00" + BLOB_OID
 ENTRIES = [
     (b"100644", b"README.md", BLOB_OID),
+    (b"100644", b"empty.bin", bytes.fromhex(git_oid("blob", EMPTY))),
+    (b"100644", b"bytes.bin", bytes.fromhex(git_oid("blob", BINARY))),
+    (b"100644", b"big.bin", bytes.fromhex(git_oid("blob", BIG))),
     (b"100755", b"shell.sh", BLOB_OID),
     (b"120000", b"link", BLOB_OID),
     (b"160000", b"submodule", BLOB_OID),
@@ -65,7 +71,8 @@ BAD_COMMIT = FIRST_COMMIT.replace(b"committer ", b"othername ")
 SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
            (2, SUBTREE), (3, BLOB),
            (1, FIRST_COMMIT), (1, MERGE), (1, BAD_PARENT), (1, BAD_COMMIT),
-           (1, REAL_COMMIT), (1, BAD_LINK), (1, BAD_TREE_LINK)]
+           (1, REAL_COMMIT), (1, BAD_LINK), (1, BAD_TREE_LINK),
+           (3, EMPTY), (3, BINARY), (3, BIG)]
 OBJECTS = SAMPLES + [(3, BLOB)] * (1808 - len(SAMPLES))
 
 
@@ -116,6 +123,21 @@ def verify_tree(text, expected_name, rows):
     assert pos == len(got), got[pos:]
 
 
+def verify_pathcat(result, data, expected="SELECTED 52 GENNEW"):
+    lines = result.splitlines()
+    assert expected in result
+    assert any("PATH OBJECT TYPE 3 SIZE " + str(len(data)) + " OID "
+               + git_oid("blob", data) in line for line in lines)
+    start = lines.index("PATH DATA BEGIN")
+    end = lines.index("PATH DATA END")
+    assert end == len(lines) - 1
+    chunks = lines[start + 1:end]
+    assert all(re.fullmatch(r"PATH HEX [0-9A-F]{2,64}", x)
+               for x in chunks)
+    assert all(len(x[9:]) % 2 == 0 for x in chunks)
+    assert bytes.fromhex("".join(x[9:] for x in chunks)) == data
+
+
 def main():
     with tempfile.TemporaryDirectory() as directory:
         d = Path(directory)
@@ -134,7 +156,7 @@ def main():
         (d / "dd:FIDXOUT").rename(d / "dd:FIDXIN")
         run(idx, "GENWRITE", cwd=d)
         (d / "dd:GENOUT").rename(d / "dd:GENIN")
-        assert "GENERATION VERIFIED 1808 UNIQUE 12" in run(idx, "GENCHECK", cwd=d)
+        assert "GENERATION VERIFIED 1808 UNIQUE 15" in run(idx, "GENCHECK", cwd=d)
         digest = (d / "dd:GENIN").read_text().splitlines()[1].split()[1]
         for prefix in ("C0", "C1"):
             for kind, name in (("STG", "STGIN"), ("IDX", "IDXIN"),
@@ -182,6 +204,31 @@ def main():
                       b"submodule".hex().upper(), cwd=d)
         assert "PATH GITLINK (EXTERNAL COMMIT)" in gitlink
         assert "PATH OID " + BLOB_OID.hex().upper() in gitlink
+
+        # M25: full raw blob bytes only after the linked path is verified.
+        for filename, data in ((b"README.md", BLOB),
+                               (b"subdir/nested.txt", BLOB),
+                               (b"empty.bin", EMPTY),
+                               (b"bytes.bin", BINARY),
+                               (b"big.bin", BIG)):
+            full = run(rec, "PATHCAT", "GENOLD", "GENNEW",
+                       git_oid("commit", FIRST_COMMIT),
+                       filename.hex().upper(), cwd=d)
+            verify_pathcat(full, data)
+        assert len(BIG) == 65536
+        for filename, expected in ((b"subdir", 8),
+                                   (b"submodule", 8),
+                                   (b"missing", 4),
+                                   (b"README.md/child", 8)):
+            output = run(rec, "PATHCAT", "GENOLD", "GENNEW",
+                         git_oid("commit", FIRST_COMMIT),
+                         filename.hex().upper(), cwd=d, expected=expected)
+            assert "PATH DATA BEGIN" not in output
+            assert "PATH HEX " not in output
+        malformed_cat = run(rec, "PATHCAT", "GENOLD", "GENNEW",
+                            git_oid("commit", FIRST_COMMIT), "612F2F62",
+                            cwd=d, expected=4)
+        assert "PATH DATA BEGIN" not in malformed_cat
         for bad in (b"missing", b"README.md/child", b"subdir/missing"):
             failure = run(rec, "PATH", "GENOLD", "GENNEW",
                           git_oid("commit", FIRST_COMMIT),
@@ -258,6 +305,10 @@ def main():
                              b"README.md".hex().upper(), cwd=d)
         assert "RECOVERED 51 GENOLD" in path_recovered
         assert "PATH OBJECT TYPE 3 SIZE 3" in path_recovered
+        full_recovered = run(rec, "PATHCAT", "GENOLD", "GENNEW",
+                             git_oid("commit", FIRST_COMMIT),
+                             b"bytes.bin".hex().upper(), cwd=d)
+        verify_pathcat(full_recovered, BINARY, "RECOVERED 51 GENOLD")
         assert "COMMIT PARENTS 2" in commit_recovered
         recovered = run(rec, "TREE", "GENOLD", "GENNEW", tree_oid, cwd=d)
         verify_tree(recovered, "RECOVERED 51 GENOLD", ENTRIES)
@@ -278,6 +329,10 @@ def main():
                           git_oid("commit", FIRST_COMMIT),
                           b"README.md".hex().upper(), cwd=d, expected=8)
         assert "PATH OBJECT TYPE" not in path_failed
+        full_failed = run(rec, "PATHCAT", "GENOLD", "GENNEW",
+                          git_oid("commit", FIRST_COMMIT),
+                          b"README.md".hex().upper(), cwd=d, expected=8)
+        assert "PATH DATA BEGIN" not in full_failed
         (d / "held-old").rename(d / "dd:C0GEN")
         (d / "held-new").rename(d / "dd:C1GEN")
         restored = run(rec, "TREE", "GENOLD", "GENNEW", tree_oid, cwd=d)
@@ -291,6 +346,10 @@ def main():
                          b"subdir/nested.txt".hex().upper(), cwd=d)
         assert "SELECTED 52 GENNEW" in final_path
         assert "PATH OBJECT TYPE 3 SIZE 3" in final_path
+        restored_full = run(rec, "PATHCAT", "GENOLD", "GENNEW",
+                            git_oid("commit", FIRST_COMMIT),
+                            b"big.bin".hex().upper(), cwd=d)
+        verify_pathcat(restored_full, BIG)
         print("NATIVE C89 TREE BINARY NAMEHEX, EMPTY, MALFORMED, "
               "NON-TREE, COMMIT, LSROOT, NESTED PATH AND FAIL-CLOSED TESTS PASSED")
 
