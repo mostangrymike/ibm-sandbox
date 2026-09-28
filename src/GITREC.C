@@ -174,7 +174,9 @@ static int rec_ascii_key(const unsigned char *line,
 }
 static int rec_commit_walk(unsigned long n,int emit) {
  unsigned long at=0,begin,end,len,parents=0,body=0;
- unsigned long parent_start=0,author=0,committer=0,j;
+ unsigned long parent_start=0,message_start=0;
+ unsigned long author=0,committer=0,j;
+ int previous_header=0;
  unsigned char binary[20];
  /* Exactly one tree line comes first. */
  while(at<n&&idx_body[at]!=0x0a) at++;
@@ -202,10 +204,10 @@ static int rec_commit_walk(unsigned long n,int emit) {
   while(at<n&&idx_body[at]!=0x0a) at++;
   if(at==n) return 0;
   len=at-begin;
-  if(len==0) {at++;body=1;break;}
+  if(len==0) {at++;message_start=at;body=1;break;}
   if(idx_body[begin]==0x20) {
    /* Folded gpgsig/mergetag header, not a new field. */
-   if(begin==parent_start||len==1) return 0;
+   if(!previous_header||len==1) return 0;
   } else {
    end=begin;
    while(end<at&&idx_body[end]!=0x20) {
@@ -224,6 +226,7 @@ static int rec_commit_walk(unsigned long n,int emit) {
    if(rec_ascii_key(idx_body+begin,len,"committer")) {
     if(committer++) return 0;
    }
+   previous_header=1;
   }
   at++;
  }
@@ -242,7 +245,7 @@ static int rec_commit_walk(unsigned long n,int emit) {
    at+=41;
   }
   printf("COMMIT PARENTS %lu\n",parents);
-  printf("COMMIT MESSAGE BYTES %lu\n",n-at);
+  printf("COMMIT MESSAGE BYTES %lu\n",n-message_start);
   puts("COMMIT DATA END");
  }
  return 1;
