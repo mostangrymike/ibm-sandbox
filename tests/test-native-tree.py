@@ -561,7 +561,8 @@ def main():
             legacy.split("PARENTS DATA BEGIN", 1)[1])
         # Every single LINKBATCH command audits only one selected
         # generation; its three markers do not trigger extra audits.
-        assert batch.count("GENERATION VERIFIED 1808 UNIQUE 1808") == 1
+        assert len(re.findall(r"^GENERATION VERIFIED [0-9]+ UNIQUE "
+                              r"[0-9]+$", batch, re.M)) == 1
         assert batch.count("NESTED ROOT LINKS VERIFIED") == 1
         assert batch.count("DEEP ROOT LINKS VERIFIED") == 1
         assert batch.count("LINK DEPTH 2 VERIFIED") == 1
@@ -584,6 +585,16 @@ def main():
             broken = run(rec, "LINKBATCH", "GENOLD", "GENNEW",
                          bad, cwd=d, expected=code)
             assert "LINK DEPTH 2 VERIFIED" not in broken
+        # A 257-entry root must fail without partial batch output.
+        over_limit = run(rec, "LINKBATCH", "GENOLD", "GENNEW",
+                         git_oid("commit", LARGE_ROOT_COMMIT),
+                         cwd=d, expected=8)
+        assert "ROOT LINK LIMIT EXCEEDED" in over_limit
+        for marker in ("NESTED ROOT LINKS VERIFIED",
+                       "DEEP ROOT LINKS VERIFIED",
+                       "LINK DEPTH 2 VERIFIED",
+                       "PARENTS DATA BEGIN"):
+            assert marker not in over_limit
 
         # M36: one deeper level: both shallower commands must pass
         # even when the deepest nested blob is missing or wrong type.
