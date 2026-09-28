@@ -764,3 +764,71 @@ one real CMS run before its output can be called
 target-proven. The native GITREC/GITCIDX modules
 and original generation files are unchanged.
 Future GITRUN suites must remain one page or less.
+
+## September 28 M26Q2 one-page CMS proof; M27 first-parent links
+
+The compact standard `GITRUN M26Q2` itself PASSED
+on actual z/VM CMS at 11:05:02, T=195.18/196.47.
+It printed only about 15 short lines, not the
+previous six or seven pages: both original
+GITFIX/M15NEW 1,808-object full audits RC0,
+M15NEW seq52 selection, exact docs-directory
+two-entry validation, negative wrong-type RC8,
+missing-path RC4, non-tree intermediate RC8,
+GITFIX seq51 recovery RC0, both manifests
+absent RC8, M15NEW restoration RC0 and final
+protected-file checks. The real CMS PIPE-to-
+in-memory-REXX-STEM capture and concise stage
+PASS/FAIL reporting are target-proven. Every
+subsequent standard GITRUN target batch must
+retain this one-page reporting contract and
+last-four-diagnostics-on-failure behavior.
+
+M27 production C89 now includes
+`GITREC FIRSTPAR C0NAME C1NAME COMMIT_OID40`.
+It fully verifies GEN2, both immutable indexes
+and all 1,808 staged objects before selecting
+a recovery generation, then independently
+authenticates and validates the supplied Git
+commit header, decodes its first Git ASCII
+parent OID, retrieves and SHA1-verifies the
+first-parent commit in that SAME generation,
+and validates the parent's complete commit
+header before emitting its parent OID and
+tree OID. A root commit has no first parent
+(RC4), unstaged/missing parent returns RC4,
+wrong-type or malformed child or parent
+returns RC8, and both-generation failures
+remain fail-closed. No missing parent is
+silently replaced by an object in a second
+generation.
+
+Native strict C89 host tests now exercise
+the production two-parent merge, authentic
+first-parent traversal, root negative,
+missing parent, wrong-type parent, malformed
+parent, bad child type, seq51 fallback,
+both unavailable fail-closed and seq52
+restoration while preserving all existing
+host binary blob, CATHEX, TREE, PATHCAT and
+LSDIR regressions. GitHub CI passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36450050947
+
+The standard `src/GITRUN.EXEC` is now M27's
+compact, no-persistent-write CMS target gate,
+retaining both independent original 1808-
+object audits and original-file integrity
+checks. It requires the native first parent
+of the historic first commit
+00D8D63229305230C8D37F884CE87F9E1A89468C
+to verify as
+2D5038C551318997B865497E04CF4C037DE4135E,
+with parent tree
+F3EF36AAD778D5DA84857D8DED46495C75F4CAB0,
+independently checked against historical
+GitHub commit metadata. It then tests wrong
+type RC8, missing commit RC4, seq51 recovery,
+both unavailable RC8 and seq52 restoration
+using in-memory PIPE capture. M27 itself
+requires live CMS execution and is not
+yet target-proven.
