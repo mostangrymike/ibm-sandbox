@@ -370,6 +370,36 @@ def main():
                           tree_oid, cwd=d, expected=8)
         assert "OBJECT IS NOT A COMMIT" in first_wrong
         assert "FIRST PARENT VERIFIED" not in first_wrong
+        # M29: verify entire chain before printing any HISTORY records.
+        history = run(rec, "HISTORY", "GENOLD", "GENNEW",
+                      git_oid("commit", GRANDCHILD), "2", cwd=d)
+        assert "SELECTED 52 GENNEW" in history
+        for hop, obj in enumerate((GRANDCHILD, MERGE, FIRST_COMMIT)):
+            assert ("HISTORY HOP " + str(hop) + " OID "
+                    + git_oid("commit", obj) + " TREE "
+                    + git_oid("tree", TREE)) in history
+        assert "HISTORY HOPS 2" in history
+        assert history.strip().endswith("HISTORY DATA END")
+        for data, hops, code, reason in (
+                (GRANDCHILD, "3", 4, "HISTORY ROOT REACHED"),
+                (MISSING_FIRST, "1", 4, "HISTORY COMMIT NOT FOUND"),
+                (BLOB_FIRST, "1", 8,
+                 "HISTORY OBJECT IS NOT A COMMIT"),
+                (MALFORMED_FIRST, "1", 8,
+                 "HISTORY COMMIT STRUCTURE INVALID")):
+            failhist = run(rec, "HISTORY", "GENOLD", "GENNEW",
+                           git_oid("commit", data), hops,
+                           cwd=d, expected=code)
+            assert reason in failhist
+            assert "HISTORY DATA BEGIN" not in failhist
+            assert "HISTORY HOP " not in failhist
+        for badval in ("0", "17", "-1", "X", ""):
+            failhist = run(rec, "HISTORY", "GENOLD", "GENNEW",
+                           git_oid("commit", GRANDCHILD), badval,
+                           cwd=d, expected=4)
+            assert "ANCESTOR DEPTH MUST BE 1 THROUGH 16" in failhist
+            assert "HISTORY DATA BEGIN" not in failhist
+
         # M28: full first-parent ancestry chain, no partial output.
         for depth, obj in ((1, MERGE), (2, FIRST_COMMIT)):
             history = run(rec, "ANCESTOR", "GENOLD", "GENNEW",
@@ -418,6 +448,11 @@ def main():
                                  git_oid("commit", GRANDCHILD),
                                  "2", cwd=d)
         assert "RECOVERED 51 GENOLD" in ancestor_recovered
+        history_recovered = run(rec, "HISTORY", "GENOLD", "GENNEW",
+                                git_oid("commit", GRANDCHILD),
+                                "2", cwd=d)
+        assert "RECOVERED 51 GENOLD" in history_recovered
+        assert "HISTORY HOPS 2" in history_recovered
         assert "ANCESTOR OID " + git_oid("commit", FIRST_COMMIT) in ancestor_recovered
         lsroot_recovered = run(rec, "LSROOT", "GENOLD", "GENNEW",
                                git_oid("commit", FIRST_COMMIT), cwd=d)
@@ -457,6 +492,11 @@ def main():
                               "2", cwd=d, expected=8)
         assert "NO FULLY VERIFIED GENERATION" in ancestor_failed
         assert "ANCESTOR VERIFIED" not in ancestor_failed
+        history_failed = run(rec, "HISTORY", "GENOLD", "GENNEW",
+                             git_oid("commit", GRANDCHILD),
+                             "2", cwd=d, expected=8)
+        assert "NO FULLY VERIFIED GENERATION" in history_failed
+        assert "HISTORY DATA BEGIN" not in history_failed
         lsroot_failed = run(rec, "LSROOT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             cwd=d, expected=8)
@@ -489,6 +529,11 @@ def main():
                                 git_oid("commit", GRANDCHILD),
                                 "2", cwd=d)
         assert "SELECTED 52 GENNEW" in ancestor_restored
+        history_restored = run(rec, "HISTORY", "GENOLD", "GENNEW",
+                               git_oid("commit", GRANDCHILD),
+                               "2", cwd=d)
+        assert "SELECTED 52 GENNEW" in history_restored
+        assert "HISTORY HOPS 2" in history_restored
         assert "ANCESTOR OID " + git_oid("commit", FIRST_COMMIT) in ancestor_restored
         final_path = run(rec, "PATH", "GENOLD", "GENNEW",
                          git_oid("commit", FIRST_COMMIT),
