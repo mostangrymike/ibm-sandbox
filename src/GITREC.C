@@ -557,6 +557,81 @@ static int rec_root_links(const unsigned char *root,
  }
  return 0;
 }
+/* M44: iterative full local tree closure. A bounded work stack
+ * avoids unbounded C recursion on deeply nested Git trees.
+ * Every tree and local blob is rehashed inside the selected seal.
+ */
+static int rec_root_closure(const unsigned char *root,
+                            unsigned int *budget) {
+ unsigned char pending[1024][20],current[20];
+ unsigned char refs[256][20],types[256];
+ unsigned long at,ms,ml,sz;
+ unsigned int top=0,count,entries,j;
+ int pos,rc;
+ static const unsigned char gitlink[6]={
+  0x31,0x36,0x30,0x30,0x30,0x30
+ };
+ memcpy(pending[top++],root,20);
+ while(top>0) {
+  memcpy(current,pending[--top],20);
+  if(*budget==0) {
+   puts("NESTED LINK BUDGET EXCEEDED");return 8;
+  }
+  (*budget)--;
+  pos=sidx_locate(current);
+  if(pos<0) {puts("ROOT LINK TREE NOT FOUND");return 4;}
+  if(sidx[pos].type!=2) {
+   puts("ROOT LINK OBJECT NOT TREE");return 8;
+  }
+  sz=sidx[pos].size;
+  sidx_silent=1;
+  rc=sidx_get(current);
+  sidx_silent=0;
+  if(rc!=0) return rc;
+  if(!rec_tree_walk(sz,0)) {
+   puts("ROOT LINK TREE INVALID");return 8;
+  }
+  at=0;count=0;entries=0;
+  while(at<sz) {
+   ms=at;
+   while(at<sz&&idx_body[at]!=0x20) at++;
+   ml=at-ms;at++;
+   while(at<sz&&idx_body[at]!=0) at++;
+   at++;
+   if(entries==256) {
+    puts("ROOT LINK LIMIT EXCEEDED");return 8;
+   }
+   entries++;
+   if(ml==6&&memcmp(idx_body+ms,gitlink,6)==0) {
+    at+=20;continue;
+   }
+   types[count]=(idx_body[ms]==0x34)?2:3;
+   memcpy(refs[count++],idx_body+at,20);
+   at+=20;
+  }
+  for(j=0;j<count;j++) {
+   pos=sidx_locate(refs[j]);
+   if(pos<0) {
+    puts("ROOT ENTRY OBJECT NOT FOUND");return 4;
+   }
+   if(sidx[pos].type!=types[j]) {
+    puts("ROOT ENTRY TYPE MISMATCH");return 8;
+   }
+   if(types[j]==2) {
+    if(top==1024) {
+     puts("NESTED LINK BUDGET EXCEEDED");return 8;
+    }
+    memcpy(pending[top++],refs[j],20);
+   } else {
+    sidx_silent=1;
+    rc=sidx_get(refs[j]);
+    sidx_silent=0;
+    if(rc!=0) return rc;
+   }
+  }
+ }
+ return 0;
+}
 /* M31: authenticate ALL parents of a commit before any output.
  * Every parent must exist and be a valid commit in the SAME
  * fully verified generation; no partial merge-parent lists.
@@ -651,13 +726,19 @@ static int rec_parents(const unsigned char *child,
    puts("CHILD ROOT TREE INVALID");return 8;
   }
   if(check_links) {
-   rc=rec_root_links(child_tree,link_depth,&budget);
+   rc=check_links==2?
+      rec_root_closure(child_tree,&budget):
+      rec_root_links(child_tree,link_depth,&budget);
    if(rc!=0) return rc;
    for(j=0;j<count;j++) {
-    rc=rec_root_links(trees[j],link_depth,&budget);
+    rc=check_links==2?
+       rec_root_closure(trees[j],&budget):
+       rec_root_links(trees[j],link_depth,&budget);
     if(rc!=0) return rc;
    }
-   if(report_depth==2) {
+   if(check_links==2) {
+    puts("FULL ROOT CLOSURE VERIFIED");
+   } else if(report_depth==2) {
     puts("NESTED ROOT LINKS VERIFIED");
     puts("DEEP ROOT LINKS VERIFIED");
     puts("LINK DEPTH 2 VERIFIED");
@@ -886,7 +967,7 @@ int main(int argc,char **argv) {
  int parent_cmd,parents_cmd;
  int roots_cmd,commitroots_cmd,linkroots_cmd;
  int nestedlinks_cmd,deeplinks_cmd,depthlinks_cmd;
- int linkbatch_cmd,rc;
+ int linkbatch_cmd,closure_cmd,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
@@ -909,13 +990,14 @@ int main(int argc,char **argv) {
  deeplinks_cmd=argc==5&&strcmp(argv[1],"DEEPLINKS")==0;
  depthlinks_cmd=argc==6&&strcmp(argv[1],"DEPTHLINKS")==0;
  linkbatch_cmd=argc==5&&strcmp(argv[1],"LINKBATCH")==0;
+ closure_cmd=argc==5&&strcmp(argv[1],"CLOSURE")==0;
  if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
      !pathcat&&!lsdir&&!lsdirv&&!lsdirdepth&&
      !firstpar&&!ancestor&&
      !history&&!parent_cmd&&!parents_cmd&&
      !roots_cmd&&!commitroots_cmd&&!linkroots_cmd&&
      !nestedlinks_cmd&&!deeplinks_cmd&&
-     !depthlinks_cmd&&!linkbatch_cmd&&
+     !depthlinks_cmd&&!linkbatch_cmd&&!closure_cmd&&
      (argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
@@ -942,6 +1024,7 @@ int main(int argc,char **argv) {
   puts("GITREC DEEPLINKS C0NAME C1NAME COMMIT_OID40");
   puts("GITREC DEPTHLINKS C0 C1 COMMIT_OID40 DEPTH");
   puts("GITREC LINKBATCH C0 C1 COMMIT_OID40");
+  puts("GITREC CLOSURE C0 C1 COMMIT_OID40");
   return 4;
  }
  if((get||full||tree||commit||root||path_command||
@@ -949,7 +1032,8 @@ int main(int argc,char **argv) {
      firstpar||ancestor||history||
      parent_cmd||parents_cmd||roots_cmd||
      commitroots_cmd||linkroots_cmd||nestedlinks_cmd||
-     deeplinks_cmd||depthlinks_cmd||linkbatch_cmd)&&
+     deeplinks_cmd||depthlinks_cmd||linkbatch_cmd||
+     closure_cmd)&&
     (strlen(argv[4])!=40||
     !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
@@ -1008,7 +1092,8 @@ int main(int argc,char **argv) {
              !parent_cmd&&!parents_cmd&&!roots_cmd&&
              !commitroots_cmd&&!linkroots_cmd&&
              !nestedlinks_cmd&&!deeplinks_cmd&&
-             !depthlinks_cmd&&!linkbatch_cmd)) return rc;
+             !depthlinks_cmd&&!linkbatch_cmd&&
+             !closure_cmd)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(tree) return rec_tree(oid);
  if(commit) return rec_commit(oid);
@@ -1031,6 +1116,7 @@ int main(int argc,char **argv) {
  if(deeplinks_cmd) return rec_parents(oid,1,1,1,2,0);
  if(depthlinks_cmd) return rec_parents(oid,1,1,1,depth,1);
  if(linkbatch_cmd) return rec_parents(oid,1,1,1,2,2);
+ if(closure_cmd) return rec_parents(oid,1,1,2,0,0);
  if(sidx_read()!=0) return 8;
  sidx_emit_full=full;
  return sidx_get(oid);
