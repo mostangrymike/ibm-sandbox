@@ -3367,3 +3367,48 @@ Real CMS:
  GITRUN
 No protected files rebuilt, no extra source
 uploads, no manual FILEDEF command sequences.
+
+## September 28 11:47 — M28 CMS compile failed; fixed on GitHub
+
+User uploaded M28 GITREC.C and GITRUN.EXEC
+and ran CMSCLNK GITREC PLAIN on real CMS:
+<stdin>: In function main:
+<stdin>:578: 'ance' undeclared;
+<stdin>:578: syntax error before 'stor';
+CMSCLNK: C compile failed, Ready(00012),
+T=6.03/6.15 11:47:44.
+The exact source line 577 contained an
+87-character OR expression ending in
+"||ancestor)&&". CMS GCCCMS toolchain
+truncated source records near 72 columns,
+splitting token ancestor into "ance"/"stor".
+Two other new lines (length79) in GITREC
+also exceeded 72. The already-compiled M27
+GITREC module is unaffected by unsuccessful
+compilation; M28 GITRUN was not run.
+
+Fixed all 3 long lines directly in GitHub
+src/GITREC.C, wrapping declarations and
+logical predicates so NO source line exceeds
+72 columns, commit
+952cc7b9145f9f74e089aa1e46d9dbddadc70935.
+Added persistent native CI guard in existing
+tests/check-cmsclnk-source.sh to reject ANY
+GITREC.C line >72 before host test success
+can be reported, commit
+235d8e4bd523d3431badb3238b3ff45259d6a630.
+Full host workflow PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36453892515 .
+User M28 compact GITRUN.EXEC already uploaded
+and unchanged; no repeat upload necessary.
+Only ask Mac from ibm-sandbox/src:
+ git pull
+ ./cms-upload.sh GITREC.C
+Real CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+GITCIDX and GITSEL unchanged. Retain compact
+one-page GITRUN PIPE-to-REXX-STEM summary and
+read-only sealed generation checks. M28 CMS
+target PASS still pending the corrected compile
+and actual GITRUN output; do not claim success.
