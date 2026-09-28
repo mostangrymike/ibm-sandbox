@@ -1267,7 +1267,9 @@ def main():
         for cmd, marker, extra in (
                 ("LSDIRV", "DIRECTORY LINKS VERIFIED", []),
                 ("LSDIRDEPTH", "DIRECTORY LINK DEPTH 1 VERIFIED",
-                 ["1"])):
+                 ["1"]),
+                ("LSDIRFULL", "DIRECTORY FULL CLOSURE VERIFIED",
+                 [])):
             check = run(
                 rec, cmd, "GENOLD", "GENNEW",
                 git_oid("commit", FIRST_COMMIT),
@@ -1360,7 +1362,8 @@ def main():
         assert "NESTED ROOT LINKS VERIFIED" not in batch_failed
         assert "PARENTS DATA BEGIN" not in batch_failed
         for cmd, extra in (("LSDIRV", []),
-                           ("LSDIRDEPTH", ["1"])):
+                           ("LSDIRDEPTH", ["1"]),
+                           ("LSDIRFULL", [])):
             check = run(
                 rec, cmd, "GENOLD", "GENNEW",
                 git_oid("commit", FIRST_COMMIT),
@@ -1369,6 +1372,7 @@ def main():
             assert "NO FULLY VERIFIED GENERATION" in check
             assert "DIRECTORY LINKS VERIFIED" not in check
             assert "DIRECTORY LINK DEPTH" not in check
+            assert "DIRECTORY FULL CLOSURE VERIFIED" not in check
             assert "PATH OBJECT TYPE" not in check
             assert "TREE DATA BEGIN" not in check
         (d / "held-old").rename(d / "dd:C0GEN")
@@ -1442,7 +1446,9 @@ def main():
         for cmd, marker, extra in (
                 ("LSDIRV", "DIRECTORY LINKS VERIFIED", []),
                 ("LSDIRDEPTH", "DIRECTORY LINK DEPTH 1 VERIFIED",
-                 ["1"])):
+                 ["1"]),
+                ("LSDIRFULL", "DIRECTORY FULL CLOSURE VERIFIED",
+                 [])):
             check = run(
                 rec, cmd, "GENOLD", "GENNEW",
                 git_oid("commit", FIRST_COMMIT),
