@@ -374,6 +374,38 @@ def main():
                           tree_oid, cwd=d, expected=8)
         assert "OBJECT IS NOT A COMMIT" in first_wrong
         assert "FIRST PARENT VERIFIED" not in first_wrong
+        # M31: emit no partial merge-parent list on an invalid link.
+        allparents = run(rec, "PARENTS", "GENOLD", "GENNEW",
+                         git_oid("commit", MERGE2), cwd=d)
+        assert "SELECTED 52 GENNEW" in allparents
+        assert "PARENTS DATA BEGIN" in allparents
+        assert "PARENTS COUNT 2" in allparents
+        assert allparents.strip().endswith("PARENTS DATA END")
+        for n, parent_data in ((1, FIRST_COMMIT), (2, SECOND_PARENT)):
+            assert ("PARENTS ORDINAL " + str(n) + " OID "
+                    + git_oid("commit", parent_data)) in allparents
+            assert ("PARENTS ORDINAL " + str(n) + " TREE "
+                    + git_oid("tree", TREE)) in allparents
+        assert all(len(line) <= 80 for line in allparents.splitlines())
+        rootparents = run(rec, "PARENTS", "GENOLD", "GENNEW",
+                          git_oid("commit", FIRST_COMMIT), cwd=d)
+        assert "PARENTS COUNT 0" in rootparents
+        assert "PARENTS DATA BEGIN" in rootparents
+        for child, rc, reason in (
+                (MERGE, 4, "PARENTS OBJECT NOT FOUND"),
+                (BLOB_FIRST, 8, "PARENTS OBJECT NOT COMMIT"),
+                (MALFORMED_FIRST, 8, "PARENTS OBJECT INVALID")):
+            badparents = run(rec, "PARENTS", "GENOLD", "GENNEW",
+                             git_oid("commit", child), cwd=d,
+                             expected=rc)
+            assert reason in badparents
+            assert "PARENTS DATA BEGIN" not in badparents
+            assert "PARENTS ORDINAL " not in badparents
+        invalid_child = run(rec, "PARENTS", "GENOLD", "GENNEW",
+                            git_oid("tree", TREE), cwd=d, expected=8)
+        assert "PARENTS CHILD NOT COMMIT" in invalid_child
+        assert "PARENTS DATA BEGIN" not in invalid_child
+
         # M30: validate numbered merge parents, not just first-parent.
         for number, parent_data in ((1, FIRST_COMMIT),
                                     (2, SECOND_PARENT)):
@@ -493,6 +525,10 @@ def main():
                                git_oid("commit", MERGE2), "2", cwd=d)
         assert "RECOVERED 51 GENOLD" in parent_recovered
         assert "PARENT OID " + git_oid("commit", SECOND_PARENT) in parent_recovered
+        parents_recovered = run(rec, "PARENTS", "GENOLD", "GENNEW",
+                                git_oid("commit", MERGE2), cwd=d)
+        assert "RECOVERED 51 GENOLD" in parents_recovered
+        assert "PARENTS COUNT 2" in parents_recovered
         assert "HISTORY HOPS 2" in history_recovered
         assert "ANCESTOR OID " + git_oid("commit", FIRST_COMMIT) in ancestor_recovered
         lsroot_recovered = run(rec, "LSROOT", "GENOLD", "GENNEW",
@@ -543,6 +579,11 @@ def main():
                             cwd=d, expected=8)
         assert "NO FULLY VERIFIED GENERATION" in parent_failed
         assert "PARENT VERIFIED" not in parent_failed
+        parents_failed = run(rec, "PARENTS", "GENOLD", "GENNEW",
+                             git_oid("commit", MERGE2),
+                             cwd=d, expected=8)
+        assert "NO FULLY VERIFIED GENERATION" in parents_failed
+        assert "PARENTS DATA BEGIN" not in parents_failed
         lsroot_failed = run(rec, "LSROOT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             cwd=d, expected=8)
@@ -584,6 +625,10 @@ def main():
                               git_oid("commit", MERGE2), "2", cwd=d)
         assert "SELECTED 52 GENNEW" in parent_restored
         assert "PARENT OID " + git_oid("commit", SECOND_PARENT) in parent_restored
+        parents_restored = run(rec, "PARENTS", "GENOLD", "GENNEW",
+                               git_oid("commit", MERGE2), cwd=d)
+        assert "SELECTED 52 GENNEW" in parents_restored
+        assert "PARENTS COUNT 2" in parents_restored
         assert "ANCESTOR OID " + git_oid("commit", FIRST_COMMIT) in ancestor_restored
         final_path = run(rec, "PATH", "GENOLD", "GENNEW",
                          git_oid("commit", FIRST_COMMIT),
