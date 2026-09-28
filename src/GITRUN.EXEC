@@ -21,7 +21,7 @@ do i=1 to 2
  if rc \= 0 then exit 12
  'FILEDEF GENIN DISK' name 'GEN A'
  if rc \= 0 then exit 12
- call verify name 'FULL AUDIT','GITCIDX GENCHECK',0,
+ call gate name 'FULL AUDIT','GITCIDX GENCHECK',0,
    'FAST AUDIT VERIFIED 1808 UNIQUE 1808',
    'PAIR VERIFIED UNIQUE 1808',
    'GENERATION VERIFIED 1808 UNIQUE 1808'
@@ -40,44 +40,44 @@ do i=1 to 4
  'FILEDEF' dd 'DISK M15NEW' typ 'A'
  if rc \= 0 then exit 12
 end
-call verify 'SELECT SEQ52','GITREC SELECT GITFIX M15NEW',0,
+call gate 'SELECT SEQ52','GITREC SELECT GITFIX M15NEW',0,
  'SELECTED 52 M15NEW','GENERATION VERIFIED 1808 UNIQUE 1808'
 if result \= 0 then exit 12
 commit='00D8D63229305230C8D37F884CE87F9E1A89468C'
 docs='646F6373'
 cmd='GITREC LSDIR GITFIX M15NEW' commit docs
-call verify 'DOCS HAS TWO VERIFIED ENTRIES',cmd,0,
+call gate 'DOCS HAS TWO VERIFIED ENTRIES',cmd,0,
  'SELECTED 52 M15NEW','TREE ENTRIES 2',
  'D4BE895844FECE160E31411ABB2ECDD6ACAECC17',
  '46135A22C7394D8090619C6C70453C58A24F5239'
 if result \= 0 then exit 12
 cmd='GITREC LSDIR GITFIX M15NEW' commit '524541444D452E6D64'
-call verify 'BLOB IS NOT DIRECTORY',cmd,8,
+call gate 'BLOB IS NOT DIRECTORY',cmd,8,
  'LSDIR REQUIRES A TREE'
 if result \= 0 then exit 12
 cmd='GITREC LSDIR GITFIX M15NEW' commit '4E4F5045'
-call verify 'MISSING DIRECTORY',cmd,4,'PATH NOT FOUND'
+call gate 'MISSING DIRECTORY',cmd,4,'PATH NOT FOUND'
 if result \= 0 then exit 12
 cmd='GITREC LSDIR GITFIX M15NEW' commit '524541444D452E6D642F78'
-call verify 'NON TREE INTERMEDIATE',cmd,8,
+call gate 'NON TREE INTERMEDIATE',cmd,8,
  'PATH COMPONENT NOT A TREE'
 if result \= 0 then exit 12
 'FILEDEF C1GEN DISK M15BAD GEN A'
 if rc \= 0 then exit 12
 cmd='GITREC LSDIR GITFIX M15NEW' commit docs
-call verify 'RECOVERED SEQ51',cmd,0,
+call gate 'RECOVERED SEQ51',cmd,0,
  'RECOVERED 51 GITFIX','TREE ENTRIES 2'
 if result \= 0 then exit 12
 'FILEDEF C0GEN DISK M15BAD GEN A'
 if rc \= 0 then exit 12
-call verify 'BOTH INVALID FAIL CLOSED',cmd,8,
+call gate 'BOTH INVALID FAIL CLOSED',cmd,8,
  'NO FULLY VERIFIED GENERATION'
 if result \= 0 then exit 12
 'FILEDEF C0GEN DISK GITFIX GEN A'
 if rc \= 0 then exit 12
 'FILEDEF C1GEN DISK M15NEW GEN A'
 if rc \= 0 then exit 12
-call verify 'RESTORED SEQ52',cmd,0,
+call gate 'RESTORED SEQ52',cmd,0,
  'SELECTED 52 M15NEW','TREE ENTRIES 2'
 if result \= 0 then exit 12
 call protected
@@ -86,7 +86,7 @@ say 'PASS FINAL PROTECTED FILES'
 say 'GITRUN M26Q ALL READ ONLY NATIVE GIT TESTS PASSED'
 exit 0
 /* All stage output is held in an in-memory REXX STEM. No dumps. */
-verify:
+gate:
  parse arg label,cmd,expected,needle1,needle2,needle3,needle4
  out.0=0
  'PIPE CMS' cmd '| STEM out.'
