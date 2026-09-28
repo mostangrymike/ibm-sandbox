@@ -3812,3 +3812,32 @@ STAGE/INDEX/SEEK/GEN, selectors or GITPBUF
 PACK. GITCIDX.C/GITSEL.C unchanged and
 need no new upload. After target M31
 results, continue independently.
+
+## September 28 13:55–13:58 — M31 LIVE CMS PASS
+
+User compiled M31 GITREC C89 on real z/VM CMS:
+CMSCLNK GITREC PLAIN, ASSEMBLER (XF) DONE,
+NO STATEMENTS FLAGGED, GITREC MODULE mode PLAIN
+built at 13:55:12 (T=8.67/9.02).
+The single standard compact GITRUN M31 then
+passed every target regression:
+ protected originals and absent M15BAD GEN
+ both original independent 1808-object
+  GITFIX/M15NEW full audits RC0
+ selected seq52 M15NEW RC0
+ atomic PARENTS list RC0
+ noncommit child RC8
+ missing child RC4
+ recovered seq51 parents RC0
+ both missing GEN2 fail-closed RC8
+ restored seq52 parents RC0
+ protected originals final STATE present
+ GITRUN M31 ALL READ ONLY NATIVE GIT TESTS PASSED
+ Ready T=172.13/173.25 at 13:58:09.
+M31 atomic full Git merge-parent listing is
+ACTUAL CMS TARGET-PROVEN. Keep one-page
+GITRUN, native C records <=72 columns,
+output lines <=80, and original sealed
+generations, selector pointers and PACK
+untouched. Continue GitHub host development
+autonomously before next actual target test.
