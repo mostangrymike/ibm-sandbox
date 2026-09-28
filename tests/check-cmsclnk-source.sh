@@ -8,6 +8,12 @@ awk 'length($0)>80 {
  printf "CMSCLNK line %d too long: %d\n",NR,length($0)
  bad=1
 } END {exit bad}' "$file"
+# CMS GCCCMS compile path truncates long C source records. Host C89
+# compilation alone does not reveal this target-specific failure.
+awk 'length($0)>72 {
+ printf "GITREC.C line %d exceeds 72: %d\\n",NR,length($0)
+ bad=1
+} END {exit bad}' "$root/src/GITREC.C"
 grep -Fq "if mode='' then mode='NAPI'" "$file"
 grep -Fq "if mode='NAPI' then do" "$file"
 grep -Fq "'ASSEMBLE GITCAPI'" "$file"
