@@ -426,6 +426,54 @@ def main():
             b"subdir".hex().upper(), cwd=d, expected=8)
         assert "ROOT LINK TREE INVALID" in malformed_verified
         assert "PATH OBJECT TYPE" not in malformed_verified
+        # M42: caller-chosen depth 0..4 must validate all
+        # referenced descendant objects without partial output.
+        for n in range(5):
+            listing = run(
+                rec, "LSDIRDEPTH", "GENOLD", "GENNEW",
+                git_oid("commit", LEVEL3_COMMIT_GOOD),
+                b"subdir".hex().upper(), str(n), cwd=d)
+            assert "DIRECTORY LINK DEPTH " + str(n) in listing
+            assert "TREE DATA END" in listing
+            assert "DIRECTORY LINKS VERIFIED" not in listing
+        for bad, code, reason in (
+                (DEEP_COMMIT_MISSING, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND"),
+                (DEEP_COMMIT_WRONG, 8,
+                 "ROOT ENTRY TYPE MISMATCH")):
+            shallow = run(
+                rec, "LSDIRDEPTH", "GENOLD", "GENNEW",
+                git_oid("commit", bad),
+                b"subdir".hex().upper(), "0", cwd=d)
+            assert "DIRECTORY LINK DEPTH 0 VERIFIED" in shallow
+            deeper = run(
+                rec, "LSDIRDEPTH", "GENOLD", "GENNEW",
+                git_oid("commit", bad),
+                b"subdir".hex().upper(), "1", cwd=d,
+                expected=code)
+            assert reason in deeper
+            assert "DIRECTORY LINK DEPTH" not in deeper
+            assert "PATH OBJECT TYPE" not in deeper
+            assert "TREE DATA BEGIN" not in deeper
+        depth_one = run(
+            rec, "LSDIRDEPTH", "GENOLD", "GENNEW",
+            git_oid("commit", LEVEL3_COMMIT_MISSING),
+            b"subdir".hex().upper(), "1", cwd=d)
+        assert "DIRECTORY LINK DEPTH 1 VERIFIED" in depth_one
+        depth_two = run(
+            rec, "LSDIRDEPTH", "GENOLD", "GENNEW",
+            git_oid("commit", LEVEL3_COMMIT_MISSING),
+            b"subdir".hex().upper(), "2", cwd=d, expected=4)
+        assert "ROOT ENTRY OBJECT NOT FOUND" in depth_two
+        assert "PATH OBJECT TYPE" not in depth_two
+        for invalid in ("", "5", "10", "-1", "X"):
+            rejected = run(
+                rec, "LSDIRDEPTH", "GENOLD", "GENNEW",
+                git_oid("commit", FIRST_COMMIT),
+                b"subdir".hex().upper(), invalid,
+                cwd=d, expected=4)
+            assert "DIRECTORY DEPTH MUST BE 0 THROUGH 4" in rejected
+            assert "GENERATION VERIFIED" not in rejected
         # M40: a canonical OID is insufficient when a terminal
         # directory is itself malformed. Never expose partial
         # PATH metadata or a partial directory listing.
