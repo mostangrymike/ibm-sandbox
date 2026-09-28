@@ -4510,3 +4510,116 @@ Next work: proceed autonomously with independent GitHub
 native source + host regressions and keep ONE standard
 compact GITRUN for future CMS gates. Do not ask to
 rerun M38/M39 or reboot for routine development.
+
+## September 28 15:54–16:02 — confirmed M39 native CMS target pass
+
+The actual native M39 transcript supplied by the user:
+ CMSCLNK GITREC PLAIN
+ ASSEMBLER (XF) DONE
+ NO STATEMENTS FLAGGED IN THIS ASSEMBLY
+ CMSCLNK: built GITREC MODULE mode PLAIN
+ Ready T=9.37/9.74 at 15:54:51.
+ GITRUN M39 COMPACT REPORT
+ Both independent full original 1808-object generation audits RC0;
+ seq52 selected RC0; single audited M35-M37 LINKBATCH RC0;
+ invalid-depth RC4, noncommit RC8, missing child RC4;
+ older seq51 recovered batch RC0;
+ both unavailable fail-closed RC8;
+ seq52 restored batch RC0; final protected originals PASS.
+ Exact final:
+ GITRUN M39 ALL READ ONLY NATIVE GIT TESTS PASSED
+ Ready T=454.77/464.18 at 16:02:50.
+M38/M39 are now ACTUAL CMS TARGET-PROVEN. Previous
+complete M37 regression was 693.54/708.96 CPU/elapsed;
+observed M39 elapsed improved by ~34.5% in separate
+runs, not an isolated benchmark or source attribution.
+
+## September 28 independent M40-M42 full host CI (batch target)
+
+Do not rerun M38/M39. Autonomously continued three
+sequential read-only native Git milestones on GitHub main
+and exercised the real strict C89 native-stage Actions suite.
+
+M40 fixes an atomic-output error in existing PATH/LSDIR:
+after full GEN2 selection, SGET and typed OID confirmation,
+a malformed TERMINAL tree could previously yield path
+metadata before its Git binary tree was parsed. Now
+terminal trees must be completely parsed BEFORE any
+path metadata/listing; malformed structure RC8 and no
+partial PATH OBJECT TYPE or TREE DATA. Blobs/Gitlinks
+preserve prior behavior. Native host synthetic regression
+tests both commands with a malformed linked subtree.
+Complete host CI passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36483659068 .
+PR #13 squash merged main at
+f3736dc6fbd42380e4aa2053b67f2264714cf4da.
+
+M41 adds read-only LSDIRV C0 C1 COMMITOID40 DIRHEX:
+after full GEN2 selected-generation and commit-relative
+path proof, independently rehash every immediate local
+directory blob/tree reference and fully parse referenced
+subtrees (external Gitlinks skipped). Enforce original
+256-entry/tree and 1024-tree visit budgets. No partial
+listing on absent/wrong/malformed links. Since rec_root_links
+reuses idx_body, reopen/revalidate the directory body
+before emitting the listing. Prior structural-only LSDIR
+semantics unchanged. Host tests positive subdirectory,
+missing and mis-typed linked blobs, malformed directory
+and contrast with permissive legacy LSDIR. First CI
+caught one missing comma in printf, fixed directly; the
+full subsequent workflow passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36483927061 .
+PR #14 squash merged main at
+43a94cb93df7c8ed0954a4e2bf328f85eb3f3546.
+
+M42 adds strict read-only LSDIRDEPTH C0 C1 COMMITOID40
+DIRHEX DEPTH, where depth is exactly one digit 0..4,
+reusing M41's proven full selected-generation and
+path validation. Validate every local immediate blob/tree
+reference and descend the requested number of subtree
+levels. SHA1 each body, parse every linked subtree,
+skip external Gitlinks; same fixed visit/entry budgets
+and atomic output/fail-closed RC4/8. Host regression:
+all five valid depths, invalid strings, depth-zero/one
+success followed by deeper missing or wrong-type failure
+with NO metadata, and all earlier regressions. Complete
+native-stage workflow PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36484134487 .
+PR #15 squash merged main at
+9fa5fbcf86b43c5344846bb71f2ce68372095f2b.
+Full native C89 -Werror, both source guards, selector,
+large CATHEX, tree/recovery, staging, indexes and native
+REF PACK checks passed in all final successful runs.
+Source GITREC.C <=72 columns, one standard in-memory
+PIPE CMS to STEM compact GITRUN only, no auxiliary target
+runner or original dataset mutation.
+
+M40-M42 are HOST-CI-PROVEN ONLY; actual CMS compilation
+and real target tests are NOT yet run. The current main
+src/GITRUN.EXEC is now M42 compact and batches their
+ONE real target gate. It retains the independent original
+GITFIX/M15NEW 1808-object GENCHECK audits, seq52 SELECT,
+M39 combined link proof, ONE historical real first-commit
+`src` directory full depth-one validation,
+invalid depth / noncommit / missing child, seq51 recovery,
+both unavailable RC8, restored seq52 and final original
+file STATE. Historical src subtree references were already
+covered by the actual M39 depth-two root walk. No new
+network capture, generated fixture or original PACK needed.
+
+NEXT USER MAC from ibm-sandbox/src:
+ git pull
+ ./cms-upload.sh GITREC.C
+ ./cms-upload.sh GITRUN.EXEC
+Then actual CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+Expected real final marker only on complete success:
+ GITRUN M42 ALL READ ONLY NATIVE GIT TESTS PASSED
+Upload ONLY two files; GITCIDX and GITSEL unchanged.
+NEVER overwrite original GITFIX/M15NEW stage, index,
+seek, GEN2, protected selector PTRs or GITPBUF PACK.
+If target error, diagnose compact FAIL/RC/marker lines
+and correct source on GitHub before repeating only
+the affected standard target batch. Continue autonomous
+GitHub engineering instead of seeking repeated permission.
