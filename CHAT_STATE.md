@@ -3592,3 +3592,32 @@ protected data rebuild needed. Continue
 single-page compact GITRUN CMS reporting,
 and mark M29 actual CMS PASS only if real
 corrected output finishes successfully.
+
+## September 28 13:34–13:36 — M29 actual CMS PASS
+
+User compiled corrected (short CMS output-record) M29
+GITREC.C with CMSCLNK GITREC PLAIN: ASSEMBLER XF
+DONE, no flagged statements, GITREC PLAIN built,
+T=8.07/8.40 at 13:34:02. Single-page GITRUN
+M29 passed live z/VM CMS:
+ PASS original protected files/absent test GEN
+ PASS GITFIX/M15NEW independent 1808 full audits
+ PASS seq52 M15NEW selected
+ PASS VERIFIED HISTORY TWO HOPS RC0
+ PASS INVALID DEPTH RC4
+ PASS NON COMMIT INPUT RC8
+ PASS RECOVERED HISTORY RC0
+ PASS BOTH INVALID FAIL CLOSED RC8
+ PASS RESTORED HISTORY RC0
+ PASS final protected originals
+ GITRUN M29 ALL READ ONLY NATIVE GIT TESTS PASSED
+ Ready T=150.68/151.64 at 13:36:37.
+Native HISTORY complete commit+tree OID records,
+two-hop traversal, generation fallback and fail
+closed behavior now TARGET-PROVEN. The 72-column
+GITREC.C guard and single-page GITRUN PIPE-STEM
+capture remain mandatory. The immutable original
+STAGE/INDEX/SEEK/GEN, selector and GITPBUF PACK
+files must not be rewritten. Continue autonomously
+with next native read-only feature, update same
+standard GITRUN only; never request long raw logs.
