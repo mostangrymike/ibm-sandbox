@@ -4366,3 +4366,41 @@ The expected last marker is
 GITCIDX/GITSEL unchanged; never rewrite GITFIX/M15NEW
 STAGE/INDEX/SEEK/GEN, original selector PTR or GITPBUF PACK.
 Standard compact GITRUN only; no auxiliary scripts.
+
+## M38 follow-on — CI guard corrected and parity regression extended
+
+After the initial M38 source/tests/runner commits, discovered that
+existing mandatory tests/check-readonly-gitrchk.sh still hardcoded
+the old M37 compact label and three separate M35/M36/M37 gates.
+Updated it on GitHub main (commit 8cb0e1837ae45c833d24d1b9eb2579b530dd2734)
+to require M38's ONE positive LINKBATCH gate, all three
+markers, unchanged negative/dual-slot/full-audit guards,
+pre/post protected files and read-only command filtering.
+Existing native-stage GitHub Actions workflow already runs
+this source guard and tests/test-native-tree.py on changes
+to both scripts and GITREC/GITRUN, so the stale check
+would have failed without this correction.
+
+Expanded tests/test-native-tree.py (commit
+7bbad5362e9d24cfe71c6c2243f4b2c0c8caf7a0)
+with exact parent-data parity against independent legacy
+DEPTHLINKS 2 on the same fixture; require precisely one
+complete generation-audit success marker and each of the
+three LINKBATCH success markers exactly once. Existing
+host positive, malformed link, missing/wrong child,
+recovery, both-invalid and restored tests remain intact.
+
+Connector-based static crosschecks confirmed ALL required
+guard grep markers match the actual GitHub runner,
+GITREC.C source records <=72, workflow invokes the
+mandatory guard and host native-tree test, full independent
+original audits and fail-closed cases remain in GITRUN.
+These are SOURCE CHECKS, not full host test execution.
+Actual post-fix GitHub Actions status is not available
+through the connected repository's commit status output;
+DO NOT call M38 CI-proven or CMS-proven without proof.
+Current M38 source is ready for actual host test/CI and
+the subsequent single target batch in docs/LINK_BATCH.md.
+Do not pause independent GitHub development while waiting
+on an ordinary target test; never overwrite protected CMS
+originals or create an auxiliary target runner.
