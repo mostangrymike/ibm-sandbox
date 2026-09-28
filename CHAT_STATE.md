@@ -3050,3 +3050,71 @@ Wait only for genuine user-provided CMS results,
 not for repeated 'proceed'. Do not touch original
 stage/index/seek/GEN/pointers, do not run obsolete
 GITRUN cleanup or legacy TLS experiments.
+
+## September 28 10:36-10:40 — M26 actual CMS PASS; compact output requested
+
+The user compiled GITREC with CMSCLNK GITREC PLAIN,
+ASSEMBLER (XF) DONE with no statements flagged
+(T=7.20/7.48). Standard GITRUN M26 on real CMS
+passed both independent full 1808-unique audits,
+selected M15NEW seq52, and LSDIR of actual first
+commit's historical docs directory returned
+73-byte tree OID 980E3417BEF3170BF6CCEDFECEB81EDF1C830477
+containing BUILD.md OID D4BE895844FECE160E31411ABB2ECDD6ACAECC17
+and STATUS.md OID 46135A22C7394D8090619C6C70453C58A24F5239.
+Blob-as-directory RC8, missing path RC4 and
+non-tree intermediate RC8; missing newer
+manifest recovered seq51 GITFIX (RC0); both
+missing GEN2 manifests rejected RC8; restored
+seq52 and verified the same directory RC0;
+all protected files checked at end.
+Final real CMS output: GITRUN M26 ALL READ ONLY
+NATIVE GIT TESTS PASSED, T=194.96/196.38 at
+10:40:21. M26 is NATIVE CMS TARGET-PROVEN.
+
+User explicitly reports GITRUN produces 6-7
+pages requiring manual copy/paste and requests
+ONE PAGE OR LESS containing all diagnostics
+needed to continue development. In response,
+GitHub src/GITRUN.EXEC was replaced by M26Q,
+a compact read-only regression that preserves
+M26's complete core audits and cases but uses
+CMS Pipelines `PIPE CMS <command> | STEM out.`
+to capture verbose synchronous native output
+in an in-memory REXX stem, inspect the actual
+PIPE return code and required distinct output
+markers, and emit only compact PASS/FAIL lines.
+Expected test absent M15BAD STATE is also
+captured in-memory. On any failure print
+stage name, actual/expected RC, marker hits and
+at most first four captured diagnostic lines;
+fail closed RC12. Positive docs LSDIR checks
+exact selected seq52, exactly two entries and
+both historical BUILD.md/STATUS.md OIDs;
+fallback checks seq51, both invalid checks
+the actual NO FULLY VERIFIED GENERATION message.
+Original protected files rechecked before
+and after with STATE and never mutated.
+No CMS files are used for capturing output.
+The successful report is about 15 short lines,
+not hundreds of progress/HEX lines.
+Source read-only/summary checks updated and
+full GitHub CI PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36445919537
+M26Q source is host/CI-guarded; its CMS PIPE
+integration still requires one real target
+test. Do not claim CMS one-page output proven
+until actual GITRUN output from user.
+
+USER WORKFLOW: user Mac shell normally inside
+ibm-sandbox/src. GITREC.C/GITCIDX.C and modules
+were already target-proven with M26 and are
+UNCHANGED by M26Q. To deploy concise GITRUN
+only:
+ Mac: git pull
+ Mac: ./cms-upload.sh GITRUN.EXEC
+ CMS: GITRUN
+No target recompile or GITREC.C upload necessary.
+Always use standard GITRUN for subsequent
+CMS tests; keep compact output pattern by
+default and no need for giant logs.
