@@ -632,6 +632,32 @@ static int rec_root_closure(const unsigned char *root,
  }
  return 0;
 }
+/* M46: verify complete closure from a raw tree object ID,
+ * without needing a commit or commit-relative path.
+ * Release a directory listing only after every local link passes.
+ */
+static int rec_tree_closure(const unsigned char *oid) {
+ unsigned int budget=1024;
+ unsigned long n;
+ int pos,rc;
+ if(sidx_read()!=0) return 8;
+ rc=rec_root_closure(oid,&budget);
+ if(rc!=0) return rc;
+ pos=sidx_locate(oid);
+ n=sidx[pos].size;
+ sidx_silent=1;
+ rc=sidx_get(oid);
+ sidx_silent=0;
+ if(rc!=0) return rc;
+ if(!rec_tree_walk(n,0)) {
+  puts("TREE STRUCTURE INVALID");return 8;
+ }
+ puts("TREE FULL CLOSURE VERIFIED");
+ puts("TREE DATA BEGIN");
+ if(!rec_tree_walk(n,1)) return 8;
+ puts("TREE DATA END");
+ return 0;
+}
 /* M31: authenticate ALL parents of a commit before any output.
  * Every parent must exist and be a valid commit in the SAME
  * fully verified generation; no partial merge-parent lists.
@@ -971,7 +997,7 @@ int main(int argc,char **argv) {
  int parent_cmd,parents_cmd;
  int roots_cmd,commitroots_cmd,linkroots_cmd;
  int nestedlinks_cmd,deeplinks_cmd,depthlinks_cmd;
- int linkbatch_cmd,closure_cmd,rc;
+ int linkbatch_cmd,closure_cmd,treeclosure_cmd,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
@@ -996,6 +1022,7 @@ int main(int argc,char **argv) {
  depthlinks_cmd=argc==6&&strcmp(argv[1],"DEPTHLINKS")==0;
  linkbatch_cmd=argc==5&&strcmp(argv[1],"LINKBATCH")==0;
  closure_cmd=argc==5&&strcmp(argv[1],"CLOSURE")==0;
+ treeclosure_cmd=argc==5&&strcmp(argv[1],"TREECLOSURE")==0;
  if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
      !pathcat&&!lsdir&&!lsdirv&&!lsdirdepth&&
      !lsdirfull&&
@@ -1004,6 +1031,7 @@ int main(int argc,char **argv) {
      !roots_cmd&&!commitroots_cmd&&!linkroots_cmd&&
      !nestedlinks_cmd&&!deeplinks_cmd&&
      !depthlinks_cmd&&!linkbatch_cmd&&!closure_cmd&&
+     !treeclosure_cmd&&
      (argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
@@ -1032,6 +1060,7 @@ int main(int argc,char **argv) {
   puts("GITREC DEPTHLINKS C0 C1 COMMIT_OID40 DEPTH");
   puts("GITREC LINKBATCH C0 C1 COMMIT_OID40");
   puts("GITREC CLOSURE C0 C1 COMMIT_OID40");
+  puts("GITREC TREECLOSURE C0 C1 TREE_OID40");
   return 4;
  }
  if((get||full||tree||commit||root||path_command||
@@ -1040,7 +1069,7 @@ int main(int argc,char **argv) {
      parent_cmd||parents_cmd||roots_cmd||
      commitroots_cmd||linkroots_cmd||nestedlinks_cmd||
      deeplinks_cmd||depthlinks_cmd||linkbatch_cmd||
-     closure_cmd)&&
+     closure_cmd||treeclosure_cmd)&&
     (strlen(argv[4])!=40||
     !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
@@ -1100,7 +1129,7 @@ int main(int argc,char **argv) {
              !commitroots_cmd&&!linkroots_cmd&&
              !nestedlinks_cmd&&!deeplinks_cmd&&
              !depthlinks_cmd&&!linkbatch_cmd&&
-             !closure_cmd)) return rc;
+             !closure_cmd&&!treeclosure_cmd)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(tree) return rec_tree(oid);
  if(commit) return rec_commit(oid);
@@ -1125,6 +1154,7 @@ int main(int argc,char **argv) {
  if(depthlinks_cmd) return rec_parents(oid,1,1,1,depth,1);
  if(linkbatch_cmd) return rec_parents(oid,1,1,1,2,2);
  if(closure_cmd) return rec_parents(oid,1,1,2,0,0);
+ if(treeclosure_cmd) return rec_tree_closure(oid);
  if(sidx_read()!=0) return 8;
  sidx_emit_full=full;
  return sidx_get(oid);
