@@ -221,6 +221,26 @@ def main():
                      git_oid("commit", FIRST_COMMIT),
                      b"subdir/nested.txt".hex().upper(), cwd=d)
         assert "PATH OBJECT TYPE 3 SIZE 3 OID " + git_oid("blob", BLOB) in nested
+        # M26: list a nested directory from its commit-relative path.
+        listed = run(rec, "LSDIR", "GENOLD", "GENNEW",
+                     git_oid("commit", FIRST_COMMIT),
+                     b"subdir".hex().upper(), cwd=d)
+        verify_tree(listed, "SELECTED 52 GENNEW",
+                    [(b"100644", b"nested.txt", BLOB_OID)])
+        for name, expected_rc in ((b"README.md", 8),
+                                  (b"submodule", 8),
+                                  (b"missing", 4),
+                                  (b"subdir/missing", 4),
+                                  (b"README.md/child", 8)):
+            bad_dir = run(rec, "LSDIR", "GENOLD", "GENNEW",
+                          git_oid("commit", FIRST_COMMIT),
+                          name.hex().upper(), cwd=d, expected=expected_rc)
+            assert "TREE DATA BEGIN" not in bad_dir
+        for malformed_dir in ("00", "2F61", "612F", "612F2F62", "GG"):
+            bad_dir = run(rec, "LSDIR", "GENOLD", "GENNEW",
+                          git_oid("commit", FIRST_COMMIT), malformed_dir,
+                          cwd=d, expected=4)
+            assert "TREE DATA BEGIN" not in bad_dir
         subtree = run(rec, "PATH", "GENOLD", "GENNEW",
                       git_oid("commit", FIRST_COMMIT),
                       b"subdir".hex().upper(), cwd=d)
@@ -326,6 +346,11 @@ def main():
         lsroot_recovered = run(rec, "LSROOT", "GENOLD", "GENNEW",
                                git_oid("commit", FIRST_COMMIT), cwd=d)
         verify_tree(lsroot_recovered, "RECOVERED 51 GENOLD", ENTRIES)
+        dir_recovered = run(rec, "LSDIR", "GENOLD", "GENNEW",
+                            git_oid("commit", FIRST_COMMIT),
+                            b"subdir".hex().upper(), cwd=d)
+        verify_tree(dir_recovered, "RECOVERED 51 GENOLD",
+                    [(b"100644", b"nested.txt", BLOB_OID)])
         path_recovered = run(rec, "PATH", "GENOLD", "GENNEW",
                              git_oid("commit", FIRST_COMMIT),
                              b"README.md".hex().upper(), cwd=d)
@@ -351,6 +376,10 @@ def main():
                             git_oid("commit", FIRST_COMMIT),
                             cwd=d, expected=8)
         assert "TREE DATA BEGIN" not in lsroot_failed
+        dir_failed = run(rec, "LSDIR", "GENOLD", "GENNEW",
+                         git_oid("commit", FIRST_COMMIT),
+                         b"subdir".hex().upper(), cwd=d, expected=8)
+        assert "TREE DATA BEGIN" not in dir_failed
         path_failed = run(rec, "PATH", "GENOLD", "GENNEW",
                           git_oid("commit", FIRST_COMMIT),
                           b"README.md".hex().upper(), cwd=d, expected=8)
@@ -372,6 +401,11 @@ def main():
                          b"subdir/nested.txt".hex().upper(), cwd=d)
         assert "SELECTED 52 GENNEW" in final_path
         assert "PATH OBJECT TYPE 3 SIZE 3" in final_path
+        final_dir = run(rec, "LSDIR", "GENOLD", "GENNEW",
+                        git_oid("commit", FIRST_COMMIT),
+                        b"subdir".hex().upper(), cwd=d)
+        verify_tree(final_dir, "SELECTED 52 GENNEW",
+                    [(b"100644", b"nested.txt", BLOB_OID)])
         restored_full = run(rec, "PATHCAT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             b"big.bin".hex().upper(), cwd=d)
