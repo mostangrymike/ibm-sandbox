@@ -3917,3 +3917,35 @@ M15NEW STAGE INDEX SEEK GEN, pointers or
 GITPBUF PACK. GITCIDX and GITSEL unchanged.
 No auxiliary test runner or manual FILEDEF.
 All subsequent target logs one-page compact.
+
+## September 28 14:17–14:20 — M32 REAL CMS PASS
+
+User uploaded M32 GITREC.C and GITRUN.EXEC
+and compiled on actual z/VM CMS:
+CMSCLNK GITREC PLAIN, ASSEMBLER (XF) DONE,
+NO STATEMENTS FLAGGED, built GITREC MODULE
+mode PLAIN, T=8.71/9.01 at 14:17:38.
+Standard one-page GITRUN M32 completed:
+ PASS protected originals and absent M15BAD
+ PASS GITFIX FULL AUDIT 1808 objects RC0
+ PASS M15NEW FULL AUDIT 1808 objects RC0
+ PASS SELECT SEQ52 RC0
+ PASS VERIFIED PARENT ROOTS RC0
+ PASS NON COMMIT CHILD RC8
+ PASS MISSING CHILD RC4
+ PASS RECOVERED ROOTS RC0
+ PASS BOTH INVALID FAIL CLOSED RC8
+ PASS RESTORED ROOTS RC0
+ PASS FINAL PROTECTED FILES
+Exact final:
+GITRUN M32 ALL READ ONLY NATIVE GIT TESTS PASSED
+Ready T=172.79/173.90 at 14:20:37.
+M32 PARENTROOTS full parent-commit and
+parent-root-tree authentication is now
+ACTUAL CMS TARGET-PROVEN. Keep one-page
+GITRUN using PIPE CMS ... | STEM, all
+original generations/selector pointers/
+GITPBUF PACK read-only; GITREC.C <=72
+columns and output records <=80.
+Proceed autonomously to next native feature
+and update only standard GITRUN for target.
