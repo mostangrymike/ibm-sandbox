@@ -1092,3 +1092,55 @@ then verifies the historic commit's
 single parent's root tree, negative input,
 fallback, fail-closed and restoration.
 Native CMS M32 target testing is pending.
+
+## M32 live CMS PASS; M33 atomic commit-root graph
+
+On September 28, actual z/VM CMS compiled M32
+GITREC PLAIN with no flagged statements
+(T=8.71/9.01). The one-page standard GITRUN
+M32 passed at 14:20:37 (T=172.79/173.90):
+both original independent 1808-object sealed
+generation audits, seq52 M15NEW selection,
+verified all original first-parent root trees,
+noncommit child RC8, missing child RC4,
+older seq51 fallback, both unavailable
+fail-closed RC8, newer seq52 restoration
+and final protected file integrity. M32
+PARENTROOTS is TARGET PROVEN.
+
+M33 adds read-only
+`GITREC COMMITROOTS C0NAME C1NAME COMMIT_OID40`.
+Unlike M32's PARENTROOTS, M33 validates the
+specified commit's *own root tree* in addition
+to every parent commit and every parent's
+root tree, all in the SAME fully audited
+selected generation. Every referenced root
+must exist as a Git tree object, SHA1-rehash
+and pass full binary tree structural parsing.
+The PARENTS-framed output and
+`COMMIT ROOTS VERIFIED` marker appear ONLY
+after all required commit and tree objects
+authenticate, with no partial parent listing
+on failure. Root commits (zero parents)
+still have their own root tree checked.
+Missing roots return RC4; wrong-type or
+structurally invalid trees return RC8.
+
+Host C89 regression extends the existing
+1808-object synthetic sealed fixture, testing
+both valid roots of a two-parent merge,
+zero-parent commit, absent/wrong-type/
+malformed child and parent root trees,
+missing parents, invalid child type,
+seq51 fallback, both unavailable fail-closed
+and restored seq52. Existing PARENTS and
+PARENTROOTS behavior is unchanged.
+Standard M33 GITRUN preserves the one-page
+in-memory PIPE CMS-to-STEM report,
+independent complete 1808-object audits
+and pre/post original protected-file checks.
+Full host CI green:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36472033887 .
+Actual target M33 compilation and regression
+are still pending. No protected originals
+or unchanged GITCIDX/GITSEL sources change.
