@@ -4023,3 +4023,35 @@ M15NEW STAGE/INDEX/SEEK/GEN, selectors and
 GITPBUF PACK stay read-only. Single one-page
 GITRUN is only required CMS regression;
 do not introduce auxiliary manual gates.
+
+## September 28 14:47–14:51 — M33 live CMS PASS
+
+Actual z/VM CMS:
+ CMSCLNK GITREC PLAIN
+ ASSEMBLER (XF) DONE
+ NO STATEMENTS FLAGGED IN THIS ASSEMBLY
+ CMSCLNK: built GITREC MODULE mode PLAIN
+ Ready T=8.85/9.18 14:48:08.
+Standard one-page GITRUN M33 COMPACT REPORT
+passed every case: protected original files
+and absent M15BAD manifest, both independent
+GITFIX/M15NEW original 1808-object GENCHECK
+audits RC0, seq52 M15NEW select RC0,
+verified supplied commit's OWN root tree
+and every parent COMMIT and PARENT root tree
+COMMITROOTS RC0, noncommit child RC8, missing
+child RC4, older seq51 recovery RC0, both
+generation manifests unavailable RC8 fail
+closed, newer seq52 restored RC0 and final
+protected originals STATE PASS. Exact marker:
+ GITRUN M33 ALL READ ONLY NATIVE GIT TESTS PASSED
+ Ready T=172.95/174.07 14:51:04.
+M33 is now ACTUAL CMS TARGET-PROVEN.
+Retain source <=72 columns, console output
+lines <=80, independent original dual 1808-
+object audits and standard one-page in-memory
+PIPE CMS ... | STEM GITRUN for future gates.
+Original staged generations, selectors,
+pack and unchanged GITCIDX/GITSEL stay
+immutable/read-only. Continue independently
+on next native Git feature.
