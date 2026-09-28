@@ -553,6 +553,18 @@ def main():
                        "LINK DEPTH 2 VERIFIED"):
             assert marker in batch
         assert "PARENTS COUNT 0" in batch
+        # Compare complete authenticated metadata with legacy M37.
+        legacy = run(rec, "DEPTHLINKS", "GENOLD", "GENNEW",
+                     git_oid("commit", DEEP_COMMIT_GOOD),
+                     "2", cwd=d)
+        assert batch.split("PARENTS DATA BEGIN", 1)[1] == (
+            legacy.split("PARENTS DATA BEGIN", 1)[1])
+        # Every single LINKBATCH command audits only one selected
+        # generation; its three markers do not trigger extra audits.
+        assert batch.count("GENERATION VERIFIED 1808 UNIQUE 1808") == 1
+        assert batch.count("NESTED ROOT LINKS VERIFIED") == 1
+        assert batch.count("DEEP ROOT LINKS VERIFIED") == 1
+        assert batch.count("LINK DEPTH 2 VERIFIED") == 1
         for bad, code, marker in (
                 (DEEP_COMMIT_MISSING, 4,
                  "ROOT ENTRY OBJECT NOT FOUND"),
