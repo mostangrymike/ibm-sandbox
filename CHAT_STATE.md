@@ -4297,3 +4297,72 @@ If failed, diagnose using compact failure markers and fix
 proactively in GitHub; retain fail-closed integrity and
 the protected immutable original stage/index/seek/GEN,
 selector PTR and GITPBUF PACK files.
+
+## September 28 15:30–15:42 CDT — M35/M36/M37 REAL CMS PASS
+
+Actual target transcript supplied by user:
+ CMSCLNK GITREC PLAIN
+ ASSEMBLER (XF) DONE
+ NO STATEMENTS FLAGGED IN THIS ASSEMBLY
+ CMSCLNK: built GITREC MODULE mode PLAIN
+ Ready T=9.28/9.63 15:30:01.
+The standard GITRUN M37 one-page compact regression passed:
+ protected originals and absent M15BAD manifest;
+ independent GITFIX/M15NEW full original 1808-object GEN2
+ audits RC0; seq52 selected RC0; M35 NESTLINKS RC0;
+ M36 DEEPLINKS RC0; M37 DEPTHLINKS 2 RC0;
+ invalid depth RC4, noncommit child RC8,
+ missing child RC4, older seq51 recovered depth2 RC0,
+ both generation manifests invalid fail-closed RC8,
+ restored seq52 depth2 RC0, final protected originals.
+Exact final marker:
+ GITRUN M37 ALL READ ONLY NATIVE GIT TESTS PASSED
+ Ready T=693.54/708.96 at 15:42:10.
+M35, M36, M37 are now actual CMS TARGET-PROVEN.
+No original staged generations, pointers or PACK were altered.
+Keep earlier host and CMS evidence intact.
+
+## September 28 after M37 — M38 audit batching development
+
+The full M37 target regression took 693.54 CPU and
+708.96 elapsed seconds. Each GITREC command independently
+runs a full audited GEN2 selection, causing repeated cost.
+Added M38 GITREC LINKBATCH C0 C1 COMMIT_OID40:
+once a complete selected-generation GENCHECK passes, perform
+a single depth-two link walk for child and ALL parent roots;
+only on complete success emit ALL three authenticated markers:
+ NESTED ROOT LINKS VERIFIED
+ DEEP ROOT LINKS VERIFIED
+ LINK DEPTH 2 VERIFIED
+plus the complete existing framed parent list. Fail closed
+on missing/wrong/corrupt linked objects before any markers.
+Depth-two success logically subsumes depth zero/one checks.
+All existing M34–M37 commands remain available unchanged.
+Updated host integration to cover batch positive, missing,
+wrong type, noncommit/missing child, seq51 recovery, both
+invalid and restored seq52. Standard read-only GITRUN M38
+uses one LINKBATCH in place of three separate positive
+GITREC audits and uses batch for fallback/restoration.
+The independent original GITFIX/M15NEW full audits, explicit
+selector audit, bad-depth/child negatives, dual invalid
+fail-closed and final protected STATE remain unchanged.
+
+GitHub main source commits:
+ 20c920312a7ae830235f0720212e9a77b1cd5cc4
+ b5c46993cea026ad26a800796fc3bfa7eb21ba8a
+ 39417f4a3a2ff9216e76b4e8120372f9f1052205
+M38 has NOT been compiled or run on CMS. Do not claim
+host CI passed until a concrete completed run is checked.
+Next target gate only after host checks:
+ Mac in ibm-sandbox/src:
+ git pull
+ ./cms-upload.sh GITREC.C
+ ./cms-upload.sh GITRUN.EXEC
+ Actual CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+The expected last marker is
+ GITRUN M38 ALL READ ONLY NATIVE GIT TESTS PASSED.
+GITCIDX/GITSEL unchanged; never rewrite GITFIX/M15NEW
+STAGE/INDEX/SEEK/GEN, original selector PTR or GITPBUF PACK.
+Standard compact GITRUN only; no auxiliary scripts.
