@@ -992,3 +992,55 @@ original dual-generation audit and recovery
 checks. Full CMS compiler source width <=72
 and one-page output requirements remain
 mandatory. M30 CMS target pass pending.
+
+## M30 target pass; M31 authenticated complete merge-parent list
+
+M30 compiled on actual z/VM CMS with no flagged
+assembler statements; the standard compact
+`GITRUN M30` PASSED at 13:49:42 on September 28,
+T=172.35/173.54. Both original 1,808-object
+generations independently fully audited, seq52
+selected, historical parent ordinal1 RC0 with
+authenticated parent/tree IDs, absent second
+parent RC4, invalid ordinal RC4, noncommit child
+RC8, seq51 fallback RC0, both generations
+unavailable RC8, restored seq52 RC0, all original
+protected files present. Numbered parent
+retrieval is now TARGET-PROVEN.
+
+M31 introduces
+`GITREC PARENTS C0NAME C1NAME COMMIT_OID40`.
+This read-only operation fully audits a
+selected GEN2 generation, rehashes and
+validates the child Git commit, then collects
+up to 16 Git parent OIDs in ordinal order.
+It independently rehashes and structurally
+validates EVERY parent as a type-1 commit in
+that SAME generation before emitting ANY
+parent records. On success it emits framed
+PARENTS DATA with separate short CMS-safe
+OID and TREE lines for each ordinal and an
+exact parent count. A root commit returns
+count zero. Missing/mis-typed/malformed
+parents fail closed with no partial lists;
+a limit of 16 parents protects the fixed C89
+arrays. There are no persistent CMS writes.
+
+The strict native host fixture now checks
+a genuine synthetic two-parent merge with
+both complete parent/tree IDs, zero-parent
+root, missing second parent, wrong-type and
+malformed first parent, invalid child and
+seq51 fallback/both-unavailable/seq52
+restoration. All earlier production C89
+regressions remain passing. The same single
+standard compact `GITRUN` is M31, retaining
+independent real full original generation
+audits, selector and before/after protected
+file checks. It tests the historical original
+commit's exactly one parent, noncommit and
+missing child negatives, fallback, both
+unavailable fail-closed and restoration.
+Native host regression and read-only guard:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36468308462
+M31 is host-proven, not yet target-proven.
