@@ -277,3 +277,22 @@ test using protected GITFIX as the older generation and disposable
 SEL1 files are described in docs/NATIVE_RECOVERY_GATE.md. Existing
 GITFIX has already passed same-minidisk cross-logon GENCHECK;
 system reboot persistence and actual atomic promotion remain open.
+
+## September 28, 2026 — M37 native target and M38 audit batching
+
+Actual z/VM CMS compiled GITREC cleanly and the standard M37 compact
+regression passed every read-only gate. M35 NESTLINKS, M36 DEEPLINKS
+and M37 DEPTHLINKS 2 are now target-proven on both original sealed
+1,808-object generations, including older-slot recovery and
+fail-closed invalid slots. Observed complete test runtime was
+693.54 seconds CPU / 708.96 seconds elapsed.
+
+M38 adds optional read-only `GITREC LINKBATCH`: one ordinary full
+generation verification followed by one depth-two complete graph
+check emits three success markers only after all links validate.
+It replaces three separate positive full-audit invocations in the
+standard compact GITRUN and preserves independent original audits,
+all negative/recovery tests and all protected original files. Source
+record and runner static checks have passed; independent complete
+GitHub Actions and real CMS execution of M38 remain unconfirmed.
+See `docs/LINK_BATCH.md` and the last section of `CHAT_STATE.md`.
