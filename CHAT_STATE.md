@@ -3621,3 +3621,88 @@ STAGE/INDEX/SEEK/GEN, selector and GITPBUF PACK
 files must not be rewritten. Continue autonomously
 with next native read-only feature, update same
 standard GITRUN only; never request long raw logs.
+
+## September 28 13:34–13:36 — M29 target PASS; M30 host verified
+
+User compiled the shortened-output-record M29 GITREC
+with CMSCLNK GITREC PLAIN on live z/VM CMS;
+ASSEMBLER (XF) DONE, no flagged statements;
+GITREC module built T=8.07/8.40 at 13:34:02.
+Standard one-page GITRUN M29 completed all tests:
+GITFIX/M15NEW independent 1808-object audits RC0,
+seq52 selected, HISTORY depth2 RC0 with full
+parent/grandparent OIDs and tree IDs on separate
+CMS-safe records, invalid depth RC4, noncommit
+RC8, recovered seq51 RC0, both unavailable
+fail closed RC8, restored seq52 RC0 and final
+protected originals checks. Exact:
+GITRUN M29 ALL READ ONLY NATIVE GIT TESTS PASSED
+Ready T=150.68/151.64 at 13:36:37.
+M29 is ACTUAL CMS TARGET PROVEN.
+
+Immediately developed M30 production C89
+GITREC PARENT C0NAME C1NAME COMMIT_OID40 N
+where N is a strict decimal one-based ordinal
+1..16, supporting both first and later Git
+merge parents. It selects a fully independently
+GEN2-audited original sealed generation,
+rehashes and fully validates the child commit's
+Git binary parent headers, selects precisely
+Nth parent, checks that the parent is actually
+staged as a COMMIT in the SAME generation,
+rehashes and validates the parent's entire
+commit header, then emits short PARENT VERIFIED
+ORDINAL, PARENT OID and PARENT TREE records.
+Absent ordinal or missing staged parent returns
+RC4; invalid child/parent type/structure or
+both invalid generations fail closed RC8.
+No persistent writes and all GITREC source
+records remain <=72 columns.
+
+Native strict C89 host test added a new fully
+staged second parent and a real two-parent
+synthetic merge, verified both 1st/2nd ordinals,
+missing 3rd ordinal, root absent first parent,
+missing/wrong type/malformed parent,
+invalid ordinal, seq51 fallback, both unavailable
+and seq52 restored. Existing historical original
+commit fixture and M0–M29 tests still run.
+Full native CI PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36467257408
+This successful CI SHA 3b54aef77ee40f61be82d58bc3b00dcf937dd4da
+includes latest production M30 C, standard
+M30 GITRUN and source guards. Prior failed CI
+runs were a host fixture unique-count assertion
+stale at 21 when two new distinct objects
+made 23; assertion was corrected and rerun PASS.
+
+Standard one-page src/GITRUN.EXEC now M30:
+protect originals, both 1808 independent
+GENCHECK audits, seq52 select, first original
+commit OID 00D8D63229305230C8D37F884CE87F9E1A89468C
+PARENT ordinal 1 authenticates historical
+parent 2D5038C551318997B865497E04CF4C037DE4135E
+with parent tree F3EF36AAD778D5DA84857D8DED46495C75F4CAB0;
+the original commit has no second parent (RC4).
+Additional invalid zero ordinal RC4 and
+noncommit child RC8, seq51 fallback,
+both unavailable RC8, restored seq52 and
+protected originals final STATE. All detailed
+output held in-memory PIPE CMS to STEM; only
+approx 14 compact PASS lines, on failure
+last four diagnostics. Read-only GITRUN
+source guard updated and host CI PASS.
+M30 live CMS compile/GITRUN NOT yet run.
+
+User Mac typically at ibm-sandbox/src.
+Next real M30 target:
+ git pull
+ ./cms-upload.sh GITREC.C
+ ./cms-upload.sh GITRUN.EXEC
+Real CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+Do not upload unchanged GITCIDX/GITSEL,
+touch original protected data or use auxiliary
+CMS test runners. Continue autonomously
+after real M30 target result.
