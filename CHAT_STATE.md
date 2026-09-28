@@ -3841,3 +3841,79 @@ output lines <=80, and original sealed
 generations, selector pointers and PACK
 untouched. Continue GitHub host development
 autonomously before next actual target test.
+
+## September 28 13:55–13:58 — M31 native CMS PASS; M32 host-green
+
+Actual CMSCLNK GITREC PLAIN: assembler XF done,
+no flagged statements, module built T=8.67/9.02
+at 13:55:12. Standard one-page GITRUN M31
+completed ALL tests on live CMS: protected originals,
+both GITFIX/M15NEW original 1808-object independent
+audits RC0, seq52 selected, verified complete
+parent list RC0, noncommit RC8, missing child RC4,
+seq51 fallback RC0, both manifests absent RC8,
+restored seq52 RC0 and all original STATE present.
+Exact final marker:
+ GITRUN M31 ALL READ ONLY NATIVE GIT TESTS PASSED
+ Ready T=172.13/173.25 at 13:58:09.
+M31 is ACTUAL CMS TARGET-PROVEN.
+
+Autonomously implemented M32 in GitHub main.
+Production src/GITREC.C extends existing
+rec_parents with optional full parent-root
+tree validation, new read-only CLI:
+ GITREC PARENTROOTS C0NAME C1NAME COMMIT_OID40
+After full GEN2 audit and verified selection,
+rehashes and structurally parses child commit,
+each referenced parent commit (max 16), and
+EACH parent's root tree referenced by its
+raw Git ASCII tree header, all within SAME
+selected immutable generation. Roots must
+be staged Git type2 trees, independently
+SHA1-rehashed and fully binary-tree parsed
+before any PARENTS DATA is emitted. On
+success emits PARENT ROOT TREES VERIFIED
+and existing short CMS-safe complete parent
+list with ordinal OIDs/trees and count.
+Missing parent root RC4, bad type or invalid
+tree RC8; no partial list, no persistent writes.
+Previously target-proven PARENTS behavior
+unchanged.
+
+Strict host native C89 regression added
+synthetic merge parent references for
+missing tree, blob-as-tree and malformed
+tree; tests both valid parent roots,
+zero-parent root, missing parent object,
+no partial output, older seq51 recovery,
+both invalid fail-closed and restored seq52,
+alongside ALL original M0–M31 tests.
+Synthetic sealed fixture expands from 23
+to 27 unique objects, still 1808 staged.
+C89 source lines stay <=72 columns.
+Standard src/GITRUN.EXEC now M32 one-page
+read-only full target suite: independent
+GITFIX/M15NEW full 1808-object audits,
+seq52 select, PARENTROOTS real historic
+commit with known parent/tree and marker,
+bad child RC8, missing child RC4,
+older seq51 recovery, both unavailable RC8,
+seq52 restoration, final protected STATE.
+Host source guard updated to M32.
+Complete GitHub native CI PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36470706971
+M32 is HOST PROVEN; actual CMS compile and
+GITRUN has NOT run.
+
+Next user Mac from ibm-sandbox/src:
+ git pull
+ ./cms-upload.sh GITREC.C
+ ./cms-upload.sh GITRUN.EXEC
+Actual CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+DO NOT rewrite protected original GITFIX/
+M15NEW STAGE INDEX SEEK GEN, pointers or
+GITPBUF PACK. GITCIDX and GITSEL unchanged.
+No auxiliary test runner or manual FILEDEF.
+All subsequent target logs one-page compact.
