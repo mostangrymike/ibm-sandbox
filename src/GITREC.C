@@ -474,6 +474,70 @@ static int rec_parent(const unsigned char *child,
  idx_print(stdout,tree);putchar('\n');
  return 0;
 }
+/* M31: authenticate ALL parents of a commit before any output.
+ * Every parent must exist and be a valid commit in the SAME
+ * fully verified generation; no partial merge-parent lists.
+ */
+static int rec_parents(const unsigned char *child) {
+ unsigned char parents[16][20],trees[16][20];
+ unsigned long at=46,begin,len,sz;
+ unsigned int count=0,j;
+ int pos,rc;
+ if(sidx_read()!=0) return 8;
+ pos=sidx_locate(child);
+ if(pos<0) {puts("PARENTS CHILD NOT FOUND");return 4;}
+ if(sidx[pos].type!=1) {
+  puts("PARENTS CHILD NOT COMMIT");return 8;
+ }
+ sz=sidx[pos].size;
+ sidx_silent=1;
+ rc=sidx_get(child);
+ sidx_silent=0;
+ if(rc!=0) return rc;
+ if(!rec_commit_walk(sz,0)) {
+  puts("PARENTS CHILD INVALID");return 8;
+ }
+ while(at<sz) {
+  begin=at;
+  while(at<sz&&idx_body[at]!=0x0a) at++;
+  if(at==sz) return 8;
+  len=at-begin;
+  if(!rec_ascii_key(idx_body+begin,len,"parent")) break;
+  if(count==16) {
+   puts("PARENTS LIMIT EXCEEDED");return 8;
+  }
+  if(!rec_ascii_oid(idx_body+begin+7,parents[count]))
+   return 8;
+  count++;
+  at++;
+ }
+ for(j=0;j<count;j++) {
+  pos=sidx_locate(parents[j]);
+  if(pos<0) {puts("PARENTS OBJECT NOT FOUND");return 4;}
+  if(sidx[pos].type!=1) {
+   puts("PARENTS OBJECT NOT COMMIT");return 8;
+  }
+  sz=sidx[pos].size;
+  sidx_silent=1;
+  rc=sidx_get(parents[j]);
+  sidx_silent=0;
+  if(rc!=0) return rc;
+  if(!rec_commit_walk(sz,0)) {
+   puts("PARENTS OBJECT INVALID");return 8;
+  }
+  if(!rec_ascii_oid(idx_body+5,trees[j])) return 8;
+ }
+ puts("PARENTS DATA BEGIN");
+ for(j=0;j<count;j++) {
+  printf("PARENTS ORDINAL %u OID ",j+1);
+  idx_print(stdout,parents[j]);putchar('\n');
+  printf("PARENTS ORDINAL %u TREE ",j+1);
+  idx_print(stdout,trees[j]);putchar('\n');
+ }
+ printf("PARENTS COUNT %u\n",count);
+ puts("PARENTS DATA END");
+ return 0;
+}
 /* M24: follow a commit's authenticated tree in the SAME
  * fully verified generation. Do not expose tree entries if either
  * linked object is missing, mis-typed or structurally invalid.
@@ -656,7 +720,7 @@ int main(int argc,char **argv) {
  unsigned int depth=0;
  unsigned long d;
  int get,full,tree,commit,root,path_command,pathcat;
- int lsdir,firstpar,ancestor,history,parent_cmd,rc;
+ int lsdir,firstpar,ancestor,history,parent_cmd,parents_cmd,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
@@ -669,9 +733,10 @@ int main(int argc,char **argv) {
  ancestor=argc==6&&strcmp(argv[1],"ANCESTOR")==0;
  history=argc==6&&strcmp(argv[1],"HISTORY")==0;
  parent_cmd=argc==6&&strcmp(argv[1],"PARENT")==0;
+ parents_cmd=argc==5&&strcmp(argv[1],"PARENTS")==0;
  if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
      !pathcat&&!lsdir&&!firstpar&&!ancestor&&
-     !history&&!parent_cmd&&
+     !history&&!parent_cmd&&!parents_cmd&&
      (argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
@@ -688,11 +753,12 @@ int main(int argc,char **argv) {
   puts("GITREC ANCESTOR C0NAME C1NAME COMMIT_OID40 DEPTH");
   puts("GITREC HISTORY C0NAME C1NAME COMMIT_OID40 DEPTH");
   puts("GITREC PARENT C0NAME C1NAME COMMIT_OID40 N");
+  puts("GITREC PARENTS C0NAME C1NAME COMMIT_OID40");
   return 4;
  }
  if((get||full||tree||commit||root||path_command||
      pathcat||lsdir||firstpar||ancestor||history||
-     parent_cmd)&&
+     parent_cmd||parents_cmd)&&
     (strlen(argv[4])!=40||
     !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
@@ -731,7 +797,7 @@ int main(int argc,char **argv) {
  if(rc!=0||(!get&&!full&&!tree&&!commit&&!root&&
              !path_command&&!pathcat&&!lsdir&&
              !firstpar&&!ancestor&&!history&&
-             !parent_cmd)) return rc;
+             !parent_cmd&&!parents_cmd)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(tree) return rec_tree(oid);
  if(commit) return rec_commit(oid);
@@ -743,6 +809,7 @@ int main(int argc,char **argv) {
  if(ancestor) return rec_ancestor(oid,depth);
  if(history) return rec_history(oid,depth);
  if(parent_cmd) return rec_parent(oid,depth);
+ if(parents_cmd) return rec_parents(oid);
  if(sidx_read()!=0) return 8;
  sidx_emit_full=full;
  return sidx_get(oid);
