@@ -85,6 +85,10 @@ GRANDCHILD = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
               + b"\nparent " + git_oid("commit", MERGE).lower().encode("ascii")
               + b"\nauthor A <a@b> 123 +0000\n"
               + b"committer A <a@b> 123 +0000\n\nthird\n")
+SECOND_PARENT = FIRST_COMMIT.replace(b"hello\n", b"other\n")
+MERGE2 = MERGE.replace(
+    b"parent " + b"1"*40,
+    b"parent " + git_oid("commit", SECOND_PARENT).lower().encode("ascii"))
 BAD_PARENT = MERGE.replace(b"parent " + b"1"*40,
                            b"parent " + b"Z"*40)
 BAD_COMMIT = FIRST_COMMIT.replace(b"committer ", b"othername ")
@@ -104,7 +108,7 @@ SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
            (3, EMPTY), (3, BINARY), (3, BIG),
            (2, HIST_TREE), (3, HIST_README),
            (1, MISSING_FIRST), (1, BLOB_FIRST), (1, MALFORMED_FIRST),
-           (1, GRANDCHILD)]
+           (1, GRANDCHILD), (1, SECOND_PARENT), (1, MERGE2)]
 OBJECTS = SAMPLES + [(3, BLOB)] * (1808 - len(SAMPLES))
 
 
@@ -370,6 +374,36 @@ def main():
                           tree_oid, cwd=d, expected=8)
         assert "OBJECT IS NOT A COMMIT" in first_wrong
         assert "FIRST PARENT VERIFIED" not in first_wrong
+        # M30: validate numbered merge parents, not just first-parent.
+        for number, parent_data in ((1, FIRST_COMMIT),
+                                    (2, SECOND_PARENT)):
+            selected_parent = run(
+                rec, "PARENT", "GENOLD", "GENNEW",
+                git_oid("commit", MERGE2), str(number), cwd=d)
+            assert "PARENT VERIFIED ORDINAL " + str(number) in selected_parent
+            assert "PARENT OID " + git_oid("commit", parent_data) in selected_parent
+            assert "PARENT TREE " + git_oid("tree", TREE) in selected_parent
+        for child, number, rc, reason in (
+                (MERGE2, "3", 4, "PARENT ORDINAL NOT FOUND"),
+                (FIRST_COMMIT, "1", 4, "PARENT ORDINAL NOT FOUND"),
+                (MERGE, "2", 4, "PARENT OBJECT NOT FOUND"),
+                (BLOB_FIRST, "1", 8, "PARENT OBJECT NOT COMMIT"),
+                (MALFORMED_FIRST, "1", 8, "PARENT OBJECT INVALID")):
+            missing_parent = run(rec, "PARENT", "GENOLD", "GENNEW",
+                                 git_oid("commit", child), number,
+                                 cwd=d, expected=rc)
+            assert reason in missing_parent
+            assert "PARENT VERIFIED" not in missing_parent
+        wrong_child = run(rec, "PARENT", "GENOLD", "GENNEW",
+                          git_oid("tree", TREE), "1",
+                          cwd=d, expected=8)
+        assert "PARENT CHILD NOT COMMIT" in wrong_child
+        for bad in ("0", "17", "-1", "xyz", ""):
+            fail_parent = run(rec, "PARENT", "GENOLD", "GENNEW",
+                              git_oid("commit", MERGE2), bad,
+                              cwd=d, expected=4)
+            assert "ANCESTOR DEPTH MUST BE 1 THROUGH 16" in fail_parent
+
         # M29: verify entire chain before printing any HISTORY records.
         history = run(rec, "HISTORY", "GENOLD", "GENNEW",
                       git_oid("commit", GRANDCHILD), "2", cwd=d)
@@ -455,6 +489,10 @@ def main():
                                 git_oid("commit", GRANDCHILD),
                                 "2", cwd=d)
         assert "RECOVERED 51 GENOLD" in history_recovered
+        parent_recovered = run(rec, "PARENT", "GENOLD", "GENNEW",
+                               git_oid("commit", MERGE2), "2", cwd=d)
+        assert "RECOVERED 51 GENOLD" in parent_recovered
+        assert "PARENT OID " + git_oid("commit", SECOND_PARENT) in parent_recovered
         assert "HISTORY HOPS 2" in history_recovered
         assert "ANCESTOR OID " + git_oid("commit", FIRST_COMMIT) in ancestor_recovered
         lsroot_recovered = run(rec, "LSROOT", "GENOLD", "GENNEW",
@@ -500,6 +538,11 @@ def main():
                              "2", cwd=d, expected=8)
         assert "NO FULLY VERIFIED GENERATION" in history_failed
         assert "HISTORY DATA BEGIN" not in history_failed
+        parent_failed = run(rec, "PARENT", "GENOLD", "GENNEW",
+                            git_oid("commit", MERGE2), "2",
+                            cwd=d, expected=8)
+        assert "NO FULLY VERIFIED GENERATION" in parent_failed
+        assert "PARENT VERIFIED" not in parent_failed
         lsroot_failed = run(rec, "LSROOT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             cwd=d, expected=8)
@@ -537,6 +580,10 @@ def main():
                                "2", cwd=d)
         assert "SELECTED 52 GENNEW" in history_restored
         assert "HISTORY HOPS 2" in history_restored
+        parent_restored = run(rec, "PARENT", "GENOLD", "GENNEW",
+                              git_oid("commit", MERGE2), "2", cwd=d)
+        assert "SELECTED 52 GENNEW" in parent_restored
+        assert "PARENT OID " + git_oid("commit", SECOND_PARENT) in parent_restored
         assert "ANCESTOR OID " + git_oid("commit", FIRST_COMMIT) in ancestor_restored
         final_path = run(rec, "PATH", "GENOLD", "GENNEW",
                          git_oid("commit", FIRST_COMMIT),
