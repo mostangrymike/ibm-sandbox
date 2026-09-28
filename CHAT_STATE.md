@@ -3165,3 +3165,41 @@ Next CMS command:
 No GITREC or GITCIDX recompile/upload is needed;
 M26's compiled module itself is already real
 target-proven. NEVER run old cleanup GITRUN.
+
+## September 28 11:05 — M26Q2 one-page target CMS PASS
+
+User ran the updated standard GITRUN M26Q2 on
+actual CMS, producing a compact 15-line report:
+GITRUN M26Q2 COMPACT REPORT
+PASS PROTECTED FILES AND ABSENT TEST MANIFEST
+PASS GITFIX FULL AUDIT RC 0
+PASS M15NEW FULL AUDIT RC 0
+PASS SELECT SEQ52 RC 0
+PASS DOCS HAS TWO VERIFIED ENTRIES RC 0
+PASS BLOB IS NOT DIRECTORY RC 8
+PASS MISSING DIRECTORY RC 4
+PASS NON TREE INTERMEDIATE RC 8
+PASS RECOVERED SEQ51 RC 0
+PASS BOTH INVALID FAIL CLOSED RC 8
+PASS RESTORED SEQ52 RC 0
+PASS FINAL PROTECTED FILES
+GITRUN M26Q2 ALL READ ONLY NATIVE GIT TESTS PASSED
+Ready; T=195.18/196.47 11:05:02.
+No raw FAST AUDIT progress or tree data was printed.
+This PROVES the CMS `PIPE CMS ... | STEM out.`
+in-memory capture, REXX single-line CALL gate
+argument semantics and positive and intentional
+negative PIPE return code propagation all work.
+Going forward, EVERY STANDARD GITRUN CMS gate
+MUST produce ONE PAGE OR LESS: short PASS/FAIL
+stage summary; on failure observed/expected RC,
+marker hits and last four captured diagnostic
+lines. Never ask the user to paste multi-page
+audit or 5737-byte PATHCAT data again. Keep
+no CMS persistent writes and preserve the
+independent 1808-object dual-generation
+audits and existing recovery/fail-closed tests.
+M26Q2 compact console contract is TARGET PROVEN.
+Continue next independent native source/host
+development and use standard GITRUN for next
+one-page CMS target gate.
