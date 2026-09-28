@@ -2642,3 +2642,43 @@ no filesystem cleanup, no pointer/file writes
 from the M22 runtime batch. Next gate genuinely
 requires user-provided live CMS M22 output;
 do not report target proof until it arrives.
+
+## September 28 09:24–09:28 — M22 ACTUAL CMS PASS
+
+User compiled corrected GITREC.C with CMSCLNK GITREC
+PLAIN: ASSEMBLER (XF) DONE, no statements flagged,
+module built, T=5.98/6.22. They then ran the standard
+GITRUN M22 batch on real z/VM CMS: all protected
+generations and selector files present, independent
+GITCIDX GENCHECK for GITFIX and M15NEW each returned
+FAST AUDIT 1808 unique, PAIR 1808 and GENERATION
+VERIFIED 1808, RC0. Real GITREC selected seq52
+M15NEW digest 493F0896884B28AC4836B88328629B7E95404B46,
+GET verified first commit OID
+00D8D63229305230C8D37F884CE87F9E1A89468C
+type1 270 bytes. Native GITREC TREE decoded its
+actual tree 204E1D6968FB81C35BF830D63A611AC64C072945
+with four entries: 100644 CHAT_STATE.md at
+6DC1BFE370142E89C2DB239E12BA08A565C2CC62;
+100644 README.md at 1BA7AE466BB0A16C294D52A8642E527B07D4D1F5;
+40000 docs at 980E3417BEF3170BF6CCEDFECEB81EDF1C830477;
+40000 src at A41B3EA7758F301B7E30BD3CFDF264300C02AE35.
+TREE RC0. Deliberate TREE on commit correctly returned
+OBJECT IS NOT A TREE RC8. Deliberately absent newer
+manifest recovered seq51 GITFIX and full four-entry
+TREE with RC0. Both manifests missing returned
+NO FULLY VERIFIED GENERATION RC8, no tree data.
+Restoration selected seq52 and decoded tree RC0;
+final protected generation/selector checks passed.
+Exact final CMS output:
+GITRUN M22 ALL READ ONLY NATIVE GIT TESTS PASSED
+Ready; T=172.16/173.64 09:28:13.
+Intentional nonexistent M15BAD GEN reported
+DMSSTT002E/DMSSOP036E as expected. Initial
+failed M22 TREE due to ASCII/EBCDIC literal
+mismatch is FIXED and native CMS PROVEN.
+Next rule: autonomously continue independent
+GitHub features and strict host CI, then prepare
+ONE standard GITRUN batch when target CMS test
+is genuinely needed; user wants no premature
+pause or manual multi-command test sequences.
