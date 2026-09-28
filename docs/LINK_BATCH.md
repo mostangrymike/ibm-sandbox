@@ -198,3 +198,56 @@ expected actual CMS final marker after a real success is
 `GITRUN M41 ALL READ ONLY NATIVE GIT TESTS PASSED`.
 M40 and M41 must remain host-only until the full CI run
 and actual CMS transcript establish the respective results.
+
+## M42: bounded recursive directory verification
+
+`GITREC LSDIRDEPTH C0 C1 COMMIT_OID40 DIRHEX DEPTH`
+extends M41's authenticated directory lookup with a strict
+one-byte decimal depth from 0 through 4. At depth zero,
+the selected directory's immediate local blob/tree entries
+are independently authenticated, as in LSDIRV; larger
+depths also descend through that many levels of local
+subtrees. The existing 256-entry-per-tree and shared
+1024-tree-visit limits apply; external Gitlinks are skipped
+as external repository references. All operations remain
+within one completely audited immutable GEN2 generation,
+and no partial metadata/listing is printed if ANY
+referenced object fails. Successful output includes
+`DIRECTORY LINK DEPTH N VERIFIED`, followed by the
+full authenticated directory listing. Invalid depth RC4,
+missing referenced objects RC4, wrong type, malformed
+subtree or exceeded limits RC8.
+
+The native host suite checks all five valid depths,
+invalid depth strings and two groups of fixtures where a
+shallower directory check succeeds but a deeper check
+discovers a missing or wrong-type object. M41 LSDIRV,
+M40 structural-only PATH/LSDIR and all prior read-only
+commands remain individually regression-tested.
+
+One standard M42 compact target runner tests the actual
+historic `src` directory at depth one. This exercises
+M40, M41 and M42 together, in addition to independently
+auditing GITFIX and M15NEW, checking M39 LINKBATCH,
+negative child/depth errors, seq51 fallback, both-slot
+fail-closed handling, seq52 restoration and original
+protected data STATE checks. The historic root/depth
+objects were previously authenticated by the real M39
+depth-two child/parent tree walk, so this target fixture
+does not require a new network fetch or test generation.
+
+Only transfer GITREC.C and the standard GITRUN.EXEC:
+```sh
+git pull
+./cms-upload.sh GITREC.C
+./cms-upload.sh GITRUN.EXEC
+```
+
+```text
+CMSCLNK GITREC PLAIN
+GITRUN
+```
+
+The real target final marker must be
+`GITRUN M42 ALL READ ONLY NATIVE GIT TESTS PASSED`
+before M40-M42 can be described as target-proven.
