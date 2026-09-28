@@ -2682,3 +2682,77 @@ GitHub features and strict host CI, then prepare
 ONE standard GITRUN batch when target CMS test
 is genuinely needed; user wants no premature
 pause or manual multi-command test sequences.
+
+## SEPTEMBER 28 — M22 ACTUAL CMS PASS; M23 READY FOR CMS
+
+M22 full actual CMS target test PASSED after user
+recompiled the EBCDIC/ASCII-corrected production
+GITREC with CMSCLNK GITREC PLAIN, assembler
+flagged zero errors. Standard GITRUN M22 on
+live CMS independently audited both complete
+1808-object GITFIX and M15NEW generations;
+selected seq52 M15NEW DIGEST
+493F0896884B28AC4836B88328629B7E95404B46;
+verified first commit GET; decoded the actual
+tree OID 204E1D6968FB81C35BF830D63A611AC64C072945
+as CHAT_STATE.md README.md docs src, with
+correct 100644 / 40000 modes and binary OIDs;
+non-tree negative RC8; recovered seq51 GITFIX
+with the newer manifest absent; both manifests
+absent RC8/no tree; restoration selected seq52;
+all protected files STATE confirmed. Exact end:
+GITRUN M22 ALL READ ONLY NATIVE GIT TESTS PASSED
+Ready T=172.16/173.64 09:28:13.
+
+After this live proof, independently developed M23
+in GitHub: production src/GITREC.C now adds
+COMMIT C0NAME C1NAME OID40, using full
+GENCHECK-selected immutable candidate,
+independent indexed selected-object rehash,
+explicit ASCII Git header/hex parsing to avoid
+CMS-native EBCDIC pitfalls, first tree OID,
+zero-plus contiguous parent OIDs, required
+author/committer and blank separator,
+fail-closed malformed/not-commit rejection,
+bounded formatted metadata output. Validated
+actual C89 compiled source with full 1808-object
+synthetic host fixtures for root commit, merge
+with two parents, invalid parent and missing
+committer, wrong type, old fallback, both
+absent rejection and restoration. Full CI PASS:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36436943632 .
+
+Standard src/GITRUN.EXEC is updated to M23
+read-only combined suite; it checks protected
+generation, original selectors and PACK;
+independently GENCHECKs both full generations;
+SELECT seq52; native COMMIT of real first
+commit 00D8D63229305230C8D37F884CE87F9E1A89468C;
+independently TREE of known tree
+204E1D6968FB81C35BF830D63A611AC64C072945;
+COMMIT on tree fails RC8; absent new GEN2
+recovers old COMMIT; both GEN2s absent RC8;
+restored both selects new COMMIT; final file
+STATE checks. No persistent writes in GITRUN.
+tests/check-readonly-gitrchk.sh CI guard was
+updated and all host tests green.
+
+LATEST GITRUN workflow: user explicitly requires
+that new CMS tests all use standard GITRUN,
+never auxiliary GITRCHK as user-facing runner,
+and autonomous GitHub development continues
+until real CMS test necessary. For M23 next
+actual CMS test, user Mac prompt is in
+ibm-sandbox/src, so:
+  git pull
+  ./cms-upload.sh GITREC.C
+  ./cms-upload.sh GITRUN.EXEC
+Then on CMS:
+  CMSCLNK GITREC PLAIN
+  GITRUN
+GITREC directly includes unchanged GITCIDX.C
+and GITSEL.C that are already on user's CMS.
+Do not upload/rebuild originals or run historical
+TLS cleanup; no changed GITCIDX.C needed.
+M23 has not yet been target executed. Await
+actual CMS output before claiming target proof.
