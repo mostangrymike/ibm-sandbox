@@ -1,5 +1,5 @@
 #!/bin/sh
-# Protect historical M20 and compact M31 Git CMS regressions.
+# Protect historical M20 and compact M32 Git CMS regressions.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 f="$root/src/GITRCHK.EXEC"
@@ -9,17 +9,17 @@ test -s "$run"
 grep -q "^say 'GITRCHK M20 READ-ONLY" "$f"
 grep -Fq "'GITREC CATHEX GITFIX M15NEW' oid" "$f"
 grep -Fq "'GITREC GET GITFIX M15NEW' oid" "$f"
-grep -q "^say 'GITRUN M31 COMPACT REPORT'$" "$run"
+grep -q "^say 'GITRUN M32 COMPACT REPORT'$" "$run"
 grep -Fq "'PIPE CMS' cmd '| STEM out.'" "$run"
 grep -Fq "'PIPE CMS STATE M15BAD GEN A | STEM out.'" "$run"
 grep -Fq "call gate name 'FULL AUDIT','GITCIDX GENCHECK',0,fast,pair,gen" "$run"
-grep -Fq "call gate 'VERIFIED PARENTS',cmd,0," "$run"
+grep -Fq "call gate 'VERIFIED PARENT ROOTS',cmd,0," "$run"
 grep -Fq "call gate 'NON COMMIT CHILD',cmd,8," "$run"
 grep -Fq "call gate 'MISSING CHILD',cmd,4," "$run"
-grep -Fq "call gate 'RECOVERED PARENTS',cmd,0," "$run"
+grep -Fq "call gate 'RECOVERED ROOTS',cmd,0," "$run"
 grep -Fq "call gate 'BOTH INVALID FAIL CLOSED',cmd,8," "$run"
-grep -Fq "call gate 'RESTORED PARENTS',cmd,0," "$run"
-grep -q "^say 'GITRUN M31 ALL READ ONLY NATIVE GIT TESTS PASSED'$" "$run"
+grep -Fq "call gate 'RESTORED ROOTS',cmd,0," "$run"
+grep -q "^say 'GITRUN M32 ALL READ ONLY NATIVE GIT TESTS PASSED'$" "$run"
 if grep -E '^[[:space:]]*call gate .*,$' "$run"; then
  echo "FAIL: split REXX CALL arguments" >&2
  exit 1
@@ -30,4 +30,4 @@ for file in "$f" "$run"; do
   exit 1
  fi
 done
-echo "READ-ONLY GITRCHK AND COMPACT GITRUN M31 GUARDS PASSED"
+echo "READ-ONLY GITRCHK AND COMPACT GITRUN M32 GUARDS PASSED"
