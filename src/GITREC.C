@@ -270,6 +270,54 @@ static int rec_commit(const unsigned char *oid) {
  return 0;
 }
 
+/* M27: follow the FIRST parent only within the same authenticated
+ * generation. Verify the entire child AND the referenced parent body
+ * before emitting any parent metadata. No cross-generation mixing.
+ */
+static int rec_firstpar(const unsigned char *child) {
+ unsigned char parent[20],tree_oid[20];
+ unsigned long first=46,sz;
+ int pos,rc;
+ if(sidx_read()!=0) return 8;
+ pos=sidx_locate(child);
+ if(pos<0) {puts("SEEK OID NOT FOUND");return 4;}
+ if(sidx[pos].type!=1) {
+  puts("OBJECT IS NOT A COMMIT");return 8;
+ }
+ sz=sidx[pos].size;
+ sidx_silent=1;
+ rc=sidx_get(child);
+ sidx_silent=0;
+ if(rc!=0) return rc;
+ if(!rec_commit_walk(sz,0)) {
+  puts("COMMIT STRUCTURE INVALID");return 8;
+ }
+ if(sz<=first||!rec_ascii_key(idx_body+first,sz-first,
+                                "parent")) {
+  puts("ROOT COMMIT HAS NO FIRST PARENT");return 4;
+ }
+ if(!rec_ascii_oid(idx_body+first+7,parent)) return 8;
+ pos=sidx_locate(parent);
+ if(pos<0) {puts("FIRST PARENT OBJECT NOT FOUND");return 4;}
+ if(sidx[pos].type!=1) {
+  puts("FIRST PARENT IS NOT A COMMIT");return 8;
+ }
+ sz=sidx[pos].size;
+ sidx_silent=1;
+ rc=sidx_get(parent);
+ sidx_silent=0;
+ if(rc!=0) return rc;
+ if(!rec_commit_walk(sz,0)) {
+  puts("FIRST PARENT STRUCTURE INVALID");return 8;
+ }
+ if(!rec_ascii_oid(idx_body+5,tree_oid)) return 8;
+ puts("FIRST PARENT VERIFIED");
+ fputs("FIRST PARENT OID ",stdout);
+ idx_print(stdout,parent);putchar('\n');
+ fputs("FIRST PARENT TREE ",stdout);
+ idx_print(stdout,tree_oid);putchar('\n');
+ return 0;
+}
 /* M24: follow a commit's authenticated tree in the SAME
  * fully verified generation. Do not expose tree entries if either
  * linked object is missing, mis-typed or structurally invalid.
@@ -449,7 +497,7 @@ int main(int argc,char **argv) {
  struct slot a,b;
  unsigned char oid[20],path[255];
  unsigned long pathlen=0;
- int get,full,tree,commit,root,path_command,pathcat,lsdir,rc;
+ int get,full,tree,commit,root,path_command,pathcat,lsdir,firstpar,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
@@ -458,8 +506,9 @@ int main(int argc,char **argv) {
  path_command=argc==6&&strcmp(argv[1],"PATH")==0;
  pathcat=argc==6&&strcmp(argv[1],"PATHCAT")==0;
  lsdir=argc==6&&strcmp(argv[1],"LSDIR")==0;
+ firstpar=argc==5&&strcmp(argv[1],"FIRSTPAR")==0;
  if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
-     !pathcat&&!lsdir&&
+     !pathcat&&!lsdir&&!firstpar&&
      (argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
@@ -472,9 +521,10 @@ int main(int argc,char **argv) {
   puts("GITREC PATH C0NAME C1NAME COMMIT_OID40 PATHHEX");
   puts("GITREC PATHCAT C0NAME C1NAME COMMIT_OID40 PATHHEX");
   puts("GITREC LSDIR C0NAME C1NAME COMMIT_OID40 DIRHEX");
+  puts("GITREC FIRSTPAR C0NAME C1NAME COMMIT_OID40");
   return 4;
  }
- if((get||full||tree||commit||root||path_command||pathcat||lsdir)&&
+ if((get||full||tree||commit||root||path_command||pathcat||lsdir||firstpar)&&
     (strlen(argv[4])!=40||
     !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
@@ -495,7 +545,7 @@ int main(int argc,char **argv) {
  }
  rc=selector_choose(&a,&b);
  if(rc!=0||(!get&&!full&&!tree&&!commit&&!root&&
-             !path_command&&!pathcat&&!lsdir)) return rc;
+             !path_command&&!pathcat&&!lsdir&&!firstpar)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(tree) return rec_tree(oid);
  if(commit) return rec_commit(oid);
@@ -503,6 +553,7 @@ int main(int argc,char **argv) {
  if(path_command) return rec_path(oid,path,pathlen,0);
  if(pathcat) return rec_path(oid,path,pathlen,1);
  if(lsdir) return rec_path(oid,path,pathlen,2);
+ if(firstpar) return rec_firstpar(oid);
  if(sidx_read()!=0) return 8;
  sidx_emit_full=full;
  return sidx_get(oid);
