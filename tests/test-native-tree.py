@@ -21,12 +21,13 @@ def git_oid(typ, data):
 
 BLOB = b"abc"
 BLOB_OID = bytes.fromhex(git_oid("blob", BLOB))
+SUBTREE = b"100644 nested.txt\\x00" + BLOB_OID
 ENTRIES = [
     (b"100644", b"README.md", BLOB_OID),
     (b"100755", b"shell.sh", BLOB_OID),
     (b"120000", b"link", BLOB_OID),
     (b"160000", b"submodule", BLOB_OID),
-    (b"40000", b"subdir", bytes.fromhex(git_oid("tree", b""))),
+    (b"40000", b"subdir", bytes.fromhex(git_oid("tree", SUBTREE))),
     (b"100644", b"nonascii-\xff", BLOB_OID),
 ]
 TREE = b"".join(mode + b" " + name + b"\x00" + oid
@@ -54,7 +55,8 @@ REAL_COMMIT = bytes.fromhex(
 BAD_PARENT = MERGE.replace(b"parent " + b"1"*40,
                            b"parent " + b"Z"*40)
 BAD_COMMIT = FIRST_COMMIT.replace(b"committer ", b"othername ")
-SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED), (3, BLOB),
+SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
+           (2, SUBTREE), (3, BLOB),
            (1, FIRST_COMMIT), (1, MERGE), (1, BAD_PARENT), (1, BAD_COMMIT),
            (1, REAL_COMMIT)]
 OBJECTS = SAMPLES + [(3, BLOB)] * (1808 - len(SAMPLES))
@@ -125,7 +127,7 @@ def main():
         (d / "dd:FIDXOUT").rename(d / "dd:FIDXIN")
         run(idx, "GENWRITE", cwd=d)
         (d / "dd:GENOUT").rename(d / "dd:GENIN")
-        assert "GENERATION VERIFIED 1808 UNIQUE 9" in run(idx, "GENCHECK", cwd=d)
+        assert "GENERATION VERIFIED 1808 UNIQUE 10" in run(idx, "GENCHECK", cwd=d)
         digest = (d / "dd:GENIN").read_text().splitlines()[1].split()[1]
         for prefix in ("C0", "C1"):
             for kind, name in (("STG", "STGIN"), ("IDX", "IDXIN"),
@@ -137,6 +139,43 @@ def main():
         tree_oid = git_oid("tree", TREE)
         result = run(rec, "TREE", "GENOLD", "GENNEW", tree_oid, cwd=d)
         verify_tree(result, "SELECTED 52 GENNEW", ENTRIES)
+        # M24: follow an authenticated commit into its root tree.
+        lsroot = run(rec, "LSROOT", "GENOLD", "GENNEW",
+                     git_oid("commit", FIRST_COMMIT), cwd=d)
+        verify_tree(lsroot, "SELECTED 52 GENNEW", ENTRIES)
+        real_root = run(rec, "LSROOT", "GENOLD", "GENNEW",
+                        git_oid("commit", REAL_COMMIT), cwd=d, expected=4)
+        assert "SEEK OID NOT FOUND" in real_root
+        assert "TREE DATA BEGIN" not in real_root
+        readme = run(rec, "PATH", "GENOLD", "GENNEW",
+                     git_oid("commit", FIRST_COMMIT),
+                     b"README.md".hex().upper(), cwd=d)
+        assert "PATH OBJECT TYPE 3 SIZE 3 OID " + git_oid("blob", BLOB) in readme
+        nested = run(rec, "PATH", "GENOLD", "GENNEW",
+                     git_oid("commit", FIRST_COMMIT),
+                     b"subdir/nested.txt".hex().upper(), cwd=d)
+        assert "PATH OBJECT TYPE 3 SIZE 3 OID " + git_oid("blob", BLOB) in nested
+        subtree = run(rec, "PATH", "GENOLD", "GENNEW",
+                      git_oid("commit", FIRST_COMMIT),
+                      b"subdir".hex().upper(), cwd=d)
+        assert "PATH OBJECT TYPE 2 SIZE " + str(len(SUBTREE)) in subtree
+        gitlink = run(rec, "PATH", "GENOLD", "GENNEW",
+                      git_oid("commit", FIRST_COMMIT),
+                      b"submodule".hex().upper(), cwd=d)
+        assert "PATH GITLINK (EXTERNAL COMMIT)" in gitlink
+        assert "PATH OID " + BLOB_OID.hex().upper() in gitlink
+        for bad in (b"missing", b"README.md/child", b"subdir/missing"):
+            failure = run(rec, "PATH", "GENOLD", "GENNEW",
+                          git_oid("commit", FIRST_COMMIT),
+                          bad.hex().upper(), cwd=d,
+                          expected=8 if bad == b"README.md/child" else 4)
+            assert "PATH OBJECT TYPE" not in failure
+        for bad in ("", "2", "00", "2F61", "612F", "612F2F62", "GG"):
+            failure = run(rec, "PATH", "GENOLD", "GENNEW",
+                          git_oid("commit", FIRST_COMMIT), bad,
+                          cwd=d, expected=4)
+            assert "PATH REQUIRES VALID NONEMPTY HEX" in failure
+
         empty = run(rec, "TREE", "GENOLD", "GENNEW",
                     git_oid("tree", b""), cwd=d)
         verify_tree(empty, "SELECTED 52 GENNEW", [])
@@ -193,6 +232,14 @@ def main():
         commit_recovered = run(rec, "COMMIT", "GENOLD", "GENNEW",
                                git_oid("commit", MERGE), cwd=d)
         assert "RECOVERED 51 GENOLD" in commit_recovered
+        lsroot_recovered = run(rec, "LSROOT", "GENOLD", "GENNEW",
+                               git_oid("commit", FIRST_COMMIT), cwd=d)
+        verify_tree(lsroot_recovered, "RECOVERED 51 GENOLD", ENTRIES)
+        path_recovered = run(rec, "PATH", "GENOLD", "GENNEW",
+                             git_oid("commit", FIRST_COMMIT),
+                             b"README.md".hex().upper(), cwd=d)
+        assert "RECOVERED 51 GENOLD" in path_recovered
+        assert "PATH OBJECT TYPE 3 SIZE 3" in path_recovered
         assert "COMMIT PARENTS 2" in commit_recovered
         recovered = run(rec, "TREE", "GENOLD", "GENNEW", tree_oid, cwd=d)
         verify_tree(recovered, "RECOVERED 51 GENOLD", ENTRIES)
@@ -205,6 +252,14 @@ def main():
                             git_oid("commit", FIRST_COMMIT), cwd=d, expected=8)
         assert "NO FULLY VERIFIED GENERATION" in commit_failed
         assert "COMMIT DATA BEGIN" not in commit_failed
+        lsroot_failed = run(rec, "LSROOT", "GENOLD", "GENNEW",
+                            git_oid("commit", FIRST_COMMIT),
+                            cwd=d, expected=8)
+        assert "TREE DATA BEGIN" not in lsroot_failed
+        path_failed = run(rec, "PATH", "GENOLD", "GENNEW",
+                          git_oid("commit", FIRST_COMMIT),
+                          b"README.md".hex().upper(), cwd=d, expected=8)
+        assert "PATH OBJECT TYPE" not in path_failed
         (d / "held-old").rename(d / "dd:C0GEN")
         (d / "held-new").rename(d / "dd:C1GEN")
         restored = run(rec, "TREE", "GENOLD", "GENNEW", tree_oid, cwd=d)
@@ -213,8 +268,13 @@ def main():
                            git_oid("commit", FIRST_COMMIT), cwd=d)
         assert "SELECTED 52 GENNEW" in final_commit
         assert "COMMIT TREE " + git_oid("tree", TREE) in final_commit
+        final_path = run(rec, "PATH", "GENOLD", "GENNEW",
+                         git_oid("commit", FIRST_COMMIT),
+                         b"subdir/nested.txt".hex().upper(), cwd=d)
+        assert "SELECTED 52 GENNEW" in final_path
+        assert "PATH OBJECT TYPE 3 SIZE 3" in final_path
         print("NATIVE C89 TREE BINARY NAMEHEX, EMPTY, MALFORMED, "
-              "NON-TREE, COMMIT HEADERS, FALLBACK AND FAIL-CLOSED TESTS PASSED")
+              "NON-TREE, COMMIT, LSROOT, NESTED PATH AND FAIL-CLOSED TESTS PASSED")
 
 
 if __name__ == "__main__":
