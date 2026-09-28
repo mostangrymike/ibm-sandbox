@@ -600,3 +600,72 @@ root and nested docs trees were checked when
 selecting the names for this batch; the
 new M24 native code has **not yet** executed
 on CMS and is not claimed target-proven.
+
+## M24 target pass; M25 full verified file bytes by relative path
+
+M24 ran successfully on real CMS on September 28:
+`CMSCLNK GITREC PLAIN` assembled with no flagged
+statements and the single standard `GITRUN`
+completed all ten linked-root/path tests.
+Both original 1,808-object generations reaudited
+fully; seq52 M15NEW selected; the first commit's
+root tree decoded; `README.md` resolved to the
+567-byte blob 1BA7AE466BB0A16C294D52A8642E527B07D4D1F5;
+nested `docs/STATUS.md` resolved to the 5,737-byte
+blob 46135A22C7394D8090619C6C70453C58A24F5239.
+Wrong input types, missing files and non-tree
+intermediates returned their expected RCs;
+missing new-generation GEN2 recovered seq51
+GITFIX; both unavailable failed closed RC8;
+restoration selected seq52; all protected file
+STATE tests passed. Final target line:
+`GITRUN M24 ALL READ ONLY NATIVE GIT TESTS PASSED`,
+Ready T=239.20/240.98 at 10:07:02.
+
+M25 production native C89 `GITREC PATHCAT C0NAME
+C1NAME COMMIT_OID40 PATHHEX` now reuses the
+verified M24 nested path traversal and complete
+GEN2-selected-generation audit. It independently
+rehashes each linked tree and the final type-3
+blob before output. Only after full success
+does it print `PATH OBJECT TYPE 3 SIZE n OID ...`,
+`PATH DATA BEGIN`, up to 32 exact raw bytes per
+`PATH HEX` line and `PATH DATA END`. Empty
+blobs produce zero HEX lines. A tree/gitlink
+target is not accepted as a blob; wrong-type,
+missing intermediate, invalid path, bad input
+and unverified candidate fail closed without
+any PATH DATA bytes. The output is textual
+hex and safe for CMS console transfer; the
+implementation does not assume unverified CMS
+binary record semantics.
+
+Host integration uses actual compiled production
+GITCIDX/GITREC with fully sealed 1,808-record
+synthetic dual generations. It byte-for-byte
+reconstructs PATHCAT outputs for ASCII, nested
+ASCII, empty, full 257-byte binary including
+NUL/high-bit bytes, and max 65,536-byte binary
+blobs. It exercises non-blob negatives, malformed
+path input, missing targets, old-generation
+fallback, both candidates unavailable and
+restoration. A second pinned fixture preserves
+the exact historical first-commit `README.md`
+contents; the test reconstructs its Git blob
+SHA1 and original four-entry root tree SHA1
+independently, then feeds the exact previously
+captured 270-byte real first commit through
+production LSROOT and PATHCAT. All native host
+CI passing:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36441754586 .
+
+The single reusable `src/GITRUN.EXEC` is M25's
+read-only CMS gate: independent audits for both
+protected generations, seq52 selection,
+PATHCAT the real first commit's README.md and
+nested docs/STATUS.md, type/missing/non-tree
+negative cases, seq51 fallback, both absent
+fail-closed and seq52 restoration, final
+all-protected file checks. Host CI verifies
+that this batch has no persistent CMS writes.
+M25 has not yet run on CMS.
