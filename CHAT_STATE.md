@@ -3949,3 +3949,77 @@ GITPBUF PACK read-only; GITREC.C <=72
 columns and output records <=80.
 Proceed autonomously to next native feature
 and update only standard GITRUN for target.
+
+## September 28 14:17–14:20 — M32 target PASS; M33 host green
+
+User ran live CMSCLNK GITREC PLAIN for M32,
+ASSEMBLER (XF) DONE with no flagged statements,
+built PLAIN MODULE at 14:17:38 T=8.71/9.01.
+Standard one-page GITRUN M32 passed:
+PASS protected originals/absent M15BAD GEN,
+independent original GITFIX and M15NEW
+1808-object full GENCHECK audits RC0,
+select seq52 RC0, verified parent root
+trees RC0, noncommit child RC8, missing
+child RC4, recovered seq51 roots RC0,
+both missing generation manifests failed
+closed RC8, restored seq52 roots RC0,
+final protected file integrity PASS.
+Exact:
+GITRUN M32 ALL READ ONLY NATIVE GIT TESTS PASSED
+Ready T=172.79/173.90 at 14:20:37.
+M32 actual z/VM CMS TARGET PROVEN.
+
+Immediately implemented M33 on GitHub main:
+production strict C89 native GITREC COMMITROOTS
+C0NAME C1NAME COMMIT_OID40. Extends proven
+PARENTROOTS: after one fully audited GEN2
+generation selection, validates SHA1 and
+structure of supplied child commit, every
+parent commit (max16) and EVERY parent
+root tree, and ALSO validates child commit's
+own root tree as real staged SHA1-authenticated
+structurally valid Git type2 tree. All
+within SAME selected generation. Emits short
+COMMIT ROOTS VERIFIED marker and framed
+complete PARENTS list ONLY after all pass;
+missing trees RC4, non-tree/malformed trees
+RC8 and no partial parent metadata. Zero
+parent root commit still requires its own
+root tree. No protected file writes.
+Existing PARENTS and PARENTROOTS unchanged.
+
+Native strict C89 host integration now tests
+both root trees of a synthetic two-parent
+merge, root commit, missing/wrong-type/
+malformed CHILD root trees, missing/wrong-
+type/malformed PARENT root trees, missing
+parent commit, noncommit child, older seq51
+fallback, both unavailable RC8, restored
+seq52 and previous native regressions.
+No changes to 1808 staged fixture objects
+or protected CMS originals. Source remains
+<=72 columns; output records <=80.
+Standard M33 compact one-page src/GITRUN.EXEC
+uses real historic first commit, validates
+its own root plus known parent root, checks
+noncommit/missing child, seq51 fallback,
+both-missing RC8, seq52 restore and pre/post
+protected STATE. In-memory PIPE CMS to STEM.
+Readonly GITRUN guard updated; complete
+GitHub CI PASS:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36472033887
+M33 HOST-PROVEN, still needs real CMS test.
+
+NEXT Mac from ibm-sandbox/src:
+ git pull
+ ./cms-upload.sh GITREC.C
+ ./cms-upload.sh GITRUN.EXEC
+CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+No GITCIDX/GITSEL changes, original GITFIX/
+M15NEW STAGE/INDEX/SEEK/GEN, selectors and
+GITPBUF PACK stay read-only. Single one-page
+GITRUN is only required CMS regression;
+do not introduce auxiliary manual gates.
