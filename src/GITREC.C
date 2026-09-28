@@ -133,6 +133,139 @@ static int rec_tree(const unsigned char *oid) {
  puts("TREE DATA END");
  return 0;
 }
+/* Git commit headers and OIDs are ASCII bytes, never CMS text.
+ * Validate the entire header before exposing any parsed metadata.
+ * Unknown ordinary Git header keys and continuation lines are
+ * allowed; the required tree, author and committer are strict.
+ */
+static int rec_ascii_hex(int c) {
+ if(c>=0x30&&c<=0x39) return c-0x30;
+ if(c>=0x41&&c<=0x46) return c-0x41+10;
+ if(c>=0x61&&c<=0x66) return c-0x61+10;
+ return -1;
+}
+static int rec_ascii_oid(const unsigned char *src,
+                         unsigned char *dst) {
+ int j,hi,lo;
+ for(j=0;j<20;j++) {
+  hi=rec_ascii_hex(src[2*j]);
+  lo=rec_ascii_hex(src[2*j+1]);
+  if(hi<0||lo<0) return 0;
+  dst[j]=(unsigned char)((hi<<4)|lo);
+ }
+ return 1;
+}
+static int rec_ascii_key(const unsigned char *line,
+                         unsigned long n,const char *key) {
+ static const unsigned char letters[][10]={
+  {0x74,0x72,0x65,0x65,0x20},
+  {0x70,0x61,0x72,0x65,0x6e,0x74,0x20},
+  {0x61,0x75,0x74,0x68,0x6f,0x72,0x20},
+  {0x63,0x6f,0x6d,0x6d,0x69,0x74,0x74,0x65,0x72,0x20}
+ };
+ static const unsigned int lengths[]={5,7,7,10};
+ unsigned int i;
+ static const char *names[]={"tree","parent","author","committer"};
+ for(i=0;i<4;i++)
+  if(strcmp(key,names[i])==0)
+   return n>=lengths[i]&&
+          memcmp(line,letters[i],lengths[i])==0;
+ return 0;
+}
+static int rec_commit_walk(unsigned long n,int emit) {
+ unsigned long at=0,begin,end,len,parents=0,body=0;
+ unsigned long parent_start=0,author=0,committer=0,j;
+ unsigned char binary[20];
+ /* Exactly one tree line comes first. */
+ while(at<n&&idx_body[at]!=0x0a) at++;
+ if(at==n||at!=45||
+    !rec_ascii_key(idx_body,at,"tree")||
+    !rec_ascii_oid(idx_body+5,binary)) return 0;
+ at++;
+ parent_start=at;
+ /* Git parent lines must precede all other headers. */
+ while(at<n) {
+  begin=at;
+  while(at<n&&idx_body[at]!=0x0a) at++;
+  if(at==n) return 0;
+  len=at-begin;
+  if(!rec_ascii_key(idx_body+begin,len,"parent"))
+   break;
+  if(len!=47||!rec_ascii_oid(idx_body+begin+7,binary))
+   return 0;
+  parents++;
+  at++;
+ }
+ /* Scan remaining header records; stop on empty delimiter line. */
+ while(at<n) {
+  begin=at;
+  while(at<n&&idx_body[at]!=0x0a) at++;
+  if(at==n) return 0;
+  len=at-begin;
+  if(len==0) {at++;body=1;break;}
+  if(idx_body[begin]==0x20) {
+   /* Folded gpgsig/mergetag header, not a new field. */
+   if(begin==parent_start||len==1) return 0;
+  } else {
+   end=begin;
+   while(end<at&&idx_body[end]!=0x20) {
+    if(!((idx_body[end]>=0x61&&idx_body[end]<=0x7a)||
+         (idx_body[end]>=0x30&&idx_body[end]<=0x39)||
+          idx_body[end]==0x2d)) return 0;
+    end++;
+   }
+   if(end==begin||end==at||end+1==at) return 0;
+   if(rec_ascii_key(idx_body+begin,len,"tree")||
+      rec_ascii_key(idx_body+begin,len,"parent"))
+    return 0;
+   if(rec_ascii_key(idx_body+begin,len,"author")) {
+    if(author++) return 0;
+   }
+   if(rec_ascii_key(idx_body+begin,len,"committer")) {
+    if(committer++) return 0;
+   }
+  }
+  at++;
+ }
+ if(!body||author!=1||committer!=1) return 0;
+ if(emit) {
+  puts("COMMIT DATA BEGIN");
+  fputs("COMMIT TREE ",stdout);
+  if(!rec_ascii_oid(idx_body+5,binary)) return 0;
+  idx_print(stdout,binary);putchar('\n');
+  at=parent_start;
+  for(j=0;j<parents;j++) {
+   at+=7;
+   if(!rec_ascii_oid(idx_body+at,binary)) return 0;
+   fputs("COMMIT PARENT ",stdout);
+   idx_print(stdout,binary);putchar('\n');
+   at+=41;
+  }
+  printf("COMMIT PARENTS %lu\n",parents);
+  printf("COMMIT MESSAGE BYTES %lu\n",n-at);
+  puts("COMMIT DATA END");
+ }
+ return 1;
+}
+static int rec_commit(const unsigned char *oid) {
+ int pos,rc;
+ if(sidx_read()!=0) return 8;
+ pos=sidx_locate(oid);
+ if(pos<0) {puts("SEEK OID NOT FOUND");return 4;}
+ if(sidx[pos].type!=1) {
+  puts("OBJECT IS NOT A COMMIT");return 8;
+ }
+ sidx_silent=1;
+ rc=sidx_get(oid);
+ sidx_silent=0;
+ if(rc!=0) return rc;
+ if(!rec_commit_walk(sidx[pos].size,0)) {
+  puts("COMMIT STRUCTURE INVALID");return 8;
+ }
+ if(!rec_commit_walk(sidx[pos].size,1)) return 8;
+ return 0;
+}
+
 /* SELECT stays read-only. GET adds a verified indexed object
  * lookup only after a complete native GENCHECK has selected a slot.
  * Never call SGET on an unverified candidate or infer an active
@@ -141,11 +274,12 @@ static int rec_tree(const unsigned char *oid) {
 int main(int argc,char **argv) {
  struct slot a,b;
  unsigned char oid[20];
- int get,full,tree,rc;
+ int get,full,tree,commit,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
- if((!get&&!full&&!tree&&
+ commit=argc==5&&strcmp(argv[1],"COMMIT")==0;
+ if((!get&&!full&&!tree&&!commit&&
      (argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
@@ -153,9 +287,10 @@ int main(int argc,char **argv) {
   puts("GITREC GET C0NAME C1NAME OID40");
   puts("GITREC CATHEX C0NAME C1NAME OID40");
   puts("GITREC TREE C0NAME C1NAME OID40");
+  puts("GITREC COMMIT C0NAME C1NAME OID40");
   return 4;
  }
- if((get||full||tree)&&(strlen(argv[4])!=40||
+ if((get||full||tree||commit)&&(strlen(argv[4])!=40||
     !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
   return 4;
@@ -170,9 +305,10 @@ int main(int argc,char **argv) {
   puts("SELECTOR SLOT 1 NAME MISMATCH");b.valid=0;
  }
  rc=selector_choose(&a,&b);
- if(rc!=0||(!get&&!full&&!tree)) return rc;
+ if(rc!=0||(!get&&!full&&!tree&&!commit)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(tree) return rec_tree(oid);
+ if(commit) return rec_commit(oid);
  if(sidx_read()!=0) return 8;
  sidx_emit_full=full;
  return sidx_get(oid);
