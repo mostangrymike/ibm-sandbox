@@ -193,7 +193,7 @@ def main():
         (d / "dd:FIDXOUT").rename(d / "dd:FIDXIN")
         run(idx, "GENWRITE", cwd=d)
         (d / "dd:GENOUT").rename(d / "dd:GENIN")
-        assert "GENERATION VERIFIED 1808 UNIQUE 21" in run(idx, "GENCHECK", cwd=d)
+        assert "GENERATION VERIFIED 1808 UNIQUE 23" in run(idx, "GENCHECK", cwd=d)
         digest = (d / "dd:GENIN").read_text().splitlines()[1].split()[1]
         for prefix in ("C0", "C1"):
             for kind, name in (("STG", "STGIN"), ("IDX", "IDXIN"),
