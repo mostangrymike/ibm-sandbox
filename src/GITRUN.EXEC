@@ -1,15 +1,12 @@
-/* M26Q2: compact, read-only native Git CMS target regression. */
+/* M27: compact, read-only native Git CMS target regression. */
 /* PIPE CMS captures diagnostics in memory; no output CMS files. */
 address cms
-say 'GITRUN M26Q2 COMPACT REPORT'
+say 'GITRUN M27 COMPACT REPORT'
 say 'ALL COUNTS REFER TO VERIFIED ORIGINAL 1808 OBJECTS'
 fast='FAST AUDIT VERIFIED 1808 UNIQUE 1808'
 pair='PAIR VERIFIED UNIQUE 1808'
 gen='GENERATION VERIFIED 1808 UNIQUE 1808'
 sel='SELECTED 52 M15NEW'
-two='TREE ENTRIES 2'
-build='D4BE895844FECE160E31411ABB2ECDD6ACAECC17'
-status='46135A22C7394D8090619C6C70453C58A24F5239'
 call protected
 if result \= 0 then exit 12
 'PIPE CMS STATE M15BAD GEN A | STEM out.'
@@ -47,23 +44,23 @@ end
 call gate 'SELECT SEQ52','GITREC SELECT GITFIX M15NEW',0,sel,gen
 if result \= 0 then exit 12
 commit='00D8D63229305230C8D37F884CE87F9E1A89468C'
-docs='646F6373'
-cmd='GITREC LSDIR GITFIX M15NEW' commit docs
-call gate 'DOCS HAS TWO VERIFIED ENTRIES',cmd,0,sel,two,build,status
+parent='2D5038C551318997B865497E04CF4C037DE4135E'
+ptree='F3EF36AAD778D5DA84857D8DED46495C75F4CAB0'
+cmd='GITREC FIRSTPAR GITFIX M15NEW' commit
+call gate 'FIRST PARENT VERIFIED',cmd,0,'FIRST PARENT VERIFIED',parent,ptree,sel
 if result \= 0 then exit 12
-cmd='GITREC LSDIR GITFIX M15NEW' commit '524541444D452E6D64'
-call gate 'BLOB IS NOT DIRECTORY',cmd,8,'LSDIR REQUIRES A TREE'
+cmd='GITREC FIRSTPAR GITFIX M15NEW' ,
+ '204E1D6968FB81C35BF830D63A611AC64C072945'
+call gate 'NON COMMIT INPUT',cmd,8,'OBJECT IS NOT A COMMIT'
 if result \= 0 then exit 12
-cmd='GITREC LSDIR GITFIX M15NEW' commit '4E4F5045'
-call gate 'MISSING DIRECTORY',cmd,4,'PATH NOT FOUND'
-if result \= 0 then exit 12
-cmd='GITREC LSDIR GITFIX M15NEW' commit '524541444D452E6D642F78'
-call gate 'NON TREE INTERMEDIATE',cmd,8,'PATH COMPONENT NOT A TREE'
+cmd='GITREC FIRSTPAR GITFIX M15NEW' ,
+ '0000000000000000000000000000000000000000'
+call gate 'MISSING COMMIT',cmd,4,'SEEK OID NOT FOUND'
 if result \= 0 then exit 12
 'FILEDEF C1GEN DISK M15BAD GEN A'
 if rc \= 0 then exit 12
-cmd='GITREC LSDIR GITFIX M15NEW' commit docs
-call gate 'RECOVERED SEQ51',cmd,0,'RECOVERED 51 GITFIX',two
+cmd='GITREC FIRSTPAR GITFIX M15NEW' commit
+call gate 'RECOVERED FIRST PARENT',cmd,0,'RECOVERED 51 GITFIX',parent,ptree
 if result \= 0 then exit 12
 'FILEDEF C0GEN DISK M15BAD GEN A'
 if rc \= 0 then exit 12
@@ -73,12 +70,12 @@ if result \= 0 then exit 12
 if rc \= 0 then exit 12
 'FILEDEF C1GEN DISK M15NEW GEN A'
 if rc \= 0 then exit 12
-call gate 'RESTORED SEQ52',cmd,0,sel,two
+call gate 'RESTORED FIRST PARENT',cmd,0,sel,parent,ptree
 if result \= 0 then exit 12
 call protected
 if result \= 0 then exit 12
 say 'PASS FINAL PROTECTED FILES'
-say 'GITRUN M26Q2 ALL READ ONLY NATIVE GIT TESTS PASSED'
+say 'GITRUN M27 ALL READ ONLY NATIVE GIT TESTS PASSED'
 exit 0
 /* All stage output is held in an in-memory REXX STEM. No dumps. */
 gate:
