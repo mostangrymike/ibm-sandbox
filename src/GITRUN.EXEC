@@ -1,7 +1,7 @@
-/* M30: compact, read-only native Git CMS target regression. */
+/* M31: compact, read-only native Git CMS target regression. */
 /* PIPE CMS captures diagnostics in memory; no output CMS files. */
 address cms
-say 'GITRUN M30 COMPACT REPORT'
+say 'GITRUN M31 COMPACT REPORT'
 say 'ALL COUNTS REFER TO VERIFIED ORIGINAL 1808 OBJECTS'
 fast='FAST AUDIT VERIFIED 1808 UNIQUE 1808'
 pair='PAIR VERIFIED UNIQUE 1808'
@@ -46,38 +46,36 @@ if result \= 0 then exit 12
 commit='00D8D63229305230C8D37F884CE87F9E1A89468C'
 parent='2D5038C551318997B865497E04CF4C037DE4135E'
 ptree='F3EF36AAD778D5DA84857D8DED46495C75F4CAB0'
-cmd='GITREC PARENT GITFIX M15NEW' commit '1'
-call gate 'PARENT ORDINAL ONE',cmd,0,'PARENT VERIFIED ORDINAL 1',parent,ptree
-if result \= 0 then exit 12
-cmd='GITREC PARENT GITFIX M15NEW' commit '2'
-call gate 'ABSENT SECOND PARENT',cmd,4,'PARENT ORDINAL NOT FOUND'
-if result \= 0 then exit 12
-cmd='GITREC PARENT GITFIX M15NEW' commit '0'
-call gate 'INVALID ORDINAL',cmd,4,'ANCESTOR DEPTH MUST BE 1 THROUGH 16'
+cmd='GITREC PARENTS GITFIX M15NEW' commit
+call gate 'VERIFIED PARENTS',cmd,0,'PARENTS COUNT 1',parent,ptree,sel
 if result \= 0 then exit 12
 tree='204E1D6968FB81C35BF830D63A611AC64C072945'
-cmd='GITREC PARENT GITFIX M15NEW' tree '1'
-call gate 'NON COMMIT CHILD',cmd,8,'PARENT CHILD NOT COMMIT'
+cmd='GITREC PARENTS GITFIX M15NEW' tree
+call gate 'NON COMMIT CHILD',cmd,8,'PARENTS CHILD NOT COMMIT'
+if result \= 0 then exit 12
+missing='0000000000000000000000000000000000000000'
+cmd='GITREC PARENTS GITFIX M15NEW' missing
+call gate 'MISSING CHILD',cmd,4,'PARENTS CHILD NOT FOUND'
 if result \= 0 then exit 12
 'FILEDEF C1GEN DISK M15BAD GEN A'
-if rc \= 0 then exit rc
-cmd='GITREC PARENT GITFIX M15NEW' commit '1'
-call gate 'RECOVERED PARENT',cmd,0,'RECOVERED 51 GITFIX',parent,ptree
+if rc \= 0 then exit 12
+cmd='GITREC PARENTS GITFIX M15NEW' commit
+call gate 'RECOVERED PARENTS',cmd,0,'RECOVERED 51 GITFIX',parent,ptree
 if result \= 0 then exit 12
 'FILEDEF C0GEN DISK M15BAD GEN A'
-if rc \= 0 then exit rc
+if rc \= 0 then exit 12
 call gate 'BOTH INVALID FAIL CLOSED',cmd,8,'NO FULLY VERIFIED GENERATION'
 if result \= 0 then exit 12
 'FILEDEF C0GEN DISK GITFIX GEN A'
-if rc \= 0 then exit rc
+if rc \= 0 then exit 12
 'FILEDEF C1GEN DISK M15NEW GEN A'
-if rc \= 0 then exit rc
-call gate 'RESTORED PARENT',cmd,0,sel,parent,ptree
+if rc \= 0 then exit 12
+call gate 'RESTORED PARENTS',cmd,0,sel,parent,ptree
 if result \= 0 then exit 12
 call protected
 if result \= 0 then exit 12
 say 'PASS FINAL PROTECTED FILES'
-say 'GITRUN M30 ALL READ ONLY NATIVE GIT TESTS PASSED'
+say 'GITRUN M31 ALL READ ONLY NATIVE GIT TESTS PASSED'
 exit 0
 /* All stage output is held in an in-memory REXX STEM. No dumps. */
 gate:
