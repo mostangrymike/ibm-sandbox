@@ -3706,3 +3706,31 @@ Do not upload unchanged GITCIDX/GITSEL,
 touch original protected data or use auxiliary
 CMS test runners. Continue autonomously
 after real M30 target result.
+
+## September 28 13:46–13:49 — M30 actual CMS target PASS
+
+User compiled M30 GITREC.C on real z/VM CMS:
+CMSCLNK GITREC PLAIN, ASSEMBLER (XF) DONE,
+no statements flagged, module PLAIN built
+T=8.28/8.61 at 13:46:45. Standard one-page
+GITRUN M30 completed fully:
+PASS both independent 1808-object full audits,
+seq52 selection, PARENT ordinal1 RC0 verified
+historic parent and tree, missing ordinal2 RC4,
+invalid ordinal0 RC4, noncommit child RC8,
+older seq51 recovery RC0, both unavailable
+fail closed RC8, newer seq52 restoration RC0,
+and final original protected-file checks.
+Exact target final:
+GITRUN M30 ALL READ ONLY NATIVE GIT TESTS PASSED
+Ready T=172.35/173.54 at 13:49:42.
+M30 numbered-parent retrieval is now ACTUAL
+CMS TARGET-PROVEN, including compact output
+and recovery; all original generations,
+selectors and GITPBUF PACK unchanged.
+Continue next native feature independently
+on GitHub. Keep <=72 C source columns,
+CMS output lines <80 characters,
+single standard one-page read-only GITRUN,
+in-memory PIPE CMS to STEM, full two-generation
+audits and negative/recovery/restoration tests.
