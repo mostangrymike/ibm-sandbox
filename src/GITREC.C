@@ -478,7 +478,8 @@ static int rec_parent(const unsigned char *child,
  * Gitlink entries refer to external repositories and are skipped.
  * The fixed bound prevents untrusted trees exhausting CMS memory.
  */
-static int rec_root_links(const unsigned char *root) {
+static int rec_root_links(const unsigned char *root,
+                          int descend,unsigned int *budget) {
  unsigned char refs[256][20],types[256];
  unsigned long at=0,ms,ml,n,sz;
  unsigned int count=0,j;
@@ -499,6 +500,10 @@ static int rec_root_links(const unsigned char *root) {
  if(!rec_tree_walk(sz,0)) {
   puts("ROOT LINK TREE INVALID");return 8;
  }
+ if(*budget==0) {
+  puts("NESTED LINK BUDGET EXCEEDED");return 8;
+ }
+ (*budget)--;
  while(at<sz) {
   ms=at;
   while(at<sz&&idx_body[at]!=0x20) at++;
@@ -535,6 +540,13 @@ static int rec_root_links(const unsigned char *root) {
    puts("ROOT ENTRY SUBTREE INVALID");return 8;
   }
  }
+ if(descend) {
+  for(j=0;j<count;j++) {
+   if(types[j]!=2) continue;
+   rc=rec_root_links(refs[j],0,budget);
+   if(rc!=0) return rc;
+  }
+ }
  return 0;
 }
 /* M31: authenticate ALL parents of a commit before any output.
@@ -543,11 +555,11 @@ static int rec_root_links(const unsigned char *root) {
  */
 static int rec_parents(const unsigned char *child,
                        int check_trees,int check_child,
-                       int check_links) {
+                       int check_links,int check_nested) {
  unsigned char parents[16][20],trees[16][20];
  unsigned char child_tree[20];
  unsigned long at=46,begin,len,sz;
- unsigned int count=0,j;
+ unsigned int count=0,j,budget=1024;
  int pos,rc;
  if(sidx_read()!=0) return 8;
  pos=sidx_locate(child);
@@ -630,13 +642,15 @@ static int rec_parents(const unsigned char *child,
    puts("CHILD ROOT TREE INVALID");return 8;
   }
   if(check_links) {
-   rc=rec_root_links(child_tree);
+   rc=rec_root_links(child_tree,check_nested,&budget);
    if(rc!=0) return rc;
    for(j=0;j<count;j++) {
-    rc=rec_root_links(trees[j]);
+    rc=rec_root_links(trees[j],check_nested,&budget);
     if(rc!=0) return rc;
    }
-   puts("ROOT DIRECT LINKS VERIFIED");
+   if(check_nested)
+    puts("NESTED ROOT LINKS VERIFIED");
+   else puts("ROOT DIRECT LINKS VERIFIED");
   } else puts("COMMIT ROOTS VERIFIED");
  } else if(check_trees) {
   puts("PARENT ROOT TREES VERIFIED");
@@ -835,7 +849,8 @@ int main(int argc,char **argv) {
  unsigned long d;
  int get,full,tree,commit,root,path_command,pathcat;
  int lsdir,firstpar,ancestor,history,parent_cmd,parents_cmd;
- int roots_cmd,commitroots_cmd,linkroots_cmd,rc;
+ int roots_cmd,commitroots_cmd,linkroots_cmd;
+ int nestedlinks_cmd,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
@@ -852,10 +867,12 @@ int main(int argc,char **argv) {
  roots_cmd=argc==5&&strcmp(argv[1],"PARENTROOTS")==0;
  commitroots_cmd=argc==5&&strcmp(argv[1],"COMMITROOTS")==0;
  linkroots_cmd=argc==5&&strcmp(argv[1],"ROOTLINKS")==0;
+ nestedlinks_cmd=argc==5&&strcmp(argv[1],"NESTLINKS")==0;
  if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
      !pathcat&&!lsdir&&!firstpar&&!ancestor&&
      !history&&!parent_cmd&&!parents_cmd&&
      !roots_cmd&&!commitroots_cmd&&!linkroots_cmd&&
+     !nestedlinks_cmd&&
      (argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
@@ -876,12 +893,13 @@ int main(int argc,char **argv) {
   puts("GITREC PARENTROOTS C0NAME C1NAME OID40");
   puts("GITREC COMMITROOTS C0NAME C1NAME OID40");
   puts("GITREC ROOTLINKS C0NAME C1NAME COMMIT_OID40");
+  puts("GITREC NESTLINKS C0NAME C1NAME COMMIT_OID40");
   return 4;
  }
  if((get||full||tree||commit||root||path_command||
      pathcat||lsdir||firstpar||ancestor||history||
      parent_cmd||parents_cmd||roots_cmd||
-     commitroots_cmd||linkroots_cmd)&&
+     commitroots_cmd||linkroots_cmd||nestedlinks_cmd)&&
     (strlen(argv[4])!=40||
     !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
@@ -921,7 +939,8 @@ int main(int argc,char **argv) {
              !path_command&&!pathcat&&!lsdir&&
              !firstpar&&!ancestor&&!history&&
              !parent_cmd&&!parents_cmd&&!roots_cmd&&
-             !commitroots_cmd&&!linkroots_cmd)) return rc;
+             !commitroots_cmd&&!linkroots_cmd&&
+             !nestedlinks_cmd)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(tree) return rec_tree(oid);
  if(commit) return rec_commit(oid);
@@ -933,10 +952,11 @@ int main(int argc,char **argv) {
  if(ancestor) return rec_ancestor(oid,depth);
  if(history) return rec_history(oid,depth);
  if(parent_cmd) return rec_parent(oid,depth);
- if(parents_cmd) return rec_parents(oid,0,0,0);
- if(roots_cmd) return rec_parents(oid,1,0,0);
- if(commitroots_cmd) return rec_parents(oid,1,1,0);
- if(linkroots_cmd) return rec_parents(oid,1,1,1);
+ if(parents_cmd) return rec_parents(oid,0,0,0,0);
+ if(roots_cmd) return rec_parents(oid,1,0,0,0);
+ if(commitroots_cmd) return rec_parents(oid,1,1,0,0);
+ if(linkroots_cmd) return rec_parents(oid,1,1,1,0);
+ if(nestedlinks_cmd) return rec_parents(oid,1,1,1,1);
  if(sidx_read()!=0) return 8;
  sidx_emit_full=full;
  return sidx_get(oid);
