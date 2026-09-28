@@ -941,3 +941,54 @@ read-only source guard passed:
 https://github.com/mostangrymike/ibm-sandbox/actions/runs/36463930319 .
 M29 requires a real CMS compile and GITRUN
 before target success can be claimed.
+
+## September 28 — M29 live CMS pass and M30 numbered parents
+
+The corrected M29 `GITREC HISTORY` compiled cleanly
+on actual CMS and the compact standard `GITRUN M29`
+fully passed, T=150.68/151.64 at 13:36:37.
+Both original 1,808-object generations completed
+their independent audits, seq52 selected, real
+two-hop first-parent history passed with complete
+separate OID/TREE lines, invalid depth returned
+RC4, noncommit input RC8, seq51 recovery RC0,
+both missing failed closed RC8, seq52 restoration
+RC0, and final protected-file checks passed.
+Native atomic history listing and the concise
+single-page PIPE-to-STEM console report are
+TARGET PROVEN.
+
+M30 introduces read-only
+`GITREC PARENT C0NAME C1NAME COMMIT_OID40 N`
+with one-based parent ordinal N (1–16).
+Unlike FIRSTPAR and HISTORY, this supports
+second and later Git merge parents. It
+validates the child's entire binary commit
+structure, identifies precisely the Nth
+ASCII Git parent header, locates, rehashes
+and fully validates the referenced parent
+commit from the SAME fully GEN2-audited
+generation, and only then emits short
+`PARENT VERIFIED ORDINAL N`, `PARENT OID`
+and `PARENT TREE` records. A missing
+ordinal or unstaged parent returns RC4;
+incorrect child or parent type, malformed
+commit or unavailable verified generations
+fail closed RC8. No original files change.
+
+Strict host C89 integration extends the full
+sealed generation fixture with a second valid
+root commit and a two-parent merge, tests
+both merge parent ordinals, missing ordinal,
+root with no parent, missing second parent,
+wrong-type/malformed parent, invalid ordinals,
+seq51 fallback, both unavailable failure
+and seq52 restoration. Standard compact
+`src/GITRUN.EXEC` M30 uses the existing real
+first commit (which has exactly one parent)
+for parent ordinal1 success and ordinal2 RC4,
+plus bad input RC8, bounds RC4 and all prior
+original dual-generation audit and recovery
+checks. Full CMS compiler source width <=72
+and one-page output requirements remain
+mandatory. M30 CMS target pass pending.
