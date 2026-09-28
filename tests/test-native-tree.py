@@ -394,6 +394,38 @@ def main():
                           git_oid("commit", FIRST_COMMIT), malformed_dir,
                           cwd=d, expected=4)
             assert "TREE DATA BEGIN" not in bad_dir
+        # M41: stricter directory listing authenticates every
+        # immediate local blob/tree reference before ANY output.
+        verified_dir = run(rec, "LSDIRV", "GENOLD", "GENNEW",
+                           git_oid("commit", FIRST_COMMIT),
+                           b"subdir".hex().upper(), cwd=d)
+        verify_tree(verified_dir, "SELECTED 52 GENNEW",
+                    [(b"100644", b"nested.txt", BLOB_OID)])
+        assert "DIRECTORY LINKS VERIFIED" in verified_dir
+        for bad, expected, marker in (
+                (NEST_MISSING_COMMIT, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND"),
+                (NEST_WRONG_COMMIT, 8,
+                 "ROOT ENTRY TYPE MISMATCH")):
+            # The original LSDIR lists a structurally valid tree.
+            plain = run(rec, "LSDIR", "GENOLD", "GENNEW",
+                        git_oid("commit", bad),
+                        b"subdir".hex().upper(), cwd=d)
+            assert "TREE DATA END" in plain
+            strict = run(rec, "LSDIRV", "GENOLD", "GENNEW",
+                         git_oid("commit", bad),
+                         b"subdir".hex().upper(), cwd=d,
+                         expected=expected)
+            assert marker in strict
+            for leaked in ("DIRECTORY LINKS VERIFIED",
+                           "PATH OBJECT TYPE", "TREE DATA BEGIN"):
+                assert leaked not in strict
+        malformed_verified = run(
+            rec, "LSDIRV", "GENOLD", "GENNEW",
+            git_oid("commit", INVALID_SUBTREE_COMMIT),
+            b"subdir".hex().upper(), cwd=d, expected=8)
+        assert "ROOT LINK TREE INVALID" in malformed_verified
+        assert "PATH OBJECT TYPE" not in malformed_verified
         # M40: a canonical OID is insufficient when a terminal
         # directory is itself malformed. Never expose partial
         # PATH metadata or a partial directory listing.
