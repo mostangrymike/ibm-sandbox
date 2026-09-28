@@ -40,11 +40,23 @@ MERGE = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
          + b"\nparent " + b"1"*40
          + b"\nauthor A <a@b> 123 +0000\n"
          + b"committer A <a@b> 123 +0000\n\nmerge\n")
+REAL_COMMIT = bytes.fromhex(
+    "7472656520323034653164363936386662383163333562663833306436336136"
+    "313161633634633037323934350A706172656E74203264353033386335353133"
+    "31383939376238363534393765303463663463303337646534313335650A6175"
+    "74686F72206D6F7374616E6772796D696B65203C6D696B65776F6D6D61636B38"
+    "3640676D61696C2E636F6D3E2031373839363935393839202D303530300A636F"
+    "6D6D6974746572206D6F7374616E6772796D696B65203C6D696B65776F6D6D61"
+    "636B383640676D61696C2E636F6D3E2031373839363935393839202D30353030"
+    "0A0A416464204D394A206F626A6563742D6F757470757420696E746567726174"
+    "696F6E2072656772657373696F6E"
+)
 BAD_PARENT = MERGE.replace(b"parent " + b"1"*40,
                            b"parent " + b"Z"*40)
 BAD_COMMIT = FIRST_COMMIT.replace(b"committer ", b"othername ")
 SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED), (3, BLOB),
-           (1, FIRST_COMMIT), (1, MERGE), (1, BAD_PARENT), (1, BAD_COMMIT)]
+           (1, FIRST_COMMIT), (1, MERGE), (1, BAD_PARENT), (1, BAD_COMMIT),
+           (1, REAL_COMMIT)]
 OBJECTS = SAMPLES + [(3, BLOB)] * (1808 - len(SAMPLES))
 
 
@@ -113,7 +125,7 @@ def main():
         (d / "dd:FIDXOUT").rename(d / "dd:FIDXIN")
         run(idx, "GENWRITE", cwd=d)
         (d / "dd:GENOUT").rename(d / "dd:GENIN")
-        assert "GENERATION VERIFIED 1808 UNIQUE 8" in run(idx, "GENCHECK", cwd=d)
+        assert "GENERATION VERIFIED 1808 UNIQUE 9" in run(idx, "GENCHECK", cwd=d)
         digest = (d / "dd:GENIN").read_text().splitlines()[1].split()[1]
         for prefix in ("C0", "C1"):
             for kind, name in (("STG", "STGIN"), ("IDX", "IDXIN"),
@@ -138,6 +150,22 @@ def main():
         assert "TREE DATA BEGIN" not in malformed
 
         # M23: selected-generation Git commit header extraction.
+        # Exact 270-byte real first-commit body captured from CMS CATHEX.
+        # This fixture catches host-only parsing assumptions before target
+        # compilation and protects the established canonical first OID.
+        assert len(REAL_COMMIT) == 270
+        assert git_oid("commit", REAL_COMMIT) == (
+            "00D8D63229305230C8D37F884CE87F9E1A89468C"
+        )
+        real = run(rec, "COMMIT", "GENOLD", "GENNEW",
+                   git_oid("commit", REAL_COMMIT), cwd=d)
+        assert "COMMIT TREE 204E1D6968FB81C35BF830D63A611AC64C072945" in real
+        assert "COMMIT PARENT 2D5038C551318997B865497E04CF4C037DE4135E" in real
+        assert "COMMIT PARENTS 1" in real
+        assert "COMMIT MESSAGE BYTES " + str(
+            len(REAL_COMMIT.split(b"\\n\\n", 1)[1])
+        ) in real
+
         root = run(rec, "COMMIT", "GENOLD", "GENNEW",
                    git_oid("commit", FIRST_COMMIT), cwd=d)
         assert "SELECTED 52 GENNEW" in root
