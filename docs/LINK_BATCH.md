@@ -79,3 +79,40 @@ The original GITFIX/M15NEW STAGE, INDEX, SEEK and GEN files,
 selector PTRs, and GITPBUF PACK remain protected and read-only.
 Only upload GITREC.C and the standard GITRUN.EXEC; the other
 native programs do not change.
+
+## M39: skip redundant subtree reads during recursive validation
+
+After M38, the depth-aware walker still read, rehashed and
+parsed a referenced subtree as a direct entry, then read,
+rehashed and parsed the same subtree again when descending.
+At any positive remaining depth, M39 skips the first
+redundant body read for tree entries. The existing recursive
+call still independently resolves the indexed OID, validates
+the exact tree type, rehashes the body, parses its entire Git
+binary tree structure and checks every requested descendant.
+Every blob is still validated at its original level; at
+depth zero every referenced subtree is still validated.
+The per-tree 256-entry and shared 1,024-tree budgets and
+fail-closed return codes remain unchanged.
+
+The host integration additionally tests missing and wrong-type
+linked objects in a nested child tree, corruption in a merge
+parent's tree, and the 257-entry root limit, with no partial
+success markers or metadata. Native host CI passed on
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36482019995
+and M39's implementation was squash-merged to main at
+`a359c9c4f72486bf2b69454286d83b1b57123419`.
+
+M39's first real CMS gate is the standard M39-labelled
+GITRUN, which also serves as the first actual M38 LINKBATCH
+target proof. No separate M38 target run is needed if M39
+passes. Use the same two Mac uploads and two CMS commands
+above; successful final marker becomes:
+
+```
+GITRUN M39 ALL READ ONLY NATIVE GIT TESTS PASSED
+```
+
+Do not infer a target performance improvement before
+the actual M39 CMS timing. Existing real target proof ends
+at M37 until the operator runs this new combined gate.
