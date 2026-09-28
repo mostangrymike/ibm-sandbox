@@ -160,3 +160,41 @@ GITRUN
 Expected final marker after a genuine target success:
 `GITRUN M40 ALL READ ONLY NATIVE GIT TESTS PASSED`.
 No protected original generation or pointer is modified.
+
+## M41: fully verified directory listing
+
+`GITREC LSDIRV C0NAME C1NAME COMMIT_OID40 DIRHEX`
+extends the target-proven path walker: after real
+full GEN2 selection and an authenticated commit-to-directory
+path, it checks that *every immediate local directory entry*
+references an independently rehashed object of the expected
+Git blob/tree type. Linked subtrees are additionally parsed
+as complete binary Git trees. Gitlinks represent external
+repositories and are not falsely treated as local objects.
+The existing 256-entry/tree and shared 1024-visit limits
+remain enforced. A missing reference returns RC4, a wrong
+type, invalid subtree, malformed terminal directory or limit
+violation RC8, and *no* verified marker, path metadata or
+directory listing is emitted on failure.
+
+The read-only walker reuses its body buffer for linked
+objects, so LSDIRV explicitly reloads and revalidates the
+selected directory before producing its listing. The old
+LSDIR command retains its original structural-only listing
+semantics; PATH and PATHCAT remain unchanged except for
+M40's terminal-tree validation. Host integration checks a
+valid nested directory and a pair of structurally valid
+directories with respectively missing and wrong-type linked
+blobs; the legacy LSDIR accepts the latter but LSDIRV must
+reject them before any output. A malformed subtree must
+also be rejected without leaking metadata.
+
+M41's ONE compact GITRUN combines M40's terminal-tree
+hardening, M41's positive actual historical `src` directory
+listing and all previously target-proven M39 full audits,
+link batch, negatives, fallback and protection checks.
+Only GITREC.C and GITRUN.EXEC need uploading. The
+expected actual CMS final marker after a real success is
+`GITRUN M41 ALL READ ONLY NATIVE GIT TESTS PASSED`.
+M40 and M41 must remain host-only until the full CI run
+and actual CMS transcript establish the respective results.
