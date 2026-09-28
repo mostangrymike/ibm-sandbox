@@ -413,6 +413,67 @@ static int rec_history(const unsigned char *starting,
  puts("HISTORY DATA END");
  return 0;
 }
+/* M30: numbered parent of a fully verified Git commit.
+ * Parent ordinals are 1 based and include merge's second parent.
+ * Never output a parent OID until its body authenticates.
+ */
+static int rec_parent(const unsigned char *child,
+                      unsigned int ordinal) {
+ unsigned char target[20],tree[20];
+ unsigned long at=46,begin,len,sz;
+ unsigned int found=0;
+ int pos,rc;
+ if(sidx_read()!=0) return 8;
+ pos=sidx_locate(child);
+ if(pos<0) {puts("PARENT CHILD NOT FOUND");return 4;}
+ if(sidx[pos].type!=1) {
+  puts("PARENT CHILD NOT COMMIT");return 8;
+ }
+ sz=sidx[pos].size;
+ sidx_silent=1;
+ rc=sidx_get(child);
+ sidx_silent=0;
+ if(rc!=0) return rc;
+ if(!rec_commit_walk(sz,0)) {
+  puts("PARENT CHILD INVALID");return 8;
+ }
+ while(at<sz) {
+  begin=at;
+  while(at<sz&&idx_body[at]!=0x0a) at++;
+  if(at==sz) return 8;
+  len=at-begin;
+  if(!rec_ascii_key(idx_body+begin,len,"parent")) break;
+  found++;
+  if(found==ordinal) {
+   if(!rec_ascii_oid(idx_body+begin+7,target)) return 8;
+   break;
+  }
+  at++;
+ }
+ if(found<ordinal) {
+  puts("PARENT ORDINAL NOT FOUND");return 4;
+ }
+ pos=sidx_locate(target);
+ if(pos<0) {puts("PARENT OBJECT NOT FOUND");return 4;}
+ if(sidx[pos].type!=1) {
+  puts("PARENT OBJECT NOT COMMIT");return 8;
+ }
+ sz=sidx[pos].size;
+ sidx_silent=1;
+ rc=sidx_get(target);
+ sidx_silent=0;
+ if(rc!=0) return rc;
+ if(!rec_commit_walk(sz,0)) {
+  puts("PARENT OBJECT INVALID");return 8;
+ }
+ if(!rec_ascii_oid(idx_body+5,tree)) return 8;
+ printf("PARENT VERIFIED ORDINAL %u\n",ordinal);
+ fputs("PARENT OID ",stdout);
+ idx_print(stdout,target);putchar('\n');
+ fputs("PARENT TREE ",stdout);
+ idx_print(stdout,tree);putchar('\n');
+ return 0;
+}
 /* M24: follow a commit's authenticated tree in the SAME
  * fully verified generation. Do not expose tree entries if either
  * linked object is missing, mis-typed or structurally invalid.
@@ -595,7 +656,7 @@ int main(int argc,char **argv) {
  unsigned int depth=0;
  unsigned long d;
  int get,full,tree,commit,root,path_command,pathcat;
- int lsdir,firstpar,ancestor,history,rc;
+ int lsdir,firstpar,ancestor,history,parent_cmd,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
@@ -607,8 +668,10 @@ int main(int argc,char **argv) {
  firstpar=argc==5&&strcmp(argv[1],"FIRSTPAR")==0;
  ancestor=argc==6&&strcmp(argv[1],"ANCESTOR")==0;
  history=argc==6&&strcmp(argv[1],"HISTORY")==0;
+ parent_cmd=argc==6&&strcmp(argv[1],"PARENT")==0;
  if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
-     !pathcat&&!lsdir&&!firstpar&&!ancestor&&!history&&
+     !pathcat&&!lsdir&&!firstpar&&!ancestor&&
+     !history&&!parent_cmd&&
      (argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
@@ -624,16 +687,18 @@ int main(int argc,char **argv) {
   puts("GITREC FIRSTPAR C0NAME C1NAME COMMIT_OID40");
   puts("GITREC ANCESTOR C0NAME C1NAME COMMIT_OID40 DEPTH");
   puts("GITREC HISTORY C0NAME C1NAME COMMIT_OID40 DEPTH");
+  puts("GITREC PARENT C0NAME C1NAME COMMIT_OID40 N");
   return 4;
  }
  if((get||full||tree||commit||root||path_command||
-     pathcat||lsdir||firstpar||ancestor||history)&&
+     pathcat||lsdir||firstpar||ancestor||history||
+     parent_cmd)&&
     (strlen(argv[4])!=40||
     !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
   return 4;
  }
- if(ancestor||history) {
+ if(ancestor||history||parent_cmd) {
   if(!argv[5][0]||strlen(argv[5])>2) {
    puts("ANCESTOR DEPTH MUST BE 1 THROUGH 16");return 4;
   }
@@ -665,7 +730,8 @@ int main(int argc,char **argv) {
  rc=selector_choose(&a,&b);
  if(rc!=0||(!get&&!full&&!tree&&!commit&&!root&&
              !path_command&&!pathcat&&!lsdir&&
-             !firstpar&&!ancestor&&!history)) return rc;
+             !firstpar&&!ancestor&&!history&&
+             !parent_cmd)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(tree) return rec_tree(oid);
  if(commit) return rec_commit(oid);
@@ -676,6 +742,7 @@ int main(int argc,char **argv) {
  if(firstpar) return rec_firstpar(oid);
  if(ancestor) return rec_ancestor(oid,depth);
  if(history) return rec_history(oid,depth);
+ if(parent_cmd) return rec_parent(oid,depth);
  if(sidx_read()!=0) return 8;
  sidx_emit_full=full;
  return sidx_get(oid);
