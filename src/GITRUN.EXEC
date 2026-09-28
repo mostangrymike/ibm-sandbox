@@ -1,7 +1,7 @@
-/* M44: compact, read-only native Git CMS target regression. */
+/* M45: compact, read-only native Git CMS target regression. */
 /* PIPE CMS captures diagnostics in memory; no output CMS files. */
 address cms
-say 'GITRUN M44 COMPACT REPORT'
+say 'GITRUN M45 COMPACT REPORT'
 say 'ALL COUNTS REFER TO VERIFIED ORIGINAL 1808 OBJECTS'
 fast='FAST AUDIT VERIFIED 1808 UNIQUE 1808'
 pair='PAIR VERIFIED UNIQUE 1808'
@@ -51,13 +51,16 @@ commit='00D8D63229305230C8D37F884CE87F9E1A89468C'
 parent='2D5038C551318997B865497E04CF4C037DE4135E'
 ptree='F3EF36AAD778D5DA84857D8DED46495C75F4CAB0'
 cmd='GITREC LINKBATCH GITFIX M15NEW' commit
-call gate 'M44 SINGLE AUDIT M35-M37',cmd,0,rootok,deepok,linkok,sel
+call gate 'M45 SINGLE AUDIT M35-M37',cmd,0,rootok,deepok,linkok,sel
 if result \= 0 then exit 12
 cmd='GITREC LSDIRDEPTH GITFIX M15NEW' commit '737263' '1'
-call gate 'M44 SRC DEPTH1',cmd,0,sel,dirv,'TREE DATA END'
+call gate 'M45 SRC DEPTH1',cmd,0,sel,dirv,'TREE DATA END'
+if result \= 0 then exit 12
+cmd='GITREC LSDIRFULL GITFIX M15NEW' commit '737263'
+call gate 'M45 SRC FULL',cmd,0,sel,'DIRECTORY FULL CLOSURE VERIFIED'
 if result \= 0 then exit 12
 cmd='GITREC CLOSURE GITFIX M15NEW' commit
-call gate 'M44 FULL CLOSURE',cmd,0,sel,'FULL ROOT CLOSURE VERIFIED'
+call gate 'M45 FULL CLOSURE',cmd,0,sel,'FULL ROOT CLOSURE VERIFIED'
 if result \= 0 then exit 12
 cmd='GITREC DEPTHLINKS GITFIX M15NEW' commit '5'
 call gate 'INVALID DEPTH',cmd,4,'LINK DEPTH MUST BE 0 THROUGH 4'
@@ -88,7 +91,7 @@ if result \= 0 then exit 12
 call protected
 if result \= 0 then exit 12
 say 'PASS FINAL PROTECTED FILES'
-say 'GITRUN M44 ALL READ ONLY NATIVE GIT TESTS PASSED'
+say 'GITRUN M45 ALL READ ONLY NATIVE GIT TESTS PASSED'
 exit 0
 /* All stage output is held in an in-memory REXX STEM. No dumps. */
 gate:
