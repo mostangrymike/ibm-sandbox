@@ -89,6 +89,18 @@ SECOND_PARENT = FIRST_COMMIT.replace(b"hello\n", b"other\n")
 MERGE2 = MERGE.replace(
     b"parent " + b"1"*40,
     b"parent " + git_oid("commit", SECOND_PARENT).lower().encode("ascii"))
+# M32: all parent commits may be valid while their trees are not.
+MISSING_ROOT_COMMIT = FIRST_COMMIT.replace(
+    git_oid("tree", TREE).lower().encode("ascii"), b"2"*40, 1)
+MISSING_ROOT_MERGE = MERGE2.replace(
+    git_oid("commit", SECOND_PARENT).lower().encode("ascii"),
+    git_oid("commit", MISSING_ROOT_COMMIT).lower().encode("ascii"))
+BLOB_ROOT_MERGE = MERGE2.replace(
+    git_oid("commit", SECOND_PARENT).lower().encode("ascii"),
+    git_oid("commit", BAD_LINK).lower().encode("ascii"))
+MALFORMED_ROOT_MERGE = MERGE2.replace(
+    git_oid("commit", SECOND_PARENT).lower().encode("ascii"),
+    git_oid("commit", BAD_TREE_LINK).lower().encode("ascii"))
 BAD_PARENT = MERGE.replace(b"parent " + b"1"*40,
                            b"parent " + b"Z"*40)
 BAD_COMMIT = FIRST_COMMIT.replace(b"committer ", b"othername ")
@@ -108,7 +120,9 @@ SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
            (3, EMPTY), (3, BINARY), (3, BIG),
            (2, HIST_TREE), (3, HIST_README),
            (1, MISSING_FIRST), (1, BLOB_FIRST), (1, MALFORMED_FIRST),
-           (1, GRANDCHILD), (1, SECOND_PARENT), (1, MERGE2)]
+           (1, GRANDCHILD), (1, SECOND_PARENT), (1, MERGE2),
+           (1, MISSING_ROOT_COMMIT), (1, MISSING_ROOT_MERGE),
+           (1, BLOB_ROOT_MERGE), (1, MALFORMED_ROOT_MERGE)]
 OBJECTS = SAMPLES + [(3, BLOB)] * (1808 - len(SAMPLES))
 
 
@@ -193,7 +207,7 @@ def main():
         (d / "dd:FIDXOUT").rename(d / "dd:FIDXIN")
         run(idx, "GENWRITE", cwd=d)
         (d / "dd:GENOUT").rename(d / "dd:GENIN")
-        assert "GENERATION VERIFIED 1808 UNIQUE 23" in run(idx, "GENCHECK", cwd=d)
+        assert "GENERATION VERIFIED 1808 UNIQUE 27" in run(idx, "GENCHECK", cwd=d)
         digest = (d / "dd:GENIN").read_text().splitlines()[1].split()[1]
         for prefix in ("C0", "C1"):
             for kind, name in (("STG", "STGIN"), ("IDX", "IDXIN"),
@@ -374,6 +388,34 @@ def main():
                           tree_oid, cwd=d, expected=8)
         assert "OBJECT IS NOT A COMMIT" in first_wrong
         assert "FIRST PARENT VERIFIED" not in first_wrong
+        # M32: no parent list until every parent's Git root tree
+        # independently rehashes and parses in the selected generation.
+        roots = run(rec, "PARENTROOTS", "GENOLD", "GENNEW",
+                    git_oid("commit", MERGE2), cwd=d)
+        assert "SELECTED 52 GENNEW" in roots
+        assert "PARENT ROOT TREES VERIFIED" in roots
+        assert "PARENTS COUNT 2" in roots
+        for n, parent_data in ((1, FIRST_COMMIT), (2, SECOND_PARENT)):
+            assert ("PARENTS ORDINAL " + str(n) + " OID "
+                    + git_oid("commit", parent_data)) in roots
+            assert ("PARENTS ORDINAL " + str(n) + " TREE "
+                    + git_oid("tree", TREE)) in roots
+        rootzero = run(rec, "PARENTROOTS", "GENOLD", "GENNEW",
+                       git_oid("commit", FIRST_COMMIT), cwd=d)
+        assert "PARENTS COUNT 0" in rootzero
+        for commit_data, code, reason in (
+                (MISSING_ROOT_MERGE, 4, "PARENT ROOT TREE NOT FOUND"),
+                (BLOB_ROOT_MERGE, 8, "PARENT ROOT OBJECT NOT TREE"),
+                (MALFORMED_ROOT_MERGE, 8, "PARENT ROOT TREE INVALID"),
+                (MERGE, 4, "PARENTS OBJECT NOT FOUND")):
+            bad_roots = run(rec, "PARENTROOTS", "GENOLD", "GENNEW",
+                            git_oid("commit", commit_data), cwd=d,
+                            expected=code)
+            assert reason in bad_roots
+            assert "PARENTS DATA BEGIN" not in bad_roots
+            assert "PARENT ROOT TREES VERIFIED" not in bad_roots
+        assert all(len(line) <= 80 for line in roots.splitlines())
+
         # M31: emit no partial merge-parent list on an invalid link.
         allparents = run(rec, "PARENTS", "GENOLD", "GENNEW",
                          git_oid("commit", MERGE2), cwd=d)
@@ -529,6 +571,10 @@ def main():
                                 git_oid("commit", MERGE2), cwd=d)
         assert "RECOVERED 51 GENOLD" in parents_recovered
         assert "PARENTS COUNT 2" in parents_recovered
+        roots_recovered = run(rec, "PARENTROOTS", "GENOLD", "GENNEW",
+                              git_oid("commit", MERGE2), cwd=d)
+        assert "RECOVERED 51 GENOLD" in roots_recovered
+        assert "PARENT ROOT TREES VERIFIED" in roots_recovered
         assert "HISTORY HOPS 2" in history_recovered
         assert "ANCESTOR OID " + git_oid("commit", FIRST_COMMIT) in ancestor_recovered
         lsroot_recovered = run(rec, "LSROOT", "GENOLD", "GENNEW",
@@ -584,6 +630,10 @@ def main():
                              cwd=d, expected=8)
         assert "NO FULLY VERIFIED GENERATION" in parents_failed
         assert "PARENTS DATA BEGIN" not in parents_failed
+        roots_failed = run(rec, "PARENTROOTS", "GENOLD", "GENNEW",
+                           git_oid("commit", MERGE2), cwd=d, expected=8)
+        assert "NO FULLY VERIFIED GENERATION" in roots_failed
+        assert "PARENTS DATA BEGIN" not in roots_failed
         lsroot_failed = run(rec, "LSROOT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             cwd=d, expected=8)
@@ -629,6 +679,10 @@ def main():
                                git_oid("commit", MERGE2), cwd=d)
         assert "SELECTED 52 GENNEW" in parents_restored
         assert "PARENTS COUNT 2" in parents_restored
+        roots_restored = run(rec, "PARENTROOTS", "GENOLD", "GENNEW",
+                             git_oid("commit", MERGE2), cwd=d)
+        assert "SELECTED 52 GENNEW" in roots_restored
+        assert "PARENT ROOT TREES VERIFIED" in roots_restored
         assert "ANCESTOR OID " + git_oid("commit", FIRST_COMMIT) in ancestor_restored
         final_path = run(rec, "PATH", "GENOLD", "GENNEW",
                          git_oid("commit", FIRST_COMMIT),
