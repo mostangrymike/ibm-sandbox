@@ -301,7 +301,8 @@ static int rec_root(const unsigned char *oid) {
  * Authenticate every linked object before printing any path result.
  */
 static int rec_path(const unsigned char *commit_oid,
-                    const unsigned char *path,unsigned long length) {
+                    const unsigned char *path,unsigned long length,
+                    int contents) {
  unsigned char next[20],found[20];
  unsigned long start=0,end,at,mode_start,mode_len,name_start;
  unsigned long name_len,object_size;
@@ -369,6 +370,9 @@ static int rec_path(const unsigned char *commit_oid,
    continue;
   }
   if(is_gitlink) {
+   if(contents) {
+    puts("PATHCAT REQUIRES A LOCAL BLOB");return 8;
+   }
    puts("PATH GITLINK (EXTERNAL COMMIT)");
    fputs("PATH OID ",stdout);
    idx_print(stdout,found);putchar('\n');
@@ -379,6 +383,9 @@ static int rec_path(const unsigned char *commit_oid,
   if(sidx[pos].type!=expected_type) {
    puts("PATH OBJECT TYPE MISMATCH");return 8;
   }
+  if(contents&&expected_type!=3) {
+   puts("PATHCAT REQUIRES A BLOB");return 8;
+  }
   object_size=sidx[pos].size;
   sidx_silent=1;
   rc=sidx_get(found);
@@ -387,6 +394,16 @@ static int rec_path(const unsigned char *commit_oid,
   printf("PATH OBJECT TYPE %d SIZE %lu OID ",
          expected_type,object_size);
   idx_print(stdout,found);putchar('\n');
+  if(contents) {
+   unsigned long j;
+   puts("PATH DATA BEGIN");
+   for(j=0;j<object_size;j++) {
+    if(j%32==0) fputs("PATH HEX ",stdout);
+    printf("%02X",idx_body[j]);
+    if(j%32==31||j+1==object_size) putchar('\n');
+   }
+   puts("PATH DATA END");
+  }
   return 0;
  }
  return 8;
@@ -420,14 +437,16 @@ int main(int argc,char **argv) {
  struct slot a,b;
  unsigned char oid[20],path[255];
  unsigned long pathlen=0;
- int get,full,tree,commit,root,path_command,rc;
+ int get,full,tree,commit,root,path_command,pathcat,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
  commit=argc==5&&strcmp(argv[1],"COMMIT")==0;
  root=argc==5&&strcmp(argv[1],"LSROOT")==0;
  path_command=argc==6&&strcmp(argv[1],"PATH")==0;
+ pathcat=argc==6&&strcmp(argv[1],"PATHCAT")==0;
  if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
+     !pathcat&&
      (argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
@@ -438,15 +457,17 @@ int main(int argc,char **argv) {
   puts("GITREC COMMIT C0NAME C1NAME OID40");
   puts("GITREC LSROOT C0NAME C1NAME COMMIT_OID40");
   puts("GITREC PATH C0NAME C1NAME COMMIT_OID40 PATHHEX");
+  puts("GITREC PATHCAT C0NAME C1NAME COMMIT_OID40 PATHHEX");
   return 4;
  }
- if((get||full||tree||commit||root||path_command)&&
+ if((get||full||tree||commit||root||path_command||pathcat)&&
     (strlen(argv[4])!=40||
     !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
   return 4;
  }
- if(path_command&&!rec_path_hex(argv[5],path,&pathlen)) {
+ if((path_command||pathcat)&&
+    !rec_path_hex(argv[5],path,&pathlen)) {
   puts("PATH REQUIRES VALID NONEMPTY HEX");return 4;
  }
  rec_expected[0]=argv[2];rec_expected[1]=argv[3];
@@ -459,12 +480,14 @@ int main(int argc,char **argv) {
   puts("SELECTOR SLOT 1 NAME MISMATCH");b.valid=0;
  }
  rc=selector_choose(&a,&b);
- if(rc!=0||(!get&&!full&&!tree&&!commit&&!root&&!path_command)) return rc;
+ if(rc!=0||(!get&&!full&&!tree&&!commit&&!root&&
+             !path_command&&!pathcat)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(tree) return rec_tree(oid);
  if(commit) return rec_commit(oid);
  if(root) return rec_root(oid);
- if(path_command) return rec_path(oid,path,pathlen);
+ if(path_command) return rec_path(oid,path,pathlen,0);
+ if(pathcat) return rec_path(oid,path,pathlen,1);
  if(sidx_read()!=0) return 8;
  sidx_emit_full=full;
  return sidx_get(oid);
