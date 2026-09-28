@@ -824,7 +824,7 @@ static int rec_path(const unsigned char *commit_oid,
    puts("DIRECTORY TREE STRUCTURE INVALID");return 8;
   }
   if(contents==3) puts("DIRECTORY LINKS VERIFIED");
-  printf("PATH OBJECT TYPE %d SIZE %lu OID "
+  printf("PATH OBJECT TYPE %d SIZE %lu OID ",
          expected_type,object_size);
   idx_print(stdout,found);putchar('\n');
   if(contents>=2) {
