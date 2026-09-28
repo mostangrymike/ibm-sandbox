@@ -650,7 +650,11 @@ static int rec_parents(const unsigned char *child,
     rc=rec_root_links(trees[j],link_depth,&budget);
     if(rc!=0) return rc;
    }
-   if(report_depth)
+   if(report_depth==2) {
+    puts("NESTED ROOT LINKS VERIFIED");
+    puts("DEEP ROOT LINKS VERIFIED");
+    puts("LINK DEPTH 2 VERIFIED");
+   } else if(report_depth)
     printf("LINK DEPTH %u VERIFIED\n",link_depth);
    else if(link_depth>1)
     puts("DEEP ROOT LINKS VERIFIED");
@@ -856,7 +860,8 @@ int main(int argc,char **argv) {
  int get,full,tree,commit,root,path_command,pathcat;
  int lsdir,firstpar,ancestor,history,parent_cmd,parents_cmd;
  int roots_cmd,commitroots_cmd,linkroots_cmd;
- int nestedlinks_cmd,deeplinks_cmd,depthlinks_cmd,rc;
+ int nestedlinks_cmd,deeplinks_cmd,depthlinks_cmd;
+ int linkbatch_cmd,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
@@ -876,12 +881,13 @@ int main(int argc,char **argv) {
  nestedlinks_cmd=argc==5&&strcmp(argv[1],"NESTLINKS")==0;
  deeplinks_cmd=argc==5&&strcmp(argv[1],"DEEPLINKS")==0;
  depthlinks_cmd=argc==6&&strcmp(argv[1],"DEPTHLINKS")==0;
+ linkbatch_cmd=argc==5&&strcmp(argv[1],"LINKBATCH")==0;
  if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
      !pathcat&&!lsdir&&!firstpar&&!ancestor&&
      !history&&!parent_cmd&&!parents_cmd&&
      !roots_cmd&&!commitroots_cmd&&!linkroots_cmd&&
      !nestedlinks_cmd&&!deeplinks_cmd&&
-     !depthlinks_cmd&&
+     !depthlinks_cmd&&!linkbatch_cmd&&
      (argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
@@ -905,13 +911,14 @@ int main(int argc,char **argv) {
   puts("GITREC NESTLINKS C0NAME C1NAME COMMIT_OID40");
   puts("GITREC DEEPLINKS C0NAME C1NAME COMMIT_OID40");
   puts("GITREC DEPTHLINKS C0 C1 COMMIT_OID40 DEPTH");
+  puts("GITREC LINKBATCH C0 C1 COMMIT_OID40");
   return 4;
  }
  if((get||full||tree||commit||root||path_command||
      pathcat||lsdir||firstpar||ancestor||history||
      parent_cmd||parents_cmd||roots_cmd||
      commitroots_cmd||linkroots_cmd||nestedlinks_cmd||
-     deeplinks_cmd||depthlinks_cmd)&&
+     deeplinks_cmd||depthlinks_cmd||linkbatch_cmd)&&
     (strlen(argv[4])!=40||
     !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
@@ -960,7 +967,7 @@ int main(int argc,char **argv) {
              !parent_cmd&&!parents_cmd&&!roots_cmd&&
              !commitroots_cmd&&!linkroots_cmd&&
              !nestedlinks_cmd&&!deeplinks_cmd&&
-             !depthlinks_cmd)) return rc;
+             !depthlinks_cmd&&!linkbatch_cmd)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(tree) return rec_tree(oid);
  if(commit) return rec_commit(oid);
@@ -979,6 +986,7 @@ int main(int argc,char **argv) {
  if(nestedlinks_cmd) return rec_parents(oid,1,1,1,1,0);
  if(deeplinks_cmd) return rec_parents(oid,1,1,1,2,0);
  if(depthlinks_cmd) return rec_parents(oid,1,1,1,depth,1);
+ if(linkbatch_cmd) return rec_parents(oid,1,1,1,2,2);
  if(sidx_read()!=0) return 8;
  sidx_emit_full=full;
  return sidx_get(oid);
