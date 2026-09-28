@@ -2882,3 +2882,97 @@ seek/gen or selectors. GitHub M24 does not
 run obsolete TLS cleanup or disk repairs.
 Always test through GITRUN, no GITRCHK
 or separate manual FILEDEF command wall.
+
+## September 28 10:01–10:07: M24 CMS PASS; M25 host complete
+
+User successfully compiled M24 GITREC with CMSCLNK
+GITREC PLAIN (no assembler warnings, T=7.08/7.36)
+and executed one standard GITRUN M24 on actual
+CMS. Both GITFIX and M15NEW each fully GEN2
+audited 1808 unique objects. Selected seq52
+M15NEW digest
+493F0896884B28AC4836B88328629B7E95404B46.
+LSROOT of canonical first commit
+00D8D63229305230C8D37F884CE87F9E1A89468C
+returned the actual 4-entry Git tree (RC0).
+PATH README.md gave Git blob type3 size567 SHA1
+1BA7AE466BB0A16C294D52A8642E527B07D4D1F5.
+Nested PATH docs/STATUS.md gave blob type3
+size5737 SHA1
+46135A22C7394D8090619C6C70453C58A24F5239.
+Wrong-type LSROOT RC8, missing path RC4,
+non-tree intermediate RC8; missing newer
+manifest recovered seq51 GITFIX (RC0),
+both absent failed closed RC8, restoration
+selected seq52 and authenticated nested blob
+(RC0); protected generation/selector/PACK
+STATE rechecks passed. Exact final line:
+GITRUN M24 ALL READ ONLY NATIVE GIT TESTS PASSED
+Ready; T=239.20/240.98 10:07:02.
+The missing M15BAD GEN / C0GEN/C1GEN messages
+were intentional negative-test fixtures.
+M24 is now NATIVE CMS TARGET-PROVEN.
+
+Without waiting for another "proceed" prompt,
+implemented M25 GitHub source and native strict
+host regressions. New production GITREC PATHCAT
+C0NAME C1NAME COMMIT_OID40 PATHHEX traverses the
+same fully authenticated linked commit and
+nested tree path as target-proven PATH,
+independently verifies full final blob SHA1
+and only then emits PATH OBJECT TYPE/SIZE/OID
+and framed PATH DATA BEGIN/END with 32 body
+bytes per PATH HEX line (empty blobs have none).
+Missing, wrong-type, malformed path, tree
+instead of blob, gitlink instead of blob and
+unavailable candidate fail closed without
+disclosing PATH DATA. All operations are
+read-only and preserve target 65536 object cap.
+
+tests/test-native-tree.py now additionally
+roundtrips ASCII, nested, empty, 257-byte
+binary with NUL/high bytes and max 65536-byte
+binary through the actual compiled C89 native
+GITREC, verifies older fallback/both absent/
+restoration. Pinned exact immutable original
+README blob at
+tests/fixtures/first-commit-README.md
+(567 bytes SHA1
+1BA7AE466BB0A16C294D52A8642E527B07D4D1F5).
+Synthetic host stage includes independent
+reconstruction of the original four-entry root
+tree (SHA1 204E1D6968FB81C35BF830D63A611AC64C072945)
+and the exact previously captured 270-byte
+original commit, then byte-for-byte verifies
+historical README via LSROOT and PATHCAT.
+All expanded CI passed, including read-only
+GITRUN source guard:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36441754586
+
+Single standard src/GITRUN.EXEC is now M25
+read-only CMS batch, with independent full
+GENCHECK for both originals, seq52 selection,
+PATHCAT real README.md 567 bytes and nested
+docs/STATUS.md 5737 bytes, reject tree/missing/
+non-tree intermediate cases, recover seq51
+when newer GEN2 unavailable, reject both
+unavailable RC8, restore seq52 with README
+full output, final all protected file checks.
+No persistent writes. GITCIDX.C and GITSEL.C
+unchanged. M25 CMS runtime still PENDING and
+must not be claimed passed before target output.
+
+USER'S PERMANENT WORKFLOW: Continue GitHub
+development autonomously until a genuine CMS
+test is required. Run every CMS test via standard
+GITRUN, not ad hoc commands or GITRCHK.
+From Mac prompt ibm-sandbox/src:
+ git pull
+ ./cms-upload.sh GITREC.C
+ ./cms-upload.sh GITRUN.EXEC
+Then on CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+No need to upload unchanged GITCIDX/GITSEL or
+rebuild protected stage/index/seek/manifests
+or run historical TLS cleanup.
