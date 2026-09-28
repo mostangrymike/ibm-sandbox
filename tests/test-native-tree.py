@@ -224,6 +224,26 @@ CHAIN_WRONG_COMMIT = FIRST_COMMIT.replace(
 CHAIN_MISSING_PARENT = MERGE2.replace(
     git_oid("commit", SECOND_PARENT).lower().encode("ascii"),
     git_oid("commit", CHAIN_MISSING_COMMIT).lower().encode("ascii"))
+# Exact M44 1024-tree-visit budget boundary.
+BUDGET_TREES = []
+budget_leaf = SUBTREE
+for budget_n in range(1023):
+    budget_leaf = (b"40000 b" + str(budget_n).encode("ascii")
+                   + b"\x00"
+                   + bytes.fromhex(git_oid("tree", budget_leaf)))
+    BUDGET_TREES.append(budget_leaf)
+BUDGET_ROOT_OK = TREE.replace(
+    bytes.fromhex(git_oid("tree", SUBTREE)),
+    bytes.fromhex(git_oid("tree", BUDGET_TREES[1021])), 1)
+BUDGET_ROOT_OVER = TREE.replace(
+    bytes.fromhex(git_oid("tree", SUBTREE)),
+    bytes.fromhex(git_oid("tree", BUDGET_TREES[1022])), 1)
+BUDGET_COMMIT_OK = FIRST_COMMIT.replace(
+    git_oid("tree", TREE).lower().encode("ascii"),
+    git_oid("tree", BUDGET_ROOT_OK).lower().encode("ascii"))
+BUDGET_COMMIT_OVER = FIRST_COMMIT.replace(
+    git_oid("tree", TREE).lower().encode("ascii"),
+    git_oid("tree", BUDGET_ROOT_OVER).lower().encode("ascii"))
 # M37: third-level missing/wrong links remain valid at depths 0-2.
 LEVEL3_GOOD = (b"40000 next\x00"
                + bytes.fromhex(git_oid("tree", DEEP_GOOD)))
@@ -297,6 +317,9 @@ SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
            (2, LEVEL3_ROOT_MISSING), (2, LEVEL3_ROOT_WRONG),
            (1, LEVEL3_COMMIT_GOOD), (1, LEVEL3_COMMIT_MISSING),
            (1, LEVEL3_COMMIT_WRONG), (1, LEVEL3_PARENT_MERGE)]
+SAMPLES.extend((2, tree) for tree in BUDGET_TREES)
+SAMPLES.extend([(2, BUDGET_ROOT_OK), (2, BUDGET_ROOT_OVER),
+                (1, BUDGET_COMMIT_OK), (1, BUDGET_COMMIT_OVER)])
 SAMPLES.extend(
     [(2, tree) for group in (CHAIN_GOOD, CHAIN_MISSING,
                             CHAIN_WRONG) for tree in group])
@@ -726,6 +749,20 @@ def main():
             assert marker in broken
             assert "FULL ROOT CLOSURE VERIFIED" not in broken
             assert "PARENTS DATA BEGIN" not in broken
+        # M44 resource boundary: root plus 1022 nested trees
+        # plus the final SUBTREE uses exactly 1024 visits.
+        exact_budget = run(rec, "CLOSURE", "GENOLD", "GENNEW",
+                           git_oid("commit", BUDGET_COMMIT_OK),
+                           cwd=d)
+        assert "FULL ROOT CLOSURE VERIFIED" in exact_budget
+        assert "PARENTS COUNT 0" in exact_budget
+        # One additional visited tree exceeds the shared budget.
+        exhausted = run(rec, "CLOSURE", "GENOLD", "GENNEW",
+                        git_oid("commit", BUDGET_COMMIT_OVER),
+                        cwd=d, expected=8)
+        assert "NESTED LINK BUDGET EXCEEDED" in exhausted
+        assert "FULL ROOT CLOSURE VERIFIED" not in exhausted
+        assert "PARENTS DATA BEGIN" not in exhausted
         too_many = run(rec, "CLOSURE", "GENOLD", "GENNEW",
                        git_oid("commit", GITLINK_257_COMMIT),
                        cwd=d, expected=8)
