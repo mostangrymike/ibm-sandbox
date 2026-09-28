@@ -880,3 +880,64 @@ C89 tests and read-only compact GITRUN guards
 passed:
 https://github.com/mostangrymike/ibm-sandbox/actions/runs/36451606606
 M28 is not yet proven on CMS.
+
+## M28 target pass and M29 atomic first-parent history
+
+M28 was successfully compiled on live CMS after
+fixing the prior over-72-column source truncation
+and adding the permanent CMS compiler line-width
+CI guard. On September 28, the standard compact
+`GITRUN M28` returned full success: both original
+1,808-object generations independently verified,
+M15NEW seq52 selected, the historical first
+and second parent commits authenticated
+(ANCESTOR depth1 and depth2 RC0), invalid
+depth returned RC4, wrong-type input RC8,
+seq51 older-generation fallback RC0, both
+manifests missing RC8, seq52 restoration RC0,
+and all protected files present. Exact final
+target marker:
+`GITRUN M28 ALL READ ONLY NATIVE GIT TESTS PASSED`,
+T=172.80/173.94. Its output remained one page.
+
+M29 adds `GITREC HISTORY C0NAME C1NAME
+COMMIT_OID40 DEPTH`, a bounded read-only
+first-parent history listing. DEPTH is the
+number of parent hops, strictly 1–16.
+This reads and independently SHA1-verifies
+each commit's raw Git object in the SAME fully
+audited selected generation; it validates
+every entire commit header before following
+a parent. The implementation stores all
+traversed OIDs and tree IDs in fixed C89
+arrays, so it prints no history records
+until ALL requested hops have verified.
+On success it emits framed HISTORY DATA
+with one HOP number, OID and tree OID per
+commit, including the starting commit.
+Root reached early or missing links return
+RC4; corrupt or wrong-type links RC8.
+No stage, index, manifest, pointer or PACK
+is written.
+
+Compiled native C89 host tests include
+a synthetic grandchild/merge/root chain;
+two-hop byte-exact history, depth bounds,
+exhausted root, missing and corrupt
+intermediate parents, full seq51 fallback,
+both-generations invalid failure and
+seq52 restored history, along with all
+prior regression coverage. M29's single
+standard compact `GITRUN` tests the
+actual original first commit and its first
+two parents, historic OIDs and tree IDs,
+invalid depth RC4, non-commit RC8,
+fallback, fail-closed and restoration.
+Original full GENCHECK and before/after
+protected-file STATE checks are retained,
+with only an approximately one-page
+PASS/FAIL output. All host CI and the
+read-only source guard passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36463930319 .
+M29 requires a real CMS compile and GITRUN
+before target success can be claimed.
