@@ -3118,3 +3118,50 @@ No target recompile or GITREC.C upload necessary.
 Always use standard GITRUN for subsequent
 CMS tests; keep compact output pattern by
 default and no need for giant logs.
+
+## September 28 10:51 — compact M26Q false failure fixed in M26Q2
+
+User ran initial compact standard GITRUN M26Q on
+actual CMS. In-memory PIPE capture worked:
+GITFIX GENCHECK returned PIPE RC0 and all
+required FAST AUDIT 1808, PAIR 1808,
+GENERATION VERIFIED 1808 output markers were
+seen (MARKERS 1 1 1 1), final diagnostic tail
+was captured correctly (10 lines total).
+However, REXX multi-line CALL syntax joined
+the expected numeric RC and subsequent marker
+text into a single expected argument, making
+the GITFIX full audit wrongly report FAIL and
+abort RC12. This is solely a compact EXEC
+harness formatting defect, not a Git store
+or GENCHECK failure.
+
+GitHub src/GITRUN.EXEC updated to M26Q2:
+defines short expected output marker variables
+at top and invokes EVERY CALL gate with all
+arguments on exactly ONE physical line,
+avoiding REXX trailing-comma continuation.
+It retains in-memory PIPE CMS ... | STEM out.,
+the full independent audits, real docs directory
+2-entry exact OID checks, negative RC cases,
+seq51 recovery, both absent fail-closed, seq52
+restore and pre/post protected STATE checks.
+tests/check-readonly-gitrchk.sh fully corrected,
+now rejects split CALL gate lines and persistent
+CMS write commands. Entire full native host CI
+PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36447522308 .
+The M26Q2 compact runner is NOT yet target
+proven; actual CMS run may reveal PIPE CMS
+stage return-code propagation nuances on
+negative cases. Keep feedback within one page
+on success and last 4 diagnostics on failure.
+
+Next MAC commands from ibm-sandbox/src:
+ git pull
+ ./cms-upload.sh GITRUN.EXEC
+Next CMS command:
+ GITRUN
+No GITREC or GITCIDX recompile/upload is needed;
+M26's compiled module itself is already real
+target-proven. NEVER run old cleanup GITRUN.
