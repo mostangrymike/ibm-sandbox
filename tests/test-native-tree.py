@@ -371,11 +371,11 @@ def main():
         assert "OBJECT IS NOT A COMMIT" in first_wrong
         assert "FIRST PARENT VERIFIED" not in first_wrong
         # M28: full first-parent ancestry chain, no partial output.
-        for d, obj in ((1, MERGE), (2, FIRST_COMMIT)):
+        for depth, obj in ((1, MERGE), (2, FIRST_COMMIT)):
             history = run(rec, "ANCESTOR", "GENOLD", "GENNEW",
                           git_oid("commit", GRANDCHILD),
-                          str(d), cwd=disk)
-            assert "ANCESTOR VERIFIED DEPTH " + str(d) in history
+                          str(depth), cwd=disk)
+            assert "ANCESTOR VERIFIED DEPTH " + str(depth) in history
             assert "ANCESTOR OID " + git_oid("commit", obj) in history
             assert "ANCESTOR TREE " + git_oid("tree", TREE) in history
         exhausted = run(rec, "ANCESTOR", "GENOLD", "GENNEW",
