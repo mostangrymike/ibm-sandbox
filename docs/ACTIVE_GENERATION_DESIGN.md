@@ -452,3 +452,67 @@ protected files. No ERASE/COPYFILE, persistent
 index/manifest writes or selector writes.
 This new batch's native CMS target execution
 is PENDING, not yet claimed passed.
+
+## September 28 M22 target-proven; M23 structured commit reader
+
+M22 `CMSCLNK GITREC PLAIN` compiled with no assembler
+warnings and the standard M22 `GITRUN` completed
+successfully on real z/VM CMS on September 28 at
+09:28 (T=172.16/173.64). Both GITFIX and M15NEW
+passed full 1,808-object native GENCHECK, selected
+seq52 M15NEW, decoded actual first-commit tree
+204E1D6968FB81C35BF830D63A611AC64C072945
+with four entries: CHAT_STATE.md, README.md, docs
+and src; rejected non-tree commit (RC8), recovered
+seq51 GITFIX when newer GEN2 was absent, refused
+both missing GEN2s (RC8), and reselected seq52
+after restoring full input mappings. Final all
+protected-file checks passed. Git's raw ASCII
+modes and delimiters are decoded using explicit
+0x20, 0x2f and mode-digit byte values, avoiding
+the earlier CMS EBCDIC comparison bug.
+
+M23 introduces
+`GITREC COMMIT C0NAME C1NAME OID40` in actual
+production C89 source. Like TREE and CATHEX, it
+first audits and authenticates the entire selected
+generation (GEN2, SFAST, PAIR), uses the selected
+generation's direct seek index, rehashes the
+requested whole Git commit object and only then
+parses the binary header. All Git on-disk OID
+digits, line endings and header names are tested
+as explicit ASCII bytes, not CMS-native C text.
+It validates exactly one first `tree` OID,
+zero or more contiguous parent OIDs, author and
+committer headers, the blank separator, normal
+Git header keys and optional folded header lines.
+No metadata is printed until the complete header
+is validated. The output contains COMMIT DATA
+BEGIN/END, TREE OID, every PARENT OID, parent
+count, and message byte count. It does not
+materialize the commit message or claim all
+parent/tree dependencies are locally available.
+
+M23 host regressions added a valid synthetic
+root commit, two-parent merge, invalid parent,
+missing committer and a not-commit negative
+fixture to the actual 1,808-record native stage.
+They verify the production compiled C89 source,
+correct metadata, no parsed output on malformed
+content, selected-generation fallback and
+both-invalid fail-closed behavior.
+Full native CI passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36436943632 .
+
+The one reusable standard `src/GITRUN.EXEC`
+now contains M23's read-only CMS gate against
+the already protected original GITFIX and
+M15NEW. It tests the real first commit
+00D8D63229305230C8D37F884CE87F9E1A89468C
+and independently its actual root tree, rejects
+a non-commit tree (RC8), verifies older-seal
+fallback for COMMIT, both unavailable (RC8)
+and intact restoration. No stage, index,
+manifest, selector or PACK files are written.
+This new COMMIT mode is HOST-PROVEN, awaiting
+real CMS execution via standard GITRUN.
