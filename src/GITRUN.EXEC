@@ -1,132 +1,143 @@
-/* M26: read-only post-incident native Git CMS regression batch. */
-/* No erase, copy, index write, manifest write or pointer write. */
+/* M26Q: compact, read-only native Git CMS target regression. */
+/* PIPE CMS captures diagnostics in memory; no output CMS files. */
 address cms
-say 'GITRUN M26 READ ONLY NATIVE GIT REGRESSION'
-say 'VERIFY ALL PROTECTED ORIGINAL FILES'
-do i=1 to 4
- typ=word('STAGE INDEX SEEK GEN',i)
- 'STATE GITFIX' typ 'A'
- if rc \= 0 then exit 12
- 'STATE M15NEW' typ 'A'
- if rc \= 0 then exit 12
-end
-do i=0 to 1
- name='GITSEL'||i
- 'STATE' name 'PTR A'
- if rc \= 0 then exit 12
- name='M15SL'||i
- 'STATE' name 'PTR A'
- if rc \= 0 then exit 12
-end
-'STATE GITPBUF PACK A'
-if rc \= 0 then exit 12
-'STATE GITCIDX MODULE A'
-if rc \= 0 then exit 12
-'STATE GITREC MODULE A'
-if rc \= 0 then exit 12
-'STATE M15BAD GEN A'
+say 'GITRUN M26Q COMPACT REPORT'
+say 'ALL COUNTS REFER TO VERIFIED ORIGINAL 1808 OBJECTS'
+call protected
+if result \= 0 then exit 12
+'PIPE CMS STATE M15BAD GEN A | STEM out.'
 if rc \= 28 then do
- say 'STOP: M15BAD GEN EXISTS; DO NOT REBIND IT'
+ say 'FAIL ABSENT M15BAD GEN EXPECTED RC28 GOT' rc
  exit 12
 end
-say 'INDEPENDENT POST-INCIDENT SEALED GENERATION AUDITS'
+say 'PASS PROTECTED FILES AND ABSENT TEST MANIFEST'
 do i=1 to 2
  name=word('GITFIX M15NEW',i)
  'FILEDEF STGIN DISK' name 'STAGE A'
- if rc \= 0 then exit rc
+ if rc \= 0 then exit 12
  'FILEDEF IDXIN DISK' name 'INDEX A'
- if rc \= 0 then exit rc
+ if rc \= 0 then exit 12
  'FILEDEF FIDXIN DISK' name 'SEEK A'
- if rc \= 0 then exit rc
+ if rc \= 0 then exit 12
  'FILEDEF GENIN DISK' name 'GEN A'
- if rc \= 0 then exit rc
- say 'GENCHECK' name
- 'GITCIDX GENCHECK'
- test=rc
- say 'GENCHECK RC' test
- if test \= 0 then exit 12
+ if rc \= 0 then exit 12
+ call verify name 'FULL AUDIT','GITCIDX GENCHECK',0,,
+   'FAST AUDIT VERIFIED 1808 UNIQUE 1808',,
+   'PAIR VERIFIED UNIQUE 1808',,
+   'GENERATION VERIFIED 1808 UNIQUE 1808'
+ if result \= 0 then exit 12
 end
-say 'BIND TWO EXISTING SELECTORS AND GENERATIONS'
 'FILEDEF SEL0 DISK M15SL0 PTR A'
-if rc \= 0 then exit rc
+if rc \= 0 then exit 12
 'FILEDEF SEL1 DISK M15SL1 PTR A'
-if rc \= 0 then exit rc
+if rc \= 0 then exit 12
 do i=1 to 4
  typ=word('STAGE INDEX SEEK GEN',i)
  dd=word('C0STG C0IDX C0SEEK C0GEN',i)
  'FILEDEF' dd 'DISK GITFIX' typ 'A'
- if rc \= 0 then exit rc
+ if rc \= 0 then exit 12
  dd=word('C1STG C1IDX C1SEEK C1GEN',i)
  'FILEDEF' dd 'DISK M15NEW' typ 'A'
- if rc \= 0 then exit rc
+ if rc \= 0 then exit 12
 end
-say 'CASE 1: SELECT FULLY VERIFIED GENERATION'
-'GITREC SELECT GITFIX M15NEW'
-test=rc
-say 'SELECT RC' test
-if test \= 0 then exit 12
+call verify 'SELECT SEQ52','GITREC SELECT GITFIX M15NEW',0,,
+ 'SELECTED 52 M15NEW',,'GENERATION VERIFIED 1808 UNIQUE 1808'
+if result \= 0 then exit 12
 commit='00D8D63229305230C8D37F884CE87F9E1A89468C'
 docs='646F6373'
-say 'CASE 2: LIST VERIFIED NESTED DOCS DIRECTORY'
-'GITREC LSDIR GITFIX M15NEW' commit docs
-test=rc
-say 'DOCS LSDIR RC' test
-if test \= 0 then exit 12
-say 'CASE 3: REJECT BLOB AS A DIRECTORY'
-'GITREC LSDIR GITFIX M15NEW' commit '524541444D452E6D64'
-test=rc
-say 'BLOB LSDIR RC' test
-if test \= 8 then exit 12
-say 'CASE 4: MISSING DIRECTORY MUST RETURN RC4'
-'GITREC LSDIR GITFIX M15NEW' commit '4E4F5045'
-test=rc
-say 'MISSING LSDIR RC' test
-if test \= 4 then exit 12
-say 'CASE 5: NON TREE INTERMEDIATE MUST RETURN RC8'
-'GITREC LSDIR GITFIX M15NEW' commit '524541444D452E6D642F78'
-test=rc
-say 'NON TREE LSDIR RC' test
-if test \= 8 then exit 12
-say 'CASE 6: NEWER GEN MISSING; FALL BACK TO OLD'
+cmd='GITREC LSDIR GITFIX M15NEW' commit docs
+call verify 'DOCS HAS TWO VERIFIED ENTRIES',cmd,0,,
+ 'SELECTED 52 M15NEW',,'TREE ENTRIES 2',,
+ 'D4BE895844FECE160E31411ABB2ECDD6ACAECC17',,
+ '46135A22C7394D8090619C6C70453C58A24F5239'
+if result \= 0 then exit 12
+cmd='GITREC LSDIR GITFIX M15NEW' commit '524541444D452E6D64'
+call verify 'BLOB IS NOT DIRECTORY',cmd,8,,
+ 'LSDIR REQUIRES A TREE'
+if result \= 0 then exit 12
+cmd='GITREC LSDIR GITFIX M15NEW' commit '4E4F5045'
+call verify 'MISSING DIRECTORY',cmd,4,,'PATH NOT FOUND'
+if result \= 0 then exit 12
+cmd='GITREC LSDIR GITFIX M15NEW' commit '524541444D452E6D642F78'
+call verify 'NON TREE INTERMEDIATE',cmd,8,,
+ 'PATH COMPONENT NOT A TREE'
+if result \= 0 then exit 12
 'FILEDEF C1GEN DISK M15BAD GEN A'
-if rc \= 0 then exit rc
-'GITREC LSDIR GITFIX M15NEW' commit docs
-test=rc
-say 'FALLBACK LSDIR RC' test
-if test \= 0 then exit 12
-say 'CASE 7: BOTH GEN MISSING MUST FAIL CLOSED'
-'FILEDEF C0GEN DISK M15BAD GEN A'
-if rc \= 0 then exit rc
-'GITREC LSDIR GITFIX M15NEW' commit docs
-test=rc
-say 'BOTH MISSING LSDIR RC' test
-if test \= 8 then exit 12
-say 'CASE 8: RESTORE BOTH VERIFIED INPUTS'
-'FILEDEF C0GEN DISK GITFIX GEN A'
-if rc \= 0 then exit rc
-'FILEDEF C1GEN DISK M15NEW GEN A'
-if rc \= 0 then exit rc
-'GITREC LSDIR GITFIX M15NEW' commit docs
-test=rc
-say 'RESTORED LSDIR RC' test
-if test \= 0 then exit 12
-say 'FINAL VERIFY PROTECTED GENERATIONS AND SELECTORS'
-do i=1 to 4
- typ=word('STAGE INDEX SEEK GEN',i)
- 'STATE GITFIX' typ 'A'
- if rc \= 0 then exit 12
- 'STATE M15NEW' typ 'A'
- if rc \= 0 then exit 12
-end
-do i=0 to 1
- name='GITSEL'||i
- 'STATE' name 'PTR A'
- if rc \= 0 then exit 12
- name='M15SL'||i
- 'STATE' name 'PTR A'
- if rc \= 0 then exit 12
-end
-'STATE GITPBUF PACK A'
 if rc \= 0 then exit 12
-say 'GITRUN M26 ALL READ ONLY NATIVE GIT TESTS PASSED'
+cmd='GITREC LSDIR GITFIX M15NEW' commit docs
+call verify 'RECOVERED SEQ51',cmd,0,,
+ 'RECOVERED 51 GITFIX',,'TREE ENTRIES 2'
+if result \= 0 then exit 12
+'FILEDEF C0GEN DISK M15BAD GEN A'
+if rc \= 0 then exit 12
+call verify 'BOTH INVALID FAIL CLOSED',cmd,8,,
+ 'NO FULLY VERIFIED GENERATION'
+if result \= 0 then exit 12
+'FILEDEF C0GEN DISK GITFIX GEN A'
+if rc \= 0 then exit 12
+'FILEDEF C1GEN DISK M15NEW GEN A'
+if rc \= 0 then exit 12
+call verify 'RESTORED SEQ52',cmd,0,,
+ 'SELECTED 52 M15NEW',,'TREE ENTRIES 2'
+if result \= 0 then exit 12
+call protected
+if result \= 0 then exit 12
+say 'PASS FINAL PROTECTED FILES'
+say 'GITRUN M26Q ALL READ ONLY NATIVE GIT TESTS PASSED'
 exit 0
+/* All stage output is held in an in-memory REXX STEM. No dumps. */
+verify:
+ parse arg label,cmd,expected,needle1,needle2,needle3,needle4
+ out.0=0
+ 'PIPE CMS' cmd '| STEM out.'
+ got=rc
+ hits1=(needle1='')
+ hits2=(needle2='')
+ hits3=(needle3='')
+ hits4=(needle4='')
+ do n=1 to out.0
+  line=out.n
+  if needle1 \= '' then
+   if pos(needle1,line)>0 then hits1=1
+  if needle2 \= '' then
+   if pos(needle2,line)>0 then hits2=1
+  if needle3 \= '' then
+   if pos(needle3,line)>0 then hits3=1
+  if needle4 \= '' then
+   if pos(needle4,line)>0 then hits4=1
+ end
+ if got \= expected|\hits1|\hits2|\hits3|\hits4 then do
+  say 'FAIL' label 'RC' got 'EXPECTED' expected
+  say 'MARKERS' hits1 hits2 hits3 hits4
+  do n=1 to min(out.0,4)
+   say 'DIAG' out.n
+  end
+  if out.0>4 then say 'DIAG' out.0 'LINES CAPTURED'
+  return 12
+ end
+ say 'PASS' label 'RC' got
+ return 0
+/* Only read-only CMS STATE commands. The historical M15BAD is separate. */
+protected:
+ do p=1 to 4
+  typ=word('STAGE INDEX SEEK GEN',p)
+  'STATE GITFIX' typ 'A'
+  if rc \= 0 then return 12
+  'STATE M15NEW' typ 'A'
+  if rc \= 0 then return 12
+ end
+ do p=0 to 1
+  name='GITSEL'||p
+  'STATE' name 'PTR A'
+  if rc \= 0 then return 12
+  name='M15SL'||p
+  'STATE' name 'PTR A'
+  if rc \= 0 then return 12
+ end
+ 'STATE GITPBUF PACK A'
+ if rc \= 0 then return 12
+ 'STATE GITCIDX MODULE A'
+ if rc \= 0 then return 12
+ 'STATE GITREC MODULE A'
+ if rc \= 0 then return 12
+ return 0
