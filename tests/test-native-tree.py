@@ -39,6 +39,22 @@ ENTRIES = [
 TREE = b"".join(mode + b" " + name + b"\x00" + oid
                 for mode, name, oid in ENTRIES)
 MALFORMED = b"100644 good-name\x00" + BLOB_OID + b"100644 truncated\x00" + b"\x01"
+# Exact historical first-commit root-tree record and README blob.
+# This is a pinned immutable Git object, never the current main branch.
+HIST_README = (ROOT / "tests/fixtures/first-commit-README.md").read_bytes()
+HIST_ENTRIES = [
+    (b"100644", b"CHAT_STATE.md",
+     bytes.fromhex("6DC1BFE370142E89C2DB239E12BA08A565C2CC62")),
+    (b"100644", b"README.md",
+     bytes.fromhex("1BA7AE466BB0A16C294D52A8642E527B07D4D1F5")),
+    (b"40000", b"docs",
+     bytes.fromhex("980E3417BEF3170BF6CCEDFECEB81EDF1C830477")),
+    (b"40000", b"src",
+     bytes.fromhex("A41B3EA7758F301B7E30BD3CFDF264300C02AE35")),
+]
+HIST_TREE = b"".join(m + b" " + n + b"\x00" + oid
+                     for m, n, oid in HIST_ENTRIES)
+
 FIRST_COMMIT = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
         + b"\nauthor A <a@b> 123 +0000\n"
         + b"committer A <a@b> 123 +0000\n\nhello\n")
@@ -72,7 +88,8 @@ SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
            (2, SUBTREE), (3, BLOB),
            (1, FIRST_COMMIT), (1, MERGE), (1, BAD_PARENT), (1, BAD_COMMIT),
            (1, REAL_COMMIT), (1, BAD_LINK), (1, BAD_TREE_LINK),
-           (3, EMPTY), (3, BINARY), (3, BIG)]
+           (3, EMPTY), (3, BINARY), (3, BIG),
+           (2, HIST_TREE), (3, HIST_README)]
 OBJECTS = SAMPLES + [(3, BLOB)] * (1808 - len(SAMPLES))
 
 
@@ -156,7 +173,7 @@ def main():
         (d / "dd:FIDXOUT").rename(d / "dd:FIDXIN")
         run(idx, "GENWRITE", cwd=d)
         (d / "dd:GENOUT").rename(d / "dd:GENIN")
-        assert "GENERATION VERIFIED 1808 UNIQUE 15" in run(idx, "GENCHECK", cwd=d)
+        assert "GENERATION VERIFIED 1808 UNIQUE 17" in run(idx, "GENCHECK", cwd=d)
         digest = (d / "dd:GENIN").read_text().splitlines()[1].split()[1]
         for prefix in ("C0", "C1"):
             for kind, name in (("STG", "STGIN"), ("IDX", "IDXIN"),
@@ -172,10 +189,19 @@ def main():
         lsroot = run(rec, "LSROOT", "GENOLD", "GENNEW",
                      git_oid("commit", FIRST_COMMIT), cwd=d)
         verify_tree(lsroot, "SELECTED 52 GENNEW", ENTRIES)
+        assert len(HIST_README) == 567
+        assert git_oid("blob", HIST_README) == (
+            "1BA7AE466BB0A16C294D52A8642E527B07D4D1F5")
+        assert git_oid("tree", HIST_TREE) == (
+            "204E1D6968FB81C35BF830D63A611AC64C072945"
+        )
         real_root = run(rec, "LSROOT", "GENOLD", "GENNEW",
-                        git_oid("commit", REAL_COMMIT), cwd=d, expected=4)
-        assert "SEEK OID NOT FOUND" in real_root
-        assert "TREE DATA BEGIN" not in real_root
+                        git_oid("commit", REAL_COMMIT), cwd=d)
+        verify_tree(real_root, "SELECTED 52 GENNEW", HIST_ENTRIES)
+        real_readme = run(rec, "PATHCAT", "GENOLD", "GENNEW",
+                          git_oid("commit", REAL_COMMIT),
+                          b"README.md".hex().upper(), cwd=d)
+        verify_pathcat(real_readme, HIST_README)
         for bad, reason in (
                 (BAD_LINK, "OBJECT IS NOT A TREE"),
                 (BAD_TREE_LINK, "TREE STRUCTURE INVALID")):
