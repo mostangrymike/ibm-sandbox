@@ -321,3 +321,9 @@ M38/M39 are host-proven, **not yet actually CMS-tested**.
 One real CMS compile and standard M39 GITRUN tests both;
 see `docs/LINK_BATCH.md`. Original sealed generations,
 selector pointers and captured PACK remain immutable.
+
+## M39–M42 latest native milestones
+
+M39 completed its actual CMS regression on September 28: two independent 1,808-object full-generation audits, verified batched nested links, fail-closed negatives, older-slot recovery, newer-slot restoration and protected originals. The complete run used 454.77 seconds CPU and 464.18 seconds elapsed.
+
+Further host-tested work adds M40 atomic terminal-directory parsing for PATH/LSDIR, M41 LSDIRV to authenticate immediate directory references, and M42 LSDIRDEPTH to authenticate referenced local subtrees to caller-selected depth 0–4. Full native C89 integration, source-guard and staging/index/REF PACK Actions suite passed: https://github.com/mostangrymike/ibm-sandbox/actions/runs/36484134487 . M40–M42 require one combined actual CMS M42 test before target-proof claims. See docs/LINK_BATCH.md and CHAT_STATE.md.
