@@ -52,13 +52,20 @@ REAL_COMMIT = bytes.fromhex(
     "0A0A416464204D394A206F626A6563742D6F757470757420696E746567726174"
     "696F6E2072656772657373696F6E"
 )
+BAD_LINK = (b"tree " + git_oid("blob", BLOB).lower().encode("ascii")
+            + b"\nauthor A <a@b> 123 +0000\n"
+            + b"committer A <a@b> 123 +0000\n\nlink\n")
+BAD_TREE_LINK = (
+    b"tree " + git_oid("tree", MALFORMED).lower().encode("ascii")
+    + b"\nauthor A <a@b> 123 +0000\n"
+    + b"committer A <a@b> 123 +0000\n\ninvalid tree\n")
 BAD_PARENT = MERGE.replace(b"parent " + b"1"*40,
                            b"parent " + b"Z"*40)
 BAD_COMMIT = FIRST_COMMIT.replace(b"committer ", b"othername ")
 SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
            (2, SUBTREE), (3, BLOB),
            (1, FIRST_COMMIT), (1, MERGE), (1, BAD_PARENT), (1, BAD_COMMIT),
-           (1, REAL_COMMIT)]
+           (1, REAL_COMMIT), (1, BAD_LINK), (1, BAD_TREE_LINK)]
 OBJECTS = SAMPLES + [(3, BLOB)] * (1808 - len(SAMPLES))
 
 
@@ -127,7 +134,7 @@ def main():
         (d / "dd:FIDXOUT").rename(d / "dd:FIDXIN")
         run(idx, "GENWRITE", cwd=d)
         (d / "dd:GENOUT").rename(d / "dd:GENIN")
-        assert "GENERATION VERIFIED 1808 UNIQUE 10" in run(idx, "GENCHECK", cwd=d)
+        assert "GENERATION VERIFIED 1808 UNIQUE 12" in run(idx, "GENCHECK", cwd=d)
         digest = (d / "dd:GENIN").read_text().splitlines()[1].split()[1]
         for prefix in ("C0", "C1"):
             for kind, name in (("STG", "STGIN"), ("IDX", "IDXIN"),
@@ -147,6 +154,17 @@ def main():
                         git_oid("commit", REAL_COMMIT), cwd=d, expected=4)
         assert "SEEK OID NOT FOUND" in real_root
         assert "TREE DATA BEGIN" not in real_root
+        for bad, reason in (
+                (BAD_LINK, "OBJECT IS NOT A TREE"),
+                (BAD_TREE_LINK, "TREE STRUCTURE INVALID")):
+            no_tree = run(rec, "LSROOT", "GENOLD", "GENNEW",
+                          git_oid("commit", bad), cwd=d, expected=8)
+            assert reason in no_tree
+            assert "TREE DATA BEGIN" not in no_tree
+            bad_path = run(rec, "PATH", "GENOLD", "GENNEW",
+                           git_oid("commit", bad),
+                           b"README.md".hex().upper(), cwd=d, expected=8)
+            assert "PATH OBJECT TYPE" not in bad_path
         readme = run(rec, "PATH", "GENOLD", "GENNEW",
                      git_oid("commit", FIRST_COMMIT),
                      b"README.md".hex().upper(), cwd=d)
