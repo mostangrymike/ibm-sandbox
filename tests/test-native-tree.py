@@ -81,6 +81,10 @@ BAD_TREE_LINK = (
     b"tree " + git_oid("tree", MALFORMED).lower().encode("ascii")
     + b"\nauthor A <a@b> 123 +0000\n"
     + b"committer A <a@b> 123 +0000\n\ninvalid tree\n")
+GRANDCHILD = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
+              + b"\nparent " + git_oid("commit", MERGE).lower().encode("ascii")
+              + b"\nauthor A <a@b> 123 +0000\n"
+              + b"committer A <a@b> 123 +0000\n\nthird\n")
 BAD_PARENT = MERGE.replace(b"parent " + b"1"*40,
                            b"parent " + b"Z"*40)
 BAD_COMMIT = FIRST_COMMIT.replace(b"committer ", b"othername ")
@@ -99,7 +103,8 @@ SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
            (1, REAL_COMMIT), (1, BAD_LINK), (1, BAD_TREE_LINK),
            (3, EMPTY), (3, BINARY), (3, BIG),
            (2, HIST_TREE), (3, HIST_README),
-           (1, MISSING_FIRST), (1, BLOB_FIRST), (1, MALFORMED_FIRST)]
+           (1, MISSING_FIRST), (1, BLOB_FIRST), (1, MALFORMED_FIRST),
+           (1, GRANDCHILD)]
 OBJECTS = SAMPLES + [(3, BLOB)] * (1808 - len(SAMPLES))
 
 
@@ -168,6 +173,7 @@ def verify_pathcat(result, data, expected="SELECTED 52 GENNEW"):
 def main():
     with tempfile.TemporaryDirectory() as directory:
         d = Path(directory)
+        disk = d
         cc = os.environ.get("CC", "cc")
         idx, rec = d / "GITCIDX", d / "GITREC"
         for name, exe in (("GITCIDX", idx), ("GITREC", rec)):
@@ -183,7 +189,7 @@ def main():
         (d / "dd:FIDXOUT").rename(d / "dd:FIDXIN")
         run(idx, "GENWRITE", cwd=d)
         (d / "dd:GENOUT").rename(d / "dd:GENIN")
-        assert "GENERATION VERIFIED 1808 UNIQUE 20" in run(idx, "GENCHECK", cwd=d)
+        assert "GENERATION VERIFIED 1808 UNIQUE 21" in run(idx, "GENCHECK", cwd=d)
         digest = (d / "dd:GENIN").read_text().splitlines()[1].split()[1]
         for prefix in ("C0", "C1"):
             for kind, name in (("STG", "STGIN"), ("IDX", "IDXIN"),
@@ -364,6 +370,32 @@ def main():
                           tree_oid, cwd=d, expected=8)
         assert "OBJECT IS NOT A COMMIT" in first_wrong
         assert "FIRST PARENT VERIFIED" not in first_wrong
+        # M28: full first-parent ancestry chain, no partial output.
+        for d, obj in ((1, MERGE), (2, FIRST_COMMIT)):
+            history = run(rec, "ANCESTOR", "GENOLD", "GENNEW",
+                          git_oid("commit", GRANDCHILD),
+                          str(d), cwd=disk)
+            assert "ANCESTOR VERIFIED DEPTH " + str(d) in history
+            assert "ANCESTOR OID " + git_oid("commit", obj) in history
+            assert "ANCESTOR TREE " + git_oid("tree", TREE) in history
+        exhausted = run(rec, "ANCESTOR", "GENOLD", "GENNEW",
+                        git_oid("commit", GRANDCHILD),
+                        "3", cwd=disk, expected=4)
+        assert "ANCESTOR ROOT REACHED" in exhausted
+        assert "ANCESTOR VERIFIED" not in exhausted
+        for value in ("0", "17", "-1", "A", "1A", "999", ""):
+            bad_depth = run(rec, "ANCESTOR", "GENOLD", "GENNEW",
+                            git_oid("commit", GRANDCHILD),
+                            value, cwd=disk, expected=4)
+            assert "ANCESTOR DEPTH MUST BE 1 THROUGH 16" in bad_depth
+        for bad, rc, reason in (
+                (MISSING_FIRST, 4, "ANCESTOR COMMIT NOT FOUND"),
+                (BLOB_FIRST, 8, "ANCESTOR OBJECT IS NOT A COMMIT"),
+                (MALFORMED_FIRST, 8, "ANCESTOR COMMIT STRUCTURE INVALID")):
+            out = run(rec, "ANCESTOR", "GENOLD", "GENNEW",
+                      git_oid("commit", bad), "1", cwd=disk, expected=rc)
+            assert reason in out
+            assert "ANCESTOR VERIFIED" not in out
         for bad in (BAD_PARENT, BAD_COMMIT):
             broken = run(rec, "COMMIT", "GENOLD", "GENNEW",
                          git_oid("commit", bad), cwd=d, expected=8)
@@ -382,6 +414,11 @@ def main():
                               git_oid("commit", MERGE), cwd=d)
         assert "RECOVERED 51 GENOLD" in first_recovered
         assert "FIRST PARENT VERIFIED" in first_recovered
+        ancestor_recovered = run(rec, "ANCESTOR", "GENOLD", "GENNEW",
+                                 git_oid("commit", GRANDCHILD),
+                                 "2", cwd=d)
+        assert "RECOVERED 51 GENOLD" in ancestor_recovered
+        assert "ANCESTOR OID " + git_oid("commit", FIRST_COMMIT) in ancestor_recovered
         lsroot_recovered = run(rec, "LSROOT", "GENOLD", "GENNEW",
                                git_oid("commit", FIRST_COMMIT), cwd=d)
         verify_tree(lsroot_recovered, "RECOVERED 51 GENOLD", ENTRIES)
@@ -415,6 +452,11 @@ def main():
                            git_oid("commit", MERGE), cwd=d, expected=8)
         assert "NO FULLY VERIFIED GENERATION" in first_failed
         assert "FIRST PARENT VERIFIED" not in first_failed
+        ancestor_failed = run(rec, "ANCESTOR", "GENOLD", "GENNEW",
+                              git_oid("commit", GRANDCHILD),
+                              "2", cwd=d, expected=8)
+        assert "NO FULLY VERIFIED GENERATION" in ancestor_failed
+        assert "ANCESTOR VERIFIED" not in ancestor_failed
         lsroot_failed = run(rec, "LSROOT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             cwd=d, expected=8)
@@ -443,6 +485,11 @@ def main():
                              git_oid("commit", MERGE), cwd=d)
         assert "SELECTED 52 GENNEW" in first_restored
         assert "FIRST PARENT VERIFIED" in first_restored
+        ancestor_restored = run(rec, "ANCESTOR", "GENOLD", "GENNEW",
+                                git_oid("commit", GRANDCHILD),
+                                "2", cwd=d)
+        assert "SELECTED 52 GENNEW" in ancestor_restored
+        assert "ANCESTOR OID " + git_oid("commit", FIRST_COMMIT) in ancestor_restored
         final_path = run(rec, "PATH", "GENOLD", "GENNEW",
                          git_oid("commit", FIRST_COMMIT),
                          b"subdir/nested.txt".hex().upper(), cwd=d)
