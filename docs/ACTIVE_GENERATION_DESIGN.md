@@ -748,7 +748,7 @@ docs-directory entry OIDs. On success, it prints
 two headers and around thirteen short PASS lines.
 On a failed case, it prints its stage name,
 observed and expected RC, missing marker flags
-and at most four diagnostic lines, then stops
+and at most four final diagnostic lines, then stops
 with RC12. Tests retain independent two-generation
 GENCHECK, selector, normal, negative, fallback,
 fail-closed and restored cases plus pre/post
@@ -758,7 +758,7 @@ of the test manifest is also captured silently.
 The output summarization mechanism follows
 documented CMS Pipelines REXX STEM behavior.
 All source/host CI regression checks passed:
-https://github.com/mostangrymike/ibm-sandbox/actions/runs/36446084502
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36446263848
 The compact PIPE/STEM runner itself still needs
 one real CMS run before its output can be called
 target-proven. The native GITREC/GITCIDX modules
