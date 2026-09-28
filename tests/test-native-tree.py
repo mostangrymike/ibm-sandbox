@@ -120,6 +120,25 @@ INVALID_SUBTREE_COMMIT = FIRST_COMMIT.replace(
 MISSING_ENTRY_MERGE = MERGE2.replace(
     git_oid("commit", SECOND_PARENT).lower().encode("ascii"),
     git_oid("commit", MISSING_ENTRY_COMMIT).lower().encode("ascii"))
+# M35: structurally valid subtrees with invalid *nested* Git links.
+NEST_MISSING = b"100644 nested.txt\\x00" + b"\\x04"*20
+NEST_WRONG = (b"100644 nested.txt\\x00"
+              + bytes.fromhex(git_oid("tree", TREE)))
+NEST_MISSING_TREE = TREE.replace(
+    bytes.fromhex(git_oid("tree", SUBTREE)),
+    bytes.fromhex(git_oid("tree", NEST_MISSING)), 1)
+NEST_WRONG_TREE = TREE.replace(
+    bytes.fromhex(git_oid("tree", SUBTREE)),
+    bytes.fromhex(git_oid("tree", NEST_WRONG)), 1)
+NEST_MISSING_COMMIT = FIRST_COMMIT.replace(
+    git_oid("tree", TREE).lower().encode("ascii"),
+    git_oid("tree", NEST_MISSING_TREE).lower().encode("ascii"))
+NEST_WRONG_COMMIT = FIRST_COMMIT.replace(
+    git_oid("tree", TREE).lower().encode("ascii"),
+    git_oid("tree", NEST_WRONG_TREE).lower().encode("ascii"))
+NEST_PARENT_MERGE = MERGE2.replace(
+    git_oid("commit", SECOND_PARENT).lower().encode("ascii"),
+    git_oid("commit", NEST_MISSING_COMMIT).lower().encode("ascii"))
 BAD_PARENT = MERGE.replace(b"parent " + b"1"*40,
                            b"parent " + b"Z"*40)
 BAD_COMMIT = FIRST_COMMIT.replace(b"committer ", b"othername ")
@@ -145,7 +164,11 @@ SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
            (2, MISSING_ENTRY_TREE), (2, WRONG_ENTRY_TREE),
            (2, INVALID_SUBTREE_TREE), (1, MISSING_ENTRY_COMMIT),
            (1, WRONG_ENTRY_COMMIT), (1, INVALID_SUBTREE_COMMIT),
-           (1, MISSING_ENTRY_MERGE)]
+           (1, MISSING_ENTRY_MERGE),
+           (2, NEST_MISSING), (2, NEST_WRONG),
+           (2, NEST_MISSING_TREE), (2, NEST_WRONG_TREE),
+           (1, NEST_MISSING_COMMIT), (1, NEST_WRONG_COMMIT),
+           (1, NEST_PARENT_MERGE)]
 OBJECTS = SAMPLES + [(3, BLOB)] * (1808 - len(SAMPLES))
 
 
@@ -230,7 +253,7 @@ def main():
         (d / "dd:FIDXOUT").rename(d / "dd:FIDXIN")
         run(idx, "GENWRITE", cwd=d)
         (d / "dd:GENOUT").rename(d / "dd:GENIN")
-        assert "GENERATION VERIFIED 1808 UNIQUE 34" in run(idx, "GENCHECK", cwd=d)
+        assert "GENERATION VERIFIED 1808 UNIQUE 41" in run(idx, "GENCHECK", cwd=d)
         digest = (d / "dd:GENIN").read_text().splitlines()[1].split()[1]
         for prefix in ("C0", "C1"):
             for kind, name in (("STG", "STGIN"), ("IDX", "IDXIN"),
@@ -411,6 +434,35 @@ def main():
                           tree_oid, cwd=d, expected=8)
         assert "OBJECT IS NOT A COMMIT" in first_wrong
         assert "FIRST PARENT VERIFIED" not in first_wrong
+        # M35: authenticate entries inside each direct root subtree.
+        nested = run(rec, "NESTLINKS", "GENOLD", "GENNEW",
+                     git_oid("commit", MERGE2), cwd=d)
+        assert "SELECTED 52 GENNEW" in nested
+        assert "NESTED ROOT LINKS VERIFIED" in nested
+        assert "PARENTS COUNT 2" in nested
+        assert all(len(line) <= 80 for line in nested.splitlines())
+        for bad, code, marker in (
+                (NEST_MISSING_COMMIT, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND"),
+                (NEST_WRONG_COMMIT, 8,
+                 "ROOT ENTRY TYPE MISMATCH"),
+                (NEST_PARENT_MERGE, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND")):
+            # M34 only checks direct root links, so these must pass.
+            direct = run(rec, "ROOTLINKS", "GENOLD", "GENNEW",
+                         git_oid("commit", bad), cwd=d)
+            assert "ROOT DIRECT LINKS VERIFIED" in direct
+            failed_nested = run(rec, "NESTLINKS", "GENOLD",
+                                "GENNEW", git_oid("commit", bad),
+                                cwd=d, expected=code)
+            assert marker in failed_nested
+            assert "NESTED ROOT LINKS VERIFIED" not in failed_nested
+            assert "PARENTS DATA BEGIN" not in failed_nested
+        root_nested = run(rec, "NESTLINKS", "GENOLD", "GENNEW",
+                          git_oid("commit", FIRST_COMMIT), cwd=d)
+        assert "NESTED ROOT LINKS VERIFIED" in root_nested
+        assert "PARENTS COUNT 0" in root_nested
+
         # M34: verify each direct blob/tree link in own and parent roots.
         links = run(rec, "ROOTLINKS", "GENOLD", "GENNEW",
                     git_oid("commit", MERGE2), cwd=d)
@@ -668,6 +720,11 @@ def main():
                               cwd=d)
         assert "RECOVERED 51 GENOLD" in links_recovered
         assert "ROOT DIRECT LINKS VERIFIED" in links_recovered
+        nested_recovered = run(rec, "NESTLINKS", "GENOLD",
+                               "GENNEW", git_oid("commit", MERGE2),
+                               cwd=d)
+        assert "RECOVERED 51 GENOLD" in nested_recovered
+        assert "NESTED ROOT LINKS VERIFIED" in nested_recovered
         assert "HISTORY HOPS 2" in history_recovered
         assert "ANCESTOR OID " + git_oid("commit", FIRST_COMMIT) in ancestor_recovered
         lsroot_recovered = run(rec, "LSROOT", "GENOLD", "GENNEW",
@@ -737,6 +794,11 @@ def main():
                            cwd=d, expected=8)
         assert "NO FULLY VERIFIED GENERATION" in links_failed
         assert "PARENTS DATA BEGIN" not in links_failed
+        nested_failed = run(rec, "NESTLINKS", "GENOLD",
+                            "GENNEW", git_oid("commit", MERGE2),
+                            cwd=d, expected=8)
+        assert "NO FULLY VERIFIED GENERATION" in nested_failed
+        assert "PARENTS DATA BEGIN" not in nested_failed
         lsroot_failed = run(rec, "LSROOT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             cwd=d, expected=8)
@@ -796,6 +858,11 @@ def main():
                              cwd=d)
         assert "SELECTED 52 GENNEW" in links_restored
         assert "ROOT DIRECT LINKS VERIFIED" in links_restored
+        nested_restored = run(rec, "NESTLINKS", "GENOLD",
+                              "GENNEW", git_oid("commit", MERGE2),
+                              cwd=d)
+        assert "SELECTED 52 GENNEW" in nested_restored
+        assert "NESTED ROOT LINKS VERIFIED" in nested_restored
         assert "ANCESTOR OID " + git_oid("commit", FIRST_COMMIT) in ancestor_restored
         final_path = run(rec, "PATH", "GENOLD", "GENNEW",
                          git_oid("commit", FIRST_COMMIT),
