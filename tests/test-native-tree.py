@@ -388,6 +388,42 @@ def main():
                           tree_oid, cwd=d, expected=8)
         assert "OBJECT IS NOT A COMMIT" in first_wrong
         assert "FIRST PARENT VERIFIED" not in first_wrong
+        # M33: authenticate selected commit root AND every parent root.
+        graph = run(rec, "COMMITROOTS", "GENOLD", "GENNEW",
+                    git_oid("commit", MERGE2), cwd=d)
+        assert "COMMIT ROOTS VERIFIED" in graph
+        assert "PARENTS COUNT 2" in graph
+        assert graph.strip().endswith("PARENTS DATA END")
+        for n, obj in ((1, FIRST_COMMIT), (2, SECOND_PARENT)):
+            assert ("PARENTS ORDINAL " + str(n) + " OID "
+                    + git_oid("commit", obj)) in graph
+            assert ("PARENTS ORDINAL " + str(n) + " TREE "
+                    + git_oid("tree", TREE)) in graph
+        assert all(len(line) <= 80 for line in graph.splitlines())
+        graph_root = run(rec, "COMMITROOTS", "GENOLD", "GENNEW",
+                         git_oid("commit", FIRST_COMMIT), cwd=d)
+        assert "COMMIT ROOTS VERIFIED" in graph_root
+        assert "PARENTS COUNT 0" in graph_root
+        for bad, rc, reason in (
+                (MISSING_ROOT_COMMIT, 4, "CHILD ROOT TREE NOT FOUND"),
+                (BAD_LINK, 8, "CHILD ROOT OBJECT NOT TREE"),
+                (BAD_TREE_LINK, 8, "CHILD ROOT TREE INVALID"),
+                (MISSING_ROOT_MERGE, 4, "PARENT ROOT TREE NOT FOUND"),
+                (BLOB_ROOT_MERGE, 8, "PARENT ROOT OBJECT NOT TREE"),
+                (MALFORMED_ROOT_MERGE, 8, "PARENT ROOT TREE INVALID"),
+                (MERGE, 4, "PARENTS OBJECT NOT FOUND")):
+            invalid_graph = run(rec, "COMMITROOTS", "GENOLD",
+                                "GENNEW", git_oid("commit", bad),
+                                cwd=d, expected=rc)
+            assert reason in invalid_graph
+            assert "COMMIT ROOTS VERIFIED" not in invalid_graph
+            assert "PARENTS DATA BEGIN" not in invalid_graph
+        bad_child_graph = run(rec, "COMMITROOTS", "GENOLD",
+                              "GENNEW", git_oid("tree", TREE),
+                              cwd=d, expected=8)
+        assert "PARENTS CHILD NOT COMMIT" in bad_child_graph
+        assert "PARENTS DATA BEGIN" not in bad_child_graph
+
         # M32: no parent list until every parent's Git root tree
         # independently rehashes and parses in the selected generation.
         roots = run(rec, "PARENTROOTS", "GENOLD", "GENNEW",
@@ -575,6 +611,10 @@ def main():
                               git_oid("commit", MERGE2), cwd=d)
         assert "RECOVERED 51 GENOLD" in roots_recovered
         assert "PARENT ROOT TREES VERIFIED" in roots_recovered
+        graph_recovered = run(rec, "COMMITROOTS", "GENOLD",
+                              "GENNEW", git_oid("commit", MERGE2), cwd=d)
+        assert "RECOVERED 51 GENOLD" in graph_recovered
+        assert "COMMIT ROOTS VERIFIED" in graph_recovered
         assert "HISTORY HOPS 2" in history_recovered
         assert "ANCESTOR OID " + git_oid("commit", FIRST_COMMIT) in ancestor_recovered
         lsroot_recovered = run(rec, "LSROOT", "GENOLD", "GENNEW",
@@ -634,6 +674,11 @@ def main():
                            git_oid("commit", MERGE2), cwd=d, expected=8)
         assert "NO FULLY VERIFIED GENERATION" in roots_failed
         assert "PARENTS DATA BEGIN" not in roots_failed
+        graph_failed = run(rec, "COMMITROOTS", "GENOLD",
+                           "GENNEW", git_oid("commit", MERGE2),
+                           cwd=d, expected=8)
+        assert "NO FULLY VERIFIED GENERATION" in graph_failed
+        assert "PARENTS DATA BEGIN" not in graph_failed
         lsroot_failed = run(rec, "LSROOT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             cwd=d, expected=8)
@@ -683,6 +728,11 @@ def main():
                              git_oid("commit", MERGE2), cwd=d)
         assert "SELECTED 52 GENNEW" in roots_restored
         assert "PARENT ROOT TREES VERIFIED" in roots_restored
+        graph_restored = run(rec, "COMMITROOTS", "GENOLD",
+                             "GENNEW", git_oid("commit", MERGE2),
+                             cwd=d)
+        assert "SELECTED 52 GENNEW" in graph_restored
+        assert "COMMIT ROOTS VERIFIED" in graph_restored
         assert "ANCESTOR OID " + git_oid("commit", FIRST_COMMIT) in ancestor_restored
         final_path = run(rec, "PATH", "GENOLD", "GENNEW",
                          git_oid("commit", FIRST_COMMIT),
