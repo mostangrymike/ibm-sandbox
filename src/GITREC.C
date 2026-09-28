@@ -892,7 +892,9 @@ static int rec_path(const unsigned char *commit_oid,
   if(rc!=0) return rc;
   /* M40: fully parse returned trees before ANY path output. */
   if(expected_type==2&&contents>=3) {
-   rc=rec_root_links(found,dir_depth,&budget);
+   rc=contents==5?
+      rec_root_closure(found,&budget):
+      rec_root_links(found,dir_depth,&budget);
    if(rc!=0) return rc;
    /* The walker reuses idx_body for linked children.
     * Reload the authenticated directory before listing.
@@ -909,6 +911,7 @@ static int rec_path(const unsigned char *commit_oid,
   if(contents==3) puts("DIRECTORY LINKS VERIFIED");
   if(contents==4)
    printf("DIRECTORY LINK DEPTH %u VERIFIED\n",dir_depth);
+  if(contents==5) puts("DIRECTORY FULL CLOSURE VERIFIED");
   printf("PATH OBJECT TYPE %d SIZE %lu OID ",
          expected_type,object_size);
   idx_print(stdout,found);putchar('\n');
@@ -963,7 +966,8 @@ int main(int argc,char **argv) {
  unsigned int depth=0,dir_depth=0;
  unsigned long d;
  int get,full,tree,commit,root,path_command,pathcat;
- int lsdir,lsdirv,lsdirdepth,firstpar,ancestor,history;
+ int lsdir,lsdirv,lsdirdepth,lsdirfull;
+ int firstpar,ancestor,history;
  int parent_cmd,parents_cmd;
  int roots_cmd,commitroots_cmd,linkroots_cmd;
  int nestedlinks_cmd,deeplinks_cmd,depthlinks_cmd;
@@ -978,6 +982,7 @@ int main(int argc,char **argv) {
  lsdir=argc==6&&strcmp(argv[1],"LSDIR")==0;
  lsdirv=argc==6&&strcmp(argv[1],"LSDIRV")==0;
  lsdirdepth=argc==7&&strcmp(argv[1],"LSDIRDEPTH")==0;
+ lsdirfull=argc==6&&strcmp(argv[1],"LSDIRFULL")==0;
  firstpar=argc==5&&strcmp(argv[1],"FIRSTPAR")==0;
  ancestor=argc==6&&strcmp(argv[1],"ANCESTOR")==0;
  history=argc==6&&strcmp(argv[1],"HISTORY")==0;
@@ -993,6 +998,7 @@ int main(int argc,char **argv) {
  closure_cmd=argc==5&&strcmp(argv[1],"CLOSURE")==0;
  if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
      !pathcat&&!lsdir&&!lsdirv&&!lsdirdepth&&
+     !lsdirfull&&
      !firstpar&&!ancestor&&
      !history&&!parent_cmd&&!parents_cmd&&
      !roots_cmd&&!commitroots_cmd&&!linkroots_cmd&&
@@ -1012,6 +1018,7 @@ int main(int argc,char **argv) {
   puts("GITREC LSDIR C0NAME C1NAME COMMIT_OID40 DIRHEX");
   puts("GITREC LSDIRV C0 C1 COMMIT_OID40 DIRHEX");
   puts("GITREC LSDIRDEPTH C0 C1 OID40 DIRHEX DEPTH");
+  puts("GITREC LSDIRFULL C0 C1 COMMIT_OID40 DIRHEX");
   puts("GITREC FIRSTPAR C0NAME C1NAME COMMIT_OID40");
   puts("GITREC ANCESTOR C0NAME C1NAME COMMIT_OID40 DEPTH");
   puts("GITREC HISTORY C0NAME C1NAME COMMIT_OID40 DEPTH");
@@ -1028,7 +1035,7 @@ int main(int argc,char **argv) {
   return 4;
  }
  if((get||full||tree||commit||root||path_command||
-     pathcat||lsdir||lsdirv||lsdirdepth||
+     pathcat||lsdir||lsdirv||lsdirdepth||lsdirfull||
      firstpar||ancestor||history||
      parent_cmd||parents_cmd||roots_cmd||
      commitroots_cmd||linkroots_cmd||nestedlinks_cmd||
@@ -1071,7 +1078,7 @@ int main(int argc,char **argv) {
   dir_depth=(unsigned int)(argv[6][0]-'0');
  }
  if((path_command||pathcat||lsdir||lsdirv||
-     lsdirdepth)&&
+     lsdirdepth||lsdirfull)&&
     !rec_path_hex(argv[5],path,&pathlen)) {
   puts("PATH REQUIRES VALID NONEMPTY HEX");return 4;
  }
@@ -1087,7 +1094,7 @@ int main(int argc,char **argv) {
  rc=selector_choose(&a,&b);
  if(rc!=0||(!get&&!full&&!tree&&!commit&&!root&&
              !path_command&&!pathcat&&!lsdir&&!lsdirv&&
-             !lsdirdepth&&
+             !lsdirdepth&&!lsdirfull&&
              !firstpar&&!ancestor&&!history&&
              !parent_cmd&&!parents_cmd&&!roots_cmd&&
              !commitroots_cmd&&!linkroots_cmd&&
@@ -1102,6 +1109,7 @@ int main(int argc,char **argv) {
  if(pathcat) return rec_path(oid,path,pathlen,1,0);
  if(lsdir) return rec_path(oid,path,pathlen,2,0);
  if(lsdirv) return rec_path(oid,path,pathlen,3,0);
+ if(lsdirfull) return rec_path(oid,path,pathlen,5,0);
  if(lsdirdepth)
   return rec_path(oid,path,pathlen,4,dir_depth);
  if(firstpar) return rec_firstpar(oid);

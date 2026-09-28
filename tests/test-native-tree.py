@@ -516,6 +516,45 @@ def main():
             b"subdir".hex().upper(), cwd=d, expected=8)
         assert "ROOT LINK TREE INVALID" in malformed_verified
         assert "PATH OBJECT TYPE" not in malformed_verified
+        # M45: full commit-relative directory closure is distinct
+        # from depth-four directory checks, with atomic listing.
+        complete_dir = run(
+            rec, "LSDIRFULL", "GENOLD", "GENNEW",
+            git_oid("commit", CHAIN_GOOD_COMMIT),
+            b"subdir".hex().upper(), cwd=d)
+        assert "DIRECTORY FULL CLOSURE VERIFIED" in complete_dir
+        assert "TREE DATA END" in complete_dir
+        for bad, code, marker in (
+                (CHAIN_MISSING_COMMIT, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND"),
+                (CHAIN_WRONG_COMMIT, 8,
+                 "ROOT ENTRY TYPE MISMATCH")):
+            shallow_dir = run(
+                rec, "LSDIRDEPTH", "GENOLD", "GENNEW",
+                git_oid("commit", bad),
+                b"subdir".hex().upper(), "4", cwd=d)
+            assert "DIRECTORY LINK DEPTH 4 VERIFIED" in shallow_dir
+            broken_dir = run(
+                rec, "LSDIRFULL", "GENOLD", "GENNEW",
+                git_oid("commit", bad),
+                b"subdir".hex().upper(), cwd=d, expected=code)
+            assert marker in broken_dir
+            for leaked in ("DIRECTORY FULL CLOSURE VERIFIED",
+                           "PATH OBJECT TYPE", "TREE DATA BEGIN"):
+                assert leaked not in broken_dir
+        over_dir = run(
+            rec, "LSDIRFULL", "GENOLD", "GENNEW",
+            git_oid("commit", GITLINK_257_SUBDIR_COMMIT),
+            b"subdir".hex().upper(), cwd=d, expected=8)
+        assert "ROOT LINK LIMIT EXCEEDED" in over_dir
+        assert "PATH OBJECT TYPE" not in over_dir
+        assert "TREE DATA BEGIN" not in over_dir
+        for bad_name in ("", "00", "2F61", "612F"):
+            invalid_path = run(
+                rec, "LSDIRFULL", "GENOLD", "GENNEW",
+                git_oid("commit", CHAIN_GOOD_COMMIT),
+                bad_name, cwd=d, expected=4)
+            assert "PATH REQUIRES VALID NONEMPTY HEX" in invalid_path
         # M42: caller-chosen depth 0..4 must validate all
         # referenced descendant objects without partial output.
         for n in range(5):
