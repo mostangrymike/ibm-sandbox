@@ -584,6 +584,16 @@ def main():
             broken = run(rec, "LINKBATCH", "GENOLD", "GENNEW",
                          bad, cwd=d, expected=code)
             assert "LINK DEPTH 2 VERIFIED" not in broken
+        # A 257-entry root must fail without partial batch output.
+        over_limit = run(rec, "LINKBATCH", "GENOLD", "GENNEW",
+                         git_oid("commit", LARGE_ROOT_COMMIT),
+                         cwd=d, expected=8)
+        assert "ROOT LINK LIMIT EXCEEDED" in over_limit
+        for marker in ("NESTED ROOT LINKS VERIFIED",
+                       "DEEP ROOT LINKS VERIFIED",
+                       "LINK DEPTH 2 VERIFIED",
+                       "PARENTS DATA BEGIN"):
+            assert marker not in over_limit
 
         # M36: one deeper level: both shallower commands must pass
         # even when the deepest nested blob is missing or wrong type.
