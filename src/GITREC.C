@@ -364,6 +364,54 @@ static int rec_ancestor(const unsigned char *starting,
  }
  return 8;
 }
+/* M29: verify every first-parent hop before showing any history.
+ * Keep the bounded chain and tree IDs in local fixed-size arrays;
+ * only commit to output after every linked object verifies.
+ */
+static int rec_history(const unsigned char *starting,
+                       unsigned int depth) {
+ unsigned char commits[17][20],trees[17][20],next[20];
+ unsigned long sz;
+ unsigned int hop,j;
+ int pos,rc;
+ if(sidx_read()!=0) return 8;
+ memcpy(commits[0],starting,20);
+ for(hop=0;hop<=depth;hop++) {
+  pos=sidx_locate(commits[hop]);
+  if(pos<0) {
+   puts("HISTORY COMMIT NOT FOUND");return 4;
+  }
+  if(sidx[pos].type!=1) {
+   puts("HISTORY OBJECT IS NOT A COMMIT");return 8;
+  }
+  sz=sidx[pos].size;
+  sidx_silent=1;
+  rc=sidx_get(commits[hop]);
+  sidx_silent=0;
+  if(rc!=0) return rc;
+  if(!rec_commit_walk(sz,0)) {
+   puts("HISTORY COMMIT STRUCTURE INVALID");return 8;
+  }
+  if(!rec_ascii_oid(idx_body+5,trees[hop])) return 8;
+  if(hop==depth) break;
+  if(sz<=46||!rec_ascii_key(idx_body+46,sz-46,"parent")) {
+   puts("HISTORY ROOT REACHED");return 4;
+  }
+  if(!rec_ascii_oid(idx_body+53,next)) return 8;
+  memcpy(commits[hop+1],next,20);
+ }
+ puts("HISTORY DATA BEGIN");
+ for(j=0;j<=depth;j++) {
+  printf("HISTORY HOP %u OID ",j);
+  idx_print(stdout,commits[j]);
+  fputs(" TREE ",stdout);
+  idx_print(stdout,trees[j]);
+  putchar('\n');
+ }
+ printf("HISTORY HOPS %u\n",depth);
+ puts("HISTORY DATA END");
+ return 0;
+}
 /* M24: follow a commit's authenticated tree in the SAME
  * fully verified generation. Do not expose tree entries if either
  * linked object is missing, mis-typed or structurally invalid.
@@ -546,7 +594,7 @@ int main(int argc,char **argv) {
  unsigned int depth=0;
  unsigned long d;
  int get,full,tree,commit,root,path_command,pathcat;
- int lsdir,firstpar,ancestor,rc;
+ int lsdir,firstpar,ancestor,history,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
@@ -557,8 +605,9 @@ int main(int argc,char **argv) {
  lsdir=argc==6&&strcmp(argv[1],"LSDIR")==0;
  firstpar=argc==5&&strcmp(argv[1],"FIRSTPAR")==0;
  ancestor=argc==6&&strcmp(argv[1],"ANCESTOR")==0;
+ history=argc==6&&strcmp(argv[1],"HISTORY")==0;
  if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
-     !pathcat&&!lsdir&&!firstpar&&!ancestor&&
+     !pathcat&&!lsdir&&!firstpar&&!ancestor&&!history&&
      (argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
@@ -573,18 +622,19 @@ int main(int argc,char **argv) {
   puts("GITREC LSDIR C0NAME C1NAME COMMIT_OID40 DIRHEX");
   puts("GITREC FIRSTPAR C0NAME C1NAME COMMIT_OID40");
   puts("GITREC ANCESTOR C0NAME C1NAME COMMIT_OID40 DEPTH");
+  puts("GITREC HISTORY C0NAME C1NAME COMMIT_OID40 DEPTH");
   return 4;
  }
  if((get||full||tree||commit||root||path_command||
-     pathcat||lsdir||firstpar||ancestor)&&
+     pathcat||lsdir||firstpar||ancestor||history)&&
     (strlen(argv[4])!=40||
     !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
   return 4;
  }
- if(ancestor) {
+ if(ancestor||history) {
   if(!argv[5][0]||strlen(argv[5])>2) {
-   puts("ANCESTOR DEPTH MUST BE 1 THROUGH 16");return 4;
+   puts("HOP DEPTH MUST BE 1 THROUGH 16");return 4;
   }
   d=0;
   for(rc=0;argv[5][rc];rc++) {
@@ -614,7 +664,7 @@ int main(int argc,char **argv) {
  rc=selector_choose(&a,&b);
  if(rc!=0||(!get&&!full&&!tree&&!commit&&!root&&
              !path_command&&!pathcat&&!lsdir&&
-             !firstpar&&!ancestor)) return rc;
+             !firstpar&&!ancestor&&!history)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(tree) return rec_tree(oid);
  if(commit) return rec_commit(oid);
@@ -624,6 +674,7 @@ int main(int argc,char **argv) {
  if(lsdir) return rec_path(oid,path,pathlen,2);
  if(firstpar) return rec_firstpar(oid);
  if(ancestor) return rec_ancestor(oid,depth);
+ if(history) return rec_history(oid,depth);
  if(sidx_read()!=0) return 8;
  sidx_emit_full=full;
  return sidx_get(oid);
