@@ -32,7 +32,19 @@ ENTRIES = [
 TREE = b"".join(mode + b" " + name + b"\x00" + oid
                 for mode, name, oid in ENTRIES)
 MALFORMED = b"100644 good-name\x00" + BLOB_OID + b"100644 truncated\x00" + b"\x01"
-SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED), (3, BLOB)]
+ROOT = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
+        + b"\nauthor A <a@b> 123 +0000\n"
+        + b"committer A <a@b> 123 +0000\n\nhello\n")
+MERGE = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
+         + b"\nparent " + git_oid("commit", ROOT).lower().encode("ascii")
+         + b"\nparent " + b"1"*40
+         + b"\nauthor A <a@b> 123 +0000\n"
+         + b"committer A <a@b> 123 +0000\n\nmerge\n")
+BAD_PARENT = MERGE.replace(b"parent " + b"1"*40,
+                           b"parent " + b"Z"*40)
+BAD_COMMIT = ROOT.replace(b"committer ", b"othername ")
+SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED), (3, BLOB),
+           (1, ROOT), (1, MERGE), (1, BAD_PARENT), (1, BAD_COMMIT)]
 OBJECTS = SAMPLES + [(3, BLOB)] * (1808 - len(SAMPLES))
 
 
@@ -52,7 +64,7 @@ def selector(seq, name, digest):
 def make_stage(path):
     with path.open("w", encoding="ascii", newline="\n") as out:
         for i, (typ, data) in enumerate(OBJECTS, 1):
-            object_type = "tree" if typ == 2 else "blob"
+            object_type = {1: "commit", 2: "tree", 3: "blob"}[typ]
             out.write(f"OBJ {i} {typ} {len(data)} {git_oid(object_type, data)}\n")
             if not data:
                 out.write("\n")
@@ -101,7 +113,7 @@ def main():
         (d / "dd:FIDXOUT").rename(d / "dd:FIDXIN")
         run(idx, "GENWRITE", cwd=d)
         (d / "dd:GENOUT").rename(d / "dd:GENIN")
-        assert "GENERATION VERIFIED 1808 UNIQUE 4" in run(idx, "GENCHECK", cwd=d)
+        assert "GENERATION VERIFIED 1808 UNIQUE 8" in run(idx, "GENCHECK", cwd=d)
         digest = (d / "dd:GENIN").read_text().splitlines()[1].split()[1]
         for prefix in ("C0", "C1"):
             for kind, name in (("STG", "STGIN"), ("IDX", "IDXIN"),
@@ -125,7 +137,35 @@ def main():
         assert "TREE STRUCTURE INVALID" in malformed
         assert "TREE DATA BEGIN" not in malformed
 
+        # M23: selected-generation Git commit header extraction.
+        root = run(rec, "COMMIT", "GENOLD", "GENNEW",
+                   git_oid("commit", ROOT), cwd=d)
+        assert "SELECTED 52 GENNEW" in root
+        assert "COMMIT TREE " + git_oid("tree", TREE) in root
+        assert "COMMIT PARENTS 0" in root
+        assert "COMMIT MESSAGE BYTES 6" in root
+        assert root.strip().endswith("COMMIT DATA END")
+        merge = run(rec, "COMMIT", "GENOLD", "GENNEW",
+                    git_oid("commit", MERGE), cwd=d)
+        assert "COMMIT PARENTS 2" in merge
+        assert "COMMIT PARENT " + git_oid("commit", ROOT) in merge
+        assert "COMMIT PARENT " + "1"*40 in merge
+        assert "COMMIT MESSAGE BYTES 6" in merge
+        for bad in (BAD_PARENT, BAD_COMMIT):
+            broken = run(rec, "COMMIT", "GENOLD", "GENNEW",
+                         git_oid("commit", bad), cwd=d, expected=8)
+            assert "COMMIT STRUCTURE INVALID" in broken
+            assert "COMMIT DATA BEGIN" not in broken
+        not_commit = run(rec, "COMMIT", "GENOLD", "GENNEW",
+                         tree_oid, cwd=d, expected=8)
+        assert "OBJECT IS NOT A COMMIT" in not_commit
+        assert "COMMIT DATA BEGIN" not in not_commit
+
         (d / "dd:C1GEN").rename(d / "held-new")
+        commit_recovered = run(rec, "COMMIT", "GENOLD", "GENNEW",
+                               git_oid("commit", MERGE), cwd=d)
+        assert "RECOVERED 51 GENOLD" in commit_recovered
+        assert "COMMIT PARENTS 2" in commit_recovered
         recovered = run(rec, "TREE", "GENOLD", "GENNEW", tree_oid, cwd=d)
         verify_tree(recovered, "RECOVERED 51 GENOLD", ENTRIES)
         (d / "dd:C0GEN").rename(d / "held-old")
@@ -133,12 +173,20 @@ def main():
                      cwd=d, expected=8)
         assert "NO FULLY VERIFIED GENERATION" in failed
         assert "TREE DATA BEGIN" not in failed
+        commit_failed = run(rec, "COMMIT", "GENOLD", "GENNEW",
+                            git_oid("commit", ROOT), cwd=d, expected=8)
+        assert "NO FULLY VERIFIED GENERATION" in commit_failed
+        assert "COMMIT DATA BEGIN" not in commit_failed
         (d / "held-old").rename(d / "dd:C0GEN")
         (d / "held-new").rename(d / "dd:C1GEN")
         restored = run(rec, "TREE", "GENOLD", "GENNEW", tree_oid, cwd=d)
         verify_tree(restored, "SELECTED 52 GENNEW", ENTRIES)
+        final_commit = run(rec, "COMMIT", "GENOLD", "GENNEW",
+                           git_oid("commit", ROOT), cwd=d)
+        assert "SELECTED 52 GENNEW" in final_commit
+        assert "COMMIT TREE " + git_oid("tree", TREE) in final_commit
         print("NATIVE C89 TREE BINARY NAMEHEX, EMPTY, MALFORMED, "
-              "NON-TREE, FALLBACK AND FAIL-CLOSED TESTS PASSED")
+              "NON-TREE, COMMIT HEADERS, FALLBACK AND FAIL-CLOSED TESTS PASSED")
 
 
 if __name__ == "__main__":
