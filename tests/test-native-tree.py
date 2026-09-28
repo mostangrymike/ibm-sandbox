@@ -544,6 +544,35 @@ def main():
                 wrong, "2", cwd=d, expected=code)
             assert "PARENTS DATA BEGIN" not in bad_child
 
+        # M38: one full audit and one depth-two graph pass. All
+        # three success markers must be committed together.
+        batch = run(rec, "LINKBATCH", "GENOLD", "GENNEW",
+                    git_oid("commit", DEEP_COMMIT_GOOD), cwd=d)
+        for marker in ("NESTED ROOT LINKS VERIFIED",
+                       "DEEP ROOT LINKS VERIFIED",
+                       "LINK DEPTH 2 VERIFIED"):
+            assert marker in batch
+        assert "PARENTS COUNT 0" in batch
+        for bad, code, marker in (
+                (DEEP_COMMIT_MISSING, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND"),
+                (DEEP_COMMIT_WRONG, 8,
+                 "ROOT ENTRY TYPE MISMATCH"),
+                (DEEP_PARENT_MERGE, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND")):
+            broken = run(rec, "LINKBATCH", "GENOLD",
+                         "GENNEW", git_oid("commit", bad),
+                         cwd=d, expected=code)
+            assert marker in broken
+            assert "NESTED ROOT LINKS VERIFIED" not in broken
+            assert "DEEP ROOT LINKS VERIFIED" not in broken
+            assert "LINK DEPTH 2 VERIFIED" not in broken
+            assert "PARENTS DATA BEGIN" not in broken
+        for bad, code in ((tree_oid, 8), ("0"*40, 4)):
+            broken = run(rec, "LINKBATCH", "GENOLD", "GENNEW",
+                         bad, cwd=d, expected=code)
+            assert "LINK DEPTH 2 VERIFIED" not in broken
+
         # M36: one deeper level: both shallower commands must pass
         # even when the deepest nested blob is missing or wrong type.
         deep_valid = run(rec, "DEEPLINKS", "GENOLD", "GENNEW",
@@ -823,6 +852,11 @@ def main():
         assert "OBJECT IS NOT A COMMIT" in not_commit
         assert "COMMIT DATA BEGIN" not in not_commit
 
+        initial_batch = run(rec, "LINKBATCH", "GENOLD",
+                            "GENNEW", git_oid("commit", MERGE2),
+                            cwd=d)
+        assert "LINK DEPTH 2 VERIFIED" in initial_batch
+        assert "SELECTED 52 GENNEW" in initial_batch
         (d / "dd:C1GEN").rename(d / "held-new")
         commit_recovered = run(rec, "COMMIT", "GENOLD", "GENNEW",
                                git_oid("commit", MERGE), cwd=d)
@@ -896,6 +930,11 @@ def main():
         assert "COMMIT PARENTS 2" in commit_recovered
         recovered = run(rec, "TREE", "GENOLD", "GENNEW", tree_oid, cwd=d)
         verify_tree(recovered, "RECOVERED 51 GENOLD", ENTRIES)
+        batch_recovered = run(rec, "LINKBATCH", "GENOLD",
+                              "GENNEW", git_oid("commit", MERGE2),
+                              cwd=d)
+        assert "RECOVERED 51 GENOLD" in batch_recovered
+        assert "LINK DEPTH 2 VERIFIED" in batch_recovered
         (d / "dd:C0GEN").rename(d / "held-old")
         failed = run(rec, "TREE", "GENOLD", "GENNEW", tree_oid,
                      cwd=d, expected=8)
@@ -974,6 +1013,12 @@ def main():
                           git_oid("commit", FIRST_COMMIT),
                           b"README.md".hex().upper(), cwd=d, expected=8)
         assert "PATH DATA BEGIN" not in full_failed
+        batch_failed = run(rec, "LINKBATCH", "GENOLD",
+                           "GENNEW", git_oid("commit", MERGE2),
+                           cwd=d, expected=8)
+        assert "NO FULLY VERIFIED GENERATION" in batch_failed
+        assert "NESTED ROOT LINKS VERIFIED" not in batch_failed
+        assert "PARENTS DATA BEGIN" not in batch_failed
         (d / "held-old").rename(d / "dd:C0GEN")
         (d / "held-new").rename(d / "dd:C1GEN")
         restored = run(rec, "TREE", "GENOLD", "GENNEW", tree_oid, cwd=d)
