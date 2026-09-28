@@ -347,7 +347,12 @@ def main():
         (d / "dd:FIDXOUT").rename(d / "dd:FIDXIN")
         run(idx, "GENWRITE", cwd=d)
         (d / "dd:GENOUT").rename(d / "dd:GENIN")
-        assert "GENERATION VERIFIED 1808 UNIQUE 63" in run(idx, "GENCHECK", cwd=d)
+        expected_unique = len({git_oid({1: "commit", 2: "tree",
+                                         3: "blob"}[typ], body)
+                               for typ, body in OBJECTS})
+        expected_gen = ("GENERATION VERIFIED 1808 UNIQUE "
+                        + str(expected_unique))
+        assert expected_gen in run(idx, "GENCHECK", cwd=d)
         digest = (d / "dd:GENIN").read_text().splitlines()[1].split()[1]
         for prefix in ("C0", "C1"):
             for kind, name in (("STG", "STGIN"), ("IDX", "IDXIN"),
