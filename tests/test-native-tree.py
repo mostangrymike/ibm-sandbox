@@ -376,8 +376,11 @@ def main():
         assert "SELECTED 52 GENNEW" in history
         for hop, obj in enumerate((GRANDCHILD, MERGE, FIRST_COMMIT)):
             assert ("HISTORY HOP " + str(hop) + " OID "
-                    + git_oid("commit", obj) + " TREE "
+                    + git_oid("commit", obj)) in history
+            assert ("HISTORY HOP " + str(hop) + " TREE "
                     + git_oid("tree", TREE)) in history
+            for line in history.splitlines():
+                assert len(line) <= 80
         assert "HISTORY HOPS 2" in history
         assert history.strip().endswith("HISTORY DATA END")
         for data, hops, code, reason in (
