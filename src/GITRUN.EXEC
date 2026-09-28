@@ -1,7 +1,7 @@
-/* M22: read-only post-incident native Git CMS regression batch. */
+/* M23: read-only post-incident native Git CMS regression batch. */
 /* No erase, copy, index write, manifest write or pointer write. */
 address cms
-say 'GITRUN M22 READ ONLY NATIVE GIT REGRESSION'
+say 'GITRUN M23 READ ONLY NATIVE GIT REGRESSION'
 say 'VERIFY ALL PROTECTED ORIGINAL FILES'
 do i=1 to 4
  typ=word('STAGE INDEX SEEK GEN',i)
@@ -67,32 +67,32 @@ say 'SELECT RC' test
 if test \= 0 then exit 12
 commit='00D8D63229305230C8D37F884CE87F9E1A89468C'
 tree='204E1D6968FB81C35BF830D63A611AC64C072945'
-say 'CASE 2: VERIFIED NATIVE GET FIRST COMMIT'
-'GITREC GET GITFIX M15NEW' commit
+say 'CASE 2: NATIVE COMMIT TREE AND PARENT DECODE'
+'GITREC COMMIT GITFIX M15NEW' commit
 test=rc
-say 'GET RC' test
+say 'COMMIT RC' test
 if test \= 0 then exit 12
-say 'CASE 3: VERIFIED NATIVE BINARY TREE DECODE'
+say 'CASE 3: CONFIRM COMMIT ROOT TREE EXISTS'
 'GITREC TREE GITFIX M15NEW' tree
 test=rc
 say 'TREE RC' test
 if test \= 0 then exit 12
-say 'CASE 4: NON TREE COMMIT MUST FAIL CLOSED'
-'GITREC TREE GITFIX M15NEW' commit
+say 'CASE 4: NON COMMIT TREE MUST FAIL CLOSED'
+'GITREC COMMIT GITFIX M15NEW' tree
 test=rc
-say 'NON TREE RC' test
+say 'NON COMMIT RC' test
 if test \= 8 then exit 12
-say 'CASE 5: NEWER GEN MISSING; FALL BACK TO OLDER TREE'
+say 'CASE 5: NEWER GEN MISSING; FALL BACK TO OLDER'
 'FILEDEF C1GEN DISK M15BAD GEN A'
 if rc \= 0 then exit rc
-'GITREC TREE GITFIX M15NEW' tree
+'GITREC COMMIT GITFIX M15NEW' commit
 test=rc
-say 'FALLBACK TREE RC' test
+say 'FALLBACK COMMIT RC' test
 if test \= 0 then exit 12
 say 'CASE 6: BOTH GEN MISSING MUST FAIL CLOSED'
 'FILEDEF C0GEN DISK M15BAD GEN A'
 if rc \= 0 then exit rc
-'GITREC TREE GITFIX M15NEW' tree
+'GITREC COMMIT GITFIX M15NEW' commit
 test=rc
 say 'BOTH MISSING RC' test
 if test \= 8 then exit 12
@@ -101,9 +101,9 @@ say 'CASE 7: RESTORE BOTH VERIFIED MANIFEST INPUTS'
 if rc \= 0 then exit rc
 'FILEDEF C1GEN DISK M15NEW GEN A'
 if rc \= 0 then exit rc
-'GITREC TREE GITFIX M15NEW' tree
+'GITREC COMMIT GITFIX M15NEW' commit
 test=rc
-say 'RESTORED TREE RC' test
+say 'RESTORED COMMIT RC' test
 if test \= 0 then exit 12
 say 'FINAL VERIFY PROTECTED GENERATIONS AND SELECTORS'
 do i=1 to 4
@@ -123,5 +123,5 @@ do i=0 to 1
 end
 'STATE GITPBUF PACK A'
 if rc \= 0 then exit 12
-say 'GITRUN M22 ALL READ ONLY NATIVE GIT TESTS PASSED'
+say 'GITRUN M23 ALL READ ONLY NATIVE GIT TESTS PASSED'
 exit 0
