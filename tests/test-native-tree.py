@@ -173,6 +173,23 @@ LARGE_ROOT = b"".join(
 LARGE_ROOT_COMMIT = FIRST_COMMIT.replace(
     git_oid("tree", TREE).lower().encode("ascii"),
     git_oid("tree", LARGE_ROOT).lower().encode("ascii"))
+# M43: external Gitlinks are still counted for bounded tree walks.
+GITLINK_256 = b"".join(
+    b"160000 ext" + ("%03d" % i).encode("ascii") + b"\x00" + BLOB_OID
+    for i in range(256))
+GITLINK_257 = GITLINK_256 + b"160000 ext256\x00" + BLOB_OID
+GITLINK_256_COMMIT = FIRST_COMMIT.replace(
+    git_oid("tree", TREE).lower().encode("ascii"),
+    git_oid("tree", GITLINK_256).lower().encode("ascii"))
+GITLINK_257_COMMIT = FIRST_COMMIT.replace(
+    git_oid("tree", TREE).lower().encode("ascii"),
+    git_oid("tree", GITLINK_257).lower().encode("ascii"))
+GITLINK_257_SUBDIR = TREE.replace(
+    bytes.fromhex(git_oid("tree", SUBTREE)),
+    bytes.fromhex(git_oid("tree", GITLINK_257)), 1)
+GITLINK_257_SUBDIR_COMMIT = FIRST_COMMIT.replace(
+    git_oid("tree", TREE).lower().encode("ascii"),
+    git_oid("tree", GITLINK_257_SUBDIR).lower().encode("ascii"))
 # M37: third-level missing/wrong links remain valid at depths 0-2.
 LEVEL3_GOOD = (b"40000 next\x00"
                + bytes.fromhex(git_oid("tree", DEEP_GOOD)))
@@ -237,6 +254,10 @@ SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
            (1, DEEP_COMMIT_MISSING), (1, DEEP_COMMIT_WRONG),
            (1, DEEP_PARENT_MERGE), (2, LARGE_ROOT),
            (1, LARGE_ROOT_COMMIT),
+           (2, GITLINK_256), (2, GITLINK_257),
+           (1, GITLINK_256_COMMIT), (1, GITLINK_257_COMMIT),
+           (2, GITLINK_257_SUBDIR),
+           (1, GITLINK_257_SUBDIR_COMMIT),
            (2, LEVEL3_GOOD), (2, LEVEL3_MISSING),
            (2, LEVEL3_WRONG), (2, LEVEL3_ROOT_GOOD),
            (2, LEVEL3_ROOT_MISSING), (2, LEVEL3_ROOT_WRONG),
@@ -326,7 +347,12 @@ def main():
         (d / "dd:FIDXOUT").rename(d / "dd:FIDXIN")
         run(idx, "GENWRITE", cwd=d)
         (d / "dd:GENOUT").rename(d / "dd:GENIN")
-        assert "GENERATION VERIFIED 1808 UNIQUE 63" in run(idx, "GENCHECK", cwd=d)
+        expected_unique = len({git_oid({1: "commit", 2: "tree",
+                                         3: "blob"}[typ], body)
+                               for typ, body in OBJECTS})
+        expected_gen = ("GENERATION VERIFIED 1808 UNIQUE "
+                        + str(expected_unique))
+        assert expected_gen in run(idx, "GENCHECK", cwd=d)
         digest = (d / "dd:GENIN").read_text().splitlines()[1].split()[1]
         for prefix in ("C0", "C1"):
             for kind, name in (("STG", "STGIN"), ("IDX", "IDXIN"),
@@ -693,6 +719,30 @@ def main():
             assert "NESTED ROOT LINKS VERIFIED" not in corrupt_nested
             assert "DEEP ROOT LINKS VERIFIED" not in corrupt_nested
             assert "PARENTS DATA BEGIN" not in corrupt_nested
+        # M43: Gitlinks are external, but count toward the same
+        # 256-entry bound so all-Gitlink trees cannot evade it.
+        at_limit = run(
+            rec, "LINKBATCH", "GENOLD", "GENNEW",
+            git_oid("commit", GITLINK_256_COMMIT), cwd=d)
+        assert "LINK DEPTH 2 VERIFIED" in at_limit
+        over_gitlinks = run(
+            rec, "LINKBATCH", "GENOLD", "GENNEW",
+            git_oid("commit", GITLINK_257_COMMIT),
+            cwd=d, expected=8)
+        assert "ROOT LINK LIMIT EXCEEDED" in over_gitlinks
+        for leaked in ("NESTED ROOT LINKS VERIFIED",
+                       "DEEP ROOT LINKS VERIFIED",
+                       "LINK DEPTH 2 VERIFIED",
+                       "PARENTS DATA BEGIN"):
+            assert leaked not in over_gitlinks
+        over_nested = run(
+            rec, "LSDIRDEPTH", "GENOLD", "GENNEW",
+            git_oid("commit", GITLINK_257_SUBDIR_COMMIT),
+            b"subdir".hex().upper(), "0", cwd=d, expected=8)
+        assert "ROOT LINK LIMIT EXCEEDED" in over_nested
+        for leaked in ("DIRECTORY LINK DEPTH",
+                       "PATH OBJECT TYPE", "TREE DATA BEGIN"):
+            assert leaked not in over_nested
         # A 257-entry root must fail without partial batch output.
         over_limit = run(rec, "LINKBATCH", "GENOLD", "GENNEW",
                          git_oid("commit", LARGE_ROOT_COMMIT),
