@@ -3412,3 +3412,43 @@ one-page GITRUN PIPE-to-REXX-STEM summary and
 read-only sealed generation checks. M28 CMS
 target PASS still pending the corrected compile
 and actual GITRUN output; do not claim success.
+
+## September 28 11:54–11:57 M28 actual CMS PASS
+
+User re-uploaded 72-column-safe M28 GITREC.C
+following the earlier GCCCMS compile failure.
+Real CMSCLNK GITREC PLAIN: ASSEMBLER (XF)
+DONE, zero statements flagged, GITREC MODULE
+PLAIN built T=7.78/8.07 at 11:54:29.
+Standard one-page GITRUN M28 then completed
+fully on real CMS:
+ PASS PROTECTED FILES AND ABSENT TEST MANIFEST
+ PASS GITFIX FULL AUDIT RC0
+ PASS M15NEW FULL AUDIT RC0
+ PASS SELECT SEQ52 RC0
+ PASS ANCESTOR DEPTH1 RC0
+ PASS ANCESTOR DEPTH2 RC0
+ PASS INVALID DEPTH RC4
+ PASS NON COMMIT INPUT RC8
+ PASS RECOVERED DEPTH2 RC0
+ PASS BOTH INVALID FAIL CLOSED RC8
+ PASS RESTORED DEPTH2 RC0
+ PASS FINAL PROTECTED FILES
+ GITRUN M28 ALL READ ONLY NATIVE GIT TESTS PASSED
+ Ready T=172.80/173.94 at 11:57
+(actual seconds in pasted log truncated).
+This PROVES bounded 2-hop native Git ancestry,
+strict invalid-depth handling, fallbacks,
+both-missing fail-closed, compact console
+reporting and protected originals on target.
+The prior CMS line-truncation fix is target-
+proven, and the permanent GITREC.C 72-column
+CI guard stays mandatory. M28 now COMPLETE.
+
+User requires autonomous GitHub development
+until next genuine CMS test, every CMS test
+via one standard GITRUN and output one page
+or less. Keep original 1808-object generation
+files and selectors read-only; no repeated
+manual FILEDEF sequences, no changes to
+unchanged GITCIDX/GITSEL.
