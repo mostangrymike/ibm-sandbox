@@ -190,6 +190,40 @@ GITLINK_257_SUBDIR = TREE.replace(
 GITLINK_257_SUBDIR_COMMIT = FIRST_COMMIT.replace(
     git_oid("tree", TREE).lower().encode("ascii"),
     git_oid("tree", GITLINK_257_SUBDIR).lower().encode("ascii"))
+# M44: genuine full closure sees referenced objects beyond depth four.
+def six_level_tree(leaf):
+    levels = []
+    for n in range(6):
+        leaf = (b"40000 level" + str(n).encode("ascii") + b"\x00"
+                + bytes.fromhex(git_oid("tree", leaf)))
+        levels.append(leaf)
+    return levels
+
+
+CHAIN_GOOD = six_level_tree(SUBTREE)
+CHAIN_MISSING = six_level_tree(NEST_MISSING)
+CHAIN_WRONG = six_level_tree(NEST_WRONG)
+CHAIN_ROOT_GOOD = TREE.replace(
+    bytes.fromhex(git_oid("tree", SUBTREE)),
+    bytes.fromhex(git_oid("tree", CHAIN_GOOD[-1])), 1)
+CHAIN_ROOT_MISSING = TREE.replace(
+    bytes.fromhex(git_oid("tree", SUBTREE)),
+    bytes.fromhex(git_oid("tree", CHAIN_MISSING[-1])), 1)
+CHAIN_ROOT_WRONG = TREE.replace(
+    bytes.fromhex(git_oid("tree", SUBTREE)),
+    bytes.fromhex(git_oid("tree", CHAIN_WRONG[-1])), 1)
+CHAIN_GOOD_COMMIT = FIRST_COMMIT.replace(
+    git_oid("tree", TREE).lower().encode("ascii"),
+    git_oid("tree", CHAIN_ROOT_GOOD).lower().encode("ascii"))
+CHAIN_MISSING_COMMIT = FIRST_COMMIT.replace(
+    git_oid("tree", TREE).lower().encode("ascii"),
+    git_oid("tree", CHAIN_ROOT_MISSING).lower().encode("ascii"))
+CHAIN_WRONG_COMMIT = FIRST_COMMIT.replace(
+    git_oid("tree", TREE).lower().encode("ascii"),
+    git_oid("tree", CHAIN_ROOT_WRONG).lower().encode("ascii"))
+CHAIN_MISSING_PARENT = MERGE2.replace(
+    git_oid("commit", SECOND_PARENT).lower().encode("ascii"),
+    git_oid("commit", CHAIN_MISSING_COMMIT).lower().encode("ascii"))
 # M37: third-level missing/wrong links remain valid at depths 0-2.
 LEVEL3_GOOD = (b"40000 next\x00"
                + bytes.fromhex(git_oid("tree", DEEP_GOOD)))
@@ -263,6 +297,13 @@ SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
            (2, LEVEL3_ROOT_MISSING), (2, LEVEL3_ROOT_WRONG),
            (1, LEVEL3_COMMIT_GOOD), (1, LEVEL3_COMMIT_MISSING),
            (1, LEVEL3_COMMIT_WRONG), (1, LEVEL3_PARENT_MERGE)]
+SAMPLES.extend(
+    [(2, tree) for group in (CHAIN_GOOD, CHAIN_MISSING,
+                            CHAIN_WRONG) for tree in group])
+SAMPLES.extend([(2, CHAIN_ROOT_GOOD), (2, CHAIN_ROOT_MISSING),
+                (2, CHAIN_ROOT_WRONG),
+                (1, CHAIN_GOOD_COMMIT), (1, CHAIN_MISSING_COMMIT),
+                (1, CHAIN_WRONG_COMMIT), (1, CHAIN_MISSING_PARENT)])
 OBJECTS = SAMPLES + [(3, BLOB)] * (1808 - len(SAMPLES))
 
 
@@ -661,6 +702,35 @@ def main():
                 rec, "DEPTHLINKS", "GENOLD", "GENNEW",
                 wrong, "2", cwd=d, expected=code)
             assert "PARENTS DATA BEGIN" not in bad_child
+
+        # M44: fixed depth four cannot validate a deeper link,
+        # but iterative full closure must authenticate all of it.
+        closure = run(rec, "CLOSURE", "GENOLD", "GENNEW",
+                      git_oid("commit", CHAIN_GOOD_COMMIT),
+                      cwd=d)
+        assert "FULL ROOT CLOSURE VERIFIED" in closure
+        assert "PARENTS COUNT 0" in closure
+        for bad, rc, marker in (
+                (CHAIN_MISSING_COMMIT, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND"),
+                (CHAIN_WRONG_COMMIT, 8,
+                 "ROOT ENTRY TYPE MISMATCH"),
+                (CHAIN_MISSING_PARENT, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND")):
+            limited = run(rec, "DEPTHLINKS", "GENOLD", "GENNEW",
+                          git_oid("commit", bad), "4", cwd=d)
+            assert "LINK DEPTH 4 VERIFIED" in limited
+            broken = run(rec, "CLOSURE", "GENOLD", "GENNEW",
+                         git_oid("commit", bad), cwd=d,
+                         expected=rc)
+            assert marker in broken
+            assert "FULL ROOT CLOSURE VERIFIED" not in broken
+            assert "PARENTS DATA BEGIN" not in broken
+        too_many = run(rec, "CLOSURE", "GENOLD", "GENNEW",
+                       git_oid("commit", GITLINK_257_COMMIT),
+                       cwd=d, expected=8)
+        assert "ROOT LINK LIMIT EXCEEDED" in too_many
+        assert "PARENTS DATA BEGIN" not in too_many
 
         # M38: one full audit and one depth-two graph pass. All
         # three success markers must be committed together.
