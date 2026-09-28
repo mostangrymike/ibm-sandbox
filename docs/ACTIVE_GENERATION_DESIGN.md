@@ -1201,3 +1201,66 @@ seq52 restoration and original file
 integrity. GitHub native host CI passed:
 https://github.com/mostangrymike/ibm-sandbox/actions/runs/36475668731 .
 M34 remains unproven on actual CMS.
+
+## M34 real CMS PASS; M35 immediate-subtree link authentication
+
+M34 `GITREC ROOTLINKS` compiled cleanly on
+actual z/VM CMS on September 28 at 14:59:57
+(ASSEMBLER XF, zero flagged statements,
+T=9.10/9.42). Its standard single-page
+`GITRUN M34` completed at 15:03:06,
+T=183.05/184.48, with every stage passing:
+independent complete 1808-object audits
+of both immutable GITFIX/M15NEW sealed
+generations, seq52 selection, all actual
+historic child/parent root direct entries
+verified RC0, noncommit/missing child
+negative RC8/4, older-generation recovery,
+both-unavailable fail closed RC8, restored
+seq52, and final protected-file presence.
+M34 is real CMS TARGET PROVEN.
+
+M35 introduces
+`GITREC NESTLINKS C0NAME C1NAME COMMIT_OID40`.
+It retains all M34 checks and additionally
+opens each immediate subtree linked by the
+specified commit's root and every parent
+root. Every entry INSIDE each immediate
+subtree must resolve to a staged Git object
+of the mode-appropriate blob/tree type
+and independently SHA1-authenticate.
+Nested linked trees must also parse
+structurally. External Gitlinks (160000)
+are skipped. The traversal is intentionally
+bounded to root plus one extra subtree level,
+not an unbounded recursive repository scan.
+The existing 256 direct-entry limit per
+tree and a shared 1024-tree budget bound
+resource use on CMS. A failure returns
+RC4 for a missing linked object or RC8
+for wrong type/structural invalidity.
+No partial parent records or success
+marker are emitted before all child and
+parent root/subtree links pass.
+
+The native C89 host fixture remains 1808
+staged objects and now has 41 distinct
+objects. M35 tests two valid synthetic
+merge parents, a zero-parent root, a
+missing nested blob, a wrong-type nested
+blob, a missing entry inside a merge
+parent's nested tree, seq51 fallback,
+both unavailable fail-closed and restored
+seq52. It explicitly proves M34 ROOTLINKS
+passes the otherwise structurally valid
+trees for which M35 NESTLINKS fails.
+The standard M35 single-page `GITRUN`
+preserves all independent audits,
+historical-commit checks, negative child
+cases, recovery, both-unavailable RC8,
+restoration, final protected originals
+and in-memory PIPE CMS-to-STEM capture.
+All source lines remain <=72 characters.
+Full native host CI PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36476834575 .
+M35 live CMS compilation and gate remain pending.
