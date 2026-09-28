@@ -296,3 +296,28 @@ all negative/recovery tests and all protected original files. Source
 record and runner static checks have passed; independent complete
 GitHub Actions and real CMS execution of M38 remain unconfirmed.
 See `docs/LINK_BATCH.md` and the last section of `CHAT_STATE.md`.
+
+## September 28 follow-on: M38/M39 host-CI-complete
+
+M38 read-only `GITREC LINKBATCH` combines M35–M37
+positive depth-two link authentication into one complete
+GEN2 selection audit and one subtree traversal. M39 removes
+redundant subtree read/hash/parse at positive recursion depth:
+the recursive call fully authenticates each subtree once.
+Blobs, terminal trees, all parent/child roots, bounded
+limits, missing/wrong-type failure codes and no-partial-output
+rules remain protected. All original GITREC commands continue
+to exist. The standard one-page `GITRUN.EXEC` is M39
+and retains two independent original full 1,808-object
+generation audits, selector proof, negatives, fallback,
+dual-invalid rejection, restoration and final STATE checks.
+
+Complete strict native C89/integration/selector/index/REF
+GitHub CI succeeded for M38 and M39, including the final
+M39 runner and guard:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36482128273
+
+M38/M39 are host-proven, **not yet actually CMS-tested**.
+One real CMS compile and standard M39 GITRUN tests both;
+see `docs/LINK_BATCH.md`. Original sealed generations,
+selector pointers and captured PACK remain immutable.
