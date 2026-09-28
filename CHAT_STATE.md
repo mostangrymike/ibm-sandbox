@@ -4476,3 +4476,37 @@ seek/GEN, selector PTRs, GITPBUF PACK or legacy data.
 Do not claim M38/M39 target proven from host success.
 Proceed with further GitHub-only work rather than
 needlessly rebooting or redoing original pack captures.
+
+## September 28 15:54–16:02 — M38 + M39 REAL CMS PASS
+
+User successfully compiled latest main `CMSCLNK GITREC PLAIN`
+on actual z/VM CMS, ASSEMBLER (XF) DONE with no flagged
+statements, built GITREC MODULE PLAIN at 15:54:51,
+9.37 CPU / 9.74 elapsed sec. Standard one-page
+`GITRUN M39 COMPACT REPORT` then passed all gates:
+- protected original datasets + absent M15BAD GEN
+- independent GITFIX and M15NEW full original
+  1,808-object generation audits RC0
+- newest seq52 M15NEW selected RC0
+- M39 single audited LINKBATCH proving M35–M37 RC0
+- invalid depth RC4, noncommit RC8, missing child RC4
+- older seq51 recovered batch RC0
+- both generations unavailable fail-closed RC8
+- newer seq52 restored batch RC0
+- final protected original file checks passed
+Exact final:
+ GITRUN M39 ALL READ ONLY NATIVE GIT TESTS PASSED
+ Ready T=454.77/464.18 at 16:02:50.
+M38 and M39 are now ACTUAL CMS TARGET-PROVEN.
+Prior M37 complete regression took 693.54 CPU /
+708.96 elapsed sec in a different observed run.
+M39 took 454.77 / 464.18, ~34.5% less elapsed
+in the two observed complete suite runs. Not an
+isolated controlled attribution to either optimization.
+All original GITFIX/M15NEW STAGE/INDEX/SEEK/GEN,
+selector pointers and GITPBUF PACK were protected;
+no original generation was regenerated or overwritten.
+Next work: proceed autonomously with independent GitHub
+native source + host regressions and keep ONE standard
+compact GITRUN for future CMS gates. Do not ask to
+rerun M38/M39 or reboot for routine development.
