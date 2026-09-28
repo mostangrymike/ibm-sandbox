@@ -1264,3 +1264,63 @@ All source lines remain <=72 characters.
 Full native host CI PASSED:
 https://github.com/mostangrymike/ibm-sandbox/actions/runs/36476834575 .
 M35 live CMS compilation and gate remain pending.
+
+## M36 and M37: batched depth-verification development
+
+User requested maximum independent engineering per assistant turn.
+To minimize real CMS transfer/build/testing overhead, the next
+standard target batch combines the previously host-proven but
+not yet target-tested M35 with two newly completed milestones.
+
+M36 adds `GITREC DEEPLINKS C0 C1 COMMIT_OID40`.
+It generalizes the verified M35 immediate-subtree implementation to
+authenticate linked contents through TWO successive subtree levels
+under the child and all parents' roots. It first SHA1-verifies and
+structurally parses each commit and root, then checks every encountered
+mode-appropriate blob or tree. A shared 1024-tree budget and 256
+direct-entry-per-tree cap bound CPU and memory. Root/tree graph
+traversal stops at the specified depth; it is not an unbounded
+recursive validator. Gitlinks (160000) are deliberately external
+references and skipped. Output is atomic: no parent-list records
+or DEEP ROOT LINKS VERIFIED marker until the entire request passes.
+
+M37 adds the user-selectable command
+`GITREC DEPTHLINKS C0 C1 COMMIT_OID40 DEPTH`,
+where DEPTH must be exactly one decimal digit in 0..4.
+Depth 0 checks the roots and all direct entries, depth 1 also
+checks entries of their immediate subtrees (M35), depth 2
+adds the next nested level (M36), and 3/4 continue deeper
+within the same fixed resource budget. A missing linked
+object returns RC4; type/structural mismatch, exceeded
+256-entry or 1024-tree budget returns RC8. It emits
+LINK DEPTH N VERIFIED and complete short parent OID/tree
+records only after all checks pass. Original ROOTLINKS and
+NESTLINKS are retained unchanged at depths 0 and 1.
+
+Strict native C89 host tests exercise all five selectable
+depths on a synthetic multi-level Git tree, missing and
+wrong-type objects that pass shallower depth 0..2 checks
+but fail at depth 3, equivalent corruption in the second
+parent of a merge, invalid depth strings, missing/noncommit
+child, 257-entry root limit, seq51 recovery, two unavailable
+generations fail-closed and seq52 restoration. The synthetic
+fixture remains 1808 staged objects with 63 unique content
+objects; the real CMS originals remain the immutable two
+1808-unique-object GITFIX/M15NEW sealed generations.
+Every `GITREC.C` source line stays <=72 columns; success
+records stay <=80 columns.
+
+The ONE standard compact `GITRUN` is now M37, and its
+single actual-CMS run validates all THREE milestones:
+M35 NESTLINKS, M36 DEEPLINKS and M37 DEPTHLINKS
+depth 2 on the existing historical original commit and
+known parent/tree OIDs. It retains both full original
+audits, seq52 selection, invalid depth RC4, noncommit
+RC8, missing child RC4, seq51 recovery, both-generation
+failure RC8, seq52 restoration and original pre/post
+protected file STATE. No auxiliary CMS runner, output
+files or protected mutations. GitHub C89 native, source
+guards and full CI passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36478127516
+M35/M36/M37 are HOST-PROVEN but still pending a
+single real CMS compile and compact GITRUN.
