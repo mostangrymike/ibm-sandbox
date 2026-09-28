@@ -765,6 +765,47 @@ def main():
                 wrong, "2", cwd=d, expected=code)
             assert "PARENTS DATA BEGIN" not in bad_child
 
+        # M46: full closure can start at any known tree OID;
+        # no synthetic commit or commit-relative path is needed.
+        direct = run(rec, "TREECLOSURE", "GENOLD", "GENNEW",
+                     git_oid("tree", CHAIN_ROOT_GOOD), cwd=d)
+        assert "TREE FULL CLOSURE VERIFIED" in direct
+        assert "TREE DATA BEGIN" in direct
+        assert "TREE DATA END" in direct
+        for tree, code, diagnostic in (
+                (CHAIN_ROOT_MISSING, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND"),
+                (CHAIN_ROOT_WRONG, 8,
+                 "ROOT ENTRY TYPE MISMATCH"),
+                (MALFORMED, 8, "ROOT LINK TREE INVALID"),
+                (GITLINK_257, 8, "ROOT LINK LIMIT EXCEEDED")):
+            output = run(rec, "TREECLOSURE", "GENOLD",
+                         "GENNEW", git_oid("tree", tree),
+                         cwd=d, expected=code)
+            assert diagnostic in output
+            assert "TREE FULL CLOSURE VERIFIED" not in output
+            assert "TREE DATA BEGIN" not in output
+        missing_tree = run(rec, "TREECLOSURE", "GENOLD",
+                           "GENNEW", "0"*40, cwd=d, expected=4)
+        assert "ROOT LINK TREE NOT FOUND" in missing_tree
+        non_tree = run(rec, "TREECLOSURE", "GENOLD",
+                       "GENNEW", git_oid("blob", BLOB),
+                       cwd=d, expected=8)
+        assert "ROOT LINK OBJECT NOT TREE" in non_tree
+        gitlinks_ok = run(rec, "TREECLOSURE", "GENOLD",
+                          "GENNEW", git_oid("tree", GITLINK_256),
+                          cwd=d)
+        assert "TREE FULL CLOSURE VERIFIED" in gitlinks_ok
+        assert "TREE DATA END" in gitlinks_ok
+        limit_ok = run(rec, "TREECLOSURE", "GENOLD",
+                       "GENNEW", git_oid("tree", BUDGET_ROOT_OK),
+                       cwd=d)
+        assert "TREE FULL CLOSURE VERIFIED" in limit_ok
+        limit_failed = run(rec, "TREECLOSURE", "GENOLD",
+                           "GENNEW", git_oid("tree", BUDGET_ROOT_OVER),
+                           cwd=d, expected=8)
+        assert "NESTED LINK BUDGET EXCEEDED" in limit_failed
+        assert "TREE DATA BEGIN" not in limit_failed
         # M44: fixed depth four cannot validate a deeper link,
         # but iterative full closure must authenticate all of it.
         closure = run(rec, "CLOSURE", "GENOLD", "GENNEW",
