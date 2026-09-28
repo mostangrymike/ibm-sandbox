@@ -719,3 +719,48 @@ read-only EXEC source guard passed:
 https://github.com/mostangrymike/ibm-sandbox/actions/runs/36444249032 .
 M26 is host-proven only until the new GITRUN is
 actually executed on CMS.
+
+## M26 target pass and compact standard GITRUN reporting
+
+M26's native `GITREC LSDIR` compiled on CMS with no
+assembler statements flagged. On September 28,
+the standard `GITRUN M26` completed all tests
+(T=194.96/196.38). The selected seq52 M15NEW
+returned the historic docs directory as a 73-byte
+tree, with precisely BUILD.md and STATUS.md.
+Both 1,808-object original sealed generations passed
+full independent GENCHECK; blob-as-directory,
+missing path and non-tree intermediate produced
+expected RC8/RC4/RC8. Old seq51 recovery, both
+invalid fail-closed and restored seq52 succeeded.
+Final protected files remained present.
+
+At user request, the *same standard GITRUN.EXEC*
+is now M26Q, a one-page **console summary** rather
+than six to seven pages of repeated full audits
+and tree records. Each native CMS command runs as
+`PIPE CMS <command> | STEM out.`, capturing output
+in an **in-memory REXX stem**, with no disk output
+or modified source generations. The runner verifies
+the PIPE return code and specific expected result
+markers independently, including both exact
+docs-directory entry OIDs. On success, it prints
+two headers and around thirteen short PASS lines.
+On a failed case, it prints its stage name,
+observed and expected RC, missing marker flags
+and at most four diagnostic lines, then stops
+with RC12. Tests retain independent two-generation
+GENCHECK, selector, normal, negative, fallback,
+fail-closed and restored cases plus pre/post
+protected-file STATE checks. Intentional absence
+of the test manifest is also captured silently.
+
+The output summarization mechanism follows
+documented CMS Pipelines REXX STEM behavior.
+All source/host CI regression checks passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36446084502
+The compact PIPE/STEM runner itself still needs
+one real CMS run before its output can be called
+target-proven. The native GITREC/GITCIDX modules
+and original generation files are unchanged.
+Future GITRUN suites must remain one page or less.
