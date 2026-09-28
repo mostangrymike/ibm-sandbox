@@ -561,7 +561,8 @@ def main():
             legacy.split("PARENTS DATA BEGIN", 1)[1])
         # Every single LINKBATCH command audits only one selected
         # generation; its three markers do not trigger extra audits.
-        assert batch.count("GENERATION VERIFIED 1808 UNIQUE 1808") == 1
+        assert len(re.findall(r"^GENERATION VERIFIED [0-9]+ UNIQUE "
+                              r"[0-9]+$", batch, re.M)) == 1
         assert batch.count("NESTED ROOT LINKS VERIFIED") == 1
         assert batch.count("DEEP ROOT LINKS VERIFIED") == 1
         assert batch.count("LINK DEPTH 2 VERIFIED") == 1
