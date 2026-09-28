@@ -3284,3 +3284,86 @@ Keep response/request compact; no changed
 GITCIDX.C or GITSEL.C. Never run old cleanup,
 rebuild protected original generations, or
 claim target M27 PASS before real console.
+
+## September 28 11:23–11:26 — M27 live CMS PASS; M28 host complete
+
+Actual z/VM CMS: user uploaded latest M27
+GITREC.C and GITRUN.EXEC; CMSCLNK GITREC PLAIN
+reported ASSEMBLER (XF) DONE with no flags
+(T=7.48/7.77); standard GITRUN M27 COMPACT
+REPORT ran entirely and returned:
+ PASS protected files/absent fixture
+ PASS GITFIX FULL AUDIT RC0
+ PASS M15NEW FULL AUDIT RC0
+ PASS SELECT SEQ52 RC0
+ PASS FIRST PARENT VERIFIED RC0
+ PASS NON COMMIT INPUT RC8
+ PASS MISSING COMMIT RC4
+ PASS RECOVERED FIRST PARENT RC0
+ PASS BOTH INVALID FAIL CLOSED RC8
+ PASS RESTORED FIRST PARENT RC0
+ PASS FINAL PROTECTED FILES
+ GITRUN M27 ALL READ ONLY NATIVE GIT TESTS PASSED
+ Ready; T=171.82/172.92 at 11:26:34.
+First-parent traversal and the single-page
+GITRUN are now proven on actual CMS. Continue
+to preserve <1 page target console reporting,
+PIPE CMS ... | STEM out. in-memory capture,
+single-physical-line REXX CALL gate invocations,
+read-only stage/index/GEN/selector/PACK access.
+Do not request full raw audit or hex dump logs.
+
+Autonomously implemented M28 in current GitHub
+main: production native C89 GITREC ANCESTOR
+C0 C1 COMMIT_OID40 DEPTH (strict numeric depth
+1-16) follows a bounded series of first-parent
+links within the SAME fully GEN2-verified sealed
+generation. Every traversed commit is located,
+fully independently SHA1 verified and structurally
+validated before attempting the next link.
+Only the final, fully verified ancestor's
+40-hex object ID, tree ID and depth are printed,
+no partial output on missing/corrupt links.
+Depth0/bad/out-of-range values RC4; root reached
+too early RC4; absent link RC4, invalid type/
+structure RC8, both-invalid full generations
+RC8 without ancestor output. Preserves all
+historical native functionality.
+
+Strict host integration tests compile actual
+native GITREC/GITCIDX C89 -Werror against
+1808-object sealed fixture including a new
+three-commit first-parent chain (grandchild,
+two-parent merge and root), success at depth1/2,
+root exhaustion at depth3, invalid depths,
+missing/corrupt/wrong-type links, seq51 recovery,
+both missing RC8 and seq52 restore. Full CI
+PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36451606606
+
+Standard src/GITRUN.EXEC is M28 COMPACT, preserving
+both independent 1808-object original audits,
+read-only protected files pre/post, seq52
+selection, real known commit OID
+00D8D63229305230C8D37F884CE87F9E1A89468C.
+New M28 one-page checks first parent depth1
+2D5038C551318997B865497E04CF4C037DE4135E,
+depth2 historical grandparent GitHub SHA
+C67A53164ADFC6FDEB708F13F1822E2CF24C060C
+tree B8A987847912D6B67C1064D5361F5A9E5868DC18;
+invalid depth RC4, noncommit RC8, older-seal
+fallback at depth2, both unavailable RC8, full
+restored depth2. Host CI source guard enforces
+one-line GATE calls and read-only commands.
+M28 target CMS run is PENDING, not yet proven.
+
+User Mac normally at ibm-sandbox/src.
+M28 next actual target step:
+ git pull
+ ./cms-upload.sh GITREC.C
+ ./cms-upload.sh GITRUN.EXEC
+Real CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+No protected files rebuilt, no extra source
+uploads, no manual FILEDEF command sequences.
