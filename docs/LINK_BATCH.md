@@ -116,3 +116,47 @@ GITRUN M39 ALL READ ONLY NATIVE GIT TESTS PASSED
 Do not infer a target performance improvement before
 the actual M39 CMS timing. Existing real target proof ends
 at M37 until the operator runs this new combined gate.
+
+## M40: atomic path metadata for terminal directories
+
+The M39 read-only tree walk is target-proven. A separate
+path-walking edge case remained: PATH could return a canonical,
+correctly typed but structurally malformed *terminal* subtree;
+LSDIR printed PATH OBJECT TYPE and OID before checking its
+tree structure. The SHA-1 of a malformed tree is a valid Git
+OID, but should not authenticate it as a directory.
+
+M40 requires the full binary Git tree parser to succeed before
+either PATH or LSDIR emits **any** metadata about a terminal
+tree. This is in addition to the existing full selected GEN2
+audit, referenced object-type check and SGET SHA-1 verification.
+Malformed terminal trees return RC8 with
+`DIRECTORY TREE STRUCTURE INVALID`; no PATH OBJECT TYPE
+or TREE DATA BEGIN is emitted. Plain blob PATH and PATHCAT
+semantics, Gitlinks and all existing link-depth commands
+are unchanged.
+
+Full host integration adds deliberately malformed terminal
+subtree tests for both PATH and LSDIR, including no partial
+result checks. One standard `GITRUN M40` adds a positive
+real 1,808-object historical `src` directory lookup using
+the known first commit and path hex 737263, while retaining
+both independent full GEN2 audits, the M39 LINKBATCH test,
+the negative cases, two-slot recovery and final protected
+STATE checks. Only GITREC.C and GITRUN.EXEC require CMS
+transfer. After full host CI succeeds, real target gate:
+
+```sh
+git pull
+./cms-upload.sh GITREC.C
+./cms-upload.sh GITRUN.EXEC
+```
+
+```text
+CMSCLNK GITREC PLAIN
+GITRUN
+```
+
+Expected final marker after a genuine target success:
+`GITRUN M40 ALL READ ONLY NATIVE GIT TESTS PASSED`.
+No protected original generation or pointer is modified.
