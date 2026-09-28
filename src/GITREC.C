@@ -404,7 +404,8 @@ static int rec_history(const unsigned char *starting,
  for(j=0;j<=depth;j++) {
   printf("HISTORY HOP %u OID ",j);
   idx_print(stdout,commits[j]);
-  fputs(" TREE ",stdout);
+  putchar('\n');
+  printf("HISTORY HOP %u TREE ",j);
   idx_print(stdout,trees[j]);
   putchar('\n');
  }
