@@ -2976,3 +2976,77 @@ Then on CMS:
 No need to upload unchanged GITCIDX/GITSEL or
 rebuild protected stage/index/seek/manifests
 or run historical TLS cleanup.
+
+## September 28 10:19–10:28 — M25 live CMS PASS, M26 ready
+
+The user ran CMSCLNK GITREC PLAIN on native z/VM
+CMS; ASSEMBLER (XF) DONE, no flagged statements,
+module built (T=7.18/7.47). They ran the standard
+GITRUN M25 and pasted interleaved console output
+ending unambiguously:
+  GITRUN M25 ALL READ ONLY NATIVE GIT TESTS PASSED
+  Ready; T=218.04/220.32 10:28:26
+Both existing sealed GITFIX and M15NEW generations
+again passed all full 1808-object native audits.
+M15NEW seq52 selected. Actual production PATHCAT
+emitted full Git binary hex for historical
+README.md (567 bytes, OID
+1BA7AE466BB0A16C294D52A8642E527B07D4D1F5)
+and nested docs/STATUS.md (5737 bytes, OID
+46135A22C7394D8090619C6C70453C58A24F5239).
+Negative target cases returned their expected
+type/path RCs, old generation fallback worked,
+both missing manifests failed closed, restored
+seq52 PATHCAT returned full README, protected
+files STATE rechecks passed. Deliberate M15BAD
+absence and C0/C1 missing GEN messages are
+expected. M25 is ACTUAL CMS TARGET-PROVEN.
+
+Following user's explicit autonomous development
+and single standard GITRUN rules, independently
+implemented M26 production C89 in GitHub:
+  GITREC LSDIR C0NAME C1NAME COMMIT_OID40 DIRHEX
+It extends the proven authenticated nested
+PATH resolver, with full selected-generation
+GEN2 verification, per-object Git SHA1, raw
+binary names/modes and an additional requirement
+that final object is a structurally sound type2
+tree; emits validated TREE DATA BEGIN, TREE
+ENTRY MODE/NAMELEN/OID, TREE NAMEHEX, TREE
+ENTRIES, TREE DATA END. Wrong types, gitlinks,
+missing or invalid paths, corrupt tree and
+both-invalid generations fail closed without
+TREE data. The strict production C89 host
+integration tests exact nested entry, malformed
+and missing targets, wrong types, fallback,
+both-invalid, restoration alongside earlier
+CATHEX/PATHCAT max-size and binary tests.
+Single standard src/GITRUN.EXEC was advanced
+to M26 with read-only checks of both protected
+1808-object generations; seq52 selection;
+LSDIR actual first commit's docs directory
+(known historical BUILD.md/STATUS.md);
+blob-as-directory RC8, missing RC4,
+non-tree intermediate RC8, newer-GEN unavailable
+seq51 fallback, both missing RC8, restored
+seq52, final original protected-file checks.
+Updated tests/check-readonly-gitrchk.sh to
+guard M26 one-batch read-only behavior.
+Full host CI PASSED:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36444249032 .
+M26 CMS live test is still PENDING.
+
+User Mac shell is usually in ibm-sandbox/src.
+NEXT ACTUAL CMS M26 test, no repeated GITCIDX or
+GITSEL upload; they are unchanged:
+ Mac:
+ git pull
+ ./cms-upload.sh GITREC.C
+ ./cms-upload.sh GITRUN.EXEC
+ CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+Wait only for genuine user-provided CMS results,
+not for repeated 'proceed'. Do not touch original
+stage/index/seek/GEN/pointers, do not run obsolete
+GITRUN cleanup or legacy TLS experiments.
