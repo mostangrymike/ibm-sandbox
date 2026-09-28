@@ -669,3 +669,53 @@ fail-closed and seq52 restoration, final
 all-protected file checks. Host CI verifies
 that this batch has no persistent CMS writes.
 M25 has not yet run on CMS.
+
+## September 28 M25 target pass; M26 nested-directory listing
+
+M25 passed on actual CMS: `CMSCLNK GITREC PLAIN`
+compiled the updated production module with no assembler
+statements flagged. The standard read-only `GITRUN M25`
+independently audited both original GITFIX/M15NEW
+1,808-object sealed generations; selected M15NEW seq52;
+successfully emitted the entire first commit's README.md
+(567-byte blob 1BA7AE466BB0A16C294D52A8642E527B07D4D1F5)
+and nested docs/STATUS.md (5,737-byte blob
+46135A22C7394D8090619C6C70453C58A24F5239)
+as framed raw-byte hex. Wrong-type and missing-path
+tests failed as expected, the absent newer manifest
+recovered the verified older generation, and both absent
+manifests failed closed. Restoration retrieved the
+complete README again; final protected file checks
+passed. Actual last line: `GITRUN M25 ALL READ ONLY
+NATIVE GIT TESTS PASSED` (CMS T=218.04/220.32 at
+10:28:26). The pasted terminal capture is interleaved,
+but the final batch completion is unambiguous.
+
+M26 adds native `GITREC LSDIR C0NAME C1NAME
+COMMIT_OID40 DIRHEX`. This read-only command resolves
+a relative directory from the verified commit's tree
+through authenticated nested trees in the same
+GEN2-selected generation, independently rehashes the
+target tree, validates the full tree structure, and
+emits all entries in the established `TREE DATA`
+framing. A regular blob, external gitlink, missing
+directory, malformed path, non-tree intermediate,
+corrupt tree or unavailable verified generation cannot
+emit tree data. Names remain raw Git bytes encoded
+as `TREE NAMEHEX`, with explicit ASCII mode decoding
+for native CMS/EBCDIC compatibility.
+
+The actual compiled C89 host tests now verify `LSDIR`
+of a nested directory (including exact child mode,
+name and OID), missing/invalid/non-directory targets,
+older-generation recovery, both-manifests-unavailable
+fail-closed behavior and restored newer selection.
+Standard `src/GITRUN.EXEC` has been updated to the
+M26 single read-only target suite. Its positive live
+CMS case lists the actual first commit's `docs`
+directory, containing the historical BUILD.md and
+STATUS.md. All host native regressions and the
+read-only EXEC source guard passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36444249032 .
+M26 is host-proven only until the new GITRUN is
+actually executed on CMS.
