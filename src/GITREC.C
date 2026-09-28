@@ -545,7 +545,8 @@ int main(int argc,char **argv) {
  unsigned long pathlen=0;
  unsigned int depth=0;
  unsigned long d;
- int get,full,tree,commit,root,path_command,pathcat,lsdir,firstpar,ancestor,rc;
+ int get,full,tree,commit,root,path_command,pathcat;
+ int lsdir,firstpar,ancestor,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
@@ -574,7 +575,8 @@ int main(int argc,char **argv) {
   puts("GITREC ANCESTOR C0NAME C1NAME COMMIT_OID40 DEPTH");
   return 4;
  }
- if((get||full||tree||commit||root||path_command||pathcat||lsdir||firstpar||ancestor)&&
+ if((get||full||tree||commit||root||path_command||
+     pathcat||lsdir||firstpar||ancestor)&&
     (strlen(argv[4])!=40||
     !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
@@ -611,7 +613,8 @@ int main(int argc,char **argv) {
  }
  rc=selector_choose(&a,&b);
  if(rc!=0||(!get&&!full&&!tree&&!commit&&!root&&
-             !path_command&&!pathcat&&!lsdir&&!firstpar&&!ancestor)) return rc;
+             !path_command&&!pathcat&&!lsdir&&
+             !firstpar&&!ancestor)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(tree) return rec_tree(oid);
  if(commit) return rec_commit(oid);
