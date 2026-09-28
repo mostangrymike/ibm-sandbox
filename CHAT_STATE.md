@@ -3734,3 +3734,81 @@ CMS output lines <80 characters,
 single standard one-page read-only GITRUN,
 in-memory PIPE CMS to STEM, full two-generation
 audits and negative/recovery/restoration tests.
+
+## September 28 13:46–13:49 M30 CMS PASS; M31 host-green
+
+Actual user CMS console: CMSCLNK GITREC PLAIN
+ASSEMBLER (XF) DONE, no statements flagged,
+GITREC MODULE PLAIN built, T=8.28/8.61 at
+13:46:45. Standard one-page GITRUN M30
+completed all PASS: protected original STATE
+and absent M15BAD, independent full 1808-object
+GENCHECK GITFIX/M15NEW RC0, seq52 M15NEW
+select RC0, numbered parent ordinal1 RC0
+(actual historic parent OID
+2D5038C551318997B865497E04CF4C037DE4135E
+and parent tree F3EF36AAD778D5DA84857D8DED46495C75F4CAB0),
+absent second parent RC4, invalid ordinal
+RC4, noncommit child RC8, recovered seq51
+RC0, both manifests unavailable RC8,
+restored seq52 RC0, final protected files
+present. Final line:
+ GITRUN M30 ALL READ ONLY NATIVE GIT TESTS PASSED
+ Ready T=172.35/173.54 13:49:42.
+M30 numbered Git parent authentication and
+one-page compact GITRUN are TARGET PROVEN.
+
+Without pausing, autonomously developed
+M31 production native strict C89
+ GITREC PARENTS C0NAME C1NAME COMMIT_OID40
+which authenticates ALL parents of a merge
+commit atomically. After full verified
+GEN2 selection, checks child's type, raw
+Git SHA1 and complete header structure;
+collects up to 16 raw first/second/... parent
+OIDs in order BEFORE fetching parent objects,
+then each parent in SAME sealed generation
+must be staged type1, SHA1-rehashed and
+complete commit structure validated.
+Emits framed PARENTS DATA with one CMS-safe
+short ordinal/OID and ordinal/TREE line
+per parent, PARENTS COUNT and DATA END ONLY
+after full success; zero-parent root returns
+count0. Missing parent RC4, wrong-type/
+malformed parent RC8, no partial output.
+No original protected file writes, no C
+source lines >72.
+
+Native C89 host integration extends authentic
+synthetic two-parent merge/second root fixture,
+tests both exact merge parent OIDs and trees,
+zero-parent root, missing/wrong-type/malformed
+parents, bad child, seq51 fallback, both
+unavailable RC8 and restored seq52, preserving
+all prior full native tests. Standard one-page
+src/GITRUN.EXEC M31 tests historical first
+commit's count1 and known exact parent/tree,
+noncommit input RC8, missing child RC4,
+seq51 fallback, both invalid RC8, restored
+seq52, independent real 1808-object GENCHECK
+for both immutable originals and final
+all-protected STATE. PIPE CMS ... | STEM
+in-memory capture, no lengthy logs.
+tests/check-readonly-gitrchk.sh updated.
+Complete host CI SUCCESS:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36468308462
+
+M31 HOST PASS ONLY, needs actual live CMS
+compile and standard one-page GITRUN to
+prove target. User Mac prompt ibm-sandbox/src:
+ git pull
+ ./cms-upload.sh GITREC.C
+ ./cms-upload.sh GITRUN.EXEC
+CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+Do not touch original GITFIX/M15NEW
+STAGE/INDEX/SEEK/GEN, selectors or GITPBUF
+PACK. GITCIDX.C/GITSEL.C unchanged and
+need no new upload. After target M31
+results, continue independently.
