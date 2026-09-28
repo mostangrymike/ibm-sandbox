@@ -832,3 +832,51 @@ both unavailable RC8 and seq52 restoration
 using in-memory PIPE capture. M27 itself
 requires live CMS execution and is not
 yet target-proven.
+
+## M27 target-proven and M28 bounded ancestry
+
+M27 passed real CMS compilation and the
+one-page standard `GITRUN M27` on September 28,
+at 11:26:34, T=171.82/172.92. Both original
+1,808-object sealed generations passed independent
+full audits and seq52 M15NEW selection. The
+historical first commit's first parent was
+independently authenticated within the selected
+generation. Wrong-type/missing inputs returned
+expected RC8/4, loss of the newer GEN2 recovered
+seq51 GITFIX, loss of both failed closed RC8,
+restoration recovered M15NEW, and all protected
+files passed final STATE. The compact GITRUN
+console contract remains actual-CMS proven.
+
+M28 adds `GITREC ANCESTOR C0 C1
+COMMIT_OID40 DEPTH`, where DEPTH is a strict
+1–16 decimal hop count along first-parent
+links. It fully GEN2-authenticates exactly one
+selected sealed generation, then rehashes and
+validates EVERY intermediate commit and its
+Git ASCII parent header, following each hop
+within that SAME generation. It prints only the
+final verified ancestor's OID and tree OID
+together with verified depth; missing, bad,
+wrong-type or root-exhausted chains emit no
+ancestor success metadata. A strict host
+fixture includes a grandchild, a two-parent
+merge and a root, checks two-hop success,
+depth3 root exhaustion, invalid depth values,
+missing and malformed parents and both
+manifest recovery states.
+
+The one-page standard `src/GITRUN.EXEC` M28
+target batch uses the actual sealed historical
+first commit, first parent and second ancestor
+to validate depth1 and depth2. The depth2
+historical grandparent SHA
+C67A53164ADFC6FDEB708F13F1822E2CF24C060C
+and tree B8A987847912D6B67C1064D5361F5A9E5868DC18
+were independently cross-checked against
+historical GitHub commit metadata. Full host
+C89 tests and read-only compact GITRUN guards
+passed:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36451606606
+M28 is not yet proven on CMS.
