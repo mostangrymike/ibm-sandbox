@@ -4127,3 +4127,93 @@ NEVER touch original GITFIX/M15NEW
 STAGE/INDEX/SEEK/GEN, protected selectors
 or GITPBUF PACK. Single standard compact
 one-page GITRUN only, no manual FILEDEF.
+
+## September 28 14:59–15:03 — M34 LIVE CMS PASS; M35 host green
+
+User's actual CMSCLNK GITREC PLAIN for M34:
+ASSEMBLER (XF) DONE, NO STATEMENTS FLAGGED,
+GITREC MODULE mode PLAIN built T=9.10/9.42
+14:59:57. Standard one-page GITRUN M34
+completed every stage:
+ PASS original protected files/absent M15BAD
+ PASS GITFIX full audit 1808 objects RC0
+ PASS M15NEW full audit 1808 objects RC0
+ PASS seq52 selected RC0
+ PASS verified actual root direct links RC0
+ PASS noncommit child RC8
+ PASS missing child RC4
+ PASS seq51 recovery RC0
+ PASS both GEN2 unavailable fail closed RC8
+ PASS restored seq52 RC0
+ PASS original protected file final STATE
+ GITRUN M34 ALL READ ONLY NATIVE GIT TESTS PASSED
+ Ready T=183.05/184.48 at 15:03:06.
+M34 is LIVE CMS TARGET PROVEN; no protected
+original files rewritten.
+
+Autonomously developed M35 native read-only
+GITREC NESTLINKS C0NAME C1NAME COMMIT_OID40.
+Extends M34 ROOTLINKS: after full GEN2 audit
+and selected generation, authenticates child
+and all parent commits, all corresponding
+root trees and all immediate root entries.
+Also descends exactly ONE subtree level
+from EVERY direct root subtree for child
+and all parent roots, authenticating every
+nested entry's referenced Git blob or tree
+of correct mode/type and SHA1, and parsing
+linked nested tree structure. External Gitlinks
+160000 skipped (external repositories).
+Bounded to 256 entries per tree, shared
+1024-tree visit budget on CMS. No unbounded
+recursive traversal and no partial parent
+list/success marker on missing/wrong-type
+or invalid nested links. No writes. All
+C source lines <=72; output <=80.
+Prior M34 ROOTLINKS semantics unchanged.
+
+Synthetic strict C89 native host fixture
+1808 objects now 41 unique; adds
+structurally valid direct subtrees
+containing missing or wrong-type nested
+blob and malformed parent-nested reference.
+Proves old M34 ROOTLINKS passes these
+shallow-valid structures while new
+NESTLINKS correctly fails RC4 or RC8
+without partial output. Tests two-parent
+merge valid nested links and zero-parent
+root, seq51 recovery, both invalid RC8
+and seq52 restoration; all M0–M34 tests
+continue passing. Corrected fixture
+binary literal escapes after initially
+discovering duplicated source backslashes.
+Standard src/GITRUN.EXEC now M35 compact
+one-page read-only test of both independent
+real original 1808-object GENCHECKs,
+seq52 selected, historic commit NESTLINKS
+and expected known parent/tree, wrong-type
+and missing child, seq51 fallback, both
+missing fail closed and seq52 restore,
+final original protected STATE. In-memory
+PIPE CMS to STEM, last-four-line diagnostics
+on failure. GITRUN source guard updated.
+FULL native host CI SUCCESS:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/36476834575
+M35 HOST-PROVEN ONLY, target CMS not run yet.
+
+Next real target gate from user Mac
+ibm-sandbox/src:
+ git pull
+ ./cms-upload.sh GITREC.C
+ ./cms-upload.sh GITRUN.EXEC
+Real CMS:
+ CMSCLNK GITREC PLAIN
+ GITRUN
+Do NOT rewrite original GITFIX/M15NEW
+STAGE/INDEX/SEEK/GEN, selector PTRs
+or GITPBUF PACK. Unchanged GITCIDX and
+GITSEL need no uploads. Only standard
+one-page GITRUN, no auxiliary CMS runner.
+If M35 fails due to missing original
+historical nested references, diagnose
+without weakening fail-closed rules.
