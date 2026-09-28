@@ -318,6 +318,52 @@ static int rec_firstpar(const unsigned char *child) {
  idx_print(stdout,tree_oid);putchar('\n');
  return 0;
 }
+/* M28: bounded, read-only first-parent ancestry.
+ * Each hop must be a fully rehashed and structurally valid Git commit
+ * in the SAME already verified generation. Do not emit intermediate
+ * ancestor results; missing or corrupt links fail closed.
+ */
+static int rec_ancestor(const unsigned char *starting,
+                        unsigned int depth) {
+ unsigned char current[20],next[20],tree[20];
+ unsigned long sz;
+ unsigned int hop;
+ int pos,rc;
+ if(sidx_read()!=0) return 8;
+ memcpy(current,starting,20);
+ for(hop=0;hop<=depth;hop++) {
+  pos=sidx_locate(current);
+  if(pos<0) {
+   puts("ANCESTOR COMMIT NOT FOUND");return 4;
+  }
+  if(sidx[pos].type!=1) {
+   puts("ANCESTOR OBJECT IS NOT A COMMIT");return 8;
+  }
+  sz=sidx[pos].size;
+  sidx_silent=1;
+  rc=sidx_get(current);
+  sidx_silent=0;
+  if(rc!=0) return rc;
+  if(!rec_commit_walk(sz,0)) {
+   puts("ANCESTOR COMMIT STRUCTURE INVALID");return 8;
+  }
+  if(hop==depth) {
+   if(!rec_ascii_oid(idx_body+5,tree)) return 8;
+   printf("ANCESTOR VERIFIED DEPTH %u\n",depth);
+   fputs("ANCESTOR OID ",stdout);
+   idx_print(stdout,current);putchar('\n');
+   fputs("ANCESTOR TREE ",stdout);
+   idx_print(stdout,tree);putchar('\n');
+   return 0;
+  }
+  if(sz<=46||!rec_ascii_key(idx_body+46,sz-46,"parent")) {
+   puts("ANCESTOR ROOT REACHED");return 4;
+  }
+  if(!rec_ascii_oid(idx_body+53,next)) return 8;
+  memcpy(current,next,20);
+ }
+ return 8;
+}
 /* M24: follow a commit's authenticated tree in the SAME
  * fully verified generation. Do not expose tree entries if either
  * linked object is missing, mis-typed or structurally invalid.
@@ -497,7 +543,9 @@ int main(int argc,char **argv) {
  struct slot a,b;
  unsigned char oid[20],path[255];
  unsigned long pathlen=0;
- int get,full,tree,commit,root,path_command,pathcat,lsdir,firstpar,rc;
+ unsigned int depth=0;
+ unsigned long d;
+ int get,full,tree,commit,root,path_command,pathcat,lsdir,firstpar,ancestor,rc;
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
@@ -507,8 +555,9 @@ int main(int argc,char **argv) {
  pathcat=argc==6&&strcmp(argv[1],"PATHCAT")==0;
  lsdir=argc==6&&strcmp(argv[1],"LSDIR")==0;
  firstpar=argc==5&&strcmp(argv[1],"FIRSTPAR")==0;
+ ancestor=argc==6&&strcmp(argv[1],"ANCESTOR")==0;
  if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
-     !pathcat&&!lsdir&&!firstpar&&
+     !pathcat&&!lsdir&&!firstpar&&!ancestor&&
      (argc!=4||strcmp(argv[1],"SELECT")!=0))||
     !proper_name(argv[2])||!proper_name(argv[3])||
     strcmp(argv[2],argv[3])==0) {
@@ -522,13 +571,30 @@ int main(int argc,char **argv) {
   puts("GITREC PATHCAT C0NAME C1NAME COMMIT_OID40 PATHHEX");
   puts("GITREC LSDIR C0NAME C1NAME COMMIT_OID40 DIRHEX");
   puts("GITREC FIRSTPAR C0NAME C1NAME COMMIT_OID40");
+  puts("GITREC ANCESTOR C0NAME C1NAME COMMIT_OID40 DEPTH");
   return 4;
  }
- if((get||full||tree||commit||root||path_command||pathcat||lsdir||firstpar)&&
+ if((get||full||tree||commit||root||path_command||pathcat||lsdir||firstpar||ancestor)&&
     (strlen(argv[4])!=40||
     !idx_hex(argv[4],oid))) {
   puts("GET REQUIRES 40 HEX DIGITS");
   return 4;
+ }
+ if(ancestor) {
+  if(!argv[5][0]||strlen(argv[5])>2) {
+   puts("ANCESTOR DEPTH MUST BE 1 THROUGH 16");return 4;
+  }
+  d=0;
+  for(rc=0;argv[5][rc];rc++) {
+   if(argv[5][rc]<'0'||argv[5][rc]>'9') {
+    puts("ANCESTOR DEPTH MUST BE 1 THROUGH 16");return 4;
+   }
+   d=d*10+(unsigned long)(argv[5][rc]-'0');
+  }
+  if(d<1||d>16) {
+   puts("ANCESTOR DEPTH MUST BE 1 THROUGH 16");return 4;
+  }
+  depth=(unsigned int)d;
  }
  if((path_command||pathcat||lsdir)&&
     !rec_path_hex(argv[5],path,&pathlen)) {
@@ -545,7 +611,7 @@ int main(int argc,char **argv) {
  }
  rc=selector_choose(&a,&b);
  if(rc!=0||(!get&&!full&&!tree&&!commit&&!root&&
-             !path_command&&!pathcat&&!lsdir&&!firstpar)) return rc;
+             !path_command&&!pathcat&&!lsdir&&!firstpar&&!ancestor)) return rc;
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(tree) return rec_tree(oid);
  if(commit) return rec_commit(oid);
@@ -554,6 +620,7 @@ int main(int argc,char **argv) {
  if(pathcat) return rec_path(oid,path,pathlen,1);
  if(lsdir) return rec_path(oid,path,pathlen,2);
  if(firstpar) return rec_firstpar(oid);
+ if(ancestor) return rec_ancestor(oid,depth);
  if(sidx_read()!=0) return 8;
  sidx_emit_full=full;
  return sidx_get(oid);
