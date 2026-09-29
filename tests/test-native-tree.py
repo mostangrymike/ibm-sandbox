@@ -1593,6 +1593,13 @@ def main():
             b"README.md".hex().upper(), cwd=d)
         assert "TREE ROOT FULL CLOSURE VERIFIED" in raw_recovered
         verify_pathcat(raw_recovered, BLOB, "RECOVERED 51 GENOLD")
+        raw_dir_recovered = run(
+            rec, "TREEPATHDIR", "GENOLD", "GENNEW",
+            git_oid("tree", TREE),
+            b"subdir".hex().upper(), cwd=d)
+        assert "RECOVERED 51 GENOLD" in raw_dir_recovered
+        assert "TREE ROOT FULL CLOSURE VERIFIED" in raw_dir_recovered
+        assert "TREE DATA END" in raw_dir_recovered
         batch_recovered = run(rec, "LINKBATCH", "GENOLD",
                               "GENNEW", git_oid("commit", MERGE2),
                               cwd=d)
@@ -1725,6 +1732,13 @@ def main():
         assert "NO FULLY VERIFIED GENERATION" in raw_failed
         assert "TREE ROOT FULL CLOSURE VERIFIED" not in raw_failed
         assert "PATH DATA BEGIN" not in raw_failed
+        raw_dir_failed = run(
+            rec, "TREEPATHDIR", "GENOLD", "GENNEW",
+            git_oid("tree", TREE),
+            b"subdir".hex().upper(), cwd=d, expected=8)
+        assert "NO FULLY VERIFIED GENERATION" in raw_dir_failed
+        assert "TREE ROOT FULL CLOSURE VERIFIED" not in raw_dir_failed
+        assert "TREE DATA BEGIN" not in raw_dir_failed
         batch_failed = run(rec, "LINKBATCH", "GENOLD",
                            "GENNEW", git_oid("commit", MERGE2),
                            cwd=d, expected=8)
@@ -1859,6 +1873,12 @@ def main():
         assert "SELECTED 52 GENNEW" in raw_restored
         assert "TREE ROOT FULL CLOSURE VERIFIED" in raw_restored
         assert "TREE DATA END" in raw_restored
+        raw_cat_restored = run(
+            rec, "TREEPATHCAT", "GENOLD", "GENNEW",
+            git_oid("tree", TREE),
+            b"README.md".hex().upper(), cwd=d)
+        assert "TREE ROOT FULL CLOSURE VERIFIED" in raw_cat_restored
+        verify_pathcat(raw_cat_restored, BLOB)
         restored_full = run(rec, "PATHCAT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             b"big.bin".hex().upper(), cwd=d)
