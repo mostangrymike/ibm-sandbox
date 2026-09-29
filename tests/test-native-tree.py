@@ -718,6 +718,8 @@ def main():
                 "TREE ROOT FULL CLOSURE VERIFIED",
                 "PATH DATA END",
                 "TREE DATA END",
+                "BATCH NON COMMIT CHILD RC8 VERIFIED",
+                "BATCH MISSING CHILD RC4 VERIFIED",
                 "BATCH ALL POSITIVE CHECKS PASSED"):
             assert marker in batch
         assert batch.count("GENERATION VERIFIED 1808") <= 1
@@ -1718,6 +1720,8 @@ def main():
         recovered_batch = run(rec, *batch_args, cwd=d)
         assert "RECOVERED 51 GENOLD" in recovered_batch
         assert "BATCH ALL POSITIVE CHECKS PASSED" in recovered_batch
+        assert "BATCH NON COMMIT CHILD RC8 VERIFIED" in recovered_batch
+        assert "BATCH MISSING CHILD RC4 VERIFIED" in recovered_batch
         batch_recovered = run(rec, "LINKBATCH", "GENOLD",
                               "GENNEW", git_oid("commit", MERGE2),
                               cwd=d)
@@ -1867,6 +1871,8 @@ def main():
         invalid_batch = run(rec, *batch_args, cwd=d, expected=8)
         assert "NO FULLY VERIFIED GENERATION" in invalid_batch
         assert "BATCH ALL POSITIVE CHECKS PASSED" not in invalid_batch
+        assert "BATCH NON COMMIT CHILD RC8 VERIFIED" not in invalid_batch
+        assert "BATCH MISSING CHILD RC4 VERIFIED" not in invalid_batch
         assert "TREE DATA BEGIN" not in invalid_batch
         batch_failed = run(rec, "LINKBATCH", "GENOLD",
                            "GENNEW", git_oid("commit", MERGE2),
@@ -2018,6 +2024,8 @@ def main():
         restored_batch = run(rec, *batch_args, cwd=d)
         assert "SELECTED 52 GENNEW" in restored_batch
         assert "BATCH ALL POSITIVE CHECKS PASSED" in restored_batch
+        assert "BATCH NON COMMIT CHILD RC8 VERIFIED" in restored_batch
+        assert "BATCH MISSING CHILD RC4 VERIFIED" in restored_batch
         restored_full = run(rec, "PATHCAT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             b"big.bin".hex().upper(), cwd=d)
