@@ -632,6 +632,33 @@ static int rec_root_closure(const unsigned char *root,
  }
  return 0;
 }
+/* M55: reuse a fully authenticated immutable local closure
+ * within RUNBATCH only. Each root is independently checked
+ * once per process with its full fresh 1024-visit budget.
+ * Standalone operations and shared parent budgets are uncached.
+ */
+static int batch_cache_on;
+static unsigned int batch_cache_count;
+static unsigned char batch_cache_oid[2][20];
+static unsigned int batch_cache_hits;
+static int rec_batch_closure(const unsigned char *oid,
+                             unsigned int *budget) {
+ unsigned int i;
+ int rc;
+ if(batch_cache_on&&*budget==1024) {
+  for(i=0;i<batch_cache_count;i++) {
+   if(memcmp(batch_cache_oid[i],oid,20)==0) {
+    batch_cache_hits++;
+    return 0;
+   }
+  }
+ }
+ rc=rec_root_closure(oid,budget);
+ if(rc==0&&batch_cache_on&&batch_cache_count<2) {
+  memcpy(batch_cache_oid[batch_cache_count++],oid,20);
+ }
+ return rc;
+}
 /* M46: verify complete closure from a raw tree object ID,
  * without needing a commit or commit-relative path.
  * Release a directory listing only after every local link passes.
@@ -641,7 +668,7 @@ static int rec_tree_closure(const unsigned char *oid) {
  unsigned long n;
  int pos,rc;
  if(sidx_read()!=0) return 8;
- rc=rec_root_closure(oid,&budget);
+ rc=rec_batch_closure(oid,&budget);
  if(rc!=0) return rc;
  pos=sidx_locate(oid);
  n=sidx[pos].size;
@@ -855,7 +882,7 @@ static int rec_path(const unsigned char *commit_oid,
   * metadata, even if the requested entry itself is intact.
   */
  if(contents>=6) {
-  rc=rec_root_closure(next,&budget);
+  rc=rec_batch_closure(next,&budget);
   if(rc!=0) return rc;
  }
  while(start<length) {
@@ -1020,6 +1047,9 @@ static int rec_batch(const unsigned char *commit,
                      unsigned long flen) {
  unsigned char missing[20]={0};
  int rc;
+ batch_cache_on=1;
+ batch_cache_count=0;
+ batch_cache_hits=0;
  rc=rec_parents(commit,1,1,1,2,2);
  if(rc!=0) return rc;
  rc=rec_path(commit,directory,dlen,4,1);
@@ -1057,6 +1087,10 @@ static int rec_batch(const unsigned char *commit,
   return 8;
  }
  puts("BATCH MISSING CHILD RC4 VERIFIED");
+ if(batch_cache_hits==0) {
+  puts("BATCH ROOT CLOSURE REUSE ABSENT");return 8;
+ }
+ printf("BATCH ROOT CLOSURE REUSES %u\n",batch_cache_hits);
  puts("BATCH ALL POSITIVE CHECKS PASSED");
  return 0;
 }
