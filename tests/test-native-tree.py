@@ -696,6 +696,70 @@ def main():
         assert "PATH GITLINK (EXTERNAL COMMIT)" in gitlink
         assert "PATH OID " + BLOB_OID.hex().upper() in gitlink
 
+        # M51: metadata from raw tree roots after whole-tree
+        # attestation, for blobs, directories and Gitlinks.
+        for name, expected in (
+                (b"README.md", "PATH OBJECT TYPE 3"),
+                (b"subdir", "PATH OBJECT TYPE 2"),
+                (b"submodule", "PATH GITLINK (EXTERNAL COMMIT)"),
+                (b"subdir/nested.txt", "PATH OBJECT TYPE 3")):
+            meta = run(rec, "TREEPATH", "GENOLD", "GENNEW",
+                       git_oid("tree", TREE), name.hex().upper(),
+                       cwd=d)
+            assert "TREE ROOT FULL CLOSURE VERIFIED" in meta
+            assert expected in meta
+            assert "TREE DATA BEGIN" not in meta
+            assert "PATH DATA BEGIN" not in meta
+        for bad_tree, code, reason in (
+                (CHAIN_ROOT_MISSING, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND"),
+                (CHAIN_ROOT_WRONG, 8,
+                 "ROOT ENTRY TYPE MISMATCH")):
+            normal = run(rec, "PATH", "GENOLD", "GENNEW",
+                         git_oid("commit", FIRST_COMMIT),
+                         b"README.md".hex().upper(), cwd=d)
+            assert "PATH OBJECT TYPE 3" in normal
+            refused = run(rec, "TREEPATH", "GENOLD", "GENNEW",
+                          git_oid("tree", bad_tree),
+                          b"README.md".hex().upper(),
+                          cwd=d, expected=code)
+            assert reason in refused
+            assert "TREE ROOT FULL CLOSURE VERIFIED" not in refused
+            assert "PATH OBJECT TYPE" not in refused
+            assert "PATH GITLINK" not in refused
+        absent = run(rec, "TREEPATH", "GENOLD", "GENNEW",
+                     "0"*40, b"README.md".hex().upper(),
+                     cwd=d, expected=4)
+        assert "ROOT LINK TREE NOT FOUND" in absent
+        wrong_root = run(rec, "TREEPATH", "GENOLD", "GENNEW",
+                         git_oid("blob", BLOB),
+                         b"README.md".hex().upper(), cwd=d,
+                         expected=8)
+        assert "ROOT LINK OBJECT NOT TREE" in wrong_root
+        for invalid in ("", "00", "2F61", "612F", "612F2F62"):
+            bad = run(rec, "TREEPATH", "GENOLD", "GENNEW",
+                      git_oid("tree", TREE), invalid,
+                      cwd=d, expected=4)
+            assert "PATH REQUIRES VALID NONEMPTY HEX" in bad
+            assert "GENERATION VERIFIED" not in bad
+        for tree, code, reason in (
+                (BUDGET_ROOT_OVER, 8,
+                 "NESTED LINK BUDGET EXCEEDED"),
+                (GITLINK_257, 8,
+                 "ROOT LINK LIMIT EXCEEDED")):
+            refused = run(
+                rec, "TREEPATH", "GENOLD", "GENNEW",
+                git_oid("tree", tree),
+                (b"README.md" if tree==BUDGET_ROOT_OVER
+                 else b"ext000").hex().upper(),
+                cwd=d, expected=code)
+            assert reason in refused
+            assert "TREE ROOT FULL CLOSURE VERIFIED" not in refused
+            assert "PATH OBJECT TYPE" not in refused
+        within = run(rec, "TREEPATH", "GENOLD", "GENNEW",
+                     git_oid("tree", BUDGET_ROOT_OK),
+                     b"README.md".hex().upper(), cwd=d)
+        assert "TREE ROOT FULL CLOSURE VERIFIED" in within
         # M50: raw tree roots can serve full-closure binary paths.
         for filename, body in (
                 (b"README.md", BLOB), (b"empty.bin", EMPTY),
@@ -1600,6 +1664,13 @@ def main():
         assert "RECOVERED 51 GENOLD" in raw_dir_recovered
         assert "TREE ROOT FULL CLOSURE VERIFIED" in raw_dir_recovered
         assert "TREE DATA END" in raw_dir_recovered
+        meta_recovered = run(
+            rec, "TREEPATH", "GENOLD", "GENNEW",
+            git_oid("tree", TREE),
+            b"submodule".hex().upper(), cwd=d)
+        assert "RECOVERED 51 GENOLD" in meta_recovered
+        assert "TREE ROOT FULL CLOSURE VERIFIED" in meta_recovered
+        assert "PATH GITLINK (EXTERNAL COMMIT)" in meta_recovered
         batch_recovered = run(rec, "LINKBATCH", "GENOLD",
                               "GENNEW", git_oid("commit", MERGE2),
                               cwd=d)
@@ -1739,6 +1810,13 @@ def main():
         assert "NO FULLY VERIFIED GENERATION" in raw_dir_failed
         assert "TREE ROOT FULL CLOSURE VERIFIED" not in raw_dir_failed
         assert "TREE DATA BEGIN" not in raw_dir_failed
+        meta_failed = run(
+            rec, "TREEPATH", "GENOLD", "GENNEW",
+            git_oid("tree", TREE),
+            b"submodule".hex().upper(), cwd=d, expected=8)
+        assert "NO FULLY VERIFIED GENERATION" in meta_failed
+        assert "TREE ROOT FULL CLOSURE VERIFIED" not in meta_failed
+        assert "PATH GITLINK" not in meta_failed
         batch_failed = run(rec, "LINKBATCH", "GENOLD",
                            "GENNEW", git_oid("commit", MERGE2),
                            cwd=d, expected=8)
@@ -1879,6 +1957,13 @@ def main():
             b"README.md".hex().upper(), cwd=d)
         assert "TREE ROOT FULL CLOSURE VERIFIED" in raw_cat_restored
         verify_pathcat(raw_cat_restored, BLOB)
+        meta_restored = run(
+            rec, "TREEPATH", "GENOLD", "GENNEW",
+            git_oid("tree", TREE),
+            b"submodule".hex().upper(), cwd=d)
+        assert "SELECTED 52 GENNEW" in meta_restored
+        assert "TREE ROOT FULL CLOSURE VERIFIED" in meta_restored
+        assert "PATH GITLINK (EXTERNAL COMMIT)" in meta_restored
         restored_full = run(rec, "PATHCAT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             b"big.bin".hex().upper(), cwd=d)

@@ -907,12 +907,14 @@ static int rec_path(const unsigned char *commit_oid,
    continue;
   }
   if(is_gitlink) {
-   if(contents&&contents!=6) {
+   if(contents&&contents!=6&&contents!=11) {
     puts(contents>=2?"LSDIR REQUIRES A TREE":
          "PATHCAT REQUIRES A LOCAL BLOB");return 8;
    }
    if(contents==6)
     puts("COMMIT ROOT FULL CLOSURE VERIFIED");
+   if(contents==11)
+    puts("TREE ROOT FULL CLOSURE VERIFIED");
    puts("PATH GITLINK (EXTERNAL COMMIT)");
    fputs("PATH OID ",stdout);
    idx_print(stdout,found);putchar('\n');
@@ -928,7 +930,7 @@ static int rec_path(const unsigned char *commit_oid,
    puts("PATHCAT REQUIRES A BLOB");return 8;
   }
   if(contents>=2&&contents!=6&&contents!=7&&
-     contents!=9&&expected_type!=2) {
+     contents!=9&&contents!=11&&expected_type!=2) {
    puts("LSDIR REQUIRES A TREE");return 8;
   }
   object_size=sidx[pos].size;
@@ -966,7 +968,7 @@ static int rec_path(const unsigned char *commit_oid,
          expected_type,object_size);
   idx_print(stdout,found);putchar('\n');
   if(contents>=2&&contents!=6&&contents!=7&&
-     contents!=9) {
+     contents!=9&&contents!=11) {
    puts("TREE DATA BEGIN");
    if(!rec_tree_walk(object_size,1)) return 8;
    puts("TREE DATA END");
@@ -1018,7 +1020,7 @@ int main(int argc,char **argv) {
  unsigned long d;
  int get,full,tree,commit,root,path_command,pathcat;
  int pathfull,pathfullcat,pathfulldir;
- int treepathcat,treepathdir;
+ int treepathcat,treepathdir,treepath;
  int lsdir,lsdirv,lsdirdepth,lsdirfull;
  int firstpar,ancestor,history;
  int parent_cmd,parents_cmd;
@@ -1037,6 +1039,7 @@ int main(int argc,char **argv) {
  pathfulldir=argc==6&&strcmp(argv[1],"PATHFULLDIR")==0;
  treepathcat=argc==6&&strcmp(argv[1],"TREEPATHCAT")==0;
  treepathdir=argc==6&&strcmp(argv[1],"TREEPATHDIR")==0;
+ treepath=argc==6&&strcmp(argv[1],"TREEPATH")==0;
  lsdir=argc==6&&strcmp(argv[1],"LSDIR")==0;
  lsdirv=argc==6&&strcmp(argv[1],"LSDIRV")==0;
  lsdirdepth=argc==7&&strcmp(argv[1],"LSDIRDEPTH")==0;
@@ -1058,6 +1061,7 @@ int main(int argc,char **argv) {
  if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
      !pathcat&&!pathfull&&!pathfullcat&&
      !pathfulldir&&!treepathcat&&!treepathdir&&
+     !treepath&&
      !lsdir&&!lsdirv&&
      !lsdirdepth&&
      !lsdirfull&&
@@ -1083,6 +1087,7 @@ int main(int argc,char **argv) {
   puts("GITREC PATHFULLDIR C0 C1 COMMIT_OID40 DIRHEX");
   puts("GITREC TREEPATHCAT C0 C1 TREE_OID40 PATHHEX");
   puts("GITREC TREEPATHDIR C0 C1 TREE_OID40 DIRHEX");
+  puts("GITREC TREEPATH C0 C1 TREE_OID40 PATHHEX");
   puts("GITREC LSDIR C0NAME C1NAME COMMIT_OID40 DIRHEX");
   puts("GITREC LSDIRV C0 C1 COMMIT_OID40 DIRHEX");
   puts("GITREC LSDIRDEPTH C0 C1 OID40 DIRHEX DEPTH");
@@ -1105,7 +1110,7 @@ int main(int argc,char **argv) {
  }
  if((get||full||tree||commit||root||path_command||
      pathcat||pathfull||pathfullcat||pathfulldir||
-     treepathcat||treepathdir||
+     treepathcat||treepathdir||treepath||
      lsdir||lsdirv||
      lsdirdepth||lsdirfull||
      firstpar||ancestor||history||
@@ -1150,7 +1155,7 @@ int main(int argc,char **argv) {
   dir_depth=(unsigned int)(argv[6][0]-'0');
  }
  if((path_command||pathcat||pathfull||pathfullcat||
-     pathfulldir||treepathcat||treepathdir||
+     pathfulldir||treepathcat||treepathdir||treepath||
      lsdir||lsdirv||
      lsdirdepth||lsdirfull)&&
     !rec_path_hex(argv[5],path,&pathlen)) {
@@ -1169,7 +1174,7 @@ int main(int argc,char **argv) {
  if(rc!=0||(!get&&!full&&!tree&&!commit&&!root&&
              !path_command&&!pathcat&&!pathfull&&
              !pathfullcat&&!pathfulldir&&
-             !treepathcat&&!treepathdir&&
+             !treepathcat&&!treepathdir&&!treepath&&
              !lsdir&&!lsdirv&&
              !lsdirdepth&&!lsdirfull&&
              !firstpar&&!ancestor&&!history&&
@@ -1189,6 +1194,7 @@ int main(int argc,char **argv) {
  if(pathfulldir) return rec_path(oid,path,pathlen,8,0);
  if(treepathcat) return rec_path(oid,path,pathlen,9,0);
  if(treepathdir) return rec_path(oid,path,pathlen,10,0);
+ if(treepath) return rec_path(oid,path,pathlen,11,0);
  if(lsdir) return rec_path(oid,path,pathlen,2,0);
  if(lsdirv) return rec_path(oid,path,pathlen,3,0);
  if(lsdirfull) return rec_path(oid,path,pathlen,5,0);
