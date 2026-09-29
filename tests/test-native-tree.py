@@ -718,6 +718,8 @@ def main():
                 "TREE FULL CLOSURE VERIFIED",
                 "COMMIT ROOT FULL CLOSURE VERIFIED",
                 "TREE ROOT FULL CLOSURE VERIFIED",
+                "HISTORY FULL ROOT CLOSURE VERIFIED",
+                "HISTORY HOPS 1",
                 "PATH DATA END",
                 "TREE DATA END",
                 "BATCH NON COMMIT CHILD RC8 VERIFIED",
@@ -1567,6 +1569,39 @@ def main():
                 assert len(line) <= 80
         assert "HISTORY HOPS 2" in history
         assert history.strip().endswith("HISTORY DATA END")
+        # M57: all ancestor commit roots close before any records.
+        fullhistory = run(
+            rec, "HISTORYFULL", "GENOLD", "GENNEW",
+            git_oid("commit", GRANDCHILD), "2", cwd=d)
+        assert "SELECTED 52 GENNEW" in fullhistory
+        assert "HISTORY FULL ROOT CLOSURE VERIFIED" in fullhistory
+        assert "HISTORY HOPS 2" in fullhistory
+        assert fullhistory.strip().endswith("HISTORY DATA END")
+        for hop, obj in enumerate(
+                (GRANDCHILD, MERGE, FIRST_COMMIT)):
+            assert ("HISTORY HOP " + str(hop) + " OID "
+                    + git_oid("commit", obj)) in fullhistory
+        # Depth zero checks one commit's entire root snapshot.
+        missing_snapshot = run(
+            rec, "HISTORYFULL", "GENOLD", "GENNEW",
+            git_oid("commit", MISSING_ROOT_COMMIT), "0",
+            cwd=d, expected=4)
+        assert "ROOT LINK TREE NOT FOUND" in missing_snapshot
+        assert "HISTORY DATA BEGIN" not in missing_snapshot
+        assert "HISTORY HOP " not in missing_snapshot
+        wrong_snapshot = run(
+            rec, "HISTORYFULL", "GENOLD", "GENNEW",
+            git_oid("commit", BAD_LINK), "0",
+            cwd=d, expected=8)
+        assert "ROOT LINK OBJECT NOT TREE" in wrong_snapshot
+        assert "HISTORY DATA BEGIN" not in wrong_snapshot
+        for bad in ("-1", "17", "foo", ""):
+            rejected = run(
+                rec, "HISTORYFULL", "GENOLD", "GENNEW",
+                git_oid("commit", GRANDCHILD), bad,
+                cwd=d, expected=4)
+            assert "HISTORY DATA BEGIN" not in rejected
+
         for data, hops, code, reason in (
                 (GRANDCHILD, "3", 4, "HISTORY ROOT REACHED"),
                 (MISSING_FIRST, "1", 4, "HISTORY COMMIT NOT FOUND"),

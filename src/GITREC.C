@@ -382,8 +382,11 @@ static int rec_ancestor(const unsigned char *starting,
  * Keep the bounded chain and tree IDs in local fixed-size arrays;
  * only commit to output after every linked object verifies.
  */
+static int rec_root_closure(const unsigned char *root,
+                            unsigned int *budget);
+/* M57: history with complete snapshots on EVERY visited commit. */
 static int rec_history(const unsigned char *starting,
-                       unsigned int depth) {
+                       unsigned int depth,int full) {
  unsigned char commits[17][20],trees[17][20],next[20];
  unsigned long sz;
  unsigned int hop,j;
@@ -413,6 +416,14 @@ static int rec_history(const unsigned char *starting,
   }
   if(!rec_ascii_oid(idx_body+53,next)) return 8;
   memcpy(commits[hop+1],next,20);
+ }
+ if(full) {
+  for(j=0;j<=depth;j++) {
+   unsigned int budget=1024;
+   rc=rec_root_closure(trees[j],&budget);
+   if(rc!=0) return rc;
+  }
+  puts("HISTORY FULL ROOT CLOSURE VERIFIED");
  }
  puts("HISTORY DATA BEGIN");
  for(j=0;j<=depth;j++) {
@@ -1091,6 +1102,9 @@ static int rec_batch(const unsigned char *commit,
  if(rc!=0) return rc;
  rc=rec_path(root,directory,dlen,11,0);
  if(rc!=0) return rc;
+ /* Full root validation for every first-parent history hop. */
+ rc=rec_history(commit,1,1);
+ if(rc!=0) return rc;
  /* Expected failures are exercised inside the same audited
   * selection. Unexpected RCs must abort the entire batch.
   */
@@ -1133,7 +1147,7 @@ int main(int argc,char **argv) {
  int pathfull,pathfullcat,pathfulldir;
  int treepathcat,treepathdir,treepath,runbatch;
  int lsdir,lsdirv,lsdirdepth,lsdirfull;
- int firstpar,ancestor,history;
+ int firstpar,ancestor,history,historyfull;
  int parent_cmd,parents_cmd;
  int roots_cmd,commitroots_cmd,linkroots_cmd;
  int nestedlinks_cmd,deeplinks_cmd,depthlinks_cmd;
@@ -1159,6 +1173,7 @@ int main(int argc,char **argv) {
  firstpar=argc==5&&strcmp(argv[1],"FIRSTPAR")==0;
  ancestor=argc==6&&strcmp(argv[1],"ANCESTOR")==0;
  history=argc==6&&strcmp(argv[1],"HISTORY")==0;
+ historyfull=argc==6&&strcmp(argv[1],"HISTORYFULL")==0;
  parent_cmd=argc==6&&strcmp(argv[1],"PARENT")==0;
  parents_cmd=argc==5&&strcmp(argv[1],"PARENTS")==0;
  roots_cmd=argc==5&&strcmp(argv[1],"PARENTROOTS")==0;
@@ -1178,7 +1193,7 @@ int main(int argc,char **argv) {
      !lsdirdepth&&
      !lsdirfull&&
      !firstpar&&!ancestor&&
-     !history&&!parent_cmd&&!parents_cmd&&
+     !history&&!historyfull&&!parent_cmd&&!parents_cmd&&
      !roots_cmd&&!commitroots_cmd&&!linkroots_cmd&&
      !nestedlinks_cmd&&!deeplinks_cmd&&
      !depthlinks_cmd&&!linkbatch_cmd&&!closure_cmd&&
@@ -1208,6 +1223,7 @@ int main(int argc,char **argv) {
   puts("GITREC FIRSTPAR C0NAME C1NAME COMMIT_OID40");
   puts("GITREC ANCESTOR C0NAME C1NAME COMMIT_OID40 DEPTH");
   puts("GITREC HISTORY C0NAME C1NAME COMMIT_OID40 DEPTH");
+  puts("GITREC HISTORYFULL C0 C1 COMMIT_OID40 DEPTH");
   puts("GITREC PARENT C0NAME C1NAME COMMIT_OID40 N");
   puts("GITREC PARENTS C0NAME C1NAME COMMIT_OID40");
   puts("GITREC PARENTROOTS C0NAME C1NAME OID40");
@@ -1226,7 +1242,7 @@ int main(int argc,char **argv) {
      treepathcat||treepathdir||treepath||runbatch||
      lsdir||lsdirv||
      lsdirdepth||lsdirfull||
-     firstpar||ancestor||history||
+     firstpar||ancestor||history||historyfull||
      parent_cmd||parents_cmd||roots_cmd||
      commitroots_cmd||linkroots_cmd||nestedlinks_cmd||
      deeplinks_cmd||depthlinks_cmd||linkbatch_cmd||
@@ -1236,7 +1252,7 @@ int main(int argc,char **argv) {
   puts("GET REQUIRES 40 HEX DIGITS");
   return 4;
  }
- if(ancestor||history||parent_cmd) {
+ if(ancestor||history||historyfull||parent_cmd) {
   if(!argv[5][0]||strlen(argv[5])>2) {
    puts("ANCESTOR DEPTH MUST BE 1 THROUGH 16");return 4;
   }
@@ -1247,7 +1263,7 @@ int main(int argc,char **argv) {
    }
    d=d*10+(unsigned long)(argv[5][rc]-'0');
   }
-  if(d<1||d>16) {
+  if((d<1&&!historyfull)||d>16) {
    puts("ANCESTOR DEPTH MUST BE 1 THROUGH 16");return 4;
   }
   depth=(unsigned int)d;
@@ -1301,6 +1317,7 @@ int main(int argc,char **argv) {
              !lsdir&&!lsdirv&&
              !lsdirdepth&&!lsdirfull&&
              !firstpar&&!ancestor&&!history&&
+             !historyfull&&
              !parent_cmd&&!parents_cmd&&!roots_cmd&&
              !commitroots_cmd&&!linkroots_cmd&&
              !nestedlinks_cmd&&!deeplinks_cmd&&
@@ -1327,7 +1344,8 @@ int main(int argc,char **argv) {
   return rec_path(oid,path,pathlen,4,dir_depth);
  if(firstpar) return rec_firstpar(oid);
  if(ancestor) return rec_ancestor(oid,depth);
- if(history) return rec_history(oid,depth);
+ if(history) return rec_history(oid,depth,0);
+ if(historyfull) return rec_history(oid,depth,1);
  if(parent_cmd) return rec_parent(oid,depth);
  if(parents_cmd) return rec_parents(oid,0,0,0,0,0);
  if(roots_cmd) return rec_parents(oid,1,0,0,0,0);
