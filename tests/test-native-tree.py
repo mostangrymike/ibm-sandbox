@@ -696,6 +696,34 @@ def main():
         assert "PATH GITLINK (EXTERNAL COMMIT)" in gitlink
         assert "PATH OID " + BLOB_OID.hex().upper() in gitlink
 
+        # M50: raw tree roots can serve full-closure binary paths.
+        for filename, body in (
+                (b"README.md", BLOB), (b"empty.bin", EMPTY),
+                (b"bytes.bin", BINARY), (b"big.bin", BIG),
+                (b"subdir/nested.txt", BLOB)):
+            raw = run(rec, "TREEPATHCAT", "GENOLD", "GENNEW",
+                      git_oid("tree", TREE), filename.hex().upper(),
+                      cwd=d)
+            assert "TREE ROOT FULL CLOSURE VERIFIED" in raw
+            verify_pathcat(raw, body)
+        raw_dir = run(rec, "TREEPATHDIR", "GENOLD", "GENNEW",
+                      git_oid("tree", TREE),
+                      b"subdir".hex().upper(), cwd=d)
+        assert "TREE ROOT FULL CLOSURE VERIFIED" in raw_dir
+        assert "TREE DATA END" in raw_dir
+        for tree, code, reason in (
+                (CHAIN_ROOT_MISSING, 4, "ROOT ENTRY OBJECT NOT FOUND"),
+                (CHAIN_ROOT_WRONG, 8, "ROOT ENTRY TYPE MISMATCH")):
+            for command, path in (("TREEPATHCAT", b"README.md"),
+                                  ("TREEPATHDIR", b"subdir")):
+                failed = run(rec, command, "GENOLD", "GENNEW",
+                             git_oid("tree", tree), path.hex().upper(),
+                             cwd=d, expected=code)
+                assert reason in failed
+                assert "TREE ROOT FULL CLOSURE VERIFIED" not in failed
+                assert "PATH OBJECT TYPE" not in failed
+                assert "TREE DATA BEGIN" not in failed
+                assert "PATH DATA BEGIN" not in failed
         # M49: complete-snapshot authenticated directory listing.
         good_dir = run(
             rec, "PATHFULLDIR", "GENOLD", "GENNEW",
