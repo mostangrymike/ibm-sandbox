@@ -1349,6 +1349,13 @@ def main():
         assert "RECOVERED 51 GENOLD" in direct_recovered
         assert "TREE FULL CLOSURE VERIFIED" in direct_recovered
         assert "TREE DATA END" in direct_recovered
+        fullpath_recovered = run(
+            rec, "PATHFULL", "GENOLD", "GENNEW",
+            git_oid("commit", FIRST_COMMIT),
+            b"README.md".hex().upper(), cwd=d)
+        assert "RECOVERED 51 GENOLD" in fullpath_recovered
+        assert "COMMIT ROOT FULL CLOSURE VERIFIED" in fullpath_recovered
+        assert "PATH OBJECT TYPE 3" in fullpath_recovered
         batch_recovered = run(rec, "LINKBATCH", "GENOLD",
                               "GENNEW", git_oid("commit", MERGE2),
                               cwd=d)
@@ -1453,6 +1460,13 @@ def main():
         assert "NO FULLY VERIFIED GENERATION" in direct_failed
         assert "TREE FULL CLOSURE VERIFIED" not in direct_failed
         assert "TREE DATA BEGIN" not in direct_failed
+        fullpath_failed = run(
+            rec, "PATHFULL", "GENOLD", "GENNEW",
+            git_oid("commit", FIRST_COMMIT),
+            b"README.md".hex().upper(), cwd=d, expected=8)
+        assert "NO FULLY VERIFIED GENERATION" in fullpath_failed
+        assert "COMMIT ROOT FULL CLOSURE VERIFIED" not in fullpath_failed
+        assert "PATH OBJECT TYPE" not in fullpath_failed
         batch_failed = run(rec, "LINKBATCH", "GENOLD",
                            "GENNEW", git_oid("commit", MERGE2),
                            cwd=d, expected=8)
@@ -1560,6 +1574,13 @@ def main():
         assert "SELECTED 52 GENNEW" in direct_restored
         assert "TREE FULL CLOSURE VERIFIED" in direct_restored
         assert "TREE DATA END" in direct_restored
+        fullpath_restored = run(
+            rec, "PATHFULL", "GENOLD", "GENNEW",
+            git_oid("commit", FIRST_COMMIT),
+            b"README.md".hex().upper(), cwd=d)
+        assert "SELECTED 52 GENNEW" in fullpath_restored
+        assert "COMMIT ROOT FULL CLOSURE VERIFIED" in fullpath_restored
+        assert "PATH OBJECT TYPE 3" in fullpath_restored
         restored_full = run(rec, "PATHCAT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             b"big.bin".hex().upper(), cwd=d)
