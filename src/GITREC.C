@@ -1018,6 +1018,7 @@ static int rec_batch(const unsigned char *commit,
                      unsigned long dlen,
                      const unsigned char *file,
                      unsigned long flen) {
+ unsigned char missing[20]={0};
  int rc;
  rc=rec_parents(commit,1,1,1,2,2);
  if(rc!=0) return rc;
@@ -1041,6 +1042,21 @@ static int rec_batch(const unsigned char *commit,
  if(rc!=0) return rc;
  rc=rec_path(root,directory,dlen,11,0);
  if(rc!=0) return rc;
+ /* Expected failures are exercised inside the same audited
+  * selection. Unexpected RCs must abort the entire batch.
+  */
+ rc=rec_parents(root,1,1,1,2,2);
+ if(rc!=8) {
+  puts("BATCH WRONG CHILD FAILURE NOT ENFORCED");
+  return 8;
+ }
+ puts("BATCH NON COMMIT CHILD RC8 VERIFIED");
+ rc=rec_parents(missing,1,1,1,2,2);
+ if(rc!=4) {
+  puts("BATCH MISSING CHILD FAILURE NOT ENFORCED");
+  return 8;
+ }
+ puts("BATCH MISSING CHILD RC4 VERIFIED");
  puts("BATCH ALL POSITIVE CHECKS PASSED");
  return 0;
 }
