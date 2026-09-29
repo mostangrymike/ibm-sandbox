@@ -738,6 +738,27 @@ def main():
                 invalid, cwd=d, expected=4)
             assert "PATH REQUIRES VALID NONEMPTY HEX" in refused
             assert "GENERATION VERIFIED" not in refused
+        # M49: snapshot-wide bounds include branches unrelated
+        # to the chosen directory; no listing on exhaustion.
+        for commit, rc, diagnostic in (
+                (GITLINK_257_SUBDIR_COMMIT, 8,
+                 "ROOT LINK LIMIT EXCEEDED"),
+                (BUDGET_COMMIT_OVER, 8,
+                 "NESTED LINK BUDGET EXCEEDED")):
+            broken = run(
+                rec, "PATHFULLDIR", "GENOLD", "GENNEW",
+                git_oid("commit", commit),
+                b"subdir".hex().upper(), cwd=d, expected=rc)
+            assert diagnostic in broken
+            assert "COMMIT ROOT FULL CLOSURE VERIFIED" not in broken
+            assert "PATH OBJECT TYPE" not in broken
+            assert "TREE DATA BEGIN" not in broken
+        bounded = run(
+            rec, "PATHFULLDIR", "GENOLD", "GENNEW",
+            git_oid("commit", BUDGET_COMMIT_OK),
+            b"subdir".hex().upper(), cwd=d)
+        assert "COMMIT ROOT FULL CLOSURE VERIFIED" in bounded
+        assert "TREE DATA END" in bounded
         # M48: full-root verified binary blob reading, including
         # all 65536 bytes, zero length, and a nested path.
         for filename, data in (
