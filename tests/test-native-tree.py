@@ -698,12 +698,12 @@ def main():
 
         # M52: one selected generation for eleven positive
         # production checks; retain a distinct final success gate.
-        cmd = ("RUNBATCH", "GENOLD", "GENNEW",
+        batch_args = ("RUNBATCH", "GENOLD", "GENNEW",
                git_oid("commit", MERGE2),
                git_oid("tree", TREE),
                b"subdir".hex().upper(),
                b"README.md".hex().upper())
-        batch = run(rec, *cmd, cwd=d)
+        batch = run(rec, *batch_args, cwd=d)
         assert "SELECTED 52 GENNEW" in batch
         assert "BATCH ALL POSITIVE CHECKS PASSED" in batch
         for marker in (
@@ -1715,7 +1715,7 @@ def main():
         assert "RECOVERED 51 GENOLD" in meta_recovered
         assert "TREE ROOT FULL CLOSURE VERIFIED" in meta_recovered
         assert "PATH GITLINK (EXTERNAL COMMIT)" in meta_recovered
-        recovered_batch = run(rec, *cmd, cwd=d)
+        recovered_batch = run(rec, *batch_args, cwd=d)
         assert "RECOVERED 51 GENOLD" in recovered_batch
         assert "BATCH ALL POSITIVE CHECKS PASSED" in recovered_batch
         batch_recovered = run(rec, "LINKBATCH", "GENOLD",
@@ -1864,7 +1864,7 @@ def main():
         assert "NO FULLY VERIFIED GENERATION" in meta_failed
         assert "TREE ROOT FULL CLOSURE VERIFIED" not in meta_failed
         assert "PATH GITLINK" not in meta_failed
-        invalid_batch = run(rec, *cmd, cwd=d, expected=8)
+        invalid_batch = run(rec, *batch_args, cwd=d, expected=8)
         assert "NO FULLY VERIFIED GENERATION" in invalid_batch
         assert "BATCH ALL POSITIVE CHECKS PASSED" not in invalid_batch
         assert "TREE DATA BEGIN" not in invalid_batch
@@ -2015,7 +2015,7 @@ def main():
         assert "SELECTED 52 GENNEW" in meta_restored
         assert "TREE ROOT FULL CLOSURE VERIFIED" in meta_restored
         assert "PATH GITLINK (EXTERNAL COMMIT)" in meta_restored
-        restored_batch = run(rec, *cmd, cwd=d)
+        restored_batch = run(rec, *batch_args, cwd=d)
         assert "SELECTED 52 GENNEW" in restored_batch
         assert "BATCH ALL POSITIVE CHECKS PASSED" in restored_batch
         restored_full = run(rec, "PATHCAT", "GENOLD", "GENNEW",
