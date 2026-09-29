@@ -560,6 +560,33 @@ def main():
                 invalid, cwd=d, expected=4)
             assert "PATH REQUIRES VALID NONEMPTY HEX" in rejected
             assert "GENERATION VERIFIED" not in rejected
+        # M47: the limit applies even when the requested path
+        # is present and uncorrupted elsewhere in the root.
+        for commit_oid, path, rc, diagnostic in (
+                (git_oid("commit", GITLINK_257_COMMIT),
+                 b"ext000", 8, "ROOT LINK LIMIT EXCEEDED"),
+                (git_oid("commit", BUDGET_COMMIT_OVER),
+                 b"README.md", 8, "NESTED LINK BUDGET EXCEEDED")):
+            ordinary_path = run(
+                rec, "PATH", "GENOLD", "GENNEW",
+                commit_oid, path.hex().upper(), cwd=d)
+            assert ("PATH OID " in ordinary_path or
+                    "PATH OBJECT TYPE " in ordinary_path)
+            rejected = run(
+                rec, "PATHFULL", "GENOLD", "GENNEW",
+                commit_oid, path.hex().upper(), cwd=d,
+                expected=rc)
+            assert diagnostic in rejected
+            assert "COMMIT ROOT FULL CLOSURE VERIFIED" not in rejected
+            assert "PATH OBJECT TYPE" not in rejected
+            assert "PATH OID " not in rejected
+        for commit_oid, path in (
+                (git_oid("commit", GITLINK_256_COMMIT), b"ext000"),
+                (git_oid("commit", BUDGET_COMMIT_OK), b"README.md")):
+            accepted = run(
+                rec, "PATHFULL", "GENOLD", "GENNEW",
+                commit_oid, path.hex().upper(), cwd=d)
+            assert "COMMIT ROOT FULL CLOSURE VERIFIED" in accepted
         # M45: full commit-relative directory closure is distinct
         # from depth-four directory checks, with atomic listing.
         complete_dir = run(
