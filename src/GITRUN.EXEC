@@ -1,7 +1,7 @@
-/* M55: compact, read-only native Git CMS target regression. */
+/* M56: compact, read-only native Git CMS target regression. */
 /* PIPE CMS captures diagnostics in memory; no output CMS files. */
 address cms
-say 'GITRUN M55 COMPACT REPORT'
+say 'GITRUN M56 COMPACT REPORT'
 say 'ALL COUNTS REFER TO VERIFIED ORIGINAL 1808 OBJECTS'
 fast='FAST AUDIT VERIFIED 1808 UNIQUE 1808'
 pair='PAIR VERIFIED UNIQUE 1808'
@@ -53,11 +53,12 @@ ptree='F3EF36AAD778D5DA84857D8DED46495C75F4CAB0'
 /* No extra full-GEN2 audit for each added milestone. */
 tree='204E1D6968FB81C35BF830D63A611AC64C072945'
 cmd='GITREC RUNBATCH GITFIX M15NEW' commit tree '737263' '524541444D452E6D64'
-call gate 'M55 ONE SELECTION ALL POSITIVES',cmd,0,sel,'BATCH ALL POSITIVE CHECKS PASSED','FULL ROOT CLOSURE VERIFIED','TREE ROOT FULL CLOSURE VERIFIED'
+call gate 'M56 ONE SELECTION ALL POSITIVES',cmd,0,sel,'BATCH ALL POSITIVE CHECKS PASSED','FULL ROOT CLOSURE VERIFIED','TREE ROOT FULL CLOSURE VERIFIED'
 if result \= 0 then exit 12
 nontype=0
 absent=0
 reuse=0
+seekreuse=0
 do n=1 to out.0
  if pos('BATCH NON COMMIT CHILD RC8 VERIFIED',out.n)>0 then
   nontype=1
@@ -65,10 +66,13 @@ do n=1 to out.0
   absent=1
  if pos('BATCH ROOT CLOSURE REUSES ',out.n)>0 then
   reuse=1
+ if pos('BATCH SEEK INDEX REUSES ',out.n)>0 then
+  seekreuse=1
 end
-if \nontype|\absent|\reuse then exit 12
+if \nontype|\absent|\reuse|\seekreuse then exit 12
 say 'PASS SELECT SEQ52 FROM VERIFIED BATCH'
 say 'PASS SHARED VERIFIED ROOT CLOSURE'
+say 'PASS SHARED VERIFIED SEEK INDEX'
 say 'PASS NON COMMIT CHILD RC 8 FROM BATCH'
 say 'PASS MISSING CHILD RC 4 FROM BATCH'
 cmd='GITREC DEPTHLINKS GITFIX M15NEW' commit '5'
@@ -92,7 +96,7 @@ if result \= 0 then exit 12
 call protected
 if result \= 0 then exit 12
 say 'PASS FINAL PROTECTED FILES'
-say 'GITRUN M55 ALL READ ONLY NATIVE GIT TESTS PASSED'
+say 'GITRUN M56 ALL READ ONLY NATIVE GIT TESTS PASSED'
 exit 0
 /* All stage output is held in an in-memory REXX STEM. No dumps. */
 gate:

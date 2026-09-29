@@ -707,6 +707,7 @@ def main():
         assert "SELECTED 52 GENNEW" in batch
         assert "BATCH ALL POSITIVE CHECKS PASSED" in batch
         assert "BATCH ROOT CLOSURE REUSES " in batch
+        assert "BATCH SEEK INDEX REUSES " in batch
         for marker in (
                 "NESTED ROOT LINKS VERIFIED",
                 "DEEP ROOT LINKS VERIFIED",
@@ -753,6 +754,7 @@ def main():
                 cwd=d, expected=rc)
             assert reason in invalid_root
             assert "BATCH ROOT CLOSURE REUSES " not in invalid_root
+            assert "BATCH SEEK INDEX REUSES " not in invalid_root
             assert "BATCH ALL POSITIVE CHECKS PASSED" not in invalid_root
         # The optimization must never leak into separate commands.
         standalone = run(
@@ -761,6 +763,7 @@ def main():
             b"subdir".hex().upper(), cwd=d)
         assert "TREE ROOT FULL CLOSURE VERIFIED" in standalone
         assert "BATCH ROOT CLOSURE REUSES " not in standalone
+        assert "BATCH SEEK INDEX REUSES " not in standalone
         for malformed in ("", "00", "2F61"):
             invalid = run(
                 rec, "RUNBATCH", "GENOLD", "GENNEW",
@@ -1749,6 +1752,7 @@ def main():
         assert "RECOVERED 51 GENOLD" in recovered_batch
         assert "BATCH ALL POSITIVE CHECKS PASSED" in recovered_batch
         assert "BATCH ROOT CLOSURE REUSES " in recovered_batch
+        assert "BATCH SEEK INDEX REUSES " in recovered_batch
         assert "BATCH NON COMMIT CHILD RC8 VERIFIED" in recovered_batch
         assert "BATCH MISSING CHILD RC4 VERIFIED" in recovered_batch
         batch_recovered = run(rec, "LINKBATCH", "GENOLD",
@@ -1901,6 +1905,7 @@ def main():
         assert "NO FULLY VERIFIED GENERATION" in invalid_batch
         assert "BATCH ALL POSITIVE CHECKS PASSED" not in invalid_batch
         assert "BATCH ROOT CLOSURE REUSES " not in invalid_batch
+        assert "BATCH SEEK INDEX REUSES " not in invalid_batch
         assert "BATCH NON COMMIT CHILD RC8 VERIFIED" not in invalid_batch
         assert "BATCH MISSING CHILD RC4 VERIFIED" not in invalid_batch
         assert "TREE DATA BEGIN" not in invalid_batch
@@ -2055,6 +2060,7 @@ def main():
         assert "SELECTED 52 GENNEW" in restored_batch
         assert "BATCH ALL POSITIVE CHECKS PASSED" in restored_batch
         assert "BATCH ROOT CLOSURE REUSES " in restored_batch
+        assert "BATCH SEEK INDEX REUSES " in restored_batch
         assert "BATCH NON COMMIT CHILD RC8 VERIFIED" in restored_batch
         assert "BATCH MISSING CHILD RC4 VERIFIED" in restored_batch
         restored_full = run(rec, "PATHCAT", "GENOLD", "GENNEW",
