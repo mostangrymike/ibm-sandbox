@@ -1102,6 +1102,9 @@ static int rec_batch(const unsigned char *commit,
  if(rc!=0) return rc;
  rc=rec_path(root,directory,dlen,11,0);
  if(rc!=0) return rc;
+ /* Full root validation for every first-parent history hop. */
+ rc=rec_history(commit,1,1);
+ if(rc!=0) return rc;
  /* Expected failures are exercised inside the same audited
   * selection. Unexpected RCs must abort the entire batch.
   */
