@@ -1,5 +1,5 @@
 #!/bin/sh
-# Protect historical M20 and compact M51 Git CMS regressions.
+# Protect historical M20 and compact M52 Git CMS regressions.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 f="$root/src/GITRCHK.EXEC"
@@ -9,36 +9,15 @@ test -s "$run"
 grep -q "^say 'GITRCHK M20 READ-ONLY" "$f"
 grep -Fq "'GITREC CATHEX GITFIX M15NEW' oid" "$f"
 grep -Fq "'GITREC GET GITFIX M15NEW' oid" "$f"
-grep -q "^say 'GITRUN M51 COMPACT REPORT'$" "$run"
+grep -q "^say 'GITRUN M52 COMPACT REPORT'$" "$run"
 grep -Fq "'PIPE CMS' cmd '| STEM out.'" "$run"
 grep -Fq "'PIPE CMS STATE M15BAD GEN A | STEM out.'" "$run"
 grep -Fq "call gate name 'FULL AUDIT','GITCIDX GENCHECK',0,fast,pair,gen" "$run"
-# One audited depth-two LINKBATCH replaces three positive audits.
-grep -Fq "call gate 'M51 SINGLE AUDIT M35-M37',cmd,0," "$run"
-grep -Fq "call gate 'M51 SRC DEPTH1',cmd,0," "$run"
-grep -Fq "call gate 'M51 SRC FULL',cmd,0," "$run"
-grep -Fq "cmd='GITREC LSDIRFULL GITFIX M15NEW' commit '737263'" "$run"
-grep -Fq "call gate 'M51 FULL CLOSURE',cmd,0," "$run"
-grep -Fq "call gate 'M51 TREE CLOSURE',cmd,0," "$run"
-grep -Fq "call gate 'M51 SRC ROOT PATH',cmd,0," "$run"
-grep -Fq "call gate 'M51 README FULLCAT',cmd,0," "$run"
-grep -Fq "call gate 'M51 SRC ROOT DIR',cmd,0," "$run"
-grep -Fq "call gate 'M51 TREE README',cmd,0," "$run"
-grep -Fq "call gate 'M51 TREE SRC',cmd,0," "$run"
-grep -Fq "call gate 'M51 TREE PATH META',cmd,0," "$run"
-grep -Fq "cmd='GITREC TREEPATH GITFIX M15NEW' tree '737263'" "$run"
-
-grep -Fq "cmd='GITREC PATHFULLCAT GITFIX M15NEW' commit '524541444D452E6D64'" "$run"
-grep -Fq "cmd='GITREC PATHFULL GITFIX M15NEW' commit '737263'" "$run"
-grep -Fq "cmd='GITREC TREECLOSURE GITFIX M15NEW' tree" "$run"
-grep -Fq "cmd='GITREC CLOSURE GITFIX M15NEW' commit" "$run"
-grep -Fq "cmd='GITREC LSDIRDEPTH GITFIX M15NEW' commit '737263' '1'" "$run"
-grep -Fq "dirv='DIRECTORY LINK DEPTH 1 VERIFIED'" "$run"
-grep -Fq "rootok='NESTED ROOT LINKS VERIFIED'" "$run"
-grep -Fq "deepok='DEEP ROOT LINKS VERIFIED'" "$run"
-grep -Fq "linkok='LINK DEPTH 2 VERIFIED'" "$run"
-if grep -Eq "call gate 'M(35|36|37) " "$run"; then
- echo "FAIL: redundant positive full-audit calls" >&2
+# Every positive original-data feature runs after one selector audit.
+grep -Fq "call gate 'M52 ONE SELECTION ALL POSITIVES'," "$run"
+grep -Fq "cmd='GITREC RUNBATCH GITFIX M15NEW' commit tree" "$run"
+if grep -Eq "call gate 'M52 (SINGLE|SRC|FULL|TREE|README)" "$run"; then
+ echo "FAIL: redundant separate positive full-audit calls" >&2
  exit 1
 fi
 grep -Fq "call gate 'INVALID DEPTH',cmd,4," "$run"
@@ -47,7 +26,7 @@ grep -Fq "call gate 'MISSING CHILD',cmd,4," "$run"
 grep -Fq "call gate 'RECOVERED BATCH',cmd,0," "$run"
 grep -Fq "call gate 'BOTH INVALID FAIL CLOSED',cmd,8," "$run"
 grep -Fq "call gate 'RESTORED BATCH',cmd,0," "$run"
-grep -q "^say 'GITRUN M51 ALL READ ONLY NATIVE GIT TESTS PASSED'$" "$run"
+grep -q "^say 'GITRUN M52 ALL READ ONLY NATIVE GIT TESTS PASSED'$" "$run"
 if grep -E '^[[:space:]]*call gate .*,$' "$run"; then
  echo "FAIL: split REXX CALL arguments" >&2
  exit 1
@@ -58,4 +37,4 @@ for file in "$f" "$run"; do
   exit 1
  fi
 done
-echo "READ-ONLY GITRCHK AND COMPACT GITRUN M51 GUARDS PASSED"
+echo "READ-ONLY GITRCHK AND COMPACT GITRUN M52 GUARDS PASSED"

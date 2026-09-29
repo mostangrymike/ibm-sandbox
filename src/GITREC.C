@@ -1007,6 +1007,43 @@ static int rec_path_hex(const char *s,unsigned char *dst,
  return 1;
 }
 
+/* M52: one process and one full selector audit for the
+ * complete positive compact CMS regression. Each existing
+ * operation still checks its own links and full closure.
+ * Never emit the aggregate marker on a failed operation.
+ */
+static int rec_batch(const unsigned char *commit,
+                     const unsigned char *root,
+                     const unsigned char *directory,
+                     unsigned long dlen,
+                     const unsigned char *file,
+                     unsigned long flen) {
+ int rc;
+ rc=rec_parents(commit,1,1,1,2,2);
+ if(rc!=0) return rc;
+ rc=rec_path(commit,directory,dlen,4,1);
+ if(rc!=0) return rc;
+ rc=rec_path(commit,directory,dlen,5,0);
+ if(rc!=0) return rc;
+ rc=rec_parents(commit,1,1,2,0,0);
+ if(rc!=0) return rc;
+ rc=rec_tree_closure(root);
+ if(rc!=0) return rc;
+ rc=rec_path(commit,directory,dlen,6,0);
+ if(rc!=0) return rc;
+ rc=rec_path(commit,file,flen,7,0);
+ if(rc!=0) return rc;
+ rc=rec_path(commit,directory,dlen,8,0);
+ if(rc!=0) return rc;
+ rc=rec_path(root,file,flen,9,0);
+ if(rc!=0) return rc;
+ rc=rec_path(root,directory,dlen,10,0);
+ if(rc!=0) return rc;
+ rc=rec_path(root,directory,dlen,11,0);
+ if(rc!=0) return rc;
+ puts("BATCH ALL POSITIVE CHECKS PASSED");
+ return 0;
+}
 /* SELECT stays read-only. GET adds a verified indexed object
  * lookup only after a complete native GENCHECK has selected a slot.
  * Never call SGET on an unverified candidate or infer an active
@@ -1015,12 +1052,13 @@ static int rec_path_hex(const char *s,unsigned char *dst,
 int main(int argc,char **argv) {
  struct slot a,b;
  unsigned char oid[20],path[255];
- unsigned long pathlen=0;
+ unsigned char boid[20],bfile[255];
+ unsigned long pathlen=0,bfilelen=0;
  unsigned int depth=0,dir_depth=0;
  unsigned long d;
  int get,full,tree,commit,root,path_command,pathcat;
  int pathfull,pathfullcat,pathfulldir;
- int treepathcat,treepathdir,treepath;
+ int treepathcat,treepathdir,treepath,runbatch;
  int lsdir,lsdirv,lsdirdepth,lsdirfull;
  int firstpar,ancestor,history;
  int parent_cmd,parents_cmd;
@@ -1040,6 +1078,7 @@ int main(int argc,char **argv) {
  treepathcat=argc==6&&strcmp(argv[1],"TREEPATHCAT")==0;
  treepathdir=argc==6&&strcmp(argv[1],"TREEPATHDIR")==0;
  treepath=argc==6&&strcmp(argv[1],"TREEPATH")==0;
+ runbatch=argc==8&&strcmp(argv[1],"RUNBATCH")==0;
  lsdir=argc==6&&strcmp(argv[1],"LSDIR")==0;
  lsdirv=argc==6&&strcmp(argv[1],"LSDIRV")==0;
  lsdirdepth=argc==7&&strcmp(argv[1],"LSDIRDEPTH")==0;
@@ -1061,7 +1100,7 @@ int main(int argc,char **argv) {
  if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
      !pathcat&&!pathfull&&!pathfullcat&&
      !pathfulldir&&!treepathcat&&!treepathdir&&
-     !treepath&&
+     !treepath&&!runbatch&&
      !lsdir&&!lsdirv&&
      !lsdirdepth&&
      !lsdirfull&&
@@ -1088,6 +1127,7 @@ int main(int argc,char **argv) {
   puts("GITREC TREEPATHCAT C0 C1 TREE_OID40 PATHHEX");
   puts("GITREC TREEPATHDIR C0 C1 TREE_OID40 DIRHEX");
   puts("GITREC TREEPATH C0 C1 TREE_OID40 PATHHEX");
+  puts("GITREC RUNBATCH C0 C1 COMMIT40 TREE40 DIRHEX FILEHEX");
   puts("GITREC LSDIR C0NAME C1NAME COMMIT_OID40 DIRHEX");
   puts("GITREC LSDIRV C0 C1 COMMIT_OID40 DIRHEX");
   puts("GITREC LSDIRDEPTH C0 C1 OID40 DIRHEX DEPTH");
@@ -1110,7 +1150,7 @@ int main(int argc,char **argv) {
  }
  if((get||full||tree||commit||root||path_command||
      pathcat||pathfull||pathfullcat||pathfulldir||
-     treepathcat||treepathdir||treepath||
+     treepathcat||treepathdir||treepath||runbatch||
      lsdir||lsdirv||
      lsdirdepth||lsdirfull||
      firstpar||ancestor||history||
@@ -1156,10 +1196,19 @@ int main(int argc,char **argv) {
  }
  if((path_command||pathcat||pathfull||pathfullcat||
      pathfulldir||treepathcat||treepathdir||treepath||
+     runbatch||
      lsdir||lsdirv||
      lsdirdepth||lsdirfull)&&
     !rec_path_hex(argv[5],path,&pathlen)) {
   puts("PATH REQUIRES VALID NONEMPTY HEX");return 4;
+ }
+ if(runbatch) {
+  if(strlen(argv[5])!=40||!idx_hex(argv[5],boid)||
+     !rec_path_hex(argv[6],path,&pathlen)||
+     !rec_path_hex(argv[7],bfile,&bfilelen)) {
+   puts("BATCH REQUIRES TREE40 DIRHEX FILEHEX");
+   return 4;
+  }
  }
  rec_expected[0]=argv[2];rec_expected[1]=argv[3];
  slot_read("dd:SEL0",&a);
@@ -1175,6 +1224,7 @@ int main(int argc,char **argv) {
              !path_command&&!pathcat&&!pathfull&&
              !pathfullcat&&!pathfulldir&&
              !treepathcat&&!treepathdir&&!treepath&&
+             !runbatch&&
              !lsdir&&!lsdirv&&
              !lsdirdepth&&!lsdirfull&&
              !firstpar&&!ancestor&&!history&&
@@ -1195,6 +1245,8 @@ int main(int argc,char **argv) {
  if(treepathcat) return rec_path(oid,path,pathlen,9,0);
  if(treepathdir) return rec_path(oid,path,pathlen,10,0);
  if(treepath) return rec_path(oid,path,pathlen,11,0);
+ if(runbatch)
+  return rec_batch(oid,boid,path,pathlen,bfile,bfilelen);
  if(lsdir) return rec_path(oid,path,pathlen,2,0);
  if(lsdirv) return rec_path(oid,path,pathlen,3,0);
  if(lsdirfull) return rec_path(oid,path,pathlen,5,0);
