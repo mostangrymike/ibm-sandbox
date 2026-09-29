@@ -696,6 +696,48 @@ def main():
         assert "PATH GITLINK (EXTERNAL COMMIT)" in gitlink
         assert "PATH OID " + BLOB_OID.hex().upper() in gitlink
 
+        # M49: complete-snapshot authenticated directory listing.
+        good_dir = run(
+            rec, "PATHFULLDIR", "GENOLD", "GENNEW",
+            git_oid("commit", CHAIN_GOOD_COMMIT),
+            b"subdir".hex().upper(), cwd=d)
+        assert "COMMIT ROOT FULL CLOSURE VERIFIED" in good_dir
+        assert "PATH OBJECT TYPE 2" in good_dir
+        assert "TREE DATA END" in good_dir
+        for bad, rc, reason in (
+                (CHAIN_MISSING_COMMIT, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND"),
+                (CHAIN_WRONG_COMMIT, 8,
+                 "ROOT ENTRY TYPE MISMATCH")):
+            ordinary = run(
+                rec, "LSDIR", "GENOLD", "GENNEW",
+                git_oid("commit", bad),
+                b"subdir".hex().upper(), cwd=d)
+            assert "TREE DATA END" in ordinary
+            refused = run(
+                rec, "PATHFULLDIR", "GENOLD", "GENNEW",
+                git_oid("commit", bad),
+                b"subdir".hex().upper(), cwd=d, expected=rc)
+            assert reason in refused
+            assert "COMMIT ROOT FULL CLOSURE VERIFIED" not in refused
+            assert "PATH OBJECT TYPE" not in refused
+            assert "TREE DATA BEGIN" not in refused
+        for name, rc in ((b"README.md", 8),
+                         (b"submodule", 8),
+                         (b"missing", 4)):
+            refused = run(
+                rec, "PATHFULLDIR", "GENOLD", "GENNEW",
+                git_oid("commit", FIRST_COMMIT),
+                name.hex().upper(), cwd=d, expected=rc)
+            assert "COMMIT ROOT FULL CLOSURE VERIFIED" not in refused
+            assert "TREE DATA BEGIN" not in refused
+        for invalid in ("", "00", "2F61", "612F"):
+            refused = run(
+                rec, "PATHFULLDIR", "GENOLD", "GENNEW",
+                git_oid("commit", FIRST_COMMIT),
+                invalid, cwd=d, expected=4)
+            assert "PATH REQUIRES VALID NONEMPTY HEX" in refused
+            assert "GENERATION VERIFIED" not in refused
         # M48: full-root verified binary blob reading, including
         # all 65536 bytes, zero length, and a nested path.
         for filename, data in (
@@ -1438,6 +1480,13 @@ def main():
             b"README.md".hex().upper(), cwd=d)
         assert "COMMIT ROOT FULL CLOSURE VERIFIED" in cat_recovered
         verify_pathcat(cat_recovered, BLOB, "RECOVERED 51 GENOLD")
+        dir_recovered = run(
+            rec, "PATHFULLDIR", "GENOLD", "GENNEW",
+            git_oid("commit", FIRST_COMMIT),
+            b"subdir".hex().upper(), cwd=d)
+        assert "RECOVERED 51 GENOLD" in dir_recovered
+        assert "COMMIT ROOT FULL CLOSURE VERIFIED" in dir_recovered
+        assert "TREE DATA END" in dir_recovered
         batch_recovered = run(rec, "LINKBATCH", "GENOLD",
                               "GENNEW", git_oid("commit", MERGE2),
                               cwd=d)
@@ -1556,6 +1605,13 @@ def main():
         assert "NO FULLY VERIFIED GENERATION" in cat_failed
         assert "COMMIT ROOT FULL CLOSURE VERIFIED" not in cat_failed
         assert "PATH DATA BEGIN" not in cat_failed
+        dir_failed = run(
+            rec, "PATHFULLDIR", "GENOLD", "GENNEW",
+            git_oid("commit", FIRST_COMMIT),
+            b"subdir".hex().upper(), cwd=d, expected=8)
+        assert "NO FULLY VERIFIED GENERATION" in dir_failed
+        assert "COMMIT ROOT FULL CLOSURE VERIFIED" not in dir_failed
+        assert "TREE DATA BEGIN" not in dir_failed
         batch_failed = run(rec, "LINKBATCH", "GENOLD",
                            "GENNEW", git_oid("commit", MERGE2),
                            cwd=d, expected=8)
@@ -1676,6 +1732,13 @@ def main():
             b"README.md".hex().upper(), cwd=d)
         assert "COMMIT ROOT FULL CLOSURE VERIFIED" in cat_restored
         verify_pathcat(cat_restored, BLOB)
+        dir_restored = run(
+            rec, "PATHFULLDIR", "GENOLD", "GENNEW",
+            git_oid("commit", FIRST_COMMIT),
+            b"subdir".hex().upper(), cwd=d)
+        assert "SELECTED 52 GENNEW" in dir_restored
+        assert "COMMIT ROOT FULL CLOSURE VERIFIED" in dir_restored
+        assert "TREE DATA END" in dir_restored
         restored_full = run(rec, "PATHCAT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             b"big.bin".hex().upper(), cwd=d)

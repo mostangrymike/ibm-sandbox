@@ -927,7 +927,7 @@ static int rec_path(const unsigned char *commit_oid,
   sidx_silent=0;
   if(rc!=0) return rc;
   /* M40: fully parse returned trees before ANY path output. */
-  if(expected_type==2&&contents>=3) {
+  if(expected_type==2&&contents>=3&&contents<=5) {
    rc=contents==5?
       rec_root_closure(found,&budget):
       rec_root_links(found,dir_depth,&budget);
@@ -1004,7 +1004,7 @@ int main(int argc,char **argv) {
  unsigned int depth=0,dir_depth=0;
  unsigned long d;
  int get,full,tree,commit,root,path_command,pathcat;
- int pathfull,pathfullcat;
+ int pathfull,pathfullcat,pathfulldir;
  int lsdir,lsdirv,lsdirdepth,lsdirfull;
  int firstpar,ancestor,history;
  int parent_cmd,parents_cmd;
@@ -1020,6 +1020,7 @@ int main(int argc,char **argv) {
  pathcat=argc==6&&strcmp(argv[1],"PATHCAT")==0;
  pathfull=argc==6&&strcmp(argv[1],"PATHFULL")==0;
  pathfullcat=argc==6&&strcmp(argv[1],"PATHFULLCAT")==0;
+ pathfulldir=argc==6&&strcmp(argv[1],"PATHFULLDIR")==0;
  lsdir=argc==6&&strcmp(argv[1],"LSDIR")==0;
  lsdirv=argc==6&&strcmp(argv[1],"LSDIRV")==0;
  lsdirdepth=argc==7&&strcmp(argv[1],"LSDIRDEPTH")==0;
@@ -1040,6 +1041,7 @@ int main(int argc,char **argv) {
  treeclosure_cmd=argc==5&&strcmp(argv[1],"TREECLOSURE")==0;
  if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
      !pathcat&&!pathfull&&!pathfullcat&&
+     !pathfulldir&&
      !lsdir&&!lsdirv&&
      !lsdirdepth&&
      !lsdirfull&&
@@ -1062,6 +1064,7 @@ int main(int argc,char **argv) {
   puts("GITREC PATHCAT C0NAME C1NAME COMMIT_OID40 PATHHEX");
   puts("GITREC PATHFULL C0 C1 COMMIT_OID40 PATHHEX");
   puts("GITREC PATHFULLCAT C0 C1 COMMIT_OID40 PATHHEX");
+  puts("GITREC PATHFULLDIR C0 C1 COMMIT_OID40 DIRHEX");
   puts("GITREC LSDIR C0NAME C1NAME COMMIT_OID40 DIRHEX");
   puts("GITREC LSDIRV C0 C1 COMMIT_OID40 DIRHEX");
   puts("GITREC LSDIRDEPTH C0 C1 OID40 DIRHEX DEPTH");
@@ -1083,7 +1086,7 @@ int main(int argc,char **argv) {
   return 4;
  }
  if((get||full||tree||commit||root||path_command||
-     pathcat||pathfull||pathfullcat||
+     pathcat||pathfull||pathfullcat||pathfulldir||
      lsdir||lsdirv||
      lsdirdepth||lsdirfull||
      firstpar||ancestor||history||
@@ -1128,6 +1131,7 @@ int main(int argc,char **argv) {
   dir_depth=(unsigned int)(argv[6][0]-'0');
  }
  if((path_command||pathcat||pathfull||pathfullcat||
+     pathfulldir||
      lsdir||lsdirv||
      lsdirdepth||lsdirfull)&&
     !rec_path_hex(argv[5],path,&pathlen)) {
@@ -1145,7 +1149,7 @@ int main(int argc,char **argv) {
  rc=selector_choose(&a,&b);
  if(rc!=0||(!get&&!full&&!tree&&!commit&&!root&&
              !path_command&&!pathcat&&!pathfull&&
-             !pathfullcat&&
+             !pathfullcat&&!pathfulldir&&
              !lsdir&&!lsdirv&&
              !lsdirdepth&&!lsdirfull&&
              !firstpar&&!ancestor&&!history&&
@@ -1162,6 +1166,7 @@ int main(int argc,char **argv) {
  if(pathcat) return rec_path(oid,path,pathlen,1,0);
  if(pathfull) return rec_path(oid,path,pathlen,6,0);
  if(pathfullcat) return rec_path(oid,path,pathlen,7,0);
+ if(pathfulldir) return rec_path(oid,path,pathlen,8,0);
  if(lsdir) return rec_path(oid,path,pathlen,2,0);
  if(lsdirv) return rec_path(oid,path,pathlen,3,0);
  if(lsdirfull) return rec_path(oid,path,pathlen,5,0);
