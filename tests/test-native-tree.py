@@ -516,6 +516,50 @@ def main():
             b"subdir".hex().upper(), cwd=d, expected=8)
         assert "ROOT LINK TREE INVALID" in malformed_verified
         assert "PATH OBJECT TYPE" not in malformed_verified
+        # M47: even a valid requested path must not leak metadata
+        # if an unrelated sibling branch is incomplete.
+        for path in (b"README.md", b"subdir", b"submodule"):
+            complete = run(
+                rec, "PATHFULL", "GENOLD", "GENNEW",
+                git_oid("commit", CHAIN_GOOD_COMMIT),
+                path.hex().upper(), cwd=d)
+            assert "COMMIT ROOT FULL CLOSURE VERIFIED" in complete
+            assert ("PATH OID " in complete if path==b"submodule"
+                    else "PATH OBJECT TYPE " in complete)
+            assert "TREE DATA BEGIN" not in complete
+            assert "PATH DATA BEGIN" not in complete
+        for bad, code, reason in (
+                (CHAIN_MISSING_COMMIT, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND"),
+                (CHAIN_WRONG_COMMIT, 8,
+                 "ROOT ENTRY TYPE MISMATCH")):
+            ordinary = run(
+                rec, "PATH", "GENOLD", "GENNEW",
+                git_oid("commit", bad),
+                b"README.md".hex().upper(), cwd=d)
+            assert "PATH OBJECT TYPE 3" in ordinary
+            full = run(
+                rec, "PATHFULL", "GENOLD", "GENNEW",
+                git_oid("commit", bad),
+                b"README.md".hex().upper(), cwd=d, expected=code)
+            assert reason in full
+            assert "COMMIT ROOT FULL CLOSURE VERIFIED" not in full
+            assert "PATH OBJECT TYPE" not in full
+            assert "PATH OID " not in full
+        nonexistent = run(
+            rec, "PATHFULL", "GENOLD", "GENNEW",
+            git_oid("commit", CHAIN_GOOD_COMMIT),
+            b"missing".hex().upper(), cwd=d, expected=4)
+        assert "PATH NOT FOUND" in nonexistent
+        assert "COMMIT ROOT FULL CLOSURE VERIFIED" not in nonexistent
+        assert "PATH OBJECT TYPE" not in nonexistent
+        for invalid in ("", "2", "00", "2F61", "612F", "612F2F62"):
+            rejected = run(
+                rec, "PATHFULL", "GENOLD", "GENNEW",
+                git_oid("commit", CHAIN_GOOD_COMMIT),
+                invalid, cwd=d, expected=4)
+            assert "PATH REQUIRES VALID NONEMPTY HEX" in rejected
+            assert "GENERATION VERIFIED" not in rejected
         # M45: full commit-relative directory closure is distinct
         # from depth-four directory checks, with atomic listing.
         complete_dir = run(
