@@ -28,6 +28,20 @@ static FILE *rec_open(const char *name,const char *mode) {
 #define main gitsel_unused
 #include "GITSEL.C"
 #undef main
+/* M56: RUNBATCH uses one freshly read seek-index snapshot
+ * after complete selector GEN2 verification. Only this
+ * read-only process may reuse the parsed index table.
+ * Stage object bodies are still reopened and rehashed.
+ */
+static int batch_seek_ready;
+static unsigned int batch_seek_reuses;
+static int rec_sidx_read(void) {
+ if(batch_seek_ready) {
+  batch_seek_reuses++;
+  return 0;
+ }
+ return sidx_read();
+}
 /* Bind slot record to its explicit CLI name and all four DDs. */
 static int rec_manifest_digest(const char *wanted) {
  FILE *f;
@@ -113,7 +127,7 @@ static int rec_tree_walk(unsigned long n,int emit) {
 }
 static int rec_tree(const unsigned char *oid) {
  int pos,rc;
- if(sidx_read()!=0) return 8;
+ if(rec_sidx_read()!=0) return 8;
  pos=sidx_locate(oid);
  if(pos<0) {puts("SEEK OID NOT FOUND");return 4;}
  if(sidx[pos].type!=2) {
@@ -253,7 +267,7 @@ static int rec_commit_walk(unsigned long n,int emit) {
 }
 static int rec_commit(const unsigned char *oid) {
  int pos,rc;
- if(sidx_read()!=0) return 8;
+ if(rec_sidx_read()!=0) return 8;
  pos=sidx_locate(oid);
  if(pos<0) {puts("SEEK OID NOT FOUND");return 4;}
  if(sidx[pos].type!=1) {
@@ -278,7 +292,7 @@ static int rec_firstpar(const unsigned char *child) {
  unsigned char parent[20],tree_oid[20];
  unsigned long first=46,sz;
  int pos,rc;
- if(sidx_read()!=0) return 8;
+ if(rec_sidx_read()!=0) return 8;
  pos=sidx_locate(child);
  if(pos<0) {puts("SEEK OID NOT FOUND");return 4;}
  if(sidx[pos].type!=1) {
@@ -329,7 +343,7 @@ static int rec_ancestor(const unsigned char *starting,
  unsigned long sz;
  unsigned int hop;
  int pos,rc;
- if(sidx_read()!=0) return 8;
+ if(rec_sidx_read()!=0) return 8;
  memcpy(current,starting,20);
  for(hop=0;hop<=depth;hop++) {
   pos=sidx_locate(current);
@@ -374,7 +388,7 @@ static int rec_history(const unsigned char *starting,
  unsigned long sz;
  unsigned int hop,j;
  int pos,rc;
- if(sidx_read()!=0) return 8;
+ if(rec_sidx_read()!=0) return 8;
  memcpy(commits[0],starting,20);
  for(hop=0;hop<=depth;hop++) {
   pos=sidx_locate(commits[hop]);
@@ -423,7 +437,7 @@ static int rec_parent(const unsigned char *child,
  unsigned long at=46,begin,len,sz;
  unsigned int found=0;
  int pos,rc;
- if(sidx_read()!=0) return 8;
+ if(rec_sidx_read()!=0) return 8;
  pos=sidx_locate(child);
  if(pos<0) {puts("PARENT CHILD NOT FOUND");return 4;}
  if(sidx[pos].type!=1) {
@@ -667,7 +681,7 @@ static int rec_tree_closure(const unsigned char *oid) {
  unsigned int budget=1024;
  unsigned long n;
  int pos,rc;
- if(sidx_read()!=0) return 8;
+ if(rec_sidx_read()!=0) return 8;
  rc=rec_batch_closure(oid,&budget);
  if(rc!=0) return rc;
  pos=sidx_locate(oid);
@@ -698,7 +712,7 @@ static int rec_parents(const unsigned char *child,
  unsigned long at=46,begin,len,sz;
  unsigned int count=0,j,budget=1024;
  int pos,rc;
- if(sidx_read()!=0) return 8;
+ if(rec_sidx_read()!=0) return 8;
  pos=sidx_locate(child);
  if(pos<0) {puts("PARENTS CHILD NOT FOUND");return 4;}
  if(sidx[pos].type!=1) {
@@ -824,7 +838,7 @@ static int rec_parents(const unsigned char *child,
 static int rec_root(const unsigned char *oid) {
  unsigned char tree_oid[20];
  int pos,rc;
- if(sidx_read()!=0) return 8;
+ if(rec_sidx_read()!=0) return 8;
  pos=sidx_locate(oid);
  if(pos<0) {puts("SEEK OID NOT FOUND");return 4;}
  if(sidx[pos].type!=1) {
@@ -855,7 +869,7 @@ static int rec_path(const unsigned char *commit_oid,
  unsigned long name_len,object_size;
  int pos,rc,expected_type=0,is_gitlink=0;
  unsigned int budget=1024;
- if(sidx_read()!=0) return 8;
+ if(rec_sidx_read()!=0) return 8;
  if(contents>=9) {
   pos=sidx_locate(commit_oid);
   if(pos<0) {puts("ROOT LINK TREE NOT FOUND");return 4;}
@@ -1050,6 +1064,11 @@ static int rec_batch(const unsigned char *commit,
  batch_cache_on=1;
  batch_cache_count=0;
  batch_cache_hits=0;
+ batch_seek_ready=0;
+ batch_seek_reuses=0;
+ /* This direct read pins the fully selected seek index. */
+ if(sidx_read()!=0) return 8;
+ batch_seek_ready=1;
  rc=rec_parents(commit,1,1,1,2,2);
  if(rc!=0) return rc;
  rc=rec_path(commit,directory,dlen,4,1);
@@ -1091,6 +1110,10 @@ static int rec_batch(const unsigned char *commit,
   puts("BATCH ROOT CLOSURE REUSE ABSENT");return 8;
  }
  printf("BATCH ROOT CLOSURE REUSES %u\n",batch_cache_hits);
+ if(batch_seek_reuses==0) {
+  puts("BATCH SEEK INDEX REUSE ABSENT");return 8;
+ }
+ printf("BATCH SEEK INDEX REUSES %u\n",batch_seek_reuses);
  puts("BATCH ALL POSITIVE CHECKS PASSED");
  return 0;
 }
@@ -1316,7 +1339,7 @@ int main(int argc,char **argv) {
  if(linkbatch_cmd) return rec_parents(oid,1,1,1,2,2);
  if(closure_cmd) return rec_parents(oid,1,1,2,0,0);
  if(treeclosure_cmd) return rec_tree_closure(oid);
- if(sidx_read()!=0) return 8;
+ if(rec_sidx_read()!=0) return 8;
  sidx_emit_full=full;
  return sidx_get(oid);
 }
