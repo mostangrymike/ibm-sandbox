@@ -706,6 +706,7 @@ def main():
         batch = run(rec, *batch_args, cwd=d)
         assert "SELECTED 52 GENNEW" in batch
         assert "BATCH ALL POSITIVE CHECKS PASSED" in batch
+        assert "BATCH ROOT CLOSURE REUSES " in batch
         for marker in (
                 "NESTED ROOT LINKS VERIFIED",
                 "DEEP ROOT LINKS VERIFIED",
@@ -1720,6 +1721,7 @@ def main():
         recovered_batch = run(rec, *batch_args, cwd=d)
         assert "RECOVERED 51 GENOLD" in recovered_batch
         assert "BATCH ALL POSITIVE CHECKS PASSED" in recovered_batch
+        assert "BATCH ROOT CLOSURE REUSES " in recovered_batch
         assert "BATCH NON COMMIT CHILD RC8 VERIFIED" in recovered_batch
         assert "BATCH MISSING CHILD RC4 VERIFIED" in recovered_batch
         batch_recovered = run(rec, "LINKBATCH", "GENOLD",
@@ -1871,6 +1873,7 @@ def main():
         invalid_batch = run(rec, *batch_args, cwd=d, expected=8)
         assert "NO FULLY VERIFIED GENERATION" in invalid_batch
         assert "BATCH ALL POSITIVE CHECKS PASSED" not in invalid_batch
+        assert "BATCH ROOT CLOSURE REUSES " not in invalid_batch
         assert "BATCH NON COMMIT CHILD RC8 VERIFIED" not in invalid_batch
         assert "BATCH MISSING CHILD RC4 VERIFIED" not in invalid_batch
         assert "TREE DATA BEGIN" not in invalid_batch
@@ -2024,6 +2027,7 @@ def main():
         restored_batch = run(rec, *batch_args, cwd=d)
         assert "SELECTED 52 GENNEW" in restored_batch
         assert "BATCH ALL POSITIVE CHECKS PASSED" in restored_batch
+        assert "BATCH ROOT CLOSURE REUSES " in restored_batch
         assert "BATCH NON COMMIT CHILD RC8 VERIFIED" in restored_batch
         assert "BATCH MISSING CHILD RC4 VERIFIED" in restored_batch
         restored_full = run(rec, "PATHCAT", "GENOLD", "GENNEW",
