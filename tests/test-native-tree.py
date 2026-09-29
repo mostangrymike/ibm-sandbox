@@ -696,6 +696,48 @@ def main():
         assert "PATH GITLINK (EXTERNAL COMMIT)" in gitlink
         assert "PATH OID " + BLOB_OID.hex().upper() in gitlink
 
+        # M52: one selected generation for eleven positive
+        # production checks; retain a distinct final success gate.
+        cmd = ("RUNBATCH", "GENOLD", "GENNEW",
+               git_oid("commit", MERGE2),
+               git_oid("tree", TREE),
+               b"subdir".hex().upper(),
+               b"README.md".hex().upper())
+        batch = run(rec, *cmd, cwd=d)
+        for marker in (
+                "NESTED ROOT LINKS VERIFIED",
+                "DEEP ROOT LINKS VERIFIED",
+                "LINK DEPTH 2 VERIFIED",
+                "DIRECTORY LINK DEPTH 1 VERIFIED",
+                "DIRECTORY FULL CLOSURE VERIFIED",
+                "FULL ROOT CLOSURE VERIFIED",
+                "TREE FULL CLOSURE VERIFIED",
+                "COMMIT ROOT FULL CLOSURE VERIFIED",
+                "TREE ROOT FULL CLOSURE VERIFIED",
+                "PATH DATA END",
+                "TREE DATA END",
+                "BATCH ALL POSITIVE CHECKS PASSED"):
+            assert marker in batch
+        assert batch.count("GENERATION VERIFIED 1808") <= 1
+        for bad, expected in (
+                ("0"*40, 4),
+                (git_oid("blob", BLOB), 8)):
+            failed = run(
+                rec, "RUNBATCH", "GENOLD", "GENNEW",
+                git_oid("commit", MERGE2), bad,
+                b"subdir".hex().upper(),
+                b"README.md".hex().upper(),
+                cwd=d, expected=expected)
+            assert "BATCH ALL POSITIVE CHECKS PASSED" not in failed
+        for malformed in ("", "00", "2F61"):
+            invalid = run(
+                rec, "RUNBATCH", "GENOLD", "GENNEW",
+                git_oid("commit", MERGE2),
+                git_oid("tree", TREE),
+                malformed, b"README.md".hex().upper(),
+                cwd=d, expected=4)
+            assert "BATCH REQUIRES TREE40 DIRHEX FILEHEX" in invalid
+            assert "GENERATION VERIFIED" not in invalid
         # M51: metadata from raw tree roots after whole-tree
         # attestation, for blobs, directories and Gitlinks.
         for name, expected in (
