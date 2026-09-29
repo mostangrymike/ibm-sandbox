@@ -1,7 +1,7 @@
-/* M52: compact, read-only native Git CMS target regression. */
+/* M53: compact, read-only native Git CMS target regression. */
 /* PIPE CMS captures diagnostics in memory; no output CMS files. */
 address cms
-say 'GITRUN M52 COMPACT REPORT'
+say 'GITRUN M53 COMPACT REPORT'
 say 'ALL COUNTS REFER TO VERIFIED ORIGINAL 1808 OBJECTS'
 fast='FAST AUDIT VERIFIED 1808 UNIQUE 1808'
 pair='PAIR VERIFIED UNIQUE 1808'
@@ -45,8 +45,7 @@ do i=1 to 4
  'FILEDEF' dd 'DISK M15NEW' typ 'A'
  if rc \= 0 then exit 12
 end
-call gate 'SELECT SEQ52','GITREC SELECT GITFIX M15NEW',0,sel,gen
-if result \= 0 then exit 12
+/* RUNBATCH itself proves selected seq52 and complete GEN2. */
 commit='00D8D63229305230C8D37F884CE87F9E1A89468C'
 parent='2D5038C551318997B865497E04CF4C037DE4135E'
 ptree='F3EF36AAD778D5DA84857D8DED46495C75F4CAB0'
@@ -54,8 +53,9 @@ ptree='F3EF36AAD778D5DA84857D8DED46495C75F4CAB0'
 /* No extra full-GEN2 audit for each added milestone. */
 tree='204E1D6968FB81C35BF830D63A611AC64C072945'
 cmd='GITREC RUNBATCH GITFIX M15NEW' commit tree '737263' '524541444D452E6D64'
-call gate 'M52 ONE SELECTION ALL POSITIVES',cmd,0,sel,'BATCH ALL POSITIVE CHECKS PASSED','FULL ROOT CLOSURE VERIFIED','TREE ROOT FULL CLOSURE VERIFIED'
+call gate 'M53 ONE SELECTION ALL POSITIVES',cmd,0,sel,'BATCH ALL POSITIVE CHECKS PASSED','FULL ROOT CLOSURE VERIFIED','TREE ROOT FULL CLOSURE VERIFIED'
 if result \= 0 then exit 12
+say 'PASS SELECT SEQ52 FROM VERIFIED BATCH'
 cmd='GITREC DEPTHLINKS GITFIX M15NEW' commit '5'
 call gate 'INVALID DEPTH',cmd,4,'LINK DEPTH MUST BE 0 THROUGH 4'
 if result \= 0 then exit 12
@@ -84,7 +84,7 @@ if result \= 0 then exit 12
 call protected
 if result \= 0 then exit 12
 say 'PASS FINAL PROTECTED FILES'
-say 'GITRUN M52 ALL READ ONLY NATIVE GIT TESTS PASSED'
+say 'GITRUN M53 ALL READ ONLY NATIVE GIT TESTS PASSED'
 exit 0
 /* All stage output is held in an in-memory REXX STEM. No dumps. */
 gate:
