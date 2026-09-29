@@ -524,7 +524,8 @@ def main():
                 git_oid("commit", CHAIN_GOOD_COMMIT),
                 path.hex().upper(), cwd=d)
             assert "COMMIT ROOT FULL CLOSURE VERIFIED" in complete
-            assert "PATH OID " in complete
+            assert ("PATH OID " in complete if path==b"submodule"
+                    else "PATH OBJECT TYPE " in complete)
             assert "TREE DATA BEGIN" not in complete
             assert "PATH DATA BEGIN" not in complete
         for bad, code, reason in (
