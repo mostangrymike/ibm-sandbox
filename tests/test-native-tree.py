@@ -696,6 +696,55 @@ def main():
         assert "PATH GITLINK (EXTERNAL COMMIT)" in gitlink
         assert "PATH OID " + BLOB_OID.hex().upper() in gitlink
 
+        # M48: full-root verified binary blob reading, including
+        # all 65536 bytes, zero length, and a nested path.
+        for filename, data in (
+                (b"README.md", BLOB),
+                (b"empty.bin", EMPTY),
+                (b"bytes.bin", BINARY),
+                (b"big.bin", BIG),
+                (b"subdir/nested.txt", BLOB)):
+            verified = run(
+                rec, "PATHFULLCAT", "GENOLD", "GENNEW",
+                git_oid("commit", FIRST_COMMIT),
+                filename.hex().upper(), cwd=d)
+            assert "COMMIT ROOT FULL CLOSURE VERIFIED" in verified
+            verify_pathcat(verified, data)
+        for bad, rc, reason in (
+                (CHAIN_MISSING_COMMIT, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND"),
+                (CHAIN_WRONG_COMMIT, 8,
+                 "ROOT ENTRY TYPE MISMATCH")):
+            ordinary = run(
+                rec, "PATHCAT", "GENOLD", "GENNEW",
+                git_oid("commit", bad), b"README.md".hex().upper(),
+                cwd=d)
+            verify_pathcat(ordinary, BLOB)
+            refused = run(
+                rec, "PATHFULLCAT", "GENOLD", "GENNEW",
+                git_oid("commit", bad),
+                b"README.md".hex().upper(), cwd=d, expected=rc)
+            assert reason in refused
+            assert "COMMIT ROOT FULL CLOSURE VERIFIED" not in refused
+            assert "PATH OBJECT TYPE" not in refused
+            assert "PATH DATA BEGIN" not in refused
+            assert "PATH HEX " not in refused
+        for invalid_name, rc in (
+                (b"subdir", 8), (b"submodule", 8),
+                (b"missing", 4)):
+            rejected = run(
+                rec, "PATHFULLCAT", "GENOLD", "GENNEW",
+                git_oid("commit", FIRST_COMMIT),
+                invalid_name.hex().upper(), cwd=d, expected=rc)
+            assert "PATH DATA BEGIN" not in rejected
+            assert "COMMIT ROOT FULL CLOSURE VERIFIED" not in rejected
+        for broken_hex in ("", "00", "612F", "2F61"):
+            invalid = run(
+                rec, "PATHFULLCAT", "GENOLD", "GENNEW",
+                git_oid("commit", FIRST_COMMIT),
+                broken_hex, cwd=d, expected=4)
+            assert "PATH REQUIRES VALID NONEMPTY HEX" in invalid
+            assert "GENERATION VERIFIED" not in invalid
         # M25: full raw blob bytes only after the linked path is verified.
         for filename, data in ((b"README.md", BLOB),
                                (b"subdir/nested.txt", BLOB),
@@ -1383,6 +1432,12 @@ def main():
         assert "RECOVERED 51 GENOLD" in fullpath_recovered
         assert "COMMIT ROOT FULL CLOSURE VERIFIED" in fullpath_recovered
         assert "PATH OBJECT TYPE 3" in fullpath_recovered
+        cat_recovered = run(
+            rec, "PATHFULLCAT", "GENOLD", "GENNEW",
+            git_oid("commit", FIRST_COMMIT),
+            b"README.md".hex().upper(), cwd=d)
+        assert "COMMIT ROOT FULL CLOSURE VERIFIED" in cat_recovered
+        verify_pathcat(cat_recovered, BLOB, "RECOVERED 51 GENOLD")
         batch_recovered = run(rec, "LINKBATCH", "GENOLD",
                               "GENNEW", git_oid("commit", MERGE2),
                               cwd=d)
@@ -1494,6 +1549,13 @@ def main():
         assert "NO FULLY VERIFIED GENERATION" in fullpath_failed
         assert "COMMIT ROOT FULL CLOSURE VERIFIED" not in fullpath_failed
         assert "PATH OBJECT TYPE" not in fullpath_failed
+        cat_failed = run(
+            rec, "PATHFULLCAT", "GENOLD", "GENNEW",
+            git_oid("commit", FIRST_COMMIT),
+            b"README.md".hex().upper(), cwd=d, expected=8)
+        assert "NO FULLY VERIFIED GENERATION" in cat_failed
+        assert "COMMIT ROOT FULL CLOSURE VERIFIED" not in cat_failed
+        assert "PATH DATA BEGIN" not in cat_failed
         batch_failed = run(rec, "LINKBATCH", "GENOLD",
                            "GENNEW", git_oid("commit", MERGE2),
                            cwd=d, expected=8)
@@ -1608,6 +1670,12 @@ def main():
         assert "SELECTED 52 GENNEW" in fullpath_restored
         assert "COMMIT ROOT FULL CLOSURE VERIFIED" in fullpath_restored
         assert "PATH OBJECT TYPE 3" in fullpath_restored
+        cat_restored = run(
+            rec, "PATHFULLCAT", "GENOLD", "GENNEW",
+            git_oid("commit", FIRST_COMMIT),
+            b"README.md".hex().upper(), cwd=d)
+        assert "COMMIT ROOT FULL CLOSURE VERIFIED" in cat_restored
+        verify_pathcat(cat_restored, BLOB)
         restored_full = run(rec, "PATHCAT", "GENOLD", "GENNEW",
                             git_oid("commit", FIRST_COMMIT),
                             b"big.bin".hex().upper(), cwd=d)
