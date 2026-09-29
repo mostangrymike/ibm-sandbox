@@ -734,6 +734,33 @@ def main():
                 b"README.md".hex().upper(),
                 cwd=d, expected=expected)
             assert "BATCH ALL POSITIVE CHECKS PASSED" not in failed
+        # M55: a bad raw root cannot enter or benefit from cache.
+        for raw, rc, reason in (
+                (BUDGET_ROOT_OVER, 8,
+                 "NESTED LINK BUDGET EXCEEDED"),
+                (GITLINK_257, 8,
+                 "ROOT LINK LIMIT EXCEEDED"),
+                (CHAIN_ROOT_MISSING, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND"),
+                (CHAIN_ROOT_WRONG, 8,
+                 "ROOT ENTRY TYPE MISMATCH")):
+            invalid_root = run(
+                rec, "RUNBATCH", "GENOLD", "GENNEW",
+                git_oid("commit", MERGE2),
+                git_oid("tree", raw),
+                b"subdir".hex().upper(),
+                b"README.md".hex().upper(),
+                cwd=d, expected=rc)
+            assert reason in invalid_root
+            assert "BATCH ROOT CLOSURE REUSES " not in invalid_root
+            assert "BATCH ALL POSITIVE CHECKS PASSED" not in invalid_root
+        # The optimization must never leak into separate commands.
+        standalone = run(
+            rec, "TREEPATHDIR", "GENOLD", "GENNEW",
+            git_oid("tree", TREE),
+            b"subdir".hex().upper(), cwd=d)
+        assert "TREE ROOT FULL CLOSURE VERIFIED" in standalone
+        assert "BATCH ROOT CLOSURE REUSES " not in standalone
         for malformed in ("", "00", "2F61"):
             invalid = run(
                 rec, "RUNBATCH", "GENOLD", "GENNEW",
