@@ -1,5 +1,5 @@
 #!/bin/sh
-# M67 verified-ref bridge must stay read-only and CMS-record-safe.
+# M68 verified-ref bridge must stay read-only and CMS-record-safe.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -23,6 +23,10 @@ grep -Fq "command = 'LOG-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF LOG' rest" "$g"
 grep -Fq "command = 'LOGDAG-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF DAG' rest" "$g"
+grep -Fq "command = 'HISTORYPATH-REF-FULL'" "$g"
+grep -Fq "'EXEC GITVREF HISTPATH' rest" "$g"
+grep -Fq "GITREC HISTORYDAGPATH GITFIX M15NEW" "$v"
+grep -Fq "HISTORYDAGPATH FULL SNAPSHOTS VERIFIED" "$v"
 grep -Fq "GITREC LOGDAGFULL GITFIX M15NEW" "$v"
 grep -Fq "LOGDAG FULL SNAPSHOTS VERIFIED" "$v"
 grep -Fq "GITREC LOGFULL GITFIX M15NEW" "$v"
@@ -45,4 +49,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M67 VERIFIED REF2 SHOW/LOG/DAG/PATH/DIR BRIDGE GUARDS PASSED"
+echo "M68 VERIFIED REF2 HISTORY/PATH BRIDGE GUARDS PASSED"

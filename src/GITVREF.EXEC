@@ -1,17 +1,28 @@
-/* M67: read-only REF2 -> verified GEN2 show/log/DAG/path/dir bridge. */
+/* M68: read-only REF2 verified history path bridge. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
-   command\='DAG' & command\='READ' & command\='DIR' then do
- say 'Usage: GITVREF RESOLVE|SHOW|LOG|DAG|READ|DIR ref [arg]'
+   command\='DAG' & command\='READ' & command\='DIR' &,
+   command\='HISTPATH' then do
+ say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
-if spec='' | extra\='' then exit 4
-if command='LOG' | command='DAG' then do
+if spec='' then exit 4
+if command='HISTPATH' then do
+ if depth='' | extra='' then exit 4
+end
+else if extra\='' then exit 4
+if command='LOG' | command='DAG' | command='HISTPATH' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
+ if command='HISTPATH' & depth+0>8 then exit 4
+ if command='HISTPATH' then do
+  call pathasciihex extra
+  if result='ERROR' then exit 4
+  pathhex=result
+ end
 end
 else if command='READ' | command='DIR' then do
  if depth='' then exit 4
@@ -34,6 +45,10 @@ end
 else if command='DAG' then do
  cmd='GITREC LOGDAGFULL GITFIX M15NEW' oid depth
  marker='LOGDAG FULL SNAPSHOTS VERIFIED'
+end
+else if command='HISTPATH' then do
+ cmd='GITREC HISTORYDAGPATH GITFIX M15NEW' oid depth pathhex
+ marker='HISTORYDAGPATH FULL SNAPSHOTS VERIFIED'
 end
 else if command='READ' then do
  cmd='GITREC PATHFULLCAT GITFIX M15NEW' oid pathhex
