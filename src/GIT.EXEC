@@ -53,6 +53,10 @@ if command = 'LOG-REF-FULL' then do
    'EXEC GITVREF LOG' rest
    exit rc
 end
+if command = 'LOGDAG-REF-FULL' then do
+   'EXEC GITVREF DAG' rest
+   exit rc
+end
 if command = 'READ-REF-FULL' then do
    'EXEC GITVREF READ' rest
    exit rc
