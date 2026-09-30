@@ -721,7 +721,7 @@ def main():
                 "HISTORY FULL ROOT CLOSURE VERIFIED",
                 "HISTORY HOPS 1",
                 "HISTORYDAG FULL ROOT CLOSURE VERIFIED",
-                "HISTORYDAG NODES 2",
+                "HISTORYDAG NODES 3",
                 "PATH DATA END",
                 "TREE DATA END",
                 "BATCH NON COMMIT CHILD RC8 VERIFIED",
