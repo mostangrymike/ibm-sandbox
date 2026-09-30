@@ -722,6 +722,8 @@ def main():
                 "HISTORY HOPS 1",
                 "HISTORYDAG FULL ROOT CLOSURE VERIFIED",
                 "HISTORYDAG NODES 3",
+                "HISTORYDAGPATH FULL SNAPSHOTS VERIFIED",
+                "HISTORYDAGPATH NODES 3",
                 "PATH DATA END",
                 "TREE DATA END",
                 "BATCH NON COMMIT CHILD RC8 VERIFIED",
@@ -1645,6 +1647,49 @@ def main():
                 git_oid("commit", MERGE2), bad_depth,
                 cwd=d, expected=4)
             assert "HISTORYDAG DATA BEGIN" not in dag_bad_depth
+
+        # M59: require the requested path in every verified DAG snapshot.
+        dag_path = run(
+            rec, "HISTORYDAGPATH", "GENOLD", "GENNEW",
+            git_oid("commit", MERGE2), "1",
+            b"README.md".hex().upper(), cwd=d)
+        assert "SELECTED 52 GENNEW" in dag_path
+        assert "HISTORYDAGPATH FULL SNAPSHOTS VERIFIED" in dag_path
+        assert "HISTORYDAGPATH NODES 3" in dag_path
+        assert dag_path.count("HISTORYDAGPATH PATH TYPE 3 SIZE 3") == 3
+        assert dag_path.count(
+            "HISTORYDAGPATH PATHOID " + git_oid("blob", BLOB)) == 3
+        assert dag_path.strip().endswith("HISTORYDAGPATH DATA END")
+        dag_path0 = run(
+            rec, "HISTORYDAGPATH", "GENOLD", "GENNEW",
+            git_oid("commit", MERGE2), "0",
+            b"subdir".hex().upper(), cwd=d)
+        assert "HISTORYDAGPATH NODES 1" in dag_path0
+        assert "HISTORYDAGPATH PATH TYPE 2" in dag_path0
+        missing_path = run(
+            rec, "HISTORYDAGPATH", "GENOLD", "GENNEW",
+            git_oid("commit", MERGE2), "1",
+            b"missing.txt".hex().upper(), cwd=d, expected=4)
+        assert "HISTORYDAGPATH PATH NOT FOUND" in missing_path
+        assert "HISTORYDAGPATH DATA BEGIN" not in missing_path
+        for bad, code, reason in (
+                (MISSING_ROOT_MERGE, 4,
+                 "ROOT LINK TREE NOT FOUND"),
+                (BLOB_ROOT_MERGE, 8,
+                 "ROOT LINK OBJECT NOT TREE")):
+            path_fail = run(
+                rec, "HISTORYDAGPATH", "GENOLD", "GENNEW",
+                git_oid("commit", bad), "1",
+                b"README.md".hex().upper(),
+                cwd=d, expected=code)
+            assert reason in path_fail
+            assert "HISTORYDAGPATH DATA BEGIN" not in path_fail
+        for bad_path in ("", "00", "2F61", "612F"):
+            path_bad = run(
+                rec, "HISTORYDAGPATH", "GENOLD", "GENNEW",
+                git_oid("commit", MERGE2), "1", bad_path,
+                cwd=d, expected=4)
+            assert "HISTORYDAGPATH DATA BEGIN" not in path_bad
 
         for data, hops, code, reason in (
                 (GRANDCHILD, "3", 4, "HISTORY ROOT REACHED"),
