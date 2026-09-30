@@ -720,6 +720,8 @@ def main():
                 "TREE ROOT FULL CLOSURE VERIFIED",
                 "HISTORY FULL ROOT CLOSURE VERIFIED",
                 "HISTORY HOPS 1",
+                "HISTORYDAG FULL ROOT CLOSURE VERIFIED",
+                "HISTORYDAG NODES 3",
                 "PATH DATA END",
                 "TREE DATA END",
                 "BATCH NON COMMIT CHILD RC8 VERIFIED",
@@ -1601,6 +1603,48 @@ def main():
                 git_oid("commit", GRANDCHILD), bad,
                 cwd=d, expected=4)
             assert "HISTORY DATA BEGIN" not in rejected
+
+        # M58: all-parent merge DAG, every commit root closes first.
+        dag = run(
+            rec, "HISTORYDAG", "GENOLD", "GENNEW",
+            git_oid("commit", MERGE2), "1", cwd=d)
+        assert "SELECTED 52 GENNEW" in dag
+        assert "HISTORYDAG FULL ROOT CLOSURE VERIFIED" in dag
+        assert "HISTORYDAG NODES 3" in dag
+        for node, obj in enumerate(
+                (MERGE2, FIRST_COMMIT, SECOND_PARENT), start=1):
+            assert ("HISTORYDAG NODE " + str(node) + " DEPTH "
+                    + ("0" if node == 1 else "1") + " OID "
+                    + git_oid("commit", obj)) in dag
+        assert dag.strip().endswith("HISTORYDAG DATA END")
+        dag0 = run(
+            rec, "HISTORYDAG", "GENOLD", "GENNEW",
+            git_oid("commit", MERGE2), "0", cwd=d)
+        assert "HISTORYDAG NODES 1" in dag0
+        for bad, code, reason in (
+                (MISSING_FIRST, 4,
+                 "HISTORYDAG COMMIT NOT FOUND"),
+                (BLOB_FIRST, 8,
+                 "HISTORYDAG OBJECT IS NOT A COMMIT"),
+                (MALFORMED_FIRST, 8,
+                 "HISTORYDAG COMMIT STRUCTURE INVALID"),
+                (MISSING_ROOT_MERGE, 4,
+                 "ROOT LINK TREE NOT FOUND"),
+                (BLOB_ROOT_MERGE, 8,
+                 "ROOT LINK OBJECT NOT TREE")):
+            dag_fail = run(
+                rec, "HISTORYDAG", "GENOLD", "GENNEW",
+                git_oid("commit", bad), "1",
+                cwd=d, expected=code)
+            assert reason in dag_fail
+            assert "HISTORYDAG DATA BEGIN" not in dag_fail
+            assert "HISTORYDAG NODE " not in dag_fail
+        for bad_depth in ("9", "-1", "x", ""):
+            dag_bad_depth = run(
+                rec, "HISTORYDAG", "GENOLD", "GENNEW",
+                git_oid("commit", MERGE2), bad_depth,
+                cwd=d, expected=4)
+            assert "HISTORYDAG DATA BEGIN" not in dag_bad_depth
 
         for data, hops, code, reason in (
                 (GRANDCHILD, "3", 4, "HISTORY ROOT REACHED"),
