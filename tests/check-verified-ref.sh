@@ -1,5 +1,5 @@
 #!/bin/sh
-# M65 verified-ref bridge must stay read-only and CMS-record-safe.
+# M66 verified-ref bridge must stay read-only and CMS-record-safe.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -29,6 +29,10 @@ grep -Fq "COMMIT ROOT FULL CLOSURE VERIFIED" "$v"
 grep -Fq "command = 'READ-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF READ' rest" "$g"
 grep -Fq "pathasciihex:" "$v"
+grep -Fq "command='DIR'" "$v"
+grep -Fq "GITREC PATHFULLDIR GITFIX M15NEW" "$v"
+grep -Fq "command = 'DIR-REF-FULL'" "$g"
+grep -Fq "'EXEC GITVREF DIR' rest" "$g"
 if grep -Ei "(DISKW|ERASE|COPYFILE|GENWRITE|SELOUT|IDXOUT|FIDXOUT|GENOUT)" "$v"; then
  echo "FAIL: verified-ref bridge contains persistent write path" >&2
  exit 1
@@ -37,4 +41,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M65 VERIFIED REF2 SHOW/LOG/PATH BRIDGE GUARDS PASSED"
+echo "M66 VERIFIED REF2 SHOW/LOG/PATH/DIR BRIDGE GUARDS PASSED"
