@@ -78,7 +78,13 @@ do n=1 to out.0
  if pos('BATCH SEEK INDEX REUSES ',out.n)>0 then
   seekreuse=1
 end
-if \historyfull|\historydag|\historydagpath|\nontype|\absent|\reuse|\seekreuse then exit 12
+if \historyfull then exit 12
+if \historydag then exit 12
+if \historydagpath then exit 12
+if \nontype then exit 12
+if \absent then exit 12
+if \reuse then exit 12
+if \seekreuse then exit 12
 say 'PASS SELECT SEQ52 FROM VERIFIED BATCH'
 say 'PASS SHARED VERIFIED ROOT CLOSURE'
 say 'PASS SHARED VERIFIED SEEK INDEX'
