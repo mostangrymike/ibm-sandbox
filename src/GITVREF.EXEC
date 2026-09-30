@@ -92,8 +92,8 @@ if command='HISTCHG' then do
   say 'HISTORYCHANGES VERSION' vi 'OID' version.vi,
       'COUNT' freq.vi 'MINDEPTH' mindepth.vi,
       'MAXDEPTH' maxdepth.vi
-  say 'HISTORYCHANGES VERSION' vi 'NEWESTCOMMIT' newest.vi
-  say 'HISTORYCHANGES VERSION' vi 'OLDESTCOMMIT' oldest.vi
+  say 'HISTORYCHANGES VERSION' vi 'MINDEPTHCOMMIT' mincommit.vi
+  say 'HISTORYCHANGES VERSION' vi 'MAXDEPTHCOMMIT' maxcommit.vi
  end
  say 'HISTORYCHANGES NODES' pathoids
  say 'HISTORYCHANGES DATA END'
@@ -116,7 +116,7 @@ changecheck:
  parsednodes=0
  distinct=0
  nodes=-1
- drop seen. version. freq. mindepth. maxdepth. newest. oldest.
+ drop seen. version. freq. mindepth. maxdepth. mincommit. maxcommit.
  curdepth=-1
  curcommit=''
  havecommit=1
@@ -155,18 +155,18 @@ changecheck:
     freq.distinct=1
     mindepth.distinct=curdepth
     maxdepth.distinct=curdepth
-    newest.distinct=curcommit
-    oldest.distinct=curcommit
+    mincommit.distinct=curcommit
+    maxcommit.distinct=curcommit
    end
    else do
     freq.vi=freq.vi+1
     if curdepth<mindepth.vi then do
      mindepth.vi=curdepth
-     newest.vi=curcommit
+     mincommit.vi=curcommit
     end
     if curdepth>maxdepth.vi then do
      maxdepth.vi=curdepth
-     oldest.vi=curcommit
+     maxcommit.vi=curcommit
     end
    end
   end
