@@ -389,3 +389,9 @@ Real CMS `GIT HISTORYCHANGES-REF-FULL HEAD 1 README.md` returned RC 8 with no tr
 ## M72 depth-parser repair
 
 Repair branch changes only the M72 EXEC parser from `word(out.ci,4)` to `word(out.ci,5)` for records shaped `HISTORYDAGPATH NODE <n> DEPTH <d>`. This is the field layout already proven by M68-M71 target transcripts. The fail-closed one-PATHOID-per-node and count-equality checks remain unchanged. Target retest requires only the corrected `GITVREF.EXEC`; no compile or GITRUN.
+
+## M72 repair merged and strict host CI green
+
+M72 repair PR #56 passed complete native-stage workflow `36782808576` and squash-merged to main as `ea4f77b22f00e40c19f62bde8cfd0697d976b6c0`. The only functional repair changes the EXEC parser for `HISTORYDAGPATH NODE <n> DEPTH <d>` from field 4 to field 5 so numeric depth is validated correctly. The original M72 CMS attempt failed closed with RC 8 and no trusted output, exactly as required. The stricter one-PATHOID-per-node and parsed-node/PATHOID/native-count equality checks remain intact. No native C, GIT.EXEC routing, REF2 data, selector, sealed generation, or PACK changed.
+
+NEXT real CMS gate: from Mac `ibm-sandbox/src`, `git pull`, upload only corrected `GITVREF.EXEC` with `CMS_SCRIPT_PORT=3272`. No compile and no GITRUN. On CMS rerun exactly `GIT HISTORYCHANGES-REF-FULL HEAD 1 README.md`. Expected authenticated version record is `HISTORYCHANGES VERSION 1 OID 1BA7AE466BB0A16C294D52A8642E527B07D4D1F5 COUNT 2 MINDEPTH 0 MAXDEPTH 1`, followed by the already proven unchanged/node summary. M72 remains not target-proven until this repaired EXEC passes on real CMS.
