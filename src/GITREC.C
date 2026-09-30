@@ -265,6 +265,43 @@ static int rec_commit_walk(unsigned long n,int emit) {
  }
  return 1;
 }
+static int rec_root_closure(const unsigned char *root,
+                            unsigned int *budget);
+/* M60: git-show style commit metadata only after its complete
+ * local root snapshot has authenticated. Reload the commit after
+ * closure because traversal reuses the shared object buffer.
+ */
+static int rec_showfull(const unsigned char *oid) {
+ unsigned char tree_oid[20];
+ unsigned long sz;
+ unsigned int budget=1024;
+ int pos,rc;
+ if(rec_sidx_read()!=0) return 8;
+ pos=sidx_locate(oid);
+ if(pos<0) {puts("SHOW COMMIT NOT FOUND");return 4;}
+ if(sidx[pos].type!=1) {
+  puts("SHOW OBJECT IS NOT A COMMIT");return 8;
+ }
+ sz=sidx[pos].size;
+ sidx_silent=1;
+ rc=sidx_get(oid);
+ sidx_silent=0;
+ if(rc!=0) return rc;
+ if(!rec_commit_walk(sz,0)) {
+  puts("SHOW COMMIT STRUCTURE INVALID");return 8;
+ }
+ if(!rec_ascii_oid(idx_body+5,tree_oid)) return 8;
+ rc=rec_root_closure(tree_oid,&budget);
+ if(rc!=0) return rc;
+ sidx_silent=1;
+ rc=sidx_get(oid);
+ sidx_silent=0;
+ if(rc!=0) return rc;
+ if(!rec_commit_walk(sz,0)) return 8;
+ puts("SHOW FULL ROOT CLOSURE VERIFIED");
+ if(!rec_commit_walk(sz,1)) return 8;
+ return 0;
+}
 static int rec_commit(const unsigned char *oid) {
  int pos,rc;
  if(rec_sidx_read()!=0) return 8;
@@ -1364,6 +1401,8 @@ static int rec_batch(const unsigned char *commit,
  if(rc!=0) return rc;
  rc=rec_history_dag_path(commit,1,file,flen);
  if(rc!=0) return rc;
+ rc=rec_showfull(commit);
+ if(rc!=0) return rc;
  /* Expected failures are exercised inside the same audited
   * selection. Unexpected RCs must abort the entire batch.
   */
@@ -1402,7 +1441,7 @@ int main(int argc,char **argv) {
  unsigned long pathlen=0,bfilelen=0;
  unsigned int depth=0,dir_depth=0;
  unsigned long d;
- int get,full,tree,commit,root,path_command,pathcat;
+ int get,full,tree,commit,showfull,root,path_command,pathcat;
  int pathfull,pathfullcat,pathfulldir;
  int treepathcat,treepathdir,treepath,runbatch;
  int lsdir,lsdirv,lsdirdepth,lsdirfull;
@@ -1416,6 +1455,7 @@ int main(int argc,char **argv) {
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
  commit=argc==5&&strcmp(argv[1],"COMMIT")==0;
+ showfull=argc==5&&strcmp(argv[1],"SHOWFULL")==0;
  root=argc==5&&strcmp(argv[1],"LSROOT")==0;
  path_command=argc==6&&strcmp(argv[1],"PATH")==0;
  pathcat=argc==6&&strcmp(argv[1],"PATHCAT")==0;
@@ -1448,7 +1488,8 @@ int main(int argc,char **argv) {
  linkbatch_cmd=argc==5&&strcmp(argv[1],"LINKBATCH")==0;
  closure_cmd=argc==5&&strcmp(argv[1],"CLOSURE")==0;
  treeclosure_cmd=argc==5&&strcmp(argv[1],"TREECLOSURE")==0;
- if((!get&&!full&&!tree&&!commit&&!root&&!path_command&&
+ if((!get&&!full&&!tree&&!commit&&!showfull&&
+     !root&&!path_command&&
      !pathcat&&!pathfull&&!pathfullcat&&
      !pathfulldir&&!treepathcat&&!treepathdir&&
      !treepath&&!runbatch&&
@@ -1471,6 +1512,7 @@ int main(int argc,char **argv) {
   puts("GITREC CATHEX C0NAME C1NAME OID40");
   puts("GITREC TREE C0NAME C1NAME OID40");
   puts("GITREC COMMIT C0NAME C1NAME OID40");
+  puts("GITREC SHOWFULL C0 C1 COMMIT_OID40");
   puts("GITREC LSROOT C0NAME C1NAME COMMIT_OID40");
   puts("GITREC PATH C0NAME C1NAME COMMIT_OID40 PATHHEX");
   puts("GITREC PATHCAT C0NAME C1NAME COMMIT_OID40 PATHHEX");
@@ -1504,7 +1546,8 @@ int main(int argc,char **argv) {
   puts("GITREC TREECLOSURE C0 C1 TREE_OID40");
   return 4;
  }
- if((get||full||tree||commit||root||path_command||
+ if((get||full||tree||commit||showfull||root||
+     path_command||
      pathcat||pathfull||pathfullcat||pathfulldir||
      treepathcat||treepathdir||treepath||runbatch||
      lsdir||lsdirv||
@@ -1589,7 +1632,8 @@ int main(int argc,char **argv) {
   puts("SELECTOR SLOT 1 NAME MISMATCH");b.valid=0;
  }
  rc=selector_choose(&a,&b);
- if(rc!=0||(!get&&!full&&!tree&&!commit&&!root&&
+ if(rc!=0||(!get&&!full&&!tree&&!commit&&!showfull&&
+             !root&&
              !path_command&&!pathcat&&!pathfull&&
              !pathfullcat&&!pathfulldir&&
              !treepathcat&&!treepathdir&&!treepath&&
@@ -1607,6 +1651,7 @@ int main(int argc,char **argv) {
  /* rec_active is set ONLY by the successful full-GEN2 callback. */
  if(tree) return rec_tree(oid);
  if(commit) return rec_commit(oid);
+ if(showfull) return rec_showfull(oid);
  if(root) return rec_root(oid);
  if(path_command) return rec_path(oid,path,pathlen,0,0);
  if(pathcat) return rec_path(oid,path,pathlen,1,0);
