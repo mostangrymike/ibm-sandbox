@@ -725,6 +725,8 @@ def main():
                 "HISTORYDAGPATH FULL SNAPSHOTS VERIFIED",
                 "HISTORYDAGPATH NODES 3",
                 "SHOW FULL ROOT CLOSURE VERIFIED",
+                "LOG FULL SNAPSHOTS VERIFIED",
+                "LOG NODES 2",
                 "PATH DATA END",
                 "TREE DATA END",
                 "BATCH NON COMMIT CHILD RC8 VERIFIED",
@@ -1142,6 +1144,42 @@ def main():
             git_oid("tree", TREE), cwd=d, expected=8)
         assert "SHOW OBJECT IS NOT A COMMIT" in show_type
         assert "COMMIT DATA BEGIN" not in show_type
+
+        # M61: LOGFULL verifies all snapshots before releasing log data.
+        logfull = run(
+            rec, "LOGFULL", "GENOLD", "GENNEW",
+            git_oid("commit", GRANDCHILD), "2", cwd=d)
+        assert "SELECTED 52 GENNEW" in logfull
+        assert "LOG FULL SNAPSHOTS VERIFIED" in logfull
+        assert "LOG NODES 3" in logfull
+        assert logfull.count("COMMIT DATA BEGIN") == 3
+        assert logfull.strip().endswith("LOG DATA END")
+        log0 = run(
+            rec, "LOGFULL", "GENOLD", "GENNEW",
+            git_oid("commit", FIRST_COMMIT), "0", cwd=d)
+        assert "LOG NODES 1" in log0
+        for bad, depth, code, reason in (
+                (MISSING_FIRST, "1", 4, "LOG COMMIT NOT FOUND"),
+                (BLOB_FIRST, "1", 8, "LOG OBJECT IS NOT A COMMIT"),
+                (MALFORMED_FIRST, "1", 8,
+                 "LOG COMMIT STRUCTURE INVALID"),
+                (MISSING_ROOT_COMMIT, "0", 4,
+                 "ROOT LINK TREE NOT FOUND"),
+                (BAD_LINK, "0", 8,
+                 "ROOT LINK OBJECT NOT TREE")):
+            log_fail = run(
+                rec, "LOGFULL", "GENOLD", "GENNEW",
+                git_oid("commit", bad), depth,
+                cwd=d, expected=code)
+            assert reason in log_fail
+            assert "LOG DATA BEGIN" not in log_fail
+            assert "COMMIT DATA BEGIN" not in log_fail
+        for bad_depth in ("17", "-1", "foo", ""):
+            log_bad = run(
+                rec, "LOGFULL", "GENOLD", "GENNEW",
+                git_oid("commit", GRANDCHILD), bad_depth,
+                cwd=d, expected=4)
+            assert "LOG DATA BEGIN" not in log_bad
 
         # M27 first-parent verification traverses the SAME sealed generation.
         first = run(rec, "FIRSTPAR", "GENOLD", "GENNEW",
