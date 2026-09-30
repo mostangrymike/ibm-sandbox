@@ -43,6 +43,8 @@ grep -Fq "call gate 'RECOVERED BATCH',cmd,0," "$run"
 grep -Fq "call gate 'BOTH INVALID FAIL CLOSED',cmd,8," "$run"
 grep -Fq "call gate 'RESTORED BATCH',cmd,0," "$run"
 grep -q "^say 'GITRUN M59 ALL READ ONLY NATIVE GIT TESTS PASSED'$" "$run"
+awk 'length($0)>80 {print "FAIL: GITRUN record >80 columns:", NR; bad=1}
+     END {exit bad}' "$run"
 if grep -E '^[[:space:]]*call gate .*,$' "$run"; then
  echo "FAIL: split REXX CALL arguments" >&2
  exit 1
