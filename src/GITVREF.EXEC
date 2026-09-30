@@ -1,24 +1,26 @@
-/* M68: read-only REF2 verified history path bridge. */
+/* M69: read-only REF2 verified path-change history bridge. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='DAG' & command\='READ' & command\='DIR' &,
-   command\='HISTPATH' then do
+   command\='HISTPATH' & command\='HISTCHG' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
 if spec='' then exit 4
-if command='HISTPATH' then do
+if command='HISTPATH' | command='HISTCHG' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
-if command='LOG' | command='DAG' | command='HISTPATH' then do
+if command='LOG' | command='DAG' | command='HISTPATH' |,
+   command='HISTCHG' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
  if command='HISTPATH' & depth+0>8 then exit 4
- if command='HISTPATH' then do
+ if command='HISTCHG' & depth+0>8 then exit 4
+ if command='HISTPATH' | command='HISTCHG' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -46,7 +48,7 @@ else if command='DAG' then do
  cmd='GITREC LOGDAGFULL GITFIX M15NEW' oid depth
  marker='LOGDAG FULL SNAPSHOTS VERIFIED'
 end
-else if command='HISTPATH' then do
+else if command='HISTPATH' | command='HISTCHG' then do
  cmd='GITREC HISTORYDAGPATH GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGPATH FULL SNAPSHOTS VERIFIED'
 end
@@ -70,6 +72,23 @@ do i=1 to out.0
  if pos(marker,out.i)>0 then ok=1
 end
 if \ok then exit 8
+if command='HISTCHG' then do
+ call changecheck
+ if result\='OK' then exit 8
+ say 'VERIFIED REF' spec oid
+ say 'HISTORYCHANGES FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYCHANGES DATA BEGIN'
+ do i=1 to out.0
+  if left(out.i,20)='HISTORYDAGPATH NODE ' |,
+     left(out.i,22)='HISTORYDAGPATH COMMIT ' |,
+     left(out.i,25)='HISTORYDAGPATH PATH TYPE ' |,
+     left(out.i,23)='HISTORYDAGPATH PATHOID ' then say out.i
+ end
+ say 'HISTORYCHANGES DISTINCT PATH OIDS' distinct
+ say 'HISTORYCHANGES NODES' pathoids
+ say 'HISTORYCHANGES DATA END'
+ exit 0
+end
 if command='RESOLVE' then do
  say 'VERIFIED REF' spec oid
  exit 0
@@ -81,6 +100,31 @@ do i=1 to out.0
  if emit then say out.i
 end
 exit 0
+
+changecheck:
+ pathoids=0
+ distinct=0
+ nodes=-1
+ drop seen.
+ do ci=1 to out.0
+  if left(out.ci,23)='HISTORYDAGPATH PATHOID ' then do
+   poid=translate(word(out.ci,3))
+   if length(poid)\=40 then return 'ERROR'
+   if verify(poid,'0123456789ABCDEF')\=0 then return 'ERROR'
+   pathoids=pathoids+1
+   if seen.poid\=1 then do
+    seen.poid=1
+    distinct=distinct+1
+   end
+  end
+  if left(out.ci,21)='HISTORYDAGPATH NODES ' then do
+   if nodes\=-1 then return 'ERROR'
+   nodes=word(out.ci,3)
+   if datatype(nodes,'W')\=1 | nodes<1 then return 'ERROR'
+  end
+ end
+ if nodes<1 | pathoids\=nodes then return 'ERROR'
+ return 'OK'
 
 readrefs:
  drop rr. refname. refoid.

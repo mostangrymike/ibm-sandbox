@@ -61,6 +61,10 @@ if command = 'HISTORYPATH-REF-FULL' then do
    'EXEC GITVREF HISTPATH' rest
    exit rc
 end
+if command = 'HISTORYCHANGES-REF-FULL' then do
+   'EXEC GITVREF HISTCHG' rest
+   exit rc
+end
 if command = 'READ-REF-FULL' then do
    'EXEC GITVREF READ' rest
    exit rc
