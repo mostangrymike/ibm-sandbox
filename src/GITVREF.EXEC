@@ -1,0 +1,100 @@
+/* M63: read-only REF2 -> verified GEN2 bridge. */
+address cms
+parse arg command spec extra
+command=translate(command)
+if command\='RESOLVE' & command\='SHOW' then do
+ say 'Usage: GITVREF RESOLVE|SHOW HEAD|branch|refs/heads/name'
+ exit 4
+end
+if spec='' | extra\='' then exit 4
+call readrefs
+if result\='OK' then exit 8
+call resolve spec
+if result='ERROR' then exit 8
+oid=result
+call bindnative
+if result\='OK' then exit 8
+cmd='GITREC SHOWFULL GITFIX M15NEW' oid
+out.0=0
+'PIPE CMS' cmd '| STEM out.'
+if rc\=0 then exit rc
+ok=0
+do i=1 to out.0
+ if pos('SHOW FULL ROOT CLOSURE VERIFIED',out.i)>0 then ok=1
+end
+if \ok then exit 8
+if command='RESOLVE' then do
+ say 'VERIFIED REF' spec oid
+ exit 0
+end
+emit=0
+say 'VERIFIED REF' spec oid
+do i=1 to out.0
+ if pos('SHOW FULL ROOT CLOSURE VERIFIED',out.i)>0 then emit=1
+ if emit then say out.i
+end
+exit 0
+
+readrefs:
+ drop rr. refname. refoid.
+ headref=''
+ refcount=0
+ 'EXECIO * DISKR GITREF2 REPO A 1 (STEM RR. FINIS'
+ if rc\=0 then do
+  say 'GITVREF: GITREF2 REPO A not found'
+  return 'ERROR'
+ end
+ if rr.0<3 | rr.1\='REF2 1' then do
+  say 'GITVREF: invalid REF2 header'
+  return 'ERROR'
+ end
+ do i=2 to rr.0
+  if word(rr.i,1)='HEAD' then do
+   if words(rr.i)\=2 | headref\='' then return 'ERROR'
+   headref=word(rr.i,2)
+  end
+  else if word(rr.i,1)='REF' then do
+   if words(rr.i)\=3 then return 'ERROR'
+   name=word(rr.i,2)
+   oid=translate(word(rr.i,3))
+   if left(name,11)\='refs/heads/' then return 'ERROR'
+   if length(oid)\=40 then return 'ERROR'
+   if verify(oid,'0123456789ABCDEF')\=0 then return 'ERROR'
+   do j=1 to refcount
+    if refname.j=name then return 'ERROR'
+   end
+   refcount=refcount+1
+   refname.refcount=name
+   refoid.refcount=oid
+  end
+  else return 'ERROR'
+ end
+ if left(headref,11)\='refs/heads/' then return 'ERROR'
+ return 'OK'
+
+resolve:
+ parse arg wanted
+ if translate(wanted)='HEAD' then wanted=headref
+ else if left(wanted,11)\='refs/heads/' then,
+  wanted='refs/heads/'||wanted
+ do i=1 to refcount
+  if refname.i=wanted then return refoid.i
+ end
+ say 'GITVREF: ref not found' wanted
+ return 'ERROR'
+
+bindnative:
+ 'FILEDEF SEL0 DISK M15SL0 PTR A'
+ if rc\=0 then return 'ERROR'
+ 'FILEDEF SEL1 DISK M15SL1 PTR A'
+ if rc\=0 then return 'ERROR'
+ do i=1 to 4
+  typ=word('STAGE INDEX SEEK GEN',i)
+  dd=word('C0STG C0IDX C0SEEK C0GEN',i)
+  'FILEDEF' dd 'DISK GITFIX' typ 'A'
+  if rc\=0 then return 'ERROR'
+  dd=word('C1STG C1IDX C1SEEK C1GEN',i)
+  'FILEDEF' dd 'DISK M15NEW' typ 'A'
+  if rc\=0 then return 'ERROR'
+ end
+ return 'OK'
