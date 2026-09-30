@@ -1,5 +1,5 @@
 #!/bin/sh
-# M71 verified-ref bridge must stay read-only and CMS-record-safe.
+# M72 verified-ref bridge must stay read-only and CMS-record-safe.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -34,7 +34,11 @@ grep -Fq "HISTORYCHANGES STATUS' status" "$v"
 grep -Fq "status='UNCHANGED'" "$v"
 grep -Fq "status='CHANGED'" "$v"
 grep -Fq "HISTORYCHANGES VERSION' vi 'OID' version.vi" "$v"
-grep -Fq "'COUNT' freq.vi" "$v"
+grep -Fq "'COUNT' freq.vi 'MINDEPTH' mindepth.vi" "$v"
+grep -Fq "'MAXDEPTH' maxdepth.vi" "$v"
+grep -Fq "curdepth=word(out.ci,4)" "$v"
+grep -Fq "mindepth.distinct=curdepth" "$v"
+grep -Fq "maxdepth.distinct=curdepth" "$v"
 grep -Fq "version.distinct=poid" "$v"
 grep -Fq "freq.distinct=1" "$v"
 grep -Fq "freq.vi=freq.vi+1" "$v"
@@ -63,4 +67,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M71 VERIFIED REF2 PATH-VERSION COUNT GUARDS PASSED"
+echo "M72 VERIFIED REF2 VERSION-DEPTH RANGE GUARDS PASSED"
