@@ -343,3 +343,7 @@ NEXT real CMS gate: from Mac `ibm-sandbox/src`, `git pull`, upload only `GIT.EXE
 ## 2026-09-30 actual M69 native CMS PASS
 
 Real CMS `GIT HISTORYCHANGES-REF-FULL HEAD 1 README.md` passed. It resolved `HEAD` to `00D8D63229305230C8D37F884CE87F9E1A89468C`, released output only after `HISTORYCHANGES FULL SNAPSHOTS VERIFIED`, and emitted two authenticated path-history nodes. Both nodes resolved `README.md` to blob `1BA7AE466BB0A16C294D52A8642E527B07D4D1F5`, type 3, size 567. The summary reported `HISTORYCHANGES DISTINCT PATH OIDS 1`, `HISTORYCHANGES NODES 2`, and `HISTORYCHANGES DATA END`. CPU 117.25 / elapsed 120.24 sec at 16:40:14. M69 is now NATIVE CMS TARGET-PROVEN. Do not rerun M69 standalone.
+
+## M70: explicit authenticated path-change status
+
+M69 actual native CMS passed on 2026-09-30. M70 keeps the same read-only command and native HISTORYDAGPATH verification path, but after the fully authenticated PATHOID set is validated it now emits an explicit `HISTORYCHANGES STATUS UNCHANGED` when exactly one distinct path OID is present, otherwise `HISTORYCHANGES STATUS CHANGED`. The status is emitted only after complete snapshot verification and PATHOID/node-count validation; no new native traversal, C source, REF2 data, selector, sealed generation, or PACK changes are involved. For the target-proven `HEAD 1 README.md` case, the expected status is `UNCHANGED` because both verified snapshots carry blob `1BA7AE466BB0A16C294D52A8642E527B07D4D1F5`.
