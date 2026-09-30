@@ -475,6 +475,61 @@ static int rec_history(const unsigned char *starting,
  puts("HISTORY DATA END");
  return 0;
 }
+/* M61: git-log style first-parent history. Verify all
+ * commits and complete local root snapshots before any log data.
+ */
+static int rec_logfull(const unsigned char *starting,
+                       unsigned int depth) {
+ unsigned char commits[17][20],trees[17][20],next[20];
+ unsigned long sizes[17],sz;
+ unsigned int hop,j,budget;
+ int pos,rc;
+ if(rec_sidx_read()!=0) return 8;
+ memcpy(commits[0],starting,20);
+ for(hop=0;hop<=depth;hop++) {
+  pos=sidx_locate(commits[hop]);
+  if(pos<0) {puts("LOG COMMIT NOT FOUND");return 4;}
+  if(sidx[pos].type!=1) {
+   puts("LOG OBJECT IS NOT A COMMIT");return 8;
+  }
+  sz=sidx[pos].size;sizes[hop]=sz;
+  sidx_silent=1;
+  rc=sidx_get(commits[hop]);
+  sidx_silent=0;
+  if(rc!=0) return rc;
+  if(!rec_commit_walk(sz,0)) {
+   puts("LOG COMMIT STRUCTURE INVALID");return 8;
+  }
+  if(!rec_ascii_oid(idx_body+5,trees[hop])) return 8;
+  if(hop==depth) break;
+  if(sz<=46||!rec_ascii_key(idx_body+46,sz-46,"parent")) {
+   puts("LOG ROOT REACHED");return 4;
+  }
+  if(!rec_ascii_oid(idx_body+53,next)) return 8;
+  memcpy(commits[hop+1],next,20);
+ }
+ for(j=0;j<=depth;j++) {
+  budget=1024;
+  rc=rec_root_closure(trees[j],&budget);
+  if(rc!=0) return rc;
+ }
+ puts("LOG FULL SNAPSHOTS VERIFIED");
+ puts("LOG DATA BEGIN");
+ for(j=0;j<=depth;j++) {
+  printf("LOG NODE %u OID ",j);
+  idx_print(stdout,commits[j]);putchar('\n');
+  sidx_silent=1;
+  rc=sidx_get(commits[j]);
+  sidx_silent=0;
+  if(rc!=0) return rc;
+  if(!rec_commit_walk(sizes[j],0)) return 8;
+  if(!rec_commit_walk(sizes[j],1)) return 8;
+ }
+ printf("LOG NODES %u\n",depth+1);
+ puts("LOG DATA END");
+ return 0;
+}
+
 /* M58: bounded all-parent history DAG with complete snapshots.
  * Traverse every parent edge through DEPTH (0..8), de-duplicate
  * commits, verify each commit and its complete local root closure,
@@ -1403,6 +1458,8 @@ static int rec_batch(const unsigned char *commit,
  if(rc!=0) return rc;
  rc=rec_showfull(commit);
  if(rc!=0) return rc;
+ rc=rec_logfull(commit,1);
+ if(rc!=0) return rc;
  /* Expected failures are exercised inside the same audited
   * selection. Unexpected RCs must abort the entire batch.
   */
@@ -1445,7 +1502,7 @@ int main(int argc,char **argv) {
  int pathfull,pathfullcat,pathfulldir;
  int treepathcat,treepathdir,treepath,runbatch;
  int lsdir,lsdirv,lsdirdepth,lsdirfull;
- int firstpar,ancestor,history,historyfull,historydag;
+ int firstpar,ancestor,history,historyfull,historydag,logfull;
  int historydagpath;
  int parent_cmd,parents_cmd;
  int roots_cmd,commitroots_cmd,linkroots_cmd;
@@ -1474,6 +1531,7 @@ int main(int argc,char **argv) {
  ancestor=argc==6&&strcmp(argv[1],"ANCESTOR")==0;
  history=argc==6&&strcmp(argv[1],"HISTORY")==0;
  historyfull=argc==6&&strcmp(argv[1],"HISTORYFULL")==0;
+ logfull=argc==6&&strcmp(argv[1],"LOGFULL")==0;
  historydag=argc==6&&strcmp(argv[1],"HISTORYDAG")==0;
  historydagpath=argc==7&&
   strcmp(argv[1],"HISTORYDAGPATH")==0;
@@ -1497,7 +1555,7 @@ int main(int argc,char **argv) {
      !lsdirdepth&&
      !lsdirfull&&
      !firstpar&&!ancestor&&
-     !history&&!historyfull&&!historydag&&
+     !history&&!historyfull&&!historydag&&!logfull&&
      !historydagpath&&
      !parent_cmd&&!parents_cmd&&
      !roots_cmd&&!commitroots_cmd&&!linkroots_cmd&&
@@ -1531,6 +1589,7 @@ int main(int argc,char **argv) {
   puts("GITREC ANCESTOR C0NAME C1NAME COMMIT_OID40 DEPTH");
   puts("GITREC HISTORY C0NAME C1NAME COMMIT_OID40 DEPTH");
   puts("GITREC HISTORYFULL C0 C1 COMMIT_OID40 DEPTH");
+  puts("GITREC LOGFULL C0 C1 COMMIT_OID40 DEPTH");
   puts("GITREC HISTORYDAG C0 C1 COMMIT_OID40 DEPTH");
   puts("GITREC HISTORYDAGPATH C0 C1 COMMIT40 DEPTH PATHHEX");
   puts("GITREC PARENT C0NAME C1NAME COMMIT_OID40 N");
@@ -1552,7 +1611,7 @@ int main(int argc,char **argv) {
      treepathcat||treepathdir||treepath||runbatch||
      lsdir||lsdirv||
      lsdirdepth||lsdirfull||
-     firstpar||ancestor||history||historyfull||
+     firstpar||ancestor||history||historyfull||logfull||
      historydag||historydagpath||
      parent_cmd||parents_cmd||roots_cmd||
      commitroots_cmd||linkroots_cmd||nestedlinks_cmd||
@@ -1563,7 +1622,7 @@ int main(int argc,char **argv) {
   puts("GET REQUIRES 40 HEX DIGITS");
   return 4;
  }
- if(ancestor||history||historyfull||parent_cmd) {
+ if(ancestor||history||historyfull||logfull||parent_cmd) {
   if(!argv[5][0]||strlen(argv[5])>2) {
    puts("ANCESTOR DEPTH MUST BE 1 THROUGH 16");return 4;
   }
@@ -1574,7 +1633,7 @@ int main(int argc,char **argv) {
    }
    d=d*10+(unsigned long)(argv[5][rc]-'0');
   }
-  if((d<1&&!historyfull)||d>16) {
+  if((d<1&&!historyfull&&!logfull)||d>16) {
    puts("ANCESTOR DEPTH MUST BE 1 THROUGH 16");return 4;
   }
   depth=(unsigned int)d;
@@ -1641,7 +1700,7 @@ int main(int argc,char **argv) {
              !lsdir&&!lsdirv&&
              !lsdirdepth&&!lsdirfull&&
              !firstpar&&!ancestor&&!history&&
-             !historyfull&&!historydag&&
+             !historyfull&&!historydag&&!logfull&&
              !historydagpath&&
              !parent_cmd&&!parents_cmd&&!roots_cmd&&
              !commitroots_cmd&&!linkroots_cmd&&
@@ -1672,6 +1731,7 @@ int main(int argc,char **argv) {
  if(ancestor) return rec_ancestor(oid,depth);
  if(history) return rec_history(oid,depth,0);
  if(historyfull) return rec_history(oid,depth,1);
+ if(logfull) return rec_logfull(oid,depth);
  if(historydag) return rec_history_dag(oid,depth);
  if(historydagpath)
   return rec_history_dag_path(oid,depth,path,pathlen);
