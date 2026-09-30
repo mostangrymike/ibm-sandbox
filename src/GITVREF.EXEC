@@ -1,4 +1,4 @@
-/* M70: read-only REF2 verified path-change status. */
+/* M71: read-only REF2 verified path-version counts. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
@@ -88,6 +88,10 @@ if command='HISTCHG' then do
  if distinct=1 then status='UNCHANGED'
  else status='CHANGED'
  say 'HISTORYCHANGES STATUS' status
+ do vi=1 to distinct
+  say 'HISTORYCHANGES VERSION' vi 'OID' version.vi,
+      'COUNT' freq.vi
+ end
  say 'HISTORYCHANGES NODES' pathoids
  say 'HISTORYCHANGES DATA END'
  exit 0
@@ -108,17 +112,21 @@ changecheck:
  pathoids=0
  distinct=0
  nodes=-1
- drop seen.
+ drop seen. version. freq.
  do ci=1 to out.0
   if left(out.ci,23)='HISTORYDAGPATH PATHOID ' then do
    poid=translate(word(out.ci,3))
    if length(poid)\=40 then return 'ERROR'
    if verify(poid,'0123456789ABCDEF')\=0 then return 'ERROR'
    pathoids=pathoids+1
-   if seen.poid\=1 then do
-    seen.poid=1
+   vi=seen.poid
+   if datatype(vi,'W')\=1 then do
     distinct=distinct+1
+    seen.poid=distinct
+    version.distinct=poid
+    freq.distinct=1
    end
+   else freq.vi=freq.vi+1
   end
   if left(out.ci,21)='HISTORYDAGPATH NODES ' then do
    if nodes\=-1 then return 'ERROR'
