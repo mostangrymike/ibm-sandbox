@@ -1,10 +1,10 @@
-/* M65: read-only REF2 -> verified GEN2 show/log/path bridge. */
+/* M66: read-only REF2 -> verified GEN2 show/log/path/dir bridge. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
-   command\='READ' then do
- say 'Usage: GITVREF RESOLVE|SHOW|LOG|READ ref [arg]'
+   command\='READ' & command\='DIR' then do
+ say 'Usage: GITVREF RESOLVE|SHOW|LOG|READ|DIR ref [arg]'
  exit 4
 end
 if spec='' | extra\='' then exit 4
@@ -12,7 +12,7 @@ if command='LOG' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if depth+0>16 then exit 4
 end
-else if command='READ' then do
+else if command='READ' | command='DIR' then do
  if depth='' then exit 4
  call pathasciihex depth
  if result='ERROR' then exit 4
@@ -32,6 +32,10 @@ if command='LOG' then do
 end
 else if command='READ' then do
  cmd='GITREC PATHFULLCAT GITFIX M15NEW' oid pathhex
+ marker='COMMIT ROOT FULL CLOSURE VERIFIED'
+end
+else if command='DIR' then do
+ cmd='GITREC PATHFULLDIR GITFIX M15NEW' oid pathhex
  marker='COMMIT ROOT FULL CLOSURE VERIFIED'
 end
 else do
