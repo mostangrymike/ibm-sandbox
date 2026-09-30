@@ -1,12 +1,17 @@
-/* M63: read-only REF2 -> verified GEN2 bridge. */
+/* M64: read-only REF2 -> verified GEN2 show/log bridge. */
 address cms
-parse arg command spec extra
+parse arg command spec depth extra
 command=translate(command)
-if command\='RESOLVE' & command\='SHOW' then do
- say 'Usage: GITVREF RESOLVE|SHOW HEAD|branch|refs/heads/name'
+if command\='RESOLVE' & command\='SHOW' & command\='LOG' then do
+ say 'Usage: GITVREF RESOLVE|SHOW|LOG ref [depth]'
  exit 4
 end
 if spec='' | extra\='' then exit 4
+if command='LOG' then do
+ if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
+ if depth+0>16 then exit 4
+end
+else if depth\='' then exit 4
 call readrefs
 if result\='OK' then exit 8
 call resolve spec
@@ -14,13 +19,20 @@ if result='ERROR' then exit 8
 oid=result
 call bindnative
 if result\='OK' then exit 8
-cmd='GITREC SHOWFULL GITFIX M15NEW' oid
+if command='LOG' then do
+ cmd='GITREC LOGFULL GITFIX M15NEW' oid depth
+ marker='LOG FULL SNAPSHOTS VERIFIED'
+end
+else do
+ cmd='GITREC SHOWFULL GITFIX M15NEW' oid
+ marker='SHOW FULL ROOT CLOSURE VERIFIED'
+end
 out.0=0
 'PIPE CMS' cmd '| STEM out.'
 if rc\=0 then exit rc
 ok=0
 do i=1 to out.0
- if pos('SHOW FULL ROOT CLOSURE VERIFIED',out.i)>0 then ok=1
+ if pos(marker,out.i)>0 then ok=1
 end
 if \ok then exit 8
 if command='RESOLVE' then do
@@ -30,7 +42,7 @@ end
 emit=0
 say 'VERIFIED REF' spec oid
 do i=1 to out.0
- if pos('SHOW FULL ROOT CLOSURE VERIFIED',out.i)>0 then emit=1
+ if pos(marker,out.i)>0 then emit=1
  if emit then say out.i
 end
 exit 0

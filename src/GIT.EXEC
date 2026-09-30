@@ -49,6 +49,10 @@ if command = 'SHOW-REF-FULL' then do
    'EXEC GITVREF SHOW' rest
    exit rc
 end
+if command = 'LOG-REF-FULL' then do
+   'EXEC GITVREF LOG' rest
+   exit rc
+end
 if command = 'CHECKOUT' | command = 'HEAD' then do
    'EXEC GITHEAD' command rest
    exit rc
