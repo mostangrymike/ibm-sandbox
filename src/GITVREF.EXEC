@@ -1,15 +1,22 @@
-/* M64: read-only REF2 -> verified GEN2 show/log bridge. */
+/* M65: read-only REF2 -> verified GEN2 show/log/path bridge. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
-if command\='RESOLVE' & command\='SHOW' & command\='LOG' then do
- say 'Usage: GITVREF RESOLVE|SHOW|LOG ref [depth]'
+if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
+   command\='READ' then do
+ say 'Usage: GITVREF RESOLVE|SHOW|LOG|READ ref [arg]'
  exit 4
 end
 if spec='' | extra\='' then exit 4
 if command='LOG' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if depth+0>16 then exit 4
+end
+else if command='READ' then do
+ if depth='' then exit 4
+ call pathasciihex depth
+ if result='ERROR' then exit 4
+ pathhex=result
 end
 else if depth\='' then exit 4
 call readrefs
@@ -22,6 +29,10 @@ if result\='OK' then exit 8
 if command='LOG' then do
  cmd='GITREC LOGFULL GITFIX M15NEW' oid depth
  marker='LOG FULL SNAPSHOTS VERIFIED'
+end
+else if command='READ' then do
+ cmd='GITREC PATHFULLCAT GITFIX M15NEW' oid pathhex
+ marker='COMMIT ROOT FULL CLOSURE VERIFIED'
 end
 else do
  cmd='GITREC SHOWFULL GITFIX M15NEW' oid
@@ -94,6 +105,33 @@ resolve:
  end
  say 'GITVREF: ref not found' wanted
  return 'ERROR'
+
+pathasciihex:
+ parse arg text
+ if text='' | length(text)>255 then return 'ERROR'
+ if pos('//',text)>0 | left(text,1)='/' | right(text,1)='/' then,
+  return 'ERROR'
+ e2ahex='000102031A091A7F1A1A1A0B0C0D0E0F' ||,
+         '101112131A1A081A18191A1A1C1D1E1F' ||,
+         '1A1A1C1A1A0A171B1A1A1A1A1A050607' ||,
+         '1A1A161A1A1E1A041A1A1A1A14151A1A' ||,
+         '20A6E180EB909FE2AB8B9B2E3C282B7C' ||,
+         '26A9AA9CDBA599E3A89E21242A293B5E' ||,
+         '2D2FDFDC9ADDDE989DACBA2C255F3E3F' ||,
+         'D78894B0B1B2FCD6FB603A2340273D22' ||,
+         'F861626364656667686996A4F3AFAEC5' ||,
+         '8C6A6B6C6D6E6F7071729787CE93F1FE' ||,
+         'C87E737475767778797AEFC0DA5BF2F9' ||,
+         'B5B6FDB7B8B9E6BBBCBD8DD9BF5DD8C4' ||,
+         '7B414243444546474849CBCABEE8ECED' ||,
+         '7D4A4B4C4D4E4F505152A1ADF5F4A38F' ||,
+         '5CE7535455565758595AA0858EE9E4D1' ||,
+         '30313233343536373839B3F7F0FAA7FF'
+ e2a=x2c(e2ahex)
+ bytes=xrange('00'x,'FF'x)
+ out=c2x(translate(text,e2a,bytes))
+ if pos('00',out)>0 then return 'ERROR'
+ return out
 
 bindnative:
  'FILEDEF SEL0 DISK M15SL0 PTR A'
