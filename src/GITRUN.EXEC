@@ -1,7 +1,7 @@
-/* M59: compact, read-only native Git CMS target regression. */
+/* M60: compact, read-only native Git CMS target regression. */
 /* PIPE CMS captures diagnostics in memory; no output CMS files. */
 address cms
-say 'GITRUN M59 COMPACT REPORT'
+say 'GITRUN M60 COMPACT REPORT'
 say 'ALL COUNTS REFER TO VERIFIED ORIGINAL 1808 OBJECTS'
 fast='FAST AUDIT VERIFIED 1808 UNIQUE 1808'
 pair='PAIR VERIFIED UNIQUE 1808'
@@ -56,11 +56,12 @@ ptree='F3EF36AAD778D5DA84857D8DED46495C75F4CAB0'
 /* No extra full-GEN2 audit for each added milestone. */
 tree='204E1D6968FB81C35BF830D63A611AC64C072945'
 cmd='GITREC RUNBATCH GITFIX M15NEW' commit tree '737263' '524541444D452E6D64'
-call gate 'M59 ONE SELECTION ALL POSITIVES',cmd,0,sel,batchok,fullroot,treeroot
+call gate 'M60 ONE SELECTION ALL POSITIVES',cmd,0,sel,batchok,fullroot,treeroot
 if result \= 0 then exit 12
 historyfull=0
 historydag=0
 historydagpath=0
+showfull=0
 nontype=0
 absent=0
 reuse=0
@@ -74,6 +75,8 @@ do n=1 to out.0
   historydag=1
  if pos('HISTORYDAGPATH FULL SNAPSHOTS VERIFIED',out.n)>0 then
   historydagpath=1
+ if pos('SHOW FULL ROOT CLOSURE VERIFIED',out.n)>0 then
+  showfull=1
  if pos('BATCH MISSING CHILD RC4 VERIFIED',out.n)>0 then
   absent=1
  if pos('BATCH ROOT CLOSURE REUSES ',out.n)>0 then
@@ -84,6 +87,7 @@ end
 if \historyfull then exit 12
 if \historydag then exit 12
 if \historydagpath then exit 12
+if \showfull then exit 12
 if \nontype then exit 12
 if \absent then exit 12
 if \reuse then exit 12
@@ -94,6 +98,7 @@ say 'PASS SHARED VERIFIED SEEK INDEX'
 say 'PASS FULL HISTORY ROOT CLOSURE'
 say 'PASS FULL ALL-PARENT HISTORY ROOT CLOSURE'
 say 'PASS FULL ALL-PARENT HISTORY PATH'
+say 'PASS SHOW FULL SNAPSHOT'
 say 'PASS NON COMMIT CHILD RC 8 FROM BATCH'
 say 'PASS MISSING CHILD RC 4 FROM BATCH'
 cmd='GITREC DEPTHLINKS GITFIX M15NEW' commit '5'
@@ -117,7 +122,7 @@ if result \= 0 then exit 12
 call protected
 if result \= 0 then exit 12
 say 'PASS FINAL PROTECTED FILES'
-say 'GITRUN M59 ALL READ ONLY NATIVE GIT TESTS PASSED'
+say 'GITRUN M60 ALL READ ONLY NATIVE GIT TESTS PASSED'
 exit 0
 /* All stage output is held in an in-memory REXX STEM. No dumps. */
 gate:
