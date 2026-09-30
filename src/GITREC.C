@@ -519,6 +519,180 @@ static int rec_history_dag(const unsigned char *starting,
  return 0;
 }
 
+/* M59: resolve one path from an already authenticated tree.
+ * Still re-read and re-hash every tree/object along the path.
+ * No output is produced by this helper.
+ */
+static int rec_root_path_meta(const unsigned char *root,
+                              const unsigned char *path,
+                              unsigned long length,
+                              unsigned char found[20],
+                              int *found_type,
+                              unsigned long *found_size) {
+ unsigned char next[20];
+ unsigned long start=0,end,at,ms,ml,ns,nl,sz;
+ int pos,rc,type,islink;
+ memcpy(next,root,20);
+ while(start<length) {
+  end=start;
+  while(end<length&&path[end]!=0x2f) end++;
+  pos=sidx_locate(next);
+  if(pos<0) {
+   puts("HISTORYDAGPATH TREE NOT FOUND");return 4;
+  }
+  if(sidx[pos].type!=2) {
+   puts("HISTORYDAGPATH COMPONENT NOT TREE");return 8;
+  }
+  sz=sidx[pos].size;
+  sidx_silent=1;
+  rc=sidx_get(next);
+  sidx_silent=0;
+  if(rc!=0) return rc;
+  if(!rec_tree_walk(sz,0)) {
+   puts("HISTORYDAGPATH TREE INVALID");return 8;
+  }
+  at=0;pos=-1;type=0;islink=0;
+  while(at<sz) {
+   ms=at;
+   while(at<sz&&idx_body[at]!=0x20) at++;
+   ml=at-ms;at++;
+   ns=at;
+   while(at<sz&&idx_body[at]!=0) at++;
+   nl=at-ns;at++;
+   if(nl==end-start&&
+      memcmp(idx_body+ns,path+start,(size_t)nl)==0) {
+    islink=(ml==6&&
+      memcmp(idx_body+ms,"\x31\x36\x30\x30\x30\x30",6)==0);
+    type=(ml==5)?2:(islink?1:3);
+    memcpy(found,idx_body+at,20);
+    pos=1;break;
+   }
+   at+=20;
+  }
+  if(pos<0) {
+   puts("HISTORYDAGPATH PATH NOT FOUND");return 4;
+  }
+  if(end<length) {
+   if(type!=2) {
+    puts("HISTORYDAGPATH COMPONENT NOT TREE");return 8;
+   }
+   memcpy(next,found,20);
+   start=end+1;
+   continue;
+  }
+  if(islink) {
+   *found_type=1;
+   *found_size=0;
+   return 0;
+  }
+  pos=sidx_locate(found);
+  if(pos<0) {
+   puts("HISTORYDAGPATH OBJECT NOT FOUND");return 4;
+  }
+  if(sidx[pos].type!=type) {
+   puts("HISTORYDAGPATH OBJECT TYPE MISMATCH");return 8;
+  }
+  *found_type=type;
+  *found_size=sidx[pos].size;
+  sidx_silent=1;
+  rc=sidx_get(found);
+  sidx_silent=0;
+  if(rc!=0) return rc;
+  if(type==2&&!rec_tree_walk(*found_size,0)) {
+   puts("HISTORYDAGPATH RESULT TREE INVALID");return 8;
+  }
+  return 0;
+ }
+ return 8;
+}
+
+/* M59: all-parent history where every snapshot and named path
+ * must authenticate before any node/path metadata is released.
+ */
+static int rec_history_dag_path(const unsigned char *starting,
+                                unsigned int depth,
+                                const unsigned char *path,
+                                unsigned long pathlen) {
+ unsigned char commits[64][20],trees[64][20],levels[64];
+ unsigned char results[64][20],parent[20];
+ unsigned long sizes[64],sz,at,begin,len;
+ int types[64];
+ unsigned int count=1,head=0,j,k,budget;
+ int pos,rc,dup;
+ if(rec_sidx_read()!=0) return 8;
+ memcpy(commits[0],starting,20);
+ levels[0]=0;
+ while(head<count) {
+  pos=sidx_locate(commits[head]);
+  if(pos<0) {
+   puts("HISTORYDAGPATH COMMIT NOT FOUND");return 4;
+  }
+  if(sidx[pos].type!=1) {
+   puts("HISTORYDAGPATH OBJECT IS NOT A COMMIT");return 8;
+  }
+  sz=sidx[pos].size;
+  sidx_silent=1;
+  rc=sidx_get(commits[head]);
+  sidx_silent=0;
+  if(rc!=0) return rc;
+  if(!rec_commit_walk(sz,0)) {
+   puts("HISTORYDAGPATH COMMIT INVALID");return 8;
+  }
+  if(!rec_ascii_oid(idx_body+5,trees[head])) return 8;
+  if(levels[head]<depth) {
+   at=46;
+   while(at<sz) {
+    begin=at;
+    while(at<sz&&idx_body[at]!=0x0a) at++;
+    if(at==sz) return 8;
+    len=at-begin;
+    if(!rec_ascii_key(idx_body+begin,len,"parent")) break;
+    if(!rec_ascii_oid(idx_body+begin+7,parent)) return 8;
+    dup=0;
+    for(k=0;k<count;k++)
+     if(memcmp(commits[k],parent,20)==0) {
+      dup=1;break;
+     }
+    if(!dup) {
+     if(count==64) {
+      puts("HISTORYDAGPATH COMMIT LIMIT EXCEEDED");
+      return 8;
+     }
+     memcpy(commits[count],parent,20);
+     levels[count]=(unsigned char)(levels[head]+1);
+     count++;
+    }
+    at++;
+   }
+  }
+  budget=1024;
+  rc=rec_root_closure(trees[head],&budget);
+  if(rc!=0) return rc;
+  rc=rec_root_path_meta(trees[head],path,pathlen,
+                        results[head],&types[head],
+                        &sizes[head]);
+  if(rc!=0) return rc;
+  head++;
+ }
+ puts("HISTORYDAGPATH FULL SNAPSHOTS VERIFIED");
+ puts("HISTORYDAGPATH DATA BEGIN");
+ for(j=0;j<count;j++) {
+  printf("HISTORYDAGPATH NODE %u DEPTH %u\n",
+         j+1,(unsigned int)levels[j]);
+  fputs("HISTORYDAGPATH COMMIT ",stdout);
+  idx_print(stdout,commits[j]);putchar('\n');
+  fputs("HISTORYDAGPATH TREE ",stdout);
+  idx_print(stdout,trees[j]);putchar('\n');
+  printf("HISTORYDAGPATH PATH TYPE %d SIZE %lu\n",
+         types[j],sizes[j]);
+  fputs("HISTORYDAGPATH PATHOID ",stdout);
+  idx_print(stdout,results[j]);putchar('\n');
+ }
+ printf("HISTORYDAGPATH NODES %u\n",count);
+ puts("HISTORYDAGPATH DATA END");
+ return 0;
+}
+
 /* M30: numbered parent of a fully verified Git commit.
  * Parent ordinals are 1 based and include merge's second parent.
  * Never output a parent OID until its body authenticates.
@@ -1231,6 +1405,7 @@ int main(int argc,char **argv) {
  int treepathcat,treepathdir,treepath,runbatch;
  int lsdir,lsdirv,lsdirdepth,lsdirfull;
  int firstpar,ancestor,history,historyfull,historydag;
+ int historydagpath;
  int parent_cmd,parents_cmd;
  int roots_cmd,commitroots_cmd,linkroots_cmd;
  int nestedlinks_cmd,deeplinks_cmd,depthlinks_cmd;
@@ -1258,6 +1433,8 @@ int main(int argc,char **argv) {
  history=argc==6&&strcmp(argv[1],"HISTORY")==0;
  historyfull=argc==6&&strcmp(argv[1],"HISTORYFULL")==0;
  historydag=argc==6&&strcmp(argv[1],"HISTORYDAG")==0;
+ historydagpath=argc==7&&
+  strcmp(argv[1],"HISTORYDAGPATH")==0;
  parent_cmd=argc==6&&strcmp(argv[1],"PARENT")==0;
  parents_cmd=argc==5&&strcmp(argv[1],"PARENTS")==0;
  roots_cmd=argc==5&&strcmp(argv[1],"PARENTROOTS")==0;
@@ -1278,6 +1455,7 @@ int main(int argc,char **argv) {
      !lsdirfull&&
      !firstpar&&!ancestor&&
      !history&&!historyfull&&!historydag&&
+     !historydagpath&&
      !parent_cmd&&!parents_cmd&&
      !roots_cmd&&!commitroots_cmd&&!linkroots_cmd&&
      !nestedlinks_cmd&&!deeplinks_cmd&&
@@ -1310,6 +1488,7 @@ int main(int argc,char **argv) {
   puts("GITREC HISTORY C0NAME C1NAME COMMIT_OID40 DEPTH");
   puts("GITREC HISTORYFULL C0 C1 COMMIT_OID40 DEPTH");
   puts("GITREC HISTORYDAG C0 C1 COMMIT_OID40 DEPTH");
+  puts("GITREC HISTORYDAGPATH C0 C1 COMMIT40 DEPTH PATHHEX");
   puts("GITREC PARENT C0NAME C1NAME COMMIT_OID40 N");
   puts("GITREC PARENTS C0NAME C1NAME COMMIT_OID40");
   puts("GITREC PARENTROOTS C0NAME C1NAME OID40");
@@ -1329,7 +1508,7 @@ int main(int argc,char **argv) {
      lsdir||lsdirv||
      lsdirdepth||lsdirfull||
      firstpar||ancestor||history||historyfull||
-     historydag||
+     historydag||historydagpath||
      parent_cmd||parents_cmd||roots_cmd||
      commitroots_cmd||linkroots_cmd||nestedlinks_cmd||
      deeplinks_cmd||depthlinks_cmd||linkbatch_cmd||
@@ -1355,7 +1534,7 @@ int main(int argc,char **argv) {
   }
   depth=(unsigned int)d;
  }
- if(historydag) {
+ if(historydag||historydagpath) {
   if(strlen(argv[5])!=1||
      argv[5][0]<'0'||argv[5][0]>'8') {
    puts("HISTORYDAG DEPTH MUST BE 0 THROUGH 8");
@@ -1386,6 +1565,10 @@ int main(int argc,char **argv) {
     !rec_path_hex(argv[5],path,&pathlen)) {
   puts("PATH REQUIRES VALID NONEMPTY HEX");return 4;
  }
+ if(historydagpath&&
+    !rec_path_hex(argv[6],path,&pathlen)) {
+  puts("PATH REQUIRES VALID NONEMPTY HEX");return 4;
+ }
  if(runbatch) {
   if(strlen(argv[5])!=40||!idx_hex(argv[5],boid)||
      !rec_path_hex(argv[6],path,&pathlen)||
@@ -1413,6 +1596,7 @@ int main(int argc,char **argv) {
              !lsdirdepth&&!lsdirfull&&
              !firstpar&&!ancestor&&!history&&
              !historyfull&&!historydag&&
+             !historydagpath&&
              !parent_cmd&&!parents_cmd&&!roots_cmd&&
              !commitroots_cmd&&!linkroots_cmd&&
              !nestedlinks_cmd&&!deeplinks_cmd&&
@@ -1442,6 +1626,8 @@ int main(int argc,char **argv) {
  if(history) return rec_history(oid,depth,0);
  if(historyfull) return rec_history(oid,depth,1);
  if(historydag) return rec_history_dag(oid,depth);
+ if(historydagpath)
+  return rec_history_dag_path(oid,depth,path,pathlen);
  if(parent_cmd) return rec_parent(oid,depth);
  if(parents_cmd) return rec_parents(oid,0,0,0,0,0);
  if(roots_cmd) return rec_parents(oid,1,0,0,0,0);
