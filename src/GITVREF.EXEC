@@ -1,4 +1,4 @@
-/* M69: read-only REF2 verified path-change history bridge. */
+/* M70: read-only REF2 verified path-change status. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
@@ -85,6 +85,9 @@ if command='HISTCHG' then do
      left(out.i,23)='HISTORYDAGPATH PATHOID ' then say out.i
  end
  say 'HISTORYCHANGES DISTINCT PATH OIDS' distinct
+ if distinct=1 then status='UNCHANGED'
+ else status='CHANGED'
+ say 'HISTORYCHANGES STATUS' status
  say 'HISTORYCHANGES NODES' pathoids
  say 'HISTORYCHANGES DATA END'
  exit 0
