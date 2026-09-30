@@ -385,3 +385,7 @@ NEXT real CMS gate: from Mac `ibm-sandbox/src`, `git pull`, upload only `GITVREF
 ## 2026-09-30 M72 first CMS validation FAILED CLOSED
 
 Real CMS `GIT HISTORYCHANGES-REF-FULL HEAD 1 README.md` returned RC 8 with no trusted output; CPU 116.05 / elapsed 118.96 sec at 16:56:34. Root cause is an EXEC-layer M72 parser defect: `HISTORYDAGPATH NODE 1 DEPTH 0` was parsed with `word(...,4)`, yielding the literal `DEPTH`, rather than `word(...,5)`, yielding numeric depth `0`. The new M72 validation therefore rejected the buffered native result before emitting `VERIFIED REF` or any HISTORYCHANGES summary. This confirms fail-closed behavior. Native HISTORYDAGPATH, sealed generations, selectors, REF2, and PACK are unaffected. M72 is NOT target-proven until the corrected EXEC is retested.
+
+## M72 depth-parser repair
+
+Repair branch changes only the M72 EXEC parser from `word(out.ci,4)` to `word(out.ci,5)` for records shaped `HISTORYDAGPATH NODE <n> DEPTH <d>`. This is the field layout already proven by M68-M71 target transcripts. The fail-closed one-PATHOID-per-node and count-equality checks remain unchanged. Target retest requires only the corrected `GITVREF.EXEC`; no compile or GITRUN.

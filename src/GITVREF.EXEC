@@ -122,7 +122,7 @@ changecheck:
    if havepath=0 then return 'ERROR'
    parsednodes=parsednodes+1
    havepath=0
-   curdepth=word(out.ci,4)
+   curdepth=word(out.ci,5)
    if datatype(curdepth,'W')\=1 then return 'ERROR'
    if curdepth<0 | curdepth>8 then return 'ERROR'
   end
