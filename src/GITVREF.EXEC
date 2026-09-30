@@ -17,6 +17,12 @@ if command='LOG' | command='DAG' | command='HISTPATH' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
+ if command='HISTPATH' & depth+0>8 then exit 4
+ if command='HISTPATH' then do
+  call pathasciihex extra
+  if result='ERROR' then exit 4
+  pathhex=result
+ end
 end
 else if command='READ' | command='DIR' then do
  if depth='' then exit 4
