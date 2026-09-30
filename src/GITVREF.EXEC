@@ -46,6 +46,10 @@ else if command='DAG' then do
  cmd='GITREC LOGDAGFULL GITFIX M15NEW' oid depth
  marker='LOGDAG FULL SNAPSHOTS VERIFIED'
 end
+else if command='HISTPATH' then do
+ cmd='GITREC HISTORYDAGPATH GITFIX M15NEW' oid depth pathhex
+ marker='HISTORYDAGPATH FULL SNAPSHOTS VERIFIED'
+end
 else if command='READ' then do
  cmd='GITREC PATHFULLCAT GITFIX M15NEW' oid pathhex
  marker='COMMIT ROOT FULL CLOSURE VERIFIED'
