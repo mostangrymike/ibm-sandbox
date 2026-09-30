@@ -1613,7 +1613,8 @@ def main():
         assert "HISTORYDAG NODES 3" in dag
         for node, obj in enumerate(
                 (MERGE2, FIRST_COMMIT, SECOND_PARENT), start=1):
-            assert ("HISTORYDAG NODE " + str(node) + " OID "
+            assert ("HISTORYDAG NODE " + str(node) + " DEPTH "
+                    + ("0" if node == 1 else "1") + " OID "
                     + git_oid("commit", obj)) in dag
         assert dag.strip().endswith("HISTORYDAG DATA END")
         dag0 = run(
