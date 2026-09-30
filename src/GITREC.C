@@ -471,9 +471,9 @@ static int rec_history_dag(const unsigned char *starting,
    return 8;
   }
   if(!rec_ascii_oid(idx_body+5,trees[head])) return 8;
-  budget=1024;
-  rc=rec_root_closure(trees[head],&budget);
-  if(rc!=0) return rc;
+  /* Capture parent OIDs while idx_body still holds this commit.
+   * Root closure reuses idx_body for linked trees and blobs.
+   */
   if(levels[head]<depth) {
    at=46;
    while(at<sz) {
@@ -500,6 +500,9 @@ static int rec_history_dag(const unsigned char *starting,
     at++;
    }
   }
+  budget=1024;
+  rc=rec_root_closure(trees[head],&budget);
+  if(rc!=0) return rc;
   head++;
  }
  puts("HISTORYDAG FULL ROOT CLOSURE VERIFIED");
