@@ -724,6 +724,7 @@ def main():
                 "HISTORYDAG NODES 3",
                 "HISTORYDAGPATH FULL SNAPSHOTS VERIFIED",
                 "HISTORYDAGPATH NODES 3",
+                "SHOW FULL ROOT CLOSURE VERIFIED",
                 "PATH DATA END",
                 "TREE DATA END",
                 "BATCH NON COMMIT CHILD RC8 VERIFIED",
@@ -1112,6 +1113,35 @@ def main():
         assert "COMMIT PARENT " + git_oid("commit", FIRST_COMMIT) in merge
         assert "COMMIT PARENT " + "1"*40 in merge
         assert "COMMIT MESSAGE BYTES 6" in merge
+
+        # M60: SHOWFULL emits commit metadata only after full root closure.
+        show = run(rec, "SHOWFULL", "GENOLD", "GENNEW",
+                   git_oid("commit", FIRST_COMMIT), cwd=d)
+        assert "SELECTED 52 GENNEW" in show
+        assert "SHOW FULL ROOT CLOSURE VERIFIED" in show
+        assert "COMMIT TREE " + git_oid("tree", TREE) in show
+        assert "COMMIT PARENTS 0" in show
+        assert show.strip().endswith("COMMIT DATA END")
+        for bad, code, reason in (
+                (MISSING_ENTRY_COMMIT, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND"),
+                (WRONG_ENTRY_COMMIT, 8,
+                 "ROOT ENTRY TYPE MISMATCH"),
+                (DEEP_COMMIT_MISSING, 4,
+                 "ROOT ENTRY OBJECT NOT FOUND"),
+                (BUDGET_COMMIT_OVER, 8,
+                 "NESTED LINK BUDGET EXCEEDED")):
+            show_fail = run(
+                rec, "SHOWFULL", "GENOLD", "GENNEW",
+                git_oid("commit", bad), cwd=d, expected=code)
+            assert reason in show_fail
+            assert "SHOW FULL ROOT CLOSURE VERIFIED" not in show_fail
+            assert "COMMIT DATA BEGIN" not in show_fail
+        show_type = run(
+            rec, "SHOWFULL", "GENOLD", "GENNEW",
+            git_oid("tree", TREE), cwd=d, expected=8)
+        assert "SHOW OBJECT IS NOT A COMMIT" in show_type
+        assert "COMMIT DATA BEGIN" not in show_type
 
         # M27 first-parent verification traverses the SAME sealed generation.
         first = run(rec, "FIRSTPAR", "GENOLD", "GENNEW",
