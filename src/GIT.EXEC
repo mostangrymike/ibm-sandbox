@@ -41,6 +41,14 @@ if command = 'UPDATE-REF' then do
    'EXEC GITUPD' rest
    exit rc
 end
+if command = 'VERIFY-REF' then do
+   'EXEC GITVREF RESOLVE' rest
+   exit rc
+end
+if command = 'SHOW-REF-FULL' then do
+   'EXEC GITVREF SHOW' rest
+   exit rc
+end
 if command = 'CHECKOUT' | command = 'HEAD' then do
    'EXEC GITHEAD' command rest
    exit rc
