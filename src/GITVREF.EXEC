@@ -1,4 +1,4 @@
-/* M72: read-only REF2 verified path-version depth ranges. */
+/* M73: read-only REF2 verified path-version commit ranges. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
@@ -92,6 +92,8 @@ if command='HISTCHG' then do
   say 'HISTORYCHANGES VERSION' vi 'OID' version.vi,
       'COUNT' freq.vi 'MINDEPTH' mindepth.vi,
       'MAXDEPTH' maxdepth.vi
+  say 'HISTORYCHANGES VERSION' vi 'NEWESTCOMMIT' newest.vi
+  say 'HISTORYCHANGES VERSION' vi 'OLDESTCOMMIT' oldest.vi
  end
  say 'HISTORYCHANGES NODES' pathoids
  say 'HISTORYCHANGES DATA END'
@@ -114,24 +116,35 @@ changecheck:
  parsednodes=0
  distinct=0
  nodes=-1
- drop seen. version. freq. mindepth. maxdepth.
+ drop seen. version. freq. mindepth. maxdepth. newest. oldest.
  curdepth=-1
+ curcommit=''
+ havecommit=1
  havepath=1
  do ci=1 to out.0
   if left(out.ci,20)='HISTORYDAGPATH NODE ' then do
-   if havepath=0 then return 'ERROR'
+   if havepath=0 | havecommit=0 then return 'ERROR'
    parsednodes=parsednodes+1
+   havecommit=0
    havepath=0
+   curcommit=''
    curdepth=word(out.ci,5)
    if datatype(curdepth,'W')\=1 then return 'ERROR'
    if curdepth<0 | curdepth>8 then return 'ERROR'
+  end
+  if left(out.ci,22)='HISTORYDAGPATH COMMIT ' then do
+   if havecommit=1 then return 'ERROR'
+   curcommit=translate(word(out.ci,3))
+   if length(curcommit)\=40 then return 'ERROR'
+   if verify(curcommit,'0123456789ABCDEF')\=0 then return 'ERROR'
+   havecommit=1
   end
   if left(out.ci,23)='HISTORYDAGPATH PATHOID ' then do
    if havepath=1 then return 'ERROR'
    poid=translate(word(out.ci,3))
    if length(poid)\=40 then return 'ERROR'
    if verify(poid,'0123456789ABCDEF')\=0 then return 'ERROR'
-   if curdepth<0 then return 'ERROR'
+   if curdepth<0 | havecommit=0 then return 'ERROR'
    havepath=1
    pathoids=pathoids+1
    vi=seen.poid
@@ -142,11 +155,19 @@ changecheck:
     freq.distinct=1
     mindepth.distinct=curdepth
     maxdepth.distinct=curdepth
+    newest.distinct=curcommit
+    oldest.distinct=curcommit
    end
    else do
     freq.vi=freq.vi+1
-    if curdepth<mindepth.vi then mindepth.vi=curdepth
-    if curdepth>maxdepth.vi then maxdepth.vi=curdepth
+    if curdepth<mindepth.vi then do
+     mindepth.vi=curdepth
+     newest.vi=curcommit
+    end
+    if curdepth>maxdepth.vi then do
+     maxdepth.vi=curdepth
+     oldest.vi=curcommit
+    end
    end
   end
   if left(out.ci,21)='HISTORYDAGPATH NODES ' then do
@@ -155,7 +176,7 @@ changecheck:
    if datatype(nodes,'W')\=1 | nodes<1 then return 'ERROR'
   end
  end
- if havepath=0 then return 'ERROR'
+ if havepath=0 | havecommit=0 then return 'ERROR'
  if nodes<1 | pathoids\=nodes then return 'ERROR'
  if parsednodes\=nodes then return 'ERROR'
  return 'OK'
