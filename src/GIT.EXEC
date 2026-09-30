@@ -57,6 +57,10 @@ if command = 'LOGDAG-REF-FULL' then do
    'EXEC GITVREF DAG' rest
    exit rc
 end
+if command = 'HISTORYPATH-REF-FULL' then do
+   'EXEC GITVREF HISTPATH' rest
+   exit rc
+end
 if command = 'READ-REF-FULL' then do
    'EXEC GITVREF READ' rest
    exit rc
