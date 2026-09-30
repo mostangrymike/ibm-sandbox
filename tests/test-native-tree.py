@@ -727,6 +727,8 @@ def main():
                 "SHOW FULL ROOT CLOSURE VERIFIED",
                 "LOG FULL SNAPSHOTS VERIFIED",
                 "LOG NODES 2",
+                "LOGDAG FULL SNAPSHOTS VERIFIED",
+                "LOGDAG NODES 3",
                 "PATH DATA END",
                 "TREE DATA END",
                 "BATCH NON COMMIT CHILD RC8 VERIFIED",
@@ -1715,6 +1717,42 @@ def main():
                 git_oid("commit", MERGE2), bad_depth,
                 cwd=d, expected=4)
             assert "HISTORYDAG DATA BEGIN" not in dag_bad_depth
+
+        # M62: all-parent log metadata after every snapshot verifies.
+        logdag = run(
+            rec, "LOGDAGFULL", "GENOLD", "GENNEW",
+            git_oid("commit", MERGE2), "1", cwd=d)
+        assert "SELECTED 52 GENNEW" in logdag
+        assert "LOGDAG FULL SNAPSHOTS VERIFIED" in logdag
+        assert "LOGDAG NODES 3" in logdag
+        assert logdag.count("COMMIT DATA BEGIN") == 3
+        assert logdag.strip().endswith("LOGDAG DATA END")
+        logdag0 = run(
+            rec, "LOGDAGFULL", "GENOLD", "GENNEW",
+            git_oid("commit", MERGE2), "0", cwd=d)
+        assert "LOGDAG NODES 1" in logdag0
+        for bad, code, reason in (
+                (MISSING_FIRST, 4, "LOGDAG COMMIT NOT FOUND"),
+                (BLOB_FIRST, 8, "LOGDAG OBJECT IS NOT A COMMIT"),
+                (MALFORMED_FIRST, 8,
+                 "LOGDAG COMMIT STRUCTURE INVALID"),
+                (MISSING_ROOT_MERGE, 4,
+                 "ROOT LINK TREE NOT FOUND"),
+                (BLOB_ROOT_MERGE, 8,
+                 "ROOT LINK OBJECT NOT TREE")):
+            logdag_fail = run(
+                rec, "LOGDAGFULL", "GENOLD", "GENNEW",
+                git_oid("commit", bad), "1",
+                cwd=d, expected=code)
+            assert reason in logdag_fail
+            assert "LOGDAG DATA BEGIN" not in logdag_fail
+            assert "COMMIT DATA BEGIN" not in logdag_fail
+        for bad_depth in ("9", "-1", "x", ""):
+            logdag_bad = run(
+                rec, "LOGDAGFULL", "GENOLD", "GENNEW",
+                git_oid("commit", MERGE2), bad_depth,
+                cwd=d, expected=4)
+            assert "LOGDAG DATA BEGIN" not in logdag_bad
 
         # M59: require the requested path in every verified DAG snapshot.
         dag_path = run(
