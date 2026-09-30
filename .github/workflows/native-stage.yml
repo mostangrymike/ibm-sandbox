@@ -18,6 +18,10 @@ on:
       - 'tests/fixtures/first-commit-README.md'
       - 'src/GITRCHK.EXEC'
       - 'src/GITRUN.EXEC'
+      - 'src/GITVREF.EXEC'
+      - 'src/GITREF2.REPO'
+      - 'src/GIT.EXEC'
+      - 'tests/check-verified-ref.sh'
       - 'tests/check-readonly-gitrchk.sh'
       - 'scripts/backup-offline-dasd.sh'
       - 'scripts/inspect-hercules-config.sh'
@@ -48,6 +52,10 @@ on:
       - 'tests/fixtures/first-commit-README.md'
       - 'src/GITRCHK.EXEC'
       - 'src/GITRUN.EXEC'
+      - 'src/GITVREF.EXEC'
+      - 'src/GITREF2.REPO'
+      - 'src/GIT.EXEC'
+      - 'tests/check-verified-ref.sh'
       - 'tests/check-readonly-gitrchk.sh'
       - 'scripts/backup-offline-dasd.sh'
       - 'scripts/inspect-hercules-config.sh'
@@ -75,6 +83,8 @@ jobs:
         run: sh tests/test-offline-dasd-backup.sh
       - name: Enforce read-only CMS CATHEX gate and cleanup hold
         run: sh tests/check-readonly-gitrchk.sh
+      - name: Check verified modern REF2 read-only bridge
+        run: sh tests/check-verified-ref.sh
       - name: Check neutral compiler EXEC source and F-disk setup
         run: sh tests/check-cmsclnk-source.sh
       - name: Reject native-text Git object headers in CMS C source
