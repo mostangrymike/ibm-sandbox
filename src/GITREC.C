@@ -1362,6 +1362,8 @@ static int rec_batch(const unsigned char *commit,
  if(rc!=0) return rc;
  rc=rec_history_dag(commit,1);
  if(rc!=0) return rc;
+ rc=rec_history_dag_path(commit,1,file,flen);
+ if(rc!=0) return rc;
  /* Expected failures are exercised inside the same audited
   * selection. Unexpected RCs must abort the entire batch.
   */
