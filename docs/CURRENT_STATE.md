@@ -315,3 +315,13 @@ CI extends the verified-ref bridge guard to require HISTORYPATH routing, HISTORY
 ## M68 merged and green
 
 M68 PR #51 passed full CI and merged as `1ec3ba4d41319a5b6232e13c6ae16fef95372009`. `GIT HISTORYPATH-REF-FULL <ref> <depth> <path>` now resolves REF2 names, validates depth 0..8, converts the CMS path to Git ASCII bytes, and invokes read-only `GITREC HISTORYDAGPATH`. It emits verified-ref and per-snapshot path metadata only after `HISTORYDAGPATH FULL SNAPSHOTS VERIFIED`. Native validation needs only updated `GIT.EXEC` and `GITVREF.EXEC`; no compile or GITRUN. Run `GIT HISTORYPATH-REF-FULL HEAD 1 README.md`. M68 is host-CI-proven, awaiting CMS target proof.
+
+## New-chat handoff checkpoint — 2026-09-30
+
+Latest native target proof is M67. Real CMS `GIT LOGDAG-REF-FULL HEAD 1` resolved modern REF2 `HEAD` to `00D8D63229305230C8D37F884CE87F9E1A89468C`, printed `LOGDAG FULL SNAPSHOTS VERIFIED`, emitted two all-parent DAG commit nodes, and ended with `LOGDAG NODES 2` / `LOGDAG DATA END`; CPU 114.85 / elapsed 117.75 sec. M67 is NATIVE CMS TARGET-PROVEN.
+
+Current development milestone is M68, already merged to main and full host CI green. M68 adds `GIT HISTORYPATH-REF-FULL <ref> <depth> <path>`, routing a modern REF2 name plus normal CMS path into the already-proven `GITREC HISTORYDAGPATH` engine. Main currently contains the M68 routing in both `src/GIT.EXEC` and `src/GITVREF.EXEC`. M68 merged commit is `1ec3ba4d41319a5b6232e13c6ae16fef95372009`. It is HOST-CI-PROVEN but NOT YET CMS target-proven.
+
+Exact next action after opening a new chat: do not redo M67. From Mac `ibm-sandbox/src`, `git pull`, then upload only `GIT.EXEC` and `GITVREF.EXEC` with `CMS_SCRIPT_PORT=3272`. No compile and no GITRUN are required. On CMS run exactly `GIT HISTORYPATH-REF-FULL HEAD 1 README.md`. Expected success includes `VERIFIED REF HEAD 00D8D63229305230C8D37F884CE87F9E1A89468C`, `HISTORYDAGPATH FULL SNAPSHOTS VERIFIED`, `HISTORYDAGPATH DATA BEGIN`, per-node path type/size/OID records, `HISTORYDAGPATH NODES 2`, and `HISTORYDAGPATH DATA END`. If that passes, record CPU/elapsed, mark M68 native-proven, then continue autonomously to the next read-only user-facing milestone; pause only when the next real CMS validation is required.
+
+Preserve all standing invariants: no writes to sealed `GITFIX/M15NEW STAGE/INDEX/SEEK/GEN`, selector PTRs, or `GITPBUF PACK`; modern REF2 remains read-only and separate from the old M5 ref store; no cross-generation mixing; no trusted-looking partial output before complete requested verification; C89 and <=72-column C physical lines; CMS EXEC records <=80 columns; keep maximum autonomous work per turn and minimal paste commands.
