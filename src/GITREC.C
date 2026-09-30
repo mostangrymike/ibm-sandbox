@@ -438,6 +438,84 @@ static int rec_history(const unsigned char *starting,
  puts("HISTORY DATA END");
  return 0;
 }
+/* M58: bounded all-parent history DAG with complete snapshots.
+ * Traverse every parent edge through DEPTH (0..8), de-duplicate
+ * commits, verify each commit and its complete local root closure,
+ * then release records only after the whole reachable DAG passes.
+ */
+static int rec_history_dag(const unsigned char *starting,
+                           unsigned int depth) {
+ unsigned char commits[64][20],trees[64][20],levels[64];
+ unsigned char parent[20];
+ unsigned long sz,at,begin,len;
+ unsigned int count=1,head=0,j,k,budget;
+ int pos,rc,dup;
+ if(rec_sidx_read()!=0) return 8;
+ memcpy(commits[0],starting,20);
+ levels[0]=0;
+ while(head<count) {
+  pos=sidx_locate(commits[head]);
+  if(pos<0) {
+   puts("HISTORYDAG COMMIT NOT FOUND");return 4;
+  }
+  if(sidx[pos].type!=1) {
+   puts("HISTORYDAG OBJECT IS NOT A COMMIT");return 8;
+  }
+  sz=sidx[pos].size;
+  sidx_silent=1;
+  rc=sidx_get(commits[head]);
+  sidx_silent=0;
+  if(rc!=0) return rc;
+  if(!rec_commit_walk(sz,0)) {
+   puts("HISTORYDAG COMMIT STRUCTURE INVALID");
+   return 8;
+  }
+  if(!rec_ascii_oid(idx_body+5,trees[head])) return 8;
+  budget=1024;
+  rc=rec_root_closure(trees[head],&budget);
+  if(rc!=0) return rc;
+  if(levels[head]<depth) {
+   at=46;
+   while(at<sz) {
+    begin=at;
+    while(at<sz&&idx_body[at]!=0x0a) at++;
+    if(at==sz) return 8;
+    len=at-begin;
+    if(!rec_ascii_key(idx_body+begin,len,"parent")) break;
+    if(!rec_ascii_oid(idx_body+begin+7,parent)) return 8;
+    dup=0;
+    for(k=0;k<count;k++)
+     if(memcmp(commits[k],parent,20)==0) {
+      dup=1;break;
+     }
+    if(!dup) {
+     if(count==64) {
+      puts("HISTORYDAG COMMIT LIMIT EXCEEDED");
+      return 8;
+     }
+     memcpy(commits[count],parent,20);
+     levels[count]=(unsigned char)(levels[head]+1);
+     count++;
+    }
+    at++;
+   }
+  }
+  head++;
+ }
+ puts("HISTORYDAG FULL ROOT CLOSURE VERIFIED");
+ puts("HISTORYDAG DATA BEGIN");
+ for(j=0;j<count;j++) {
+  printf("HISTORYDAG NODE %u DEPTH %u OID ",
+         j+1,(unsigned int)levels[j]);
+  idx_print(stdout,commits[j]);putchar('\n');
+  printf("HISTORYDAG NODE %u TREE ",j+1);
+  idx_print(stdout,trees[j]);putchar('\n');
+ }
+ printf("HISTORYDAG NODES %u\n",count);
+ puts("HISTORYDAG DATA END");
+ return 0;
+}
+
 /* M30: numbered parent of a fully verified Git commit.
  * Parent ordinals are 1 based and include merge's second parent.
  * Never output a parent OID until its body authenticates.
@@ -1147,7 +1225,7 @@ int main(int argc,char **argv) {
  int pathfull,pathfullcat,pathfulldir;
  int treepathcat,treepathdir,treepath,runbatch;
  int lsdir,lsdirv,lsdirdepth,lsdirfull;
- int firstpar,ancestor,history,historyfull;
+ int firstpar,ancestor,history,historyfull,historydag;
  int parent_cmd,parents_cmd;
  int roots_cmd,commitroots_cmd,linkroots_cmd;
  int nestedlinks_cmd,deeplinks_cmd,depthlinks_cmd;
@@ -1174,6 +1252,7 @@ int main(int argc,char **argv) {
  ancestor=argc==6&&strcmp(argv[1],"ANCESTOR")==0;
  history=argc==6&&strcmp(argv[1],"HISTORY")==0;
  historyfull=argc==6&&strcmp(argv[1],"HISTORYFULL")==0;
+ historydag=argc==6&&strcmp(argv[1],"HISTORYDAG")==0;
  parent_cmd=argc==6&&strcmp(argv[1],"PARENT")==0;
  parents_cmd=argc==5&&strcmp(argv[1],"PARENTS")==0;
  roots_cmd=argc==5&&strcmp(argv[1],"PARENTROOTS")==0;
@@ -1193,7 +1272,8 @@ int main(int argc,char **argv) {
      !lsdirdepth&&
      !lsdirfull&&
      !firstpar&&!ancestor&&
-     !history&&!historyfull&&!parent_cmd&&!parents_cmd&&
+     !history&&!historyfull&&!historydag&&
+     !parent_cmd&&!parents_cmd&&
      !roots_cmd&&!commitroots_cmd&&!linkroots_cmd&&
      !nestedlinks_cmd&&!deeplinks_cmd&&
      !depthlinks_cmd&&!linkbatch_cmd&&!closure_cmd&&
@@ -1224,6 +1304,7 @@ int main(int argc,char **argv) {
   puts("GITREC ANCESTOR C0NAME C1NAME COMMIT_OID40 DEPTH");
   puts("GITREC HISTORY C0NAME C1NAME COMMIT_OID40 DEPTH");
   puts("GITREC HISTORYFULL C0 C1 COMMIT_OID40 DEPTH");
+  puts("GITREC HISTORYDAG C0 C1 COMMIT_OID40 DEPTH");
   puts("GITREC PARENT C0NAME C1NAME COMMIT_OID40 N");
   puts("GITREC PARENTS C0NAME C1NAME COMMIT_OID40");
   puts("GITREC PARENTROOTS C0NAME C1NAME OID40");
@@ -1243,6 +1324,7 @@ int main(int argc,char **argv) {
      lsdir||lsdirv||
      lsdirdepth||lsdirfull||
      firstpar||ancestor||history||historyfull||
+     historydag||
      parent_cmd||parents_cmd||roots_cmd||
      commitroots_cmd||linkroots_cmd||nestedlinks_cmd||
      deeplinks_cmd||depthlinks_cmd||linkbatch_cmd||
@@ -1267,6 +1349,14 @@ int main(int argc,char **argv) {
    puts("ANCESTOR DEPTH MUST BE 1 THROUGH 16");return 4;
   }
   depth=(unsigned int)d;
+ }
+ if(historydag) {
+  if(strlen(argv[5])!=1||
+     argv[5][0]<'0'||argv[5][0]>'8') {
+   puts("HISTORYDAG DEPTH MUST BE 0 THROUGH 8");
+   return 4;
+  }
+  depth=(unsigned int)(argv[5][0]-'0');
  }
  if(depthlinks_cmd) {
   if(strlen(argv[5])!=1||
@@ -1317,7 +1407,7 @@ int main(int argc,char **argv) {
              !lsdir&&!lsdirv&&
              !lsdirdepth&&!lsdirfull&&
              !firstpar&&!ancestor&&!history&&
-             !historyfull&&
+             !historyfull&&!historydag&&
              !parent_cmd&&!parents_cmd&&!roots_cmd&&
              !commitroots_cmd&&!linkroots_cmd&&
              !nestedlinks_cmd&&!deeplinks_cmd&&
@@ -1346,6 +1436,7 @@ int main(int argc,char **argv) {
  if(ancestor) return rec_ancestor(oid,depth);
  if(history) return rec_history(oid,depth,0);
  if(historyfull) return rec_history(oid,depth,1);
+ if(historydag) return rec_history_dag(oid,depth);
  if(parent_cmd) return rec_parent(oid,depth);
  if(parents_cmd) return rec_parents(oid,0,0,0,0,0);
  if(roots_cmd) return rec_parents(oid,1,0,0,0,0);
