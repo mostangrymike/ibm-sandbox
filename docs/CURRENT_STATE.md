@@ -285,3 +285,7 @@ CI extends the verified-ref bridge guard to require DIR routing, PATHFULLDIR, th
 ## M66 merged and green
 
 M66 PR #49 passed full native-stage CI and merged as `2da7e4e3715e5b1d904073de8a04e5c1116e8d26`. `GIT DIR-REF-FULL <ref> <dir>` now resolves a modern REF2 name, converts the CMS directory token to Git ASCII path bytes, invokes read-only `GITREC PATHFULLDIR`, and emits verified-ref plus directory TREE DATA only after complete root closure succeeds. No GITREC/GITCIDX/GITSEL or REF2 data changed. Native validation requires only updated `GIT.EXEC` and `GITVREF.EXEC`; no compile or GITRUN. Run `GIT DIR-REF-FULL HEAD src`. M66 is host-CI-proven, awaiting CMS target proof.
+
+## 2026-09-30 actual M66 native CMS PASS
+
+Real CMS `GIT DIR-REF-FULL HEAD src` passed. It resolved `HEAD` to `00D8D63229305230C8D37F884CE87F9E1A89468C`, printed `COMMIT ROOT FULL CLOSURE VERIFIED`, resolved `src` to tree `A41B3EA7758F301B7E30BD3CFDF264300C02AE35` size 3690, and emitted the complete authenticated directory listing between `TREE DATA BEGIN` and `TREE DATA END`, reporting `TREE ENTRIES 93`. CPU 68.25 / elapsed 69.89 sec at 16:06:18. M66 is now NATIVE CMS TARGET-PROVEN. The console paste contains an interleaved Ready/timing line in the middle of the long listing, but the complete success markers, final entry count, and `TREE DATA END` are present. This establishes direct human-facing ref+directory browsing without manual OIDs or hex paths and without writes. Do not rerun M66 standalone.
