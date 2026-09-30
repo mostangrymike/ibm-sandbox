@@ -1,4 +1,4 @@
-/* M71: read-only REF2 verified path-version counts. */
+/* M72: read-only REF2 verified path-version depth ranges. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
@@ -90,7 +90,8 @@ if command='HISTCHG' then do
  say 'HISTORYCHANGES STATUS' status
  do vi=1 to distinct
   say 'HISTORYCHANGES VERSION' vi 'OID' version.vi,
-      'COUNT' freq.vi
+      'COUNT' freq.vi 'MINDEPTH' mindepth.vi,
+      'MAXDEPTH' maxdepth.vi
  end
  say 'HISTORYCHANGES NODES' pathoids
  say 'HISTORYCHANGES DATA END'
@@ -110,14 +111,28 @@ exit 0
 
 changecheck:
  pathoids=0
+ parsednodes=0
  distinct=0
  nodes=-1
- drop seen. version. freq.
+ drop seen. version. freq. mindepth. maxdepth.
+ curdepth=-1
+ havepath=1
  do ci=1 to out.0
+  if left(out.ci,20)='HISTORYDAGPATH NODE ' then do
+   if havepath=0 then return 'ERROR'
+   parsednodes=parsednodes+1
+   havepath=0
+   curdepth=word(out.ci,4)
+   if datatype(curdepth,'W')\=1 then return 'ERROR'
+   if curdepth<0 | curdepth>8 then return 'ERROR'
+  end
   if left(out.ci,23)='HISTORYDAGPATH PATHOID ' then do
+   if havepath=1 then return 'ERROR'
    poid=translate(word(out.ci,3))
    if length(poid)\=40 then return 'ERROR'
    if verify(poid,'0123456789ABCDEF')\=0 then return 'ERROR'
+   if curdepth<0 then return 'ERROR'
+   havepath=1
    pathoids=pathoids+1
    vi=seen.poid
    if datatype(vi,'W')\=1 then do
@@ -125,8 +140,14 @@ changecheck:
     seen.poid=distinct
     version.distinct=poid
     freq.distinct=1
+    mindepth.distinct=curdepth
+    maxdepth.distinct=curdepth
    end
-   else freq.vi=freq.vi+1
+   else do
+    freq.vi=freq.vi+1
+    if curdepth<mindepth.vi then mindepth.vi=curdepth
+    if curdepth>maxdepth.vi then maxdepth.vi=curdepth
+   end
   end
   if left(out.ci,21)='HISTORYDAGPATH NODES ' then do
    if nodes\=-1 then return 'ERROR'
@@ -134,7 +155,9 @@ changecheck:
    if datatype(nodes,'W')\=1 | nodes<1 then return 'ERROR'
   end
  end
+ if havepath=0 then return 'ERROR'
  if nodes<1 | pathoids\=nodes then return 'ERROR'
+ if parsednodes\=nodes then return 'ERROR'
  return 'OK'
 
 readrefs:
