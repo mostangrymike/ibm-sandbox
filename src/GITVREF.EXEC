@@ -558,6 +558,11 @@ stateemit:
  say 'HISTORYSTATE NODES' snodes
  say 'HISTORYSTATE EDGES' sedgecount
  say 'HISTORYSTATE TRANSITIONS' stpairs
+ do ti=1 to stpairs
+  say 'HISTORYSTATE TRANSITION' ti 'CHILDVERSION' stpairchild.ti,
+      'PARENTVERSION' stpairparent.ti 'COUNT' stpaircount.ti
+  say 'HISTORYSTATE TRANSITION' ti 'STATUS' stpairstatus.ti
+ end
  do ni=1 to snodes
   say 'HISTORYSTATE NODE' ni 'DEPTH' sdepth.ni
   say 'HISTORYSTATE NODE' ni 'COMMIT' scommit.ni
