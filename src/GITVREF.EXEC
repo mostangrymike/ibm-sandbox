@@ -636,6 +636,8 @@ stateclass:
 statestatus:
  call stateclass
  if result\='OK' then return 8
+ call statepairs
+ if result\='OK' then return 8
  say 'VERIFIED REF' spec oid
  say 'HISTORYSTATUS FULL SNAPSHOTS VERIFIED'
  say 'HISTORYSTATUS DATA BEGIN'
@@ -644,6 +646,8 @@ statestatus:
  say 'HISTORYSTATUS PRESENT' spresentcount
  say 'HISTORYSTATUS ABSENT' sabsecount
  say 'HISTORYSTATUS VERSIONS' sversions
+ say 'HISTORYSTATUS TRANSITIONS' trpairs
+ say 'HISTORYSTATUS CHANGED TRANSITIONS' trchanged
  say 'HISTORYSTATUS NODES' snodes
  say 'HISTORYSTATUS EDGES' sedgecount
  say 'HISTORYSTATUS CHANGED EDGES' schanged
@@ -755,9 +759,7 @@ statenear:
  return 0
 
 
-statetrans:
- call stateclass
- if result\='OK' then return 8
+statepairs:
  drop trno. trchild. trparent. trcount. trstatus.
  trpairs=0
  trtotal=0
@@ -787,9 +789,16 @@ statetrans:
  do ti=1 to trpairs
   trtotal=trtotal+trcount.ti
  end
- if trtotal\=sedgecount then return 8
- if schanged=0 & trchanged\=0 then return 8
- if schanged>0 & trchanged=0 then return 8
+ if trtotal\=sedgecount then return 'ERROR'
+ if schanged=0 & trchanged\=0 then return 'ERROR'
+ if schanged>0 & trchanged=0 then return 'ERROR'
+ return 'OK'
+
+statetrans:
+ call stateclass
+ if result\='OK' then return 8
+ call statepairs
+ if result\='OK' then return 8
  say 'VERIFIED REF' spec oid
  say 'HISTORYTRANSITIONS FULL SNAPSHOTS VERIFIED'
  say 'HISTORYTRANSITIONS DATA BEGIN'
@@ -827,6 +836,8 @@ statetrans:
 statediff:
  call stateclass
  if result\='OK' then return 8
+ call statepairs
+ if result\='OK' then return 8
  say 'VERIFIED REF' spec oid
  say 'HISTORYDIFFS FULL SNAPSHOTS VERIFIED'
  say 'HISTORYDIFFS DATA BEGIN'
@@ -844,6 +855,19 @@ statediff:
  end
  say 'HISTORYDIFFS NODES' snodes
  say 'HISTORYDIFFS EDGES' sedgecount
+ say 'HISTORYDIFFS TRANSITIONS' trpairs
+ say 'HISTORYDIFFS CHANGED TRANSITIONS' trchanged
+ do ti=1 to trpairs
+  cv=trchild.ti
+  pv=trparent.ti
+  say 'HISTORYDIFFS TRANSITION' ti 'CHILDSTATE' cv,
+      'PARENTSTATE' pv 'COUNT' trcount.ti
+  say 'HISTORYDIFFS TRANSITION' ti 'STATUS' trstatus.ti
+  if cv>0 then,
+   say 'HISTORYDIFFS TRANSITION' ti 'CHILDOID' sveroid.cv
+  if pv>0 then,
+   say 'HISTORYDIFFS TRANSITION' ti 'PARENTOID' sveroid.pv
+ end
  say 'HISTORYDIFFS CHANGED EDGES' schanged
  say 'HISTORYDIFFS ADDED EDGES' sadd
  say 'HISTORYDIFFS DELETED EDGES' sdelete
