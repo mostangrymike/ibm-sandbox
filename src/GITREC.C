@@ -1032,9 +1032,9 @@ static int rec_history_dag_state(const unsigned char *starting,
   budget=1024;
   rc=rec_root_closure(trees[head],&budget);
   if(rc!=0) return rc;
-  rc=rec_root_path_meta(trees[head],path,pathlen,
-                        results[head],&types[head],
-                        &sizes[head]);
+  rc=rec_root_path_state(trees[head],path,pathlen,
+                         results[head],&types[head],
+                         &sizes[head],&present[head]);
   if(rc!=0) return rc;
   head++;
  }
