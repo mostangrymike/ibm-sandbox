@@ -590,3 +590,7 @@ Therefore M94-M99 are NATIVE CMS TARGET-PROVEN for authenticated PRESENT/ABSENT 
 ## M100: authenticated path change log
 
 M100 adds `GIT HISTORYLOG-REF-FULL <ref> <depth> <path>`. It reuses the native CMS-target-proven HISTORYDAGSTATE graph and strict state parser, then emits only child-to-parent edges whose authenticated path state or PATHOID changes. Records are explicitly edge-oriented, not chronological claims: each change includes status ADDED/DELETED/MODIFIED, child/parent node and depth, child/parent commit, PRESENT/ABSENT state, and OID/type/size for present endpoints. Unchanged edges are counted in the verified graph but omitted from the concise log. No native C or protected-data changes.
+
+## M101: compact authenticated path status
+
+M101 adds `GIT HISTORYSTATUS-REF-FULL <ref> <depth> <path>`. It runs the same CMS-target-proven HISTORYDAGSTATE traversal and strict parser, but emits only a compact verified summary: CHANGED/UNCHANGED, ALLPRESENT/ALLABSENT/MIXED, PRESENT/ABSENT snapshot counts, node/edge counts, and exact ADDED/DELETED/MODIFIED/UNCHANGED edge totals. It is intended for low-noise CMS use when per-edge details are unnecessary. No native C or protected-data changes.
