@@ -1131,6 +1131,7 @@ static int rec_history_first_state(const unsigned char *starting,
    printf("HISTORYFIRSTSTATE PATH PRESENT TYPE %d SIZE %lu\n",
           types[j],sizes[j]);
    fputs("HISTORYFIRSTSTATE PATHOID ",stdout);
+   idx_print(stdout,results[j]);putchar('\n');
   }
   if(!present[j]) puts("HISTORYFIRSTSTATE PATH ABSENT");
  }
