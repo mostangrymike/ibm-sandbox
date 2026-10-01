@@ -565,3 +565,13 @@ The merged batch adds native `GITREC HISTORYDAGSTATE`, preserving existing HISTO
 Exact next target proofs from HEAD `00D8D632...` and parent `2D5038C...`: README.md is ALLPRESENT and UNCHANGED with blob `1BA7AE46...D1F5`, size 567. `src` is ALLPRESENT and MODIFIED, changing tree OID from parent `884916539208F673916FBD6988DE6B028C355723` to child `A41B3EA7758F301B7E30BD3CFDF264300C02AE35`. `src/M9JOBJ.EXEC` is MIXED and ADDED: child PRESENT blob `775F6C809889E3497D8837379B37A706DFD101CA`, size 646; parent ABSENT. No deletion occurs in the reachable depth-8 first-parent window, so DELETED remains host-proven but lacks a real target fixture in this window.
 
 NEXT combined CMS gate: upload `GITREC.C`, `GITVREF.EXEC`, and `GIT.EXEC`, rebuild only `GITREC` with `CMSCLNK GITREC PLAIN`, no GITRUN. Then validate HISTORYSTATE/HISTORYDIFFS on README.md, src, and src/M9JOBJ.EXEC. This is the next genuine target dependency; additional host-only work would stack more presentation logic on an unproven native HISTORYDAGSTATE foundation.
+
+## 2026-10-01 actual M94-M99 native CMS PASS
+
+Real CMS rebuilt the new native state engine successfully with `CMSCLNK GITREC PLAIN` (13.31 CPU / 13.77 elapsed at 14:13:35). `GIT HISTORYDIFFS-REF-FULL HEAD 1 README.md` passed as UNCHANGED / ALLPRESENT with PRESENT 2, ABSENT 0, one unchanged edge and zero added/deleted/modified edges (115.83 CPU / 118.69 elapsed at 14:15:49).
+
+`GIT HISTORYDIFFS-REF-FULL HEAD 1 src` passed as CHANGED / ALLPRESENT with one MODIFIED edge: child node 1 depth 0 commit `00D8D63229305230C8D37F884CE87F9E1A89468C` tree `204E1D6968FB81C35BF830D63A611AC64C072945` path tree `A41B3EA7758F301B7E30BD3CFDF264300C02AE35` type 2 size 3690; parent node 2 depth 1 commit `2D5038C551318997B865497E04CF4C037DE4135E` tree `F3EF36AAD778D5DA84857D8DED46495C75F4CAB0` path tree `884916539208F673916FBD6988DE6B028C355723` type 2 size 3651. CPU 115.22 / elapsed 118.11 at 14:18:34.
+
+`GIT HISTORYSTATE-REF-FULL HEAD 1 src/M9JOBJ.EXEC` passed as MIXED with PRESENT 1 / ABSENT 1: node 1 PRESENT blob `775F6C809889E3497D8837379B37A706DFD101CA` type 3 size 646; node 2 ABSENT; authenticated edge 1 child 1 -> parent 2. CPU 115.74 / elapsed 118.67 at 14:22:26.
+
+`GIT HISTORYDIFFS-REF-FULL HEAD 1 src/M9JOBJ.EXEC` passed as CHANGED / MIXED with one ADDED edge, child PRESENT / parent ABSENT, child OID `775F6C809889E3497D8837379B37A706DFD101CA` type 3 size 646, and zero deleted/modified/unchanged edges. CPU 115.52 / elapsed 118.43 at 14:26:15. M94-M99 are now NATIVE CMS TARGET-PROVEN. DELETED remains implemented/host-proven but lacks a deletion fixture in this reachable window.
