@@ -754,6 +754,76 @@ statenear:
  say 'HISTORYNEAREST DATA END'
  return 0
 
+
+statetrans:
+ call stateclass
+ if result\='OK' then return 8
+ drop trno. trchild. trparent. trcount. trstatus.
+ trpairs=0
+ trtotal=0
+ trchanged=0
+ do ei=1 to sedgecount
+  ec=sedgechild.ei
+  ep=sedgeparent.ei
+  cv=snodever.ec
+  pv=snodever.ep
+  tk=cv||'.'||pv
+  ti=trno.tk
+  if datatype(ti,'W')\=1 then do
+   trpairs=trpairs+1
+   ti=trpairs
+   trno.tk=ti
+   trchild.ti=cv
+   trparent.ti=pv
+   trcount.ti=1
+   if cv=pv then trstatus.ti='UNCHANGED'
+   else if cv>0 & pv=0 then trstatus.ti='ADDED'
+   else if cv=0 & pv>0 then trstatus.ti='DELETED'
+   else trstatus.ti='MODIFIED'
+   if trstatus.ti\='UNCHANGED' then trchanged=trchanged+1
+  end
+  else trcount.ti=trcount.ti+1
+ end
+ do ti=1 to trpairs
+  trtotal=trtotal+trcount.ti
+ end
+ if trtotal\=sedgecount then return 8
+ if schanged=0 & trchanged\=0 then return 8
+ if schanged>0 & trchanged=0 then return 8
+ say 'VERIFIED REF' spec oid
+ say 'HISTORYTRANSITIONS FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYTRANSITIONS DATA BEGIN'
+ say 'HISTORYTRANSITIONS STATUS' diffstatus
+ say 'HISTORYTRANSITIONS PATH STATUS' slifecycle
+ say 'HISTORYTRANSITIONS VERSIONS' sversions
+ say 'HISTORYTRANSITIONS STATE 0 ABSENT'
+ do vi=1 to sversions
+  say 'HISTORYTRANSITIONS STATE' vi 'PRESENT OID' sveroid.vi
+  say 'HISTORYTRANSITIONS STATE' vi 'TYPE' svertype.vi,
+      'SIZE' sversize.vi
+ end
+ say 'HISTORYTRANSITIONS NODES' snodes
+ say 'HISTORYTRANSITIONS EDGES' sedgecount
+ say 'HISTORYTRANSITIONS TRANSITIONS' trpairs
+ say 'HISTORYTRANSITIONS CHANGED TRANSITIONS' trchanged
+ say 'HISTORYTRANSITIONS ADDED EDGES' sadd
+ say 'HISTORYTRANSITIONS DELETED EDGES' sdelete
+ say 'HISTORYTRANSITIONS MODIFIED EDGES' smodify
+ say 'HISTORYTRANSITIONS UNCHANGED EDGES' sunchanged
+ do ti=1 to trpairs
+  cv=trchild.ti
+  pv=trparent.ti
+  say 'HISTORYTRANSITIONS TRANSITION' ti 'CHILDSTATE' cv,
+      'PARENTSTATE' pv 'COUNT' trcount.ti
+  say 'HISTORYTRANSITIONS TRANSITION' ti 'STATUS' trstatus.ti
+  if cv>0 then,
+   say 'HISTORYTRANSITIONS TRANSITION' ti 'CHILDOID' sveroid.cv
+  if pv>0 then,
+   say 'HISTORYTRANSITIONS TRANSITION' ti 'PARENTOID' sveroid.pv
+ end
+ say 'HISTORYTRANSITIONS DATA END'
+ return 0
+
 statediff:
  call stateclass
  if result\='OK' then return 8
