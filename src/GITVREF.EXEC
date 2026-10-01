@@ -448,6 +448,32 @@ statecheck:
  end
  return 'OK'
 
+
+stateemit:
+ say 'VERIFIED REF' spec oid
+ say 'HISTORYSTATE FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYSTATE DATA BEGIN'
+ say 'HISTORYSTATE NODES' snodes
+ say 'HISTORYSTATE EDGES' sedgecount
+ do ni=1 to snodes
+  say 'HISTORYSTATE NODE' ni 'DEPTH' sdepth.ni
+  say 'HISTORYSTATE NODE' ni 'COMMIT' scommit.ni
+  say 'HISTORYSTATE NODE' ni 'TREE' stree.ni
+  if spresent.ni=1 then ns='PRESENT'
+  else ns='ABSENT'
+  say 'HISTORYSTATE NODE' ni 'STATE' ns
+  if spresent.ni=1 then do
+   say 'HISTORYSTATE NODE' ni 'OID' soid.ni
+   say 'HISTORYSTATE NODE' ni 'TYPE' stype.ni 'SIZE' ssize.ni
+  end
+ end
+ do ei=1 to sedgecount
+  say 'HISTORYSTATE EDGE' ei 'CHILD' sedgechild.ei,
+      'PARENT' sedgeparent.ei
+ end
+ say 'HISTORYSTATE DATA END'
+ return 0
+
 statediff:
  drop sstatus.
  sadd=0
