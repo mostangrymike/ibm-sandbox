@@ -26,8 +26,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTPATH' & depth+0>8 then exit 4
  if command='HISTCHG' & depth+0>8 then exit 4
  if command='HISTEDGE' & depth+0>8 then exit 4
- if command='HISTDIFF' & depth+0>8 then exit 4
- if command='HISTSTATE' & depth+0>8 then exit 4
+ if command='HISTDIFF' & depth+0>16 then exit 4
+ if command='HISTSTATE' & depth+0>16 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' then do
@@ -334,7 +334,7 @@ statecheck:
    if datatype(curnode,'W')\=1 | curnode\=parsednodes then,
     return 'ERROR'
    if curnode<1 | curnode>64 then return 'ERROR'
-   if datatype(curdepth,'W')\=1 | curdepth<0 | curdepth>8 then,
+   if datatype(curdepth,'W')\=1 | curdepth<0 | curdepth>16 then,
     return 'ERROR'
    curcommit=''
    curtree=''
