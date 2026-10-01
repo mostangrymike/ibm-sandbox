@@ -286,6 +286,7 @@ changecheck:
    if datatype(vi,'W')\=1 then do
     distinct=distinct+1
     seen.poid=distinct
+    vi=distinct
     version.distinct=poid
     freq.distinct=1
     mindepth.distinct=curdepth
