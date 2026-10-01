@@ -219,8 +219,12 @@ if command='HISTCHG' | command='HISTEDGE' |,
   say 'HISTORYEDGES UNCHANGED EDGES' unchangededges
   say 'HISTORYEDGES TRANSITIONS' pairs
   do ti=1 to pairs
-   say 'HISTORYEDGES TRANSITION' ti 'CHILDVERSION' pairchild.ti,
-       'PARENTVERSION' pairparent.ti 'COUNT' paircount.ti
+   cv=pairchild.ti
+   pv=pairparent.ti
+   say 'HISTORYEDGES TRANSITION' ti 'CHILDVERSION' cv,
+       'PARENTVERSION' pv 'COUNT' paircount.ti
+   say 'HISTORYEDGES TRANSITION' ti 'CHILDOID' version.cv
+   say 'HISTORYEDGES TRANSITION' ti 'PARENTOID' version.pv
   end
   do ei=1 to edgecount
    ec=edgechild.ei
@@ -265,8 +269,12 @@ if command='HISTCHG' | command='HISTEDGE' |,
  say 'HISTORYCHANGES UNCHANGED EDGES' unchangededges
  say 'HISTORYCHANGES TRANSITIONS' pairs
  do ti=1 to pairs
-  say 'HISTORYCHANGES TRANSITION' ti 'CHILDVERSION' pairchild.ti,
-      'PARENTVERSION' pairparent.ti 'COUNT' paircount.ti
+  cv=pairchild.ti
+  pv=pairparent.ti
+  say 'HISTORYCHANGES TRANSITION' ti 'CHILDVERSION' cv,
+      'PARENTVERSION' pv 'COUNT' paircount.ti
+  say 'HISTORYCHANGES TRANSITION' ti 'CHILDOID' version.cv
+  say 'HISTORYCHANGES TRANSITION' ti 'PARENTOID' version.pv
  end
  do ei=1 to edgecount
   ec=edgechild.ei
