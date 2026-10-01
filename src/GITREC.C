@@ -1813,6 +1813,8 @@ int main(int argc,char **argv) {
  historydag=argc==6&&strcmp(argv[1],"HISTORYDAG")==0;
  historydagpath=argc==7&&
   strcmp(argv[1],"HISTORYDAGPATH")==0;
+ historydagstate=argc==7&&
+  strcmp(argv[1],"HISTORYDAGSTATE")==0;
  parent_cmd=argc==6&&strcmp(argv[1],"PARENT")==0;
  parents_cmd=argc==5&&strcmp(argv[1],"PARENTS")==0;
  roots_cmd=argc==5&&strcmp(argv[1],"PARENTROOTS")==0;
@@ -1835,7 +1837,7 @@ int main(int argc,char **argv) {
      !firstpar&&!ancestor&&
      !history&&!historyfull&&!historydag&&!logfull&&
      !logdagfull&&
-     !historydagpath&&
+     !historydagpath&&!historydagstate&&
      !parent_cmd&&!parents_cmd&&
      !roots_cmd&&!commitroots_cmd&&!linkroots_cmd&&
      !nestedlinks_cmd&&!deeplinks_cmd&&
@@ -1894,7 +1896,7 @@ int main(int argc,char **argv) {
      lsdirdepth||lsdirfull||
      firstpar||ancestor||history||historyfull||logfull||
      logdagfull||
-     historydag||historydagpath||
+     historydag||historydagpath||historydagstate||
      parent_cmd||parents_cmd||roots_cmd||
      commitroots_cmd||linkroots_cmd||nestedlinks_cmd||
      deeplinks_cmd||depthlinks_cmd||linkbatch_cmd||
@@ -1951,7 +1953,7 @@ int main(int argc,char **argv) {
     !rec_path_hex(argv[5],path,&pathlen)) {
   puts("PATH REQUIRES VALID NONEMPTY HEX");return 4;
  }
- if(historydagpath&&
+ if((historydagpath||historydagstate)&&
     !rec_path_hex(argv[6],path,&pathlen)) {
   puts("PATH REQUIRES VALID NONEMPTY HEX");return 4;
  }
@@ -2019,6 +2021,8 @@ int main(int argc,char **argv) {
  if(historydag) return rec_history_dag(oid,depth);
  if(historydagpath)
   return rec_history_dag_path(oid,depth,path,pathlen);
+ if(historydagstate)
+  return rec_history_dag_state(oid,depth,path,pathlen);
  if(parent_cmd) return rec_parent(oid,depth);
  if(parents_cmd) return rec_parents(oid,0,0,0,0,0);
  if(roots_cmd) return rec_parents(oid,1,0,0,0,0);
