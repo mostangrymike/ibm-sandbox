@@ -157,6 +157,9 @@ if command='HISTCHG' | command='HISTEDGE' |,
   say 'VERIFIED REF' spec oid
   say 'HISTORYDIFFS FULL SNAPSHOTS VERIFIED'
   say 'HISTORYDIFFS DATA BEGIN'
+  if changededges=0 then diffstatus='UNCHANGED'
+  else diffstatus='CHANGED'
+  say 'HISTORYDIFFS STATUS' diffstatus
   say 'HISTORYDIFFS VERSIONS' distinct
   do vi=1 to distinct
    say 'HISTORYDIFFS VERSION' vi 'OID' version.vi
@@ -164,6 +167,16 @@ if command='HISTCHG' | command='HISTEDGE' |,
   say 'HISTORYDIFFS NODES' nodes
   say 'HISTORYDIFFS EDGES' edgecount
   say 'HISTORYDIFFS CHANGED EDGES' changededges
+  say 'HISTORYDIFFS TRANSITIONS' changedpairs
+  do ci=1 to changedpairs
+   ti=changepair.ci
+   cv=pairchild.ti
+   pv=pairparent.ti
+   say 'HISTORYDIFFS TRANSITION' ci 'CHILDVERSION' cv,
+       'PARENTVERSION' pv 'COUNT' paircount.ti
+   say 'HISTORYDIFFS TRANSITION' ci 'CHILDOID' version.cv
+   say 'HISTORYDIFFS TRANSITION' ci 'PARENTOID' version.pv
+  end
   do ei=1 to edgecount
    if edgestatus.ei\='CHANGED' then iterate
    ec=edgechild.ei
