@@ -457,6 +457,7 @@ stateemit:
   else sabsecount=sabsecount+1
  end
  if spresentcount+sabsecount\=snodes then return 8
+ sversions=0
  if spresentcount=snodes then slifecycle='ALLPRESENT'
  else if sabsecount=snodes then slifecycle='ALLABSENT'
  else slifecycle='MIXED'
