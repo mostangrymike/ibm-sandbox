@@ -1865,6 +1865,7 @@ static int rec_history_first_cli(int argc,char **argv) {
  rec_expected[0]=argv[2];rec_expected[1]=argv[3];
  slot_read("dd:SEL0",&a);
  slot_read("dd:SEL1",&b);
+ if(a.valid&&strcmp(a.gen,argv[2])!=0) a.valid=0;
  return 4;
 }
 /* SELECT stays read-only. GET adds a verified indexed object
