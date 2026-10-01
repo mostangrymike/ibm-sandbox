@@ -84,6 +84,9 @@ if command='HISTCHG' then do
   members=members+freq.vi
   do ci=1 to freq.vi
    if length(vcommit.vi.ci)\=40 then exit 8
+   if length(vtree.vi.ci)\=40 then exit 8
+   if datatype(vnode.vi.ci,'W')\=1 then exit 8
+   if vnode.vi.ci<1 | vnode.vi.ci>64 then exit 8
    if datatype(vdepth.vi.ci,'W')\=1 then exit 8
    if vdepth.vi.ci<0 | vdepth.vi.ci>8 then exit 8
   end
