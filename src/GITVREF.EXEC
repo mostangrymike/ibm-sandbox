@@ -184,7 +184,7 @@ changecheck:
  drop seen. seencommit. version. freq. mindepth. maxdepth.
  drop mincommit. maxcommit. vtype. vsize. depthseen.
  drop vcommit. vdepth. vnode. vtree. nodeversion.
- drop edgechild. edgeparent. edgekey.
+ drop edgechild. edgeparent. edgekey. parentseen.
  curnode=-1
  curdepth=-1
  curcommit=''
@@ -302,6 +302,7 @@ changecheck:
    edgecount=edgecount+1
    edgechild.edgecount=ec
    edgeparent.edgecount=ep
+   parentseen.ep=1
   end
   if words(out.ci)=3 & word(out.ci,1)='HISTORYDAGPATH' &,
      word(out.ci,2)='EDGES' then do
@@ -321,6 +322,10 @@ changecheck:
  if edges<0 | edges\=edgecount then return 'ERROR'
  if nodes<1 | pathoids\=nodes then return 'ERROR'
  if parsednodes\=nodes then return 'ERROR'
+ if parentseen.1=1 then return 'ERROR'
+ do ni=2 to nodes
+  if parentseen.ni\=1 then return 'ERROR'
+ end
  return 'OK'
 
 depthlist:
