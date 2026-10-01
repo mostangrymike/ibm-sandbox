@@ -460,6 +460,22 @@ stateemit:
  drop sverseen. sveroid. svercount. svermin. svermax.
  drop svertype. sversize.
  sversions=0
+ do ni=1 to snodes
+  if spresent.ni=0 then iterate
+  poid=soid.ni
+  vi=sverseen.poid
+  if datatype(vi,'W')\=1 then do
+   sversions=sversions+1
+   vi=sversions
+   sverseen.poid=vi
+   sveroid.vi=poid
+   svercount.vi=1
+   svermin.vi=sdepth.ni
+   svermax.vi=sdepth.ni
+   svertype.vi=stype.ni
+   sversize.vi=ssize.ni
+  end
+ end
  if spresentcount=snodes then slifecycle='ALLPRESENT'
  else if sabsecount=snodes then slifecycle='ALLABSENT'
  else slifecycle='MIXED'
