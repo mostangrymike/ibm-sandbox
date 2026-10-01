@@ -1,5 +1,5 @@
 #!/bin/sh
-# M77 verified-ref bridge must stay read-only and CMS-record-safe.
+# M80 verified-ref bridge must stay read-only and CMS-record-safe.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -62,6 +62,21 @@ grep -Fq "vdepth.vi.vcidx=curdepth" "$v"
 grep -Fq "HISTORYCHANGES VERSION' vi 'COMMIT' vcommit.vi.ci" "$v"
 grep -Fq "'DEPTH' vdepth.vi.ci" "$v"
 grep -Fq "datatype(vdepth.vi.ci,'W')" "$v"
+grep -Fq "curnode=word(out.ci,3)" "$v"
+grep -Fq "curnode\\=parsednodes | curnode>64" "$v"
+grep -Fq "seencommit.curcommit=1" "$v"
+grep -Fq "curtree=translate(word(out.ci,3))" "$v"
+grep -Fq "havetree=1" "$v"
+grep -Fq "vnode.distinct.1=curnode" "$v"
+grep -Fq "vtree.distinct.1=curtree" "$v"
+grep -Fq "vnode.vi.vcidx=curnode" "$v"
+grep -Fq "vtree.vi.vcidx=curtree" "$v"
+grep -Fq "members=members+freq.vi" "$v"
+grep -Fq "if members\\=nodes then exit 8" "$v"
+grep -Fq "verify(vcommit.vi.ci,'0123456789ABCDEF')" "$v"
+grep -Fq "verify(vtree.vi.ci,'0123456789ABCDEF')" "$v"
+grep -Fq "HISTORYCHANGES VERSION' vi 'NODE' vnode.vi.ci" "$v"
+grep -Fq "'TREE' vtree.vi.ci" "$v"
 grep -Fq "depthseen.distinct.curdepth=1" "$v"
 grep -Fq "depthseen.vi.curdepth=1" "$v"
 grep -Fq "depthlist:" "$v"
@@ -93,4 +108,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M77 VERIFIED REF2 COMMIT-DEPTH MEMBERSHIP GUARDS PASSED"
+echo "M80 VERIFIED REF2 SNAPSHOT-MEMBERSHIP GUARDS PASSED"

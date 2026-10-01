@@ -1,4 +1,4 @@
-/* M77: read-only REF2 verified commit-depth membership. */
+/* M80: read-only REF2 verified snapshot membership. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
@@ -76,16 +76,24 @@ if command='HISTCHG' then do
  call changecheck
  if result\='OK' then exit 8
  drop depthtext.
+ members=0
  do vi=1 to distinct
   call depthlist vi
   if result='ERROR' then exit 8
   depthtext.vi=result
+  members=members+freq.vi
   do ci=1 to freq.vi
    if length(vcommit.vi.ci)\=40 then exit 8
+   if verify(vcommit.vi.ci,'0123456789ABCDEF')\=0 then exit 8
+   if length(vtree.vi.ci)\=40 then exit 8
+   if verify(vtree.vi.ci,'0123456789ABCDEF')\=0 then exit 8
+   if datatype(vnode.vi.ci,'W')\=1 then exit 8
+   if vnode.vi.ci<1 | vnode.vi.ci>64 then exit 8
    if datatype(vdepth.vi.ci,'W')\=1 then exit 8
    if vdepth.vi.ci<0 | vdepth.vi.ci>8 then exit 8
   end
  end
+ if members\=nodes then exit 8
  say 'VERIFIED REF' spec oid
  say 'HISTORYCHANGES FULL SNAPSHOTS VERIFIED'
  say 'HISTORYCHANGES DATA BEGIN'
@@ -107,6 +115,12 @@ if command='HISTCHG' then do
   do ci=1 to freq.vi
    say 'HISTORYCHANGES VERSION' vi 'COMMIT' vcommit.vi.ci,
        'DEPTH' vdepth.vi.ci
+   say 'HISTORYCHANGES VERSION' vi 'NODE' vnode.vi.ci,
+       'DEPTH' vdepth.vi.ci
+   say 'HISTORYCHANGES VERSION' vi 'NODE' vnode.vi.ci,
+       'COMMIT' vcommit.vi.ci
+   say 'HISTORYCHANGES VERSION' vi 'NODE' vnode.vi.ci,
+       'TREE' vtree.vi.ci
   end
   say 'HISTORYCHANGES VERSION' vi 'TYPE' vtype.vi 'SIZE' vsize.vi
   say 'HISTORYCHANGES VERSION' vi 'MINDEPTHCOMMIT' mincommit.vi
@@ -133,23 +147,33 @@ changecheck:
  parsednodes=0
  distinct=0
  nodes=-1
- drop seen. version. freq. mindepth. maxdepth. mincommit. maxcommit.
- drop vtype. vsize. depthseen. vcommit. vdepth.
+ drop seen. seencommit. version. freq. mindepth. maxdepth.
+ drop mincommit. maxcommit. vtype. vsize. depthseen.
+ drop vcommit. vdepth. vnode. vtree.
+ curnode=-1
  curdepth=-1
  curcommit=''
+ curtree=''
  curtype=-1
  cursize=-1
  havecommit=1
+ havetree=1
  havemeta=1
  havepath=1
  do ci=1 to out.0
   if left(out.ci,20)='HISTORYDAGPATH NODE ' then do
-   if havepath=0 | havecommit=0 | havemeta=0 then return 'ERROR'
+   if havepath=0 | havecommit=0 | havetree=0 | havemeta=0 then,
+    return 'ERROR'
    parsednodes=parsednodes+1
+   curnode=word(out.ci,3)
+   if datatype(curnode,'W')\=1 then return 'ERROR'
+   if curnode\=parsednodes | curnode>64 then return 'ERROR'
    havecommit=0
+   havetree=0
    havemeta=0
    havepath=0
    curcommit=''
+   curtree=''
    curtype=-1
    cursize=-1
    curdepth=word(out.ci,5)
@@ -157,14 +181,23 @@ changecheck:
    if curdepth<0 | curdepth>8 then return 'ERROR'
   end
   if left(out.ci,22)='HISTORYDAGPATH COMMIT ' then do
-   if havecommit=1 then return 'ERROR'
+   if havecommit=1 | curnode<1 then return 'ERROR'
    curcommit=translate(word(out.ci,3))
    if length(curcommit)\=40 then return 'ERROR'
    if verify(curcommit,'0123456789ABCDEF')\=0 then return 'ERROR'
+   if seencommit.curcommit=1 then return 'ERROR'
+   seencommit.curcommit=1
    havecommit=1
   end
+  if left(out.ci,20)='HISTORYDAGPATH TREE ' then do
+   if havetree=1 | havecommit=0 then return 'ERROR'
+   curtree=translate(word(out.ci,3))
+   if length(curtree)\=40 then return 'ERROR'
+   if verify(curtree,'0123456789ABCDEF')\=0 then return 'ERROR'
+   havetree=1
+  end
   if left(out.ci,25)='HISTORYDAGPATH PATH TYPE ' then do
-   if havemeta=1 | havecommit=0 then return 'ERROR'
+   if havemeta=1 | havecommit=0 | havetree=0 then return 'ERROR'
    if word(out.ci,5)\='SIZE' then return 'ERROR'
    curtype=word(out.ci,4)
    cursize=word(out.ci,6)
@@ -178,7 +211,8 @@ changecheck:
    poid=translate(word(out.ci,3))
    if length(poid)\=40 then return 'ERROR'
    if verify(poid,'0123456789ABCDEF')\=0 then return 'ERROR'
-   if curdepth<0 | havecommit=0 | havemeta=0 then return 'ERROR'
+   if curnode<1 | curdepth<0 | havecommit=0 | havetree=0 |,
+      havemeta=0 then return 'ERROR'
    havepath=1
    pathoids=pathoids+1
    vi=seen.poid
@@ -196,6 +230,8 @@ changecheck:
     depthseen.distinct.curdepth=1
     vcommit.distinct.1=curcommit
     vdepth.distinct.1=curdepth
+    vnode.distinct.1=curnode
+    vtree.distinct.1=curtree
    end
    else do
     if vtype.vi\=curtype | vsize.vi\=cursize then return 'ERROR'
@@ -204,6 +240,8 @@ changecheck:
     vcidx=freq.vi
     vcommit.vi.vcidx=curcommit
     vdepth.vi.vcidx=curdepth
+    vnode.vi.vcidx=curnode
+    vtree.vi.vcidx=curtree
     if curdepth<mindepth.vi then do
      mindepth.vi=curdepth
      mincommit.vi=curcommit
@@ -220,7 +258,8 @@ changecheck:
    if datatype(nodes,'W')\=1 | nodes<1 then return 'ERROR'
   end
  end
- if havepath=0 | havecommit=0 | havemeta=0 then return 'ERROR'
+ if havepath=0 | havecommit=0 | havetree=0 | havemeta=0 then,
+  return 'ERROR'
  if nodes<1 | pathoids\=nodes then return 'ERROR'
  if parsednodes\=nodes then return 'ERROR'
  return 'OK'
