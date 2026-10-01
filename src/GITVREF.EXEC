@@ -450,9 +450,22 @@ statecheck:
 
 
 stateemit:
+ spresentcount=0
+ sabsecount=0
+ do ni=1 to snodes
+  if spresent.ni=1 then spresentcount=spresentcount+1
+  else sabsecount=sabsecount+1
+ end
+ if spresentcount+sabsecount\=snodes then return 8
+ if spresentcount=snodes then slifecycle='ALLPRESENT'
+ else if sabsecount=snodes then slifecycle='ALLABSENT'
+ else slifecycle='MIXED'
  say 'VERIFIED REF' spec oid
  say 'HISTORYSTATE FULL SNAPSHOTS VERIFIED'
  say 'HISTORYSTATE DATA BEGIN'
+ say 'HISTORYSTATE STATUS' slifecycle
+ say 'HISTORYSTATE PRESENT' spresentcount
+ say 'HISTORYSTATE ABSENT' sabsecount
  say 'HISTORYSTATE NODES' snodes
  say 'HISTORYSTATE EDGES' sedgecount
  do ni=1 to snodes
