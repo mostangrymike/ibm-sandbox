@@ -54,8 +54,12 @@ else if command='DAG' then do
  cmd='GITREC LOGDAGFULL GITFIX M15NEW' oid depth
  marker='LOGDAG FULL SNAPSHOTS VERIFIED'
 end
+else if command='HISTDIFF' then do
+ cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
+ marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
+end
 else if command='HISTPATH' | command='HISTCHG' |,
-        command='HISTEDGE' | command='HISTDIFF' then do
+        command='HISTEDGE' then do
  cmd='GITREC HISTORYDAGPATH GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGPATH FULL SNAPSHOTS VERIFIED'
 end
@@ -79,8 +83,91 @@ do i=1 to out.0
  if pos(marker,out.i)>0 then ok=1
 end
 if \ok then exit 8
-if command='HISTCHG' | command='HISTEDGE' |,
-   command='HISTDIFF' then do
+if command='HISTDIFF' then do
+ call statecheck
+ if result\='OK' then exit 8
+ changededges=0
+ unchangededges=0
+ addededges=0
+ deletededges=0
+ modifiededges=0
+ drop diffkind.
+ do ei=1 to edgecount
+  ec=edgechild.ei
+  ep=edgeparent.ei
+  cs=nstate.ec
+  ps=nstate.ep
+  if cs='ABSENT' & ps='ABSENT' then do
+   diffkind.ei='UNCHANGED'
+   unchangededges=unchangededges+1
+  end
+  else if cs='PRESENT' & ps='ABSENT' then do
+   diffkind.ei='ADDED'
+   changededges=changededges+1
+   addededges=addededges+1
+  end
+  else if cs='ABSENT' & ps='PRESENT' then do
+   diffkind.ei='DELETED'
+   changededges=changededges+1
+   deletededges=deletededges+1
+  end
+  else if cs='PRESENT' & ps='PRESENT' then do
+   if nodeoid.ec=nodeoid.ep then do
+    diffkind.ei='UNCHANGED'
+    unchangededges=unchangededges+1
+   end
+   else do
+    diffkind.ei='MODIFIED'
+    changededges=changededges+1
+    modifiededges=modifiededges+1
+   end
+  end
+  else exit 8
+ end
+ if changededges+unchangededges\=edgecount then exit 8
+ if addededges+deletededges+modifiededges\=changededges then exit 8
+ if changededges=0 then diffstatus='UNCHANGED'
+ else diffstatus='CHANGED'
+ say 'VERIFIED REF' spec oid
+ say 'HISTORYDIFFS FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYDIFFS DATA BEGIN'
+ say 'HISTORYDIFFS STATUS' diffstatus
+ say 'HISTORYDIFFS NODES' nodes
+ say 'HISTORYDIFFS EDGES' edgecount
+ say 'HISTORYDIFFS CHANGED EDGES' changededges
+ say 'HISTORYDIFFS UNCHANGED EDGES' unchangededges
+ say 'HISTORYDIFFS ADDED EDGES' addededges
+ say 'HISTORYDIFFS DELETED EDGES' deletededges
+ say 'HISTORYDIFFS MODIFIED EDGES' modifiededges
+ do ei=1 to edgecount
+  if diffkind.ei='UNCHANGED' then iterate
+  ec=edgechild.ei
+  ep=edgeparent.ei
+  say 'HISTORYDIFFS EDGE' ei 'CHILD' ec 'PARENT' ep
+  say 'HISTORYDIFFS EDGE' ei 'KIND' diffkind.ei
+  say 'HISTORYDIFFS EDGE' ei 'CHILDSTATE' nstate.ec
+  say 'HISTORYDIFFS EDGE' ei 'PARENTSTATE' nstate.ep
+  say 'HISTORYDIFFS EDGE' ei 'CHILDDEPTH' nodedepth.ec
+  say 'HISTORYDIFFS EDGE' ei 'PARENTDEPTH' nodedepth.ep
+  say 'HISTORYDIFFS EDGE' ei 'CHILDCOMMIT' nodecommit.ec
+  say 'HISTORYDIFFS EDGE' ei 'PARENTCOMMIT' nodecommit.ep
+  say 'HISTORYDIFFS EDGE' ei 'CHILDTREE' nodetree.ec
+  say 'HISTORYDIFFS EDGE' ei 'PARENTTREE' nodetree.ep
+  if nstate.ec='PRESENT' then do
+   say 'HISTORYDIFFS EDGE' ei 'CHILDOID' nodeoid.ec
+   say 'HISTORYDIFFS EDGE' ei 'CHILDTYPE' nodetype.ec,
+       'SIZE' nodesize.ec
+  end
+  if nstate.ep='PRESENT' then do
+   say 'HISTORYDIFFS EDGE' ei 'PARENTOID' nodeoid.ep
+   say 'HISTORYDIFFS EDGE' ei 'PARENTTYPE' nodetype.ep,
+       'SIZE' nodesize.ep
+  end
+ end
+ say 'HISTORYDIFFS DATA END'
+ exit 0
+end
+if command='HISTCHG' | command='HISTEDGE' then do
  call changecheck
  if result\='OK' then exit 8
  drop depthtext.
@@ -153,55 +240,6 @@ if command='HISTCHG' | command='HISTEDGE' |,
  if changededges>0 & changedpairs=0 then exit 8
  if distinct=1 & changededges\=0 then exit 8
  if distinct>1 & changededges=0 then exit 8
- if command='HISTDIFF' then do
-  say 'VERIFIED REF' spec oid
-  say 'HISTORYDIFFS FULL SNAPSHOTS VERIFIED'
-  say 'HISTORYDIFFS DATA BEGIN'
-  if changededges=0 then diffstatus='UNCHANGED'
-  else diffstatus='CHANGED'
-  say 'HISTORYDIFFS STATUS' diffstatus
-  say 'HISTORYDIFFS VERSIONS' distinct
-  do vi=1 to distinct
-   say 'HISTORYDIFFS VERSION' vi 'OID' version.vi
-  end
-  say 'HISTORYDIFFS NODES' nodes
-  say 'HISTORYDIFFS EDGES' edgecount
-  say 'HISTORYDIFFS CHANGED EDGES' changededges
-  say 'HISTORYDIFFS TRANSITIONS' changedpairs
-  do ci=1 to changedpairs
-   ti=changepair.ci
-   cv=pairchild.ti
-   pv=pairparent.ti
-   say 'HISTORYDIFFS TRANSITION' ci 'CHILDVERSION' cv,
-       'PARENTVERSION' pv 'COUNT' paircount.ti
-   say 'HISTORYDIFFS TRANSITION' ci 'CHILDOID' version.cv
-   say 'HISTORYDIFFS TRANSITION' ci 'PARENTOID' version.pv
-  end
-  do ei=1 to edgecount
-   if edgestatus.ei\='CHANGED' then iterate
-   ec=edgechild.ei
-   ep=edgeparent.ei
-   cv=edgecv.ei
-   pv=edgepv.ei
-   say 'HISTORYDIFFS EDGE' ei 'CHILD' ec 'PARENT' ep
-   say 'HISTORYDIFFS EDGE' ei 'CHILDVERSION' edgecv.ei,
-       'PARENTVERSION' edgepv.ei
-   say 'HISTORYDIFFS EDGE' ei 'CHILDOID' version.cv
-   say 'HISTORYDIFFS EDGE' ei 'PARENTOID' version.pv
-   say 'HISTORYDIFFS EDGE' ei 'CHILDTYPE' vtype.cv,
-       'SIZE' vsize.cv
-   say 'HISTORYDIFFS EDGE' ei 'PARENTTYPE' vtype.pv,
-       'SIZE' vsize.pv
-   say 'HISTORYDIFFS EDGE' ei 'CHILDDEPTH' nodedepth.ec
-   say 'HISTORYDIFFS EDGE' ei 'PARENTDEPTH' nodedepth.ep
-   say 'HISTORYDIFFS EDGE' ei 'CHILDCOMMIT' nodecommit.ec
-   say 'HISTORYDIFFS EDGE' ei 'PARENTCOMMIT' nodecommit.ep
-   say 'HISTORYDIFFS EDGE' ei 'CHILDTREE' nodetree.ec
-   say 'HISTORYDIFFS EDGE' ei 'PARENTTREE' nodetree.ep
-  end
-  say 'HISTORYDIFFS DATA END'
-  exit 0
- end
  if command='HISTEDGE' then do
   if distinct=1 then status='UNCHANGED'
   else status='CHANGED'
@@ -336,6 +374,173 @@ do i=1 to out.0
  end
 end
 exit 0
+
+statecheck:
+ parsednodes=0
+ edgecount=0
+ nodes=-1
+ edges=-1
+ edgephase=0
+ databegin=0
+ dataend=0
+ drop seencommit. nstate. nodeoid. nodetype. nodesize.
+ drop nodecommit. nodedepth. nodetree.
+ drop edgechild. edgeparent. edgekey. parentseen.
+ curnode=-1
+ curdepth=-1
+ curcommit=''
+ curtree=''
+ curtype=-1
+ cursize=-1
+ pending=0
+ havecommit=1
+ havetree=1
+ havestate=1
+ do ci=1 to out.0
+  if words(out.ci)=3 & word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='DATA' & word(out.ci,3)='BEGIN' then do
+   if databegin=1 | dataend=1 then return 'ERROR'
+   databegin=1
+   iterate
+  end
+  if words(out.ci)=3 & word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='DATA' & word(out.ci,3)='END' then do
+   if databegin\=1 | dataend=1 then return 'ERROR'
+   dataend=1
+   iterate
+  end
+  if word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)\='FULL' & databegin\=1 then return 'ERROR'
+  if dataend=1 & word(out.ci,1)='HISTORYDAGSTATE' then,
+   return 'ERROR'
+  if word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='NODE' then do
+   if edgephase=1 then return 'ERROR'
+   if words(out.ci)\=5 | word(out.ci,4)\='DEPTH' then,
+    return 'ERROR'
+   if havecommit=0 | havetree=0 | havestate=0 then,
+    return 'ERROR'
+   parsednodes=parsednodes+1
+   curnode=word(out.ci,3)
+   curdepth=word(out.ci,5)
+   if datatype(curnode,'W')\=1 | datatype(curdepth,'W')\=1 then,
+    return 'ERROR'
+   if curnode\=parsednodes | curnode>64 then return 'ERROR'
+   if curdepth<0 | curdepth>8 then return 'ERROR'
+   havecommit=0
+   havetree=0
+   havestate=0
+   pending=0
+   curcommit=''
+   curtree=''
+  end
+  if word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='COMMIT' then do
+   if edgephase=1 then return 'ERROR'
+   if words(out.ci)\=3 | havecommit=1 | curnode<1 then,
+    return 'ERROR'
+   curcommit=translate(word(out.ci,3))
+   if length(curcommit)\=40 then return 'ERROR'
+   if verify(curcommit,'0123456789ABCDEF')\=0 then return 'ERROR'
+   if seencommit.curcommit=1 then return 'ERROR'
+   seencommit.curcommit=1
+   nodecommit.curnode=curcommit
+   nodedepth.curnode=curdepth
+   havecommit=1
+  end
+  if word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='TREE' then do
+   if edgephase=1 then return 'ERROR'
+   if words(out.ci)\=3 | havetree=1 | havecommit=0 then,
+    return 'ERROR'
+   curtree=translate(word(out.ci,3))
+   if length(curtree)\=40 then return 'ERROR'
+   if verify(curtree,'0123456789ABCDEF')\=0 then return 'ERROR'
+   nodetree.curnode=curtree
+   havetree=1
+  end
+  if word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='PATH' & word(out.ci,3)='ABSENT' then do
+   if edgephase=1 then return 'ERROR'
+   if words(out.ci)\=3 | havestate=1 | havecommit=0 |,
+      havetree=0 | pending=1 then return 'ERROR'
+   nstate.curnode='ABSENT'
+   havestate=1
+  end
+  if word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='PATH' & word(out.ci,3)='PRESENT' then do
+   if edgephase=1 then return 'ERROR'
+   if words(out.ci)\=7 | word(out.ci,4)\='TYPE' |,
+      word(out.ci,6)\='SIZE' then return 'ERROR'
+   if havestate=1 | havecommit=0 | havetree=0 | pending=1 then,
+    return 'ERROR'
+   curtype=word(out.ci,5)
+   cursize=word(out.ci,7)
+   if datatype(curtype,'W')\=1 | datatype(cursize,'W')\=1 then,
+    return 'ERROR'
+   if curtype<1 | curtype>3 | cursize<0 then return 'ERROR'
+   pending=1
+  end
+  if word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='PATHOID' then do
+   if edgephase=1 then return 'ERROR'
+   if words(out.ci)\=3 | pending\=1 | havestate=1 then,
+    return 'ERROR'
+   poid=translate(word(out.ci,3))
+   if length(poid)\=40 then return 'ERROR'
+   if verify(poid,'0123456789ABCDEF')\=0 then return 'ERROR'
+   nstate.curnode='PRESENT'
+   nodeoid.curnode=poid
+   nodetype.curnode=curtype
+   nodesize.curnode=cursize
+   pending=0
+   havestate=1
+  end
+  if word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='EDGE' then do
+   if havecommit=0 | havetree=0 | havestate=0 | pending=1 then,
+    return 'ERROR'
+   edgephase=1
+   if words(out.ci)\=6 | word(out.ci,3)\='CHILD' |,
+      word(out.ci,5)\='PARENT' then return 'ERROR'
+   ec=word(out.ci,4)
+   ep=word(out.ci,6)
+   if datatype(ec,'W')\=1 | datatype(ep,'W')\=1 then,
+    return 'ERROR'
+   if ec<1 | ep<1 | ec>parsednodes | ep>parsednodes then,
+    return 'ERROR'
+   if ec=ep | edgekey.ec.ep=1 then return 'ERROR'
+   edgekey.ec.ep=1
+   edgecount=edgecount+1
+   edgechild.edgecount=ec
+   edgeparent.edgecount=ep
+   parentseen.ep=1
+  end
+  if words(out.ci)=3 & word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='EDGES' then do
+   edgephase=1
+   if edges\=-1 then return 'ERROR'
+   edges=word(out.ci,3)
+   if datatype(edges,'W')\=1 | edges<0 then return 'ERROR'
+   if edges\=edgecount then return 'ERROR'
+  end
+  if words(out.ci)=3 & word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='NODES' then do
+   if nodes\=-1 then return 'ERROR'
+   nodes=word(out.ci,3)
+   if datatype(nodes,'W')\=1 | nodes<1 then return 'ERROR'
+  end
+ end
+ if databegin\=1 | dataend\=1 then return 'ERROR'
+ if havecommit=0 | havetree=0 | havestate=0 | pending=1 then,
+  return 'ERROR'
+ if edges<0 | edges\=edgecount then return 'ERROR'
+ if nodes<1 | parsednodes\=nodes then return 'ERROR'
+ if parentseen.1=1 then return 'ERROR'
+ do ni=2 to nodes
+  if parentseen.ni\=1 then return 'ERROR'
+ end
+ return 'OK'
 
 changecheck:
  pathoids=0
