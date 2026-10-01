@@ -1859,8 +1859,8 @@ static int rec_history_first_cli(int argc,char **argv) {
  if(strcmp(argv[2],argv[3])==0) return 4;
  if(strlen(argv[4])!=40||!idx_hex(argv[4],oid)) return 4;
  if(!argv[5][0]||strlen(argv[5])>2) return 4;
- for(i=0;argv[5][i];i++) {
- }
+ if(sscanf(argv[5],"%u%c",&depth,&extra)!=1||depth>16)
+  return 4;
  return 4;
 }
 /* SELECT stays read-only. GET adds a verified indexed object
