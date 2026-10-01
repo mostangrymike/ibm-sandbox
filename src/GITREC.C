@@ -1866,7 +1866,7 @@ int main(int argc,char **argv) {
  int lsdir,lsdirv,lsdirdepth,lsdirfull;
  int firstpar,ancestor,history,historyfull,historydag,logfull;
  int logdagfull;
- int historydagpath,historydagstate;
+ int historydagpath,historydagstate,historyfirststate;
  int parent_cmd,parents_cmd;
  int roots_cmd,commitroots_cmd,linkroots_cmd;
  int nestedlinks_cmd,deeplinks_cmd,depthlinks_cmd;
@@ -1901,6 +1901,8 @@ int main(int argc,char **argv) {
   strcmp(argv[1],"HISTORYDAGPATH")==0;
  historydagstate=argc==7&&
   strcmp(argv[1],"HISTORYDAGSTATE")==0;
+ historyfirststate=argc==7&&
+  strcmp(argv[1],"HISTORYFIRSTSTATE")==0;
  parent_cmd=argc==6&&strcmp(argv[1],"PARENT")==0;
  parents_cmd=argc==5&&strcmp(argv[1],"PARENTS")==0;
  roots_cmd=argc==5&&strcmp(argv[1],"PARENTROOTS")==0;
