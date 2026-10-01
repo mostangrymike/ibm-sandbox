@@ -81,6 +81,10 @@ if command = 'HISTORYLOG-REF-FULL' then do
    'EXEC GITVREF HISTLOG' rest
    exit rc
 end
+if command = 'HISTORYSTATUS-REF-FULL' then do
+   'EXEC GITVREF HISTSTATUS' rest
+   exit rc
+end
 if command = 'READ-REF-FULL' then do
    'EXEC GITVREF READ' rest
    exit rc
