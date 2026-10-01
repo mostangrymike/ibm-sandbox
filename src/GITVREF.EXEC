@@ -587,7 +587,10 @@ statediff:
  say 'HISTORYDIFFS VERSIONS' sversions
  do vi=1 to sversions
   say 'HISTORYDIFFS VERSION' vi 'OID' sveroid.vi,
-      'COUNT' svercount.vi
+      'COUNT' svercount.vi 'MINDEPTH' svermin.vi,
+      'MAXDEPTH' svermax.vi
+  say 'HISTORYDIFFS VERSION' vi 'TYPE' svertype.vi,
+      'SIZE' sversize.vi
  end
  say 'HISTORYDIFFS NODES' snodes
  say 'HISTORYDIFFS EDGES' sedgecount
