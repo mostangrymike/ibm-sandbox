@@ -498,6 +498,43 @@ stateversions:
  else slifecycle='MIXED'
  return 'OK'
 
+
+statetransitions:
+ drop stpairno. stpairchild. stpairparent. stpaircount.
+ drop stpairstatus.
+ stpairs=0
+ do ei=1 to sedgecount
+  ec=sedgechild.ei
+  ep=sedgeparent.ei
+  cv=snodever.ec
+  pv=snodever.ep
+  if datatype(cv,'W')\=1 | datatype(pv,'W')\=1 then,
+   return 'ERROR'
+  if cv<0 | pv<0 | cv>sversions | pv>sversions then,
+   return 'ERROR'
+  tk=cv||'.'||pv
+  ti=stpairno.tk
+  if datatype(ti,'W')\=1 then do
+   stpairs=stpairs+1
+   ti=stpairs
+   stpairno.tk=ti
+   stpairchild.ti=cv
+   stpairparent.ti=pv
+   stpaircount.ti=1
+   if cv=0 & pv>0 then stpairstatus.ti='DELETED'
+   else if cv>0 & pv=0 then stpairstatus.ti='ADDED'
+   else if cv=pv then stpairstatus.ti='UNCHANGED'
+   else stpairstatus.ti='MODIFIED'
+  end
+  else stpaircount.ti=stpaircount.ti+1
+ end
+ sttotal=0
+ do ti=1 to stpairs
+  sttotal=sttotal+stpaircount.ti
+ end
+ if sttotal\=sedgecount then return 'ERROR'
+ return 'OK'
+
 stateemit:
  call stateversions
  if result\='OK' then return 8
