@@ -1,5 +1,5 @@
 #!/bin/sh
-# M100 authenticated path change-log guards.
+# M101 authenticated compact path-status guards.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -36,6 +36,8 @@ grep -Fq "command = 'HISTORYSTATE-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF HISTSTATE' rest" "$g"
 grep -Fq "command = 'HISTORYLOG-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF HISTLOG' rest" "$g"
+grep -Fq "command = 'HISTORYSTATUS-REF-FULL'" "$g"
+grep -Fq "'EXEC GITVREF HISTSTATUS' rest" "$g"
 grep -Fq "'EXEC GITVREF HISTEDGE' rest" "$g"
 grep -Fq "command='HISTCHG'" "$v"
 grep -Fq "HISTORYCHANGES FULL SNAPSHOTS VERIFIED" "$v"
@@ -132,6 +134,12 @@ grep -Fq "rec_root_path_state" "$rec"
 grep -Fq "statecheck:" "$v"
 grep -Fq "stateemit:" "$v"
 grep -Fq "statelog:" "$v"
+grep -Fq "statestatus:" "$v"
+grep -Fq "HISTORYSTATUS FULL SNAPSHOTS VERIFIED" "$v"
+grep -Fq "HISTORYSTATUS PATH STATUS' slifecycle" "$v"
+grep -Fq "HISTORYSTATUS ADDED EDGES' sadd" "$v"
+grep -Fq "HISTORYSTATUS DELETED EDGES' sdelete" "$v"
+grep -Fq "HISTORYSTATUS MODIFIED EDGES' smodify" "$v"
 grep -Fq "HISTORYLOG FULL SNAPSHOTS VERIFIED" "$v"
 grep -Fq "HISTORYLOG CHANGES' changes" "$v"
 grep -Fq "HISTORYLOG CHANGE' ei 'STATUS' lstatus.ei" "$v"
@@ -186,4 +194,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M100 AUTHENTICATED PATH CHANGE-LOG GUARDS PASSED"
+echo "M101 AUTHENTICATED COMPACT PATH-STATUS GUARDS PASSED"
