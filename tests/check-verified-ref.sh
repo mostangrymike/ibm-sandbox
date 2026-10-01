@@ -1,5 +1,5 @@
 #!/bin/sh
-# M96 verified path-state and edge-diff guards.
+# M97 verified path-state history and edge-diff guards.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -32,6 +32,8 @@ grep -Fq "'EXEC GITVREF HISTCHG' rest" "$g"
 grep -Fq "command = 'HISTORYEDGES-REF-FULL'" "$g"
 grep -Fq "command = 'HISTORYDIFFS-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF HISTDIFF' rest" "$g"
+grep -Fq "command = 'HISTORYSTATE-REF-FULL'" "$g"
+grep -Fq "'EXEC GITVREF HISTSTATE' rest" "$g"
 grep -Fq "'EXEC GITVREF HISTEDGE' rest" "$g"
 grep -Fq "command='HISTCHG'" "$v"
 grep -Fq "HISTORYCHANGES FULL SNAPSHOTS VERIFIED" "$v"
@@ -126,6 +128,11 @@ grep -Fq "HISTORYDAGSTATE PATH PRESENT TYPE %d SIZE %lu" "$rec"
 grep -Fq "HISTORYDAGSTATE PATH ABSENT" "$rec"
 grep -Fq "rec_root_path_state" "$rec"
 grep -Fq "statecheck:" "$v"
+grep -Fq "stateemit:" "$v"
+grep -Fq "HISTORYSTATE FULL SNAPSHOTS VERIFIED" "$v"
+grep -Fq "HISTORYSTATE NODE' ni 'STATE' ns" "$v"
+grep -Fq "HISTORYSTATE NODE' ni 'OID' soid.ni" "$v"
+grep -Fq "HISTORYSTATE EDGE' ei 'CHILD' sedgechild.ei" "$v"
 grep -Fq "statediff:" "$v"
 grep -Fq "HISTORYDIFFS ADDED EDGES" "$v"
 grep -Fq "HISTORYDIFFS DELETED EDGES" "$v"
@@ -165,4 +172,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M96 VERIFIED PATH-STATE DIFF GUARDS PASSED"
+echo "M97 VERIFIED PATH-STATE HISTORY AND DIFF GUARDS PASSED"
