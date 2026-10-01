@@ -637,6 +637,7 @@ statediff:
  say 'HISTORYDIFFS PRESENT' spresentcount
  say 'HISTORYDIFFS ABSENT' sabsecount
  say 'HISTORYDIFFS VERSIONS' sversions
+ say 'HISTORYDIFFS VERSION 0 STATE ABSENT COUNT' sabsecount
  do vi=1 to sversions
   say 'HISTORYDIFFS VERSION' vi 'OID' sveroid.vi,
       'COUNT' svercount.vi 'MINDEPTH' svermin.vi,
@@ -646,6 +647,12 @@ statediff:
  end
  say 'HISTORYDIFFS NODES' snodes
  say 'HISTORYDIFFS EDGES' sedgecount
+ say 'HISTORYDIFFS TRANSITIONS' stpairs
+ do ti=1 to stpairs
+  say 'HISTORYDIFFS TRANSITION' ti 'CHILDVERSION' stpairchild.ti,
+      'PARENTVERSION' stpairparent.ti 'COUNT' stpaircount.ti
+  say 'HISTORYDIFFS TRANSITION' ti 'STATUS' stpairstatus.ti
+ end
  say 'HISTORYDIFFS CHANGED EDGES' schanged
  say 'HISTORYDIFFS ADDED EDGES' sadd
  say 'HISTORYDIFFS DELETED EDGES' sdelete
