@@ -513,3 +513,11 @@ Because native HISTORYDAGPATH now carries internal EDGE/EDGES records, the gener
 Repair PR #65 passed native-stage workflow `36893598554` and squash-merged as `a7948adc69587f6ce179e4238a48ba8e2757b116`. The first-occurrence PATHOID bug is fixed by assigning `vi=distinct` immediately after allocating a new version, before `nodeversion.curnode=vi`. The repair also preserves the previously target-proven HISTORYPATH output surface by filtering only internal native `HISTORYDAGPATH EDGE` and `HISTORYDAGPATH EDGES` records in HISTPATH mode. GITREC.C and GIT.EXEC are unchanged from the already uploaded/rebuilt M86 gate; only GITVREF.EXEC must be refreshed for target retest. No compile and no GITRUN are required.
 
 NEXT target retest: from Mac `ibm-sandbox/src`, `git pull`, then `CMS_SCRIPT_PORT=3272 ./cms-upload.sh GITVREF.EXEC`. On CMS run `GIT HISTORYCHANGES-REF-FULL HEAD 1 README.md` and `GIT HISTORYEDGES-REF-FULL HEAD 1 README.md`. Optional compatibility check in the same session: `GIT HISTORYPATH-REF-FULL HEAD 1 README.md`; it should retain the old M68-style output without native EDGE/EDGES records. If the two edge-aware commands pass, M80-M86 can be marked NATIVE CMS TARGET-PROVEN based on the already successful GITREC rebuild plus this repaired wrapper run.
+
+## 2026-10-01 actual repaired M80-M86 native CMS PASS
+
+Real CMS passed the repaired combined gate. HISTORYCHANGES reported one authenticated edge, child node 1 -> parent node 2, child version 1 -> parent version 1, status UNCHANGED, with zero changed edges and one unchanged edge. Exact snapshot membership matched the expected commits and trees. CPU 115.78 / elapsed 118.67 sec at 12:29:01.
+
+HISTORYEDGES independently passed with status UNCHANGED, versions 1, nodes 2, edges 1, changed edges 0, unchanged edges 1, and the same node/version edge mapping. CPU 115.74 / elapsed 118.64 sec at 12:33:45.
+
+HISTORYPATH also passed and preserved the previously proven output surface with no EDGE/EDGES records exposed. CPU 116.00 / elapsed 118.91 sec at 12:37:07. Together with the successful GITREC rebuild from the prior gate, M80-M86 are now NATIVE CMS TARGET-PROVEN.
