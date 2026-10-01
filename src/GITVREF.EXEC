@@ -202,7 +202,11 @@ emit=0
 say 'VERIFIED REF' spec oid
 do i=1 to out.0
  if pos(marker,out.i)>0 then emit=1
- if emit then say out.i
+ if emit then do
+  if command='HISTPATH' &,
+     left(out.i,20)='HISTORYDAGPATH EDGE' then iterate
+  say out.i
+ end
 end
 exit 0
 
