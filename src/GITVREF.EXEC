@@ -75,14 +75,14 @@ if \ok then exit 8
 if command='HISTCHG' then do
  call changecheck
  if result\='OK' then exit 8
- drop depthtext. committext.
+ drop depthtext.
  do vi=1 to distinct
   call depthlist vi
   if result='ERROR' then exit 8
   depthtext.vi=result
-  call commitlist vi
-  if result='ERROR' then exit 8
-  committext.vi=result
+  do ci=1 to freq.vi
+   if length(vcommit.vi.ci)\=40 then exit 8
+  end
  end
  say 'VERIFIED REF' spec oid
  say 'HISTORYCHANGES FULL SNAPSHOTS VERIFIED'
@@ -102,7 +102,9 @@ if command='HISTCHG' then do
       'COUNT' freq.vi 'MINDEPTH' mindepth.vi,
       'MAXDEPTH' maxdepth.vi
   say 'HISTORYCHANGES VERSION' vi 'DEPTHS' depthtext.vi
-  say 'HISTORYCHANGES VERSION' vi 'COMMITS' committext.vi
+  do ci=1 to freq.vi
+   say 'HISTORYCHANGES VERSION' vi 'COMMIT' vcommit.vi.ci
+  end
   say 'HISTORYCHANGES VERSION' vi 'TYPE' vtype.vi 'SIZE' vsize.vi
   say 'HISTORYCHANGES VERSION' vi 'MINDEPTHCOMMIT' mincommit.vi
   say 'HISTORYCHANGES VERSION' vi 'MAXDEPTHCOMMIT' maxcommit.vi
@@ -129,7 +131,7 @@ changecheck:
  distinct=0
  nodes=-1
  drop seen. version. freq. mindepth. maxdepth. mincommit. maxcommit.
- drop vtype. vsize. depthseen. commitseen.
+ drop vtype. vsize. depthseen. vcommit.
  curdepth=-1
  curcommit=''
  curtype=-1
@@ -189,13 +191,13 @@ changecheck:
     vtype.distinct=curtype
     vsize.distinct=cursize
     depthseen.distinct.curdepth=1
-    commitseen.distinct.curcommit=1
+    vcommit.distinct.1=curcommit
    end
    else do
     if vtype.vi\=curtype | vsize.vi\=cursize then return 'ERROR'
     freq.vi=freq.vi+1
     depthseen.vi.curdepth=1
-    commitseen.vi.curcommit=1
+    vcommit.vi.freq.vi=curcommit
     if curdepth<mindepth.vi then do
      mindepth.vi=curdepth
      mincommit.vi=curcommit
@@ -228,21 +230,6 @@ depthlist:
  end
  if dl='' then return 'ERROR'
  return dl
-
-commitlist:
- parse arg cv
- cl=''
- do cc=1 to out.0
-  if left(out.cc,22)='HISTORYDAGPATH COMMIT ' then do
-   coid=translate(word(out.cc,3))
-   if commitseen.cv.coid=1 then do
-    if cl='' then cl=coid
-    else cl=cl||','||coid
-   end
-  end
- end
- if cl='' then return 'ERROR'
- return cl
 
 readrefs:
  drop rr. refname. refoid.
