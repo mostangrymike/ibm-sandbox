@@ -1,4 +1,4 @@
-/* M80: read-only REF2 verified snapshot membership. */
+/* M82: read-only REF2 verified path edge changes. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
