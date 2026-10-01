@@ -784,11 +784,14 @@ static int rec_history_dag_path(const unsigned char *starting,
                                 unsigned long pathlen) {
  unsigned char commits[64][20],trees[64][20],levels[64];
  unsigned char results[64][20],parent[20];
+ unsigned char edge[64][64];
  unsigned long sizes[64],sz,at,begin,len;
  int types[64];
- unsigned int count=1,head=0,j,k,budget;
+ unsigned int count=1,head=0,j,k,budget,pidx;
+ unsigned int edgecount=0;
  int pos,rc,dup;
  if(rec_sidx_read()!=0) return 8;
+ memset(edge,0,sizeof(edge));
  memcpy(commits[0],starting,20);
  levels[0]=0;
  while(head<count) {
