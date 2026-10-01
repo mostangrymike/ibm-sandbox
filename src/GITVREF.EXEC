@@ -1,4 +1,4 @@
-/* M97: read-only REF2 verified path-state history and diffs. */
+/* M99: read-only REF2 verified path-state lifecycle and diffs. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
