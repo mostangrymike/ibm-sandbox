@@ -1133,6 +1133,7 @@ static int rec_history_first_state(const unsigned char *starting,
          j+1,j+2);
  printf("HISTORYFIRSTSTATE EDGES %u\n",depth);
  printf("HISTORYFIRSTSTATE NODES %u\n",depth+1);
+ puts("HISTORYFIRSTSTATE DATA END");
  return 0;
 }
 
