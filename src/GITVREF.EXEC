@@ -540,6 +540,60 @@ stateemit:
  say 'HISTORYSTATE DATA END'
  return 0
 
+
+statelog:
+ changes=0
+ drop lstatus.
+ do ei=1 to sedgecount
+  ec=sedgechild.ei
+  ep=sedgeparent.ei
+  cp=spresent.ec
+  pp=spresent.ep
+  if cp=1 & pp=1 then do
+   if soid.ec=soid.ep then lstatus.ei='UNCHANGED'
+   else lstatus.ei='MODIFIED'
+  end
+  else if cp=1 & pp=0 then lstatus.ei='ADDED'
+  else if cp=0 & pp=1 then lstatus.ei='DELETED'
+  else lstatus.ei='UNCHANGED'
+  if lstatus.ei\='UNCHANGED' then changes=changes+1
+ end
+ say 'VERIFIED REF' spec oid
+ say 'HISTORYLOG FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYLOG DATA BEGIN'
+ say 'HISTORYLOG NODES' snodes
+ say 'HISTORYLOG EDGES' sedgecount
+ say 'HISTORYLOG CHANGES' changes
+ do ei=1 to sedgecount
+  if lstatus.ei='UNCHANGED' then iterate
+  ec=sedgechild.ei
+  ep=sedgeparent.ei
+  say 'HISTORYLOG CHANGE' ei 'STATUS' lstatus.ei
+  say 'HISTORYLOG CHANGE' ei 'CHILD' ec 'PARENT' ep
+  say 'HISTORYLOG CHANGE' ei 'CHILDDEPTH' sdepth.ec,
+      'PARENTDEPTH' sdepth.ep
+  say 'HISTORYLOG CHANGE' ei 'CHILDCOMMIT' scommit.ec
+  say 'HISTORYLOG CHANGE' ei 'PARENTCOMMIT' scommit.ep
+  if spresent.ec=1 then cs='PRESENT'
+  else cs='ABSENT'
+  if spresent.ep=1 then ps='PRESENT'
+  else ps='ABSENT'
+  say 'HISTORYLOG CHANGE' ei 'CHILDSTATE' cs,
+      'PARENTSTATE' ps
+  if spresent.ec=1 then do
+   say 'HISTORYLOG CHANGE' ei 'CHILDOID' soid.ec
+   say 'HISTORYLOG CHANGE' ei 'CHILDTYPE' stype.ec,
+       'SIZE' ssize.ec
+  end
+  if spresent.ep=1 then do
+   say 'HISTORYLOG CHANGE' ei 'PARENTOID' soid.ep
+   say 'HISTORYLOG CHANGE' ei 'PARENTTYPE' stype.ep,
+       'SIZE' ssize.ep
+  end
+ end
+ say 'HISTORYLOG DATA END'
+ return 0
+
 statediff:
  call stateversions
  if result\='OK' then return 8
