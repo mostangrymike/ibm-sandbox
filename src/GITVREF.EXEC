@@ -436,6 +436,7 @@ statecheck:
   end
   if word(out.ci,1)='HISTORYDAGSTATE' &,
      word(out.ci,2)='COMMIT' then do
+   if edgephase=1 then return 'ERROR'
    if words(out.ci)\=3 | havecommit=1 | curnode<1 then,
     return 'ERROR'
    curcommit=translate(word(out.ci,3))
@@ -449,6 +450,7 @@ statecheck:
   end
   if word(out.ci,1)='HISTORYDAGSTATE' &,
      word(out.ci,2)='TREE' then do
+   if edgephase=1 then return 'ERROR'
    if words(out.ci)\=3 | havetree=1 | havecommit=0 then,
     return 'ERROR'
    curtree=translate(word(out.ci,3))
@@ -459,6 +461,7 @@ statecheck:
   end
   if word(out.ci,1)='HISTORYDAGSTATE' &,
      word(out.ci,2)='PATH' & word(out.ci,3)='ABSENT' then do
+   if edgephase=1 then return 'ERROR'
    if words(out.ci)\=3 | havestate=1 | havecommit=0 |,
       havetree=0 | pending=1 then return 'ERROR'
    nstate.curnode='ABSENT'
@@ -466,6 +469,7 @@ statecheck:
   end
   if word(out.ci,1)='HISTORYDAGSTATE' &,
      word(out.ci,2)='PATH' & word(out.ci,3)='PRESENT' then do
+   if edgephase=1 then return 'ERROR'
    if words(out.ci)\=7 | word(out.ci,4)\='TYPE' |,
       word(out.ci,6)\='SIZE' then return 'ERROR'
    if havestate=1 | havecommit=0 | havetree=0 | pending=1 then,
@@ -479,6 +483,7 @@ statecheck:
   end
   if word(out.ci,1)='HISTORYDAGSTATE' &,
      word(out.ci,2)='PATHOID' then do
+   if edgephase=1 then return 'ERROR'
    if words(out.ci)\=3 | pending\=1 | havestate=1 then,
     return 'ERROR'
    poid=translate(word(out.ci,3))
@@ -493,6 +498,8 @@ statecheck:
   end
   if word(out.ci,1)='HISTORYDAGSTATE' &,
      word(out.ci,2)='EDGE' then do
+   if havecommit=0 | havetree=0 | havestate=0 | pending=1 then,
+    return 'ERROR'
    edgephase=1
    if words(out.ci)\=6 | word(out.ci,3)\='CHILD' |,
       word(out.ci,5)\='PARENT' then return 'ERROR'
