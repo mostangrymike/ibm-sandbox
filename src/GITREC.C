@@ -1128,6 +1128,9 @@ static int rec_history_first_state(const unsigned char *starting,
   fputs("HISTORYFIRSTSTATE TREE ",stdout);
   idx_print(stdout,trees[j]);putchar('\n');
  }
+ for(j=0;j<depth;j++)
+  printf("HISTORYFIRSTSTATE EDGE CHILD %u PARENT %u\n",
+         j+1,j+2);
  return 0;
 }
 
