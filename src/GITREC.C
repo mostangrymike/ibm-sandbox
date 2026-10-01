@@ -1066,6 +1066,20 @@ static int rec_history_dag_state(const unsigned char *starting,
  return 0;
 }
 
+/* M111: bounded first-parent path-state history, depth 0..16. */
+static int rec_history_first_state(const unsigned char *starting,
+                                   unsigned int depth,
+                                   const unsigned char *path,
+                                   unsigned long pathlen) {
+ unsigned char commits[17][20],trees[17][20],results[17][20];
+ unsigned char next[20];
+ unsigned long sizes[17],sz;
+ int types[17],present[17];
+ unsigned int hop,j,budget;
+ int pos,rc;
+ return 0;
+}
+
 /* M111 first-parent state work follows above this point. */
 /* M30: numbered parent of a fully verified Git commit.
  * Parent ordinals are 1 based and include merge's second parent.
