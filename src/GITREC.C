@@ -2075,6 +2075,7 @@ int main(int argc,char **argv) {
              !historyfull&&!historydag&&!logfull&&
              !logdagfull&&
              !historydagpath&&!historydagstate&&
+      !historyfirststate&&
              !parent_cmd&&!parents_cmd&&!roots_cmd&&
              !commitroots_cmd&&!linkroots_cmd&&
              !nestedlinks_cmd&&!deeplinks_cmd&&
