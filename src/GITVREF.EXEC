@@ -75,6 +75,12 @@ if \ok then exit 8
 if command='HISTCHG' then do
  call changecheck
  if result\='OK' then exit 8
+ drop depthtext.
+ do vi=1 to distinct
+  call depthlist vi
+  if result='ERROR' then exit 8
+  depthtext.vi=result
+ end
  say 'VERIFIED REF' spec oid
  say 'HISTORYCHANGES FULL SNAPSHOTS VERIFIED'
  say 'HISTORYCHANGES DATA BEGIN'
@@ -92,8 +98,7 @@ if command='HISTCHG' then do
   say 'HISTORYCHANGES VERSION' vi 'OID' version.vi,
       'COUNT' freq.vi 'MINDEPTH' mindepth.vi,
       'MAXDEPTH' maxdepth.vi
-  call depthlist vi
-  say 'HISTORYCHANGES VERSION' vi 'DEPTHS' result
+  say 'HISTORYCHANGES VERSION' vi 'DEPTHS' depthtext.vi
   say 'HISTORYCHANGES VERSION' vi 'TYPE' vtype.vi 'SIZE' vsize.vi
   say 'HISTORYCHANGES VERSION' vi 'MINDEPTHCOMMIT' mincommit.vi
   say 'HISTORYCHANGES VERSION' vi 'MAXDEPTHCOMMIT' maxcommit.vi
