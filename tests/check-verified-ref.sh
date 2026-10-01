@@ -1,5 +1,5 @@
 #!/bin/sh
-# M74 verified-ref bridge must stay read-only and CMS-record-safe.
+# M75 verified-ref bridge must stay read-only and CMS-record-safe.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -52,6 +52,11 @@ grep -Fq "curtype=word(out.ci,4)" "$v"
 grep -Fq "cursize=word(out.ci,6)" "$v"
 grep -Fq "if curtype<1 | curtype>3 then return 'ERROR'" "$v"
 grep -Fq "if vtype.vi\\=curtype | vsize.vi\\=cursize then return 'ERROR'" "$v"
+grep -Fq "HISTORYCHANGES VERSION' vi 'DEPTHS' depthtext.vi" "$v"
+grep -Fq "depthtext.vi=result" "$v"
+grep -Fq "depthseen.distinct.curdepth=1" "$v"
+grep -Fq "depthseen.vi.curdepth=1" "$v"
+grep -Fq "depthlist:" "$v"
 grep -Fq "version.distinct=poid" "$v"
 grep -Fq "freq.distinct=1" "$v"
 grep -Fq "freq.vi=freq.vi+1" "$v"
