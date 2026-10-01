@@ -103,8 +103,10 @@ if command='HISTCHG' | command='HISTEDGE' |,
  end
  if members\=nodes then exit 8
  drop edgestatus. edgecv. edgepv.
+ drop pairno. pairchild. pairparent. paircount.
  changededges=0
  unchangededges=0
+ pairs=0
  do ei=1 to edgecount
   ec=edgechild.ei
   ep=edgeparent.ei
