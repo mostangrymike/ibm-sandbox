@@ -154,12 +154,18 @@ changecheck:
  havepath=1
  do ci=1 to out.0
   if left(out.ci,20)='HISTORYDAGPATH NODE ' then do
-   if havepath=0 | havecommit=0 | havemeta=0 then return 'ERROR'
+   if havepath=0 | havecommit=0 | havetree=0 | havemeta=0 then,
+    return 'ERROR'
    parsednodes=parsednodes+1
+   curnode=word(out.ci,3)
+   if datatype(curnode,'W')\=1 then return 'ERROR'
+   if curnode\=parsednodes | curnode>64 then return 'ERROR'
    havecommit=0
+   havetree=0
    havemeta=0
    havepath=0
    curcommit=''
+   curtree=''
    curtype=-1
    cursize=-1
    curdepth=word(out.ci,5)
