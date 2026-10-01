@@ -575,3 +575,14 @@ Real CMS rebuilt the new native state engine successfully with `CMSCLNK GITREC P
 `GIT HISTORYSTATE-REF-FULL HEAD 1 src/M9JOBJ.EXEC` passed as MIXED with PRESENT 1 / ABSENT 1: node 1 PRESENT blob `775F6C809889E3497D8837379B37A706DFD101CA` type 3 size 646; node 2 ABSENT; authenticated edge 1 child 1 -> parent 2. CPU 115.74 / elapsed 118.67 at 14:22:26.
 
 `GIT HISTORYDIFFS-REF-FULL HEAD 1 src/M9JOBJ.EXEC` passed as CHANGED / MIXED with one ADDED edge, child PRESENT / parent ABSENT, child OID `775F6C809889E3497D8837379B37A706DFD101CA` type 3 size 646, and zero deleted/modified/unchanged edges. CPU 115.52 / elapsed 118.43 at 14:26:15. M94-M99 are now NATIVE CMS TARGET-PROVEN. DELETED remains implemented/host-proven but lacks a deletion fixture in this reachable window.
+
+## M94-M99 native CMS target proof
+
+Actual z/VM 4.4 CMS validation passed after `CMSCLNK GITREC PLAIN` completed with no statements flagged (13.31 CPU / 13.77 elapsed). All four commands returned Ready/RC0 and emitted trusted output only after full snapshot verification.
+
+- `HISTORYDIFFS-REF-FULL HEAD 1 README.md`: HEAD `00D8D632...`, ALLPRESENT 2/0, 2 nodes, 1 edge, UNCHANGED, changed 0, added/deleted/modified 0, unchanged 1; 115.83 CPU / 118.69 elapsed.
+- `HISTORYDIFFS-REF-FULL HEAD 1 src`: ALLPRESENT 2/0, CHANGED, exactly one MODIFIED edge. Child tree/path OID `A41B3EA7758F301B7E30BD3CFDF264300C02AE35` type 2 size 3690; parent `884916539208F673916FBD6988DE6B028C355723` type 2 size 3651; child/parent commits and root trees matched the expected HEAD/parent snapshots; 115.22 CPU / 118.11 elapsed.
+- `HISTORYSTATE-REF-FULL HEAD 1 src/M9JOBJ.EXEC`: MIXED, PRESENT 1, ABSENT 1, 2 nodes, 1 edge. Node 1 authenticated PRESENT blob `775F6C809889E3497D8837379B37A706DFD101CA` type 3 size 646 at HEAD; node 2 authenticated ABSENT at parent; 115.74 CPU / 118.67 elapsed.
+- `HISTORYDIFFS-REF-FULL HEAD 1 src/M9JOBJ.EXEC`: MIXED, CHANGED, exactly one ADDED edge, child PRESENT / parent ABSENT, expected child blob/type/size and snapshot metadata; 115.52 CPU / 118.43 elapsed.
+
+Therefore M94-M99 are NATIVE CMS TARGET-PROVEN for authenticated PRESENT/ABSENT history plus UNCHANGED, MODIFIED, and ADDED edge classification. DELETED remains implemented and host-CI-proven but has no deletion fixture in the current depth-8 reachable window.
