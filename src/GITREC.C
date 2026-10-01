@@ -1848,7 +1848,10 @@ static int rec_batch(const unsigned char *commit,
  puts("BATCH ALL POSITIVE CHECKS PASSED");
  return 0;
 }
-static int rec_history_first_cli(int argc,char **argv) {return 4;}
+static int rec_history_first_cli(int argc,char **argv) {
+ struct slot a,b;
+ return 4;
+}
 /* SELECT stays read-only. GET adds a verified indexed object
  * lookup only after a complete native GENCHECK has selected a slot.
  * Never call SGET on an unverified candidate or infer an active
