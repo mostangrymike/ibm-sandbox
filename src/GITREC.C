@@ -959,7 +959,7 @@ static int rec_history_dag_path(const unsigned char *starting,
  return 0;
 }
 
-/* M95: all-parent history with authenticated present/absent path state. */
+/* M95: authenticated present/absent path history. */
 static int rec_history_dag_state(const unsigned char *starting,
                                  unsigned int depth,
                                  const unsigned char *path,
