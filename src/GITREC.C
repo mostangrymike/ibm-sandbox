@@ -1118,6 +1118,7 @@ static int rec_history_first_state(const unsigned char *starting,
   fputs("HISTORYFIRSTSTATE COMMIT ",stdout);
   idx_print(stdout,commits[j]);putchar('\n');
   fputs("HISTORYFIRSTSTATE TREE ",stdout);
+  idx_print(stdout,trees[j]);putchar('\n');
  }
  return 0;
 }
