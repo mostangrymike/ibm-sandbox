@@ -1780,7 +1780,7 @@ int main(int argc,char **argv) {
  int lsdir,lsdirv,lsdirdepth,lsdirfull;
  int firstpar,ancestor,history,historyfull,historydag,logfull;
  int logdagfull;
- int historydagpath;
+ int historydagpath,historydagstate;
  int parent_cmd,parents_cmd;
  int roots_cmd,commitroots_cmd,linkroots_cmd;
  int nestedlinks_cmd,deeplinks_cmd,depthlinks_cmd;
@@ -1872,6 +1872,7 @@ int main(int argc,char **argv) {
   puts("GITREC LOGDAGFULL C0 C1 COMMIT_OID40 DEPTH");
   puts("GITREC HISTORYDAG C0 C1 COMMIT_OID40 DEPTH");
   puts("GITREC HISTORYDAGPATH C0 C1 COMMIT40 DEPTH PATHHEX");
+  puts("GITREC HISTORYDAGSTATE C0 C1 COMMIT40 DEPTH PATHHEX");
   puts("GITREC PARENT C0NAME C1NAME COMMIT_OID40 N");
   puts("GITREC PARENTS C0NAME C1NAME COMMIT_OID40");
   puts("GITREC PARENTROOTS C0NAME C1NAME OID40");
@@ -1919,7 +1920,7 @@ int main(int argc,char **argv) {
   }
   depth=(unsigned int)d;
  }
- if(historydag||historydagpath||logdagfull) {
+ if(historydag||historydagpath||historydagstate||logdagfull) {
   if(strlen(argv[5])!=1||
      argv[5][0]<'0'||argv[5][0]>'8') {
    puts("HISTORYDAG DEPTH MUST BE 0 THROUGH 8");
@@ -1983,7 +1984,7 @@ int main(int argc,char **argv) {
              !firstpar&&!ancestor&&!history&&
              !historyfull&&!historydag&&!logfull&&
              !logdagfull&&
-             !historydagpath&&
+             !historydagpath&&!historydagstate&&
              !parent_cmd&&!parents_cmd&&!roots_cmd&&
              !commitroots_cmd&&!linkroots_cmd&&
              !nestedlinks_cmd&&!deeplinks_cmd&&
