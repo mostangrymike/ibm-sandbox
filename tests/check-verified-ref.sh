@@ -1,5 +1,5 @@
 #!/bin/sh
-# M99 verified path-state lifecycle and diff guards.
+# M107 verified depth-16 mixed-state transition guards.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -126,6 +126,19 @@ grep -Fq "GITREC HISTORYDAGSTATE GITFIX M15NEW" "$v"
 grep -Fq "HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED" "$v"
 grep -Fq "HISTORYDAGSTATE PATH PRESENT TYPE %d SIZE %lu" "$rec"
 grep -Fq "HISTORYDAGSTATE PATH ABSENT" "$rec"
+grep -Fq "HISTORYDAGSTATE DEPTH MUST BE 0 THROUGH 16" "$rec"
+grep -Fq "HISTORYDAG DEPTH MUST BE 0 THROUGH 8" "$rec"
+grep -Fq "command=\'HISTDIFF\' & depth+0>16" "$v"
+grep -Fq "command=\'HISTSTATE\' & depth+0>16" "$v"
+grep -Fq "snodever.ni=0" "$v"
+grep -Fq "statetransitions:" "$v"
+grep -Fq "HISTORYSTATE VERSION 0 STATE ABSENT COUNT" "$v"
+grep -Fq "HISTORYSTATE TRANSITIONS\' stpairs" "$v"
+grep -Fq "HISTORYDIFFS TRANSITIONS\' stpairs" "$v"
+grep -Fq "stpairstatus.ti=\'ADDED\'" "$v"
+grep -Fq "stpairstatus.ti=\'DELETED\'" "$v"
+grep -Fq "stpairstatus.ti=\'MODIFIED\'" "$v"
+grep -Fq "stadd\\=sadd | stdelete\\=sdelete" "$v"
 grep -Fq "rec_root_path_state" "$rec"
 grep -Fq "statecheck:" "$v"
 grep -Fq "stateemit:" "$v"
@@ -178,4 +191,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M99 VERIFIED PATH-STATE LIFECYCLE AND DIFF GUARDS PASSED"
+echo "M107 VERIFIED DEPTH-16 MIXED-STATE TRANSITION GUARDS PASSED"
