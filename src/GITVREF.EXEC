@@ -113,6 +113,12 @@ if command='HISTCHG' then do
   do ci=1 to freq.vi
    say 'HISTORYCHANGES VERSION' vi 'COMMIT' vcommit.vi.ci,
        'DEPTH' vdepth.vi.ci
+   say 'HISTORYCHANGES VERSION' vi 'NODE' vnode.vi.ci,
+       'DEPTH' vdepth.vi.ci
+   say 'HISTORYCHANGES VERSION' vi 'NODE' vnode.vi.ci,
+       'COMMIT' vcommit.vi.ci
+   say 'HISTORYCHANGES VERSION' vi 'NODE' vnode.vi.ci,
+       'TREE' vtree.vi.ci
   end
   say 'HISTORYCHANGES VERSION' vi 'TYPE' vtype.vi 'SIZE' vsize.vi
   say 'HISTORYCHANGES VERSION' vi 'MINDEPTHCOMMIT' mincommit.vi
