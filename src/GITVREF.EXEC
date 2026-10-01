@@ -424,6 +424,147 @@ do i=1 to out.0
 end
 exit 0
 
+statecheck:
+ parsednodes=0
+ edgecount=0
+ nodes=-1
+ edges=-1
+ edgephase=0
+ drop seencommit. nstate. nodeoid. nodetype. nodesize.
+ drop nodecommit. nodedepth. nodetree.
+ drop edgechild. edgeparent. edgekey. parentseen.
+ curnode=-1
+ curdepth=-1
+ curcommit=''
+ curtree=''
+ curtype=-1
+ cursize=-1
+ pending=0
+ havecommit=1
+ havetree=1
+ havestate=1
+ do ci=1 to out.0
+  if word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='NODE' then do
+   if edgephase=1 then return 'ERROR'
+   if words(out.ci)\=5 | word(out.ci,4)\='DEPTH' then,
+    return 'ERROR'
+   if havecommit=0 | havetree=0 | havestate=0 then,
+    return 'ERROR'
+   parsednodes=parsednodes+1
+   curnode=word(out.ci,3)
+   curdepth=word(out.ci,5)
+   if datatype(curnode,'W')\=1 | datatype(curdepth,'W')\=1 then,
+    return 'ERROR'
+   if curnode\=parsednodes | curnode>64 then return 'ERROR'
+   if curdepth<0 | curdepth>8 then return 'ERROR'
+   havecommit=0
+   havetree=0
+   havestate=0
+   pending=0
+   curcommit=''
+   curtree=''
+  end
+  if word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='COMMIT' then do
+   if words(out.ci)\=3 | havecommit=1 | curnode<1 then,
+    return 'ERROR'
+   curcommit=translate(word(out.ci,3))
+   if length(curcommit)\=40 then return 'ERROR'
+   if verify(curcommit,'0123456789ABCDEF')\=0 then return 'ERROR'
+   if seencommit.curcommit=1 then return 'ERROR'
+   seencommit.curcommit=1
+   nodecommit.curnode=curcommit
+   nodedepth.curnode=curdepth
+   havecommit=1
+  end
+  if word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='TREE' then do
+   if words(out.ci)\=3 | havetree=1 | havecommit=0 then,
+    return 'ERROR'
+   curtree=translate(word(out.ci,3))
+   if length(curtree)\=40 then return 'ERROR'
+   if verify(curtree,'0123456789ABCDEF')\=0 then return 'ERROR'
+   nodetree.curnode=curtree
+   havetree=1
+  end
+  if word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='PATH' & word(out.ci,3)='ABSENT' then do
+   if words(out.ci)\=3 | havestate=1 | havecommit=0 |,
+      havetree=0 | pending=1 then return 'ERROR'
+   nstate.curnode='ABSENT'
+   havestate=1
+  end
+  if word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='PATH' & word(out.ci,3)='PRESENT' then do
+   if words(out.ci)\=7 | word(out.ci,4)\='TYPE' |,
+      word(out.ci,6)\='SIZE' then return 'ERROR'
+   if havestate=1 | havecommit=0 | havetree=0 | pending=1 then,
+    return 'ERROR'
+   curtype=word(out.ci,5)
+   cursize=word(out.ci,7)
+   if datatype(curtype,'W')\=1 | datatype(cursize,'W')\=1 then,
+    return 'ERROR'
+   if curtype<1 | curtype>3 | cursize<0 then return 'ERROR'
+   pending=1
+  end
+  if word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='PATHOID' then do
+   if words(out.ci)\=3 | pending\=1 | havestate=1 then,
+    return 'ERROR'
+   poid=translate(word(out.ci,3))
+   if length(poid)\=40 then return 'ERROR'
+   if verify(poid,'0123456789ABCDEF')\=0 then return 'ERROR'
+   nstate.curnode='PRESENT'
+   nodeoid.curnode=poid
+   nodetype.curnode=curtype
+   nodesize.curnode=cursize
+   pending=0
+   havestate=1
+  end
+  if word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='EDGE' then do
+   edgephase=1
+   if words(out.ci)\=6 | word(out.ci,3)\='CHILD' |,
+      word(out.ci,5)\='PARENT' then return 'ERROR'
+   ec=word(out.ci,4)
+   ep=word(out.ci,6)
+   if datatype(ec,'W')\=1 | datatype(ep,'W')\=1 then,
+    return 'ERROR'
+   if ec<1 | ep<1 | ec>parsednodes | ep>parsednodes then,
+    return 'ERROR'
+   if ec=ep | edgekey.ec.ep=1 then return 'ERROR'
+   edgekey.ec.ep=1
+   edgecount=edgecount+1
+   edgechild.edgecount=ec
+   edgeparent.edgecount=ep
+   parentseen.ep=1
+  end
+  if words(out.ci)=3 & word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='EDGES' then do
+   edgephase=1
+   if edges\=-1 then return 'ERROR'
+   edges=word(out.ci,3)
+   if datatype(edges,'W')\=1 | edges<0 then return 'ERROR'
+   if edges\=edgecount then return 'ERROR'
+  end
+  if words(out.ci)=3 & word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='NODES' then do
+   if nodes\=-1 then return 'ERROR'
+   nodes=word(out.ci,3)
+   if datatype(nodes,'W')\=1 | nodes<1 then return 'ERROR'
+  end
+ end
+ if havecommit=0 | havetree=0 | havestate=0 | pending=1 then,
+  return 'ERROR'
+ if edges<0 | edges\=edgecount then return 'ERROR'
+ if nodes<1 | parsednodes\=nodes then return 'ERROR'
+ if parentseen.1=1 then return 'ERROR'
+ do ni=2 to nodes
+  if parentseen.ni\=1 then return 'ERROR'
+ end
+ return 'OK'
+
 changecheck:
  pathoids=0
  parsednodes=0
