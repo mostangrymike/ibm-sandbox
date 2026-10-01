@@ -1066,6 +1066,7 @@ static int rec_history_dag_state(const unsigned char *starting,
  return 0;
 }
 
+/* M111 first-parent state work follows above this point. */
 /* M30: numbered parent of a fully verified Git commit.
  * Parent ordinals are 1 based and include merge's second parent.
  * Never output a parent OID until its body authenticates.
