@@ -475,6 +475,13 @@ stateemit:
    svertype.vi=stype.ni
    sversize.vi=ssize.ni
   end
+  else do
+   if svertype.vi\=stype.ni | sversize.vi\=ssize.ni then,
+    return 8
+   svercount.vi=svercount.vi+1
+   if sdepth.ni<svermin.vi then svermin.vi=sdepth.ni
+   if sdepth.ni>svermax.vi then svermax.vi=sdepth.ni
+  end
  end
  if spresentcount=snodes then slifecycle='ALLPRESENT'
  else if sabsecount=snodes then slifecycle='ALLABSENT'
