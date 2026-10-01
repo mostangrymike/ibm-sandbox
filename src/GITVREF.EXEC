@@ -77,7 +77,7 @@ do i=1 to out.0
  if pos(marker,out.i)>0 then ok=1
 end
 if \ok then exit 8
-if command='HISTCHG' then do
+if command='HISTCHG' | command='HISTEDGE' then do
  call changecheck
  if result\='OK' then exit 8
  drop depthtext.
@@ -123,6 +123,31 @@ if command='HISTCHG' then do
  if changededges+unchangededges\=edgecount then exit 8
  if distinct=1 & changededges\=0 then exit 8
  if distinct>1 & changededges=0 then exit 8
+ if command='HISTEDGE' then do
+  if distinct=1 then status='UNCHANGED'
+  else status='CHANGED'
+  say 'VERIFIED REF' spec oid
+  say 'HISTORYEDGES FULL SNAPSHOTS VERIFIED'
+  say 'HISTORYEDGES DATA BEGIN'
+  say 'HISTORYEDGES STATUS' status
+  say 'HISTORYEDGES VERSIONS' distinct
+  do vi=1 to distinct
+   say 'HISTORYEDGES VERSION' vi 'OID' version.vi
+  end
+  say 'HISTORYEDGES NODES' nodes
+  say 'HISTORYEDGES EDGES' edgecount
+  say 'HISTORYEDGES CHANGED EDGES' changededges
+  say 'HISTORYEDGES UNCHANGED EDGES' unchangededges
+  do ei=1 to edgecount
+   say 'HISTORYEDGES EDGE' ei 'CHILD' edgechild.ei,
+       'PARENT' edgeparent.ei
+   say 'HISTORYEDGES EDGE' ei 'CHILDVERSION' edgecv.ei,
+       'PARENTVERSION' edgepv.ei
+   say 'HISTORYEDGES EDGE' ei 'STATUS' edgestatus.ei
+  end
+  say 'HISTORYEDGES DATA END'
+  exit 0
+ end
  say 'VERIFIED REF' spec oid
  say 'HISTORYCHANGES FULL SNAPSHOTS VERIFIED'
  say 'HISTORYCHANGES DATA BEGIN'
