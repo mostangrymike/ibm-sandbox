@@ -1,4 +1,4 @@
-/* M97: read-only REF2 verified path-state history and diffs. */
+/* M99: read-only REF2 verified path-state lifecycle and diffs. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
@@ -450,9 +450,22 @@ statecheck:
 
 
 stateemit:
+ spresentcount=0
+ sabsecount=0
+ do ni=1 to snodes
+  if spresent.ni=1 then spresentcount=spresentcount+1
+  else sabsecount=sabsecount+1
+ end
+ if spresentcount+sabsecount\=snodes then return 8
+ if spresentcount=snodes then slifecycle='ALLPRESENT'
+ else if sabsecount=snodes then slifecycle='ALLABSENT'
+ else slifecycle='MIXED'
  say 'VERIFIED REF' spec oid
  say 'HISTORYSTATE FULL SNAPSHOTS VERIFIED'
  say 'HISTORYSTATE DATA BEGIN'
+ say 'HISTORYSTATE STATUS' slifecycle
+ say 'HISTORYSTATE PRESENT' spresentcount
+ say 'HISTORYSTATE ABSENT' sabsecount
  say 'HISTORYSTATE NODES' snodes
  say 'HISTORYSTATE EDGES' sedgecount
  do ni=1 to snodes
@@ -517,10 +530,23 @@ statediff:
  else return 8
  if schanged=0 then diffstatus='UNCHANGED'
  else diffstatus='CHANGED'
+ spresentcount=0
+ sabsecount=0
+ do ni=1 to snodes
+  if spresent.ni=1 then spresentcount=spresentcount+1
+  else sabsecount=sabsecount+1
+ end
+ if spresentcount+sabsecount\=snodes then return 8
+ if spresentcount=snodes then slifecycle='ALLPRESENT'
+ else if sabsecount=snodes then slifecycle='ALLABSENT'
+ else slifecycle='MIXED'
  say 'VERIFIED REF' spec oid
  say 'HISTORYDIFFS FULL SNAPSHOTS VERIFIED'
  say 'HISTORYDIFFS DATA BEGIN'
  say 'HISTORYDIFFS STATUS' diffstatus
+ say 'HISTORYDIFFS PATH STATUS' slifecycle
+ say 'HISTORYDIFFS PRESENT' spresentcount
+ say 'HISTORYDIFFS ABSENT' sabsecount
  say 'HISTORYDIFFS NODES' snodes
  say 'HISTORYDIFFS EDGES' sedgecount
  say 'HISTORYDIFFS CHANGED EDGES' schanged

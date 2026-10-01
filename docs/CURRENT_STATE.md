@@ -551,3 +551,7 @@ Concrete target proofs are available from the known HEAD/parent pair. `README.md
 ## M97: concise authenticated path-state timeline
 
 M97 adds `GIT HISTORYSTATE-REF-FULL <ref> <depth> <path>`, routed through the same new native `HISTORYDAGSTATE` engine and strict state parser used by HISTORYDIFFS. It emits every verified snapshot node with depth, commit, tree, and explicit `STATE PRESENT|ABSENT`; present nodes additionally emit PATHOID/type/size. It also emits the authenticated child-parent edge list. This is a raw state timeline, not a weaker traversal or a second parser. The next target gate can therefore validate raw state and classified diffs from one native GITREC rebuild.
+
+## M98-M99: authenticated lifecycle summaries
+
+M98 extends HISTORYSTATE with pre-output snapshot counts and lifecycle status: `ALLPRESENT`, `ALLABSENT`, or `MIXED`, plus exact PRESENT and ABSENT counts. M99 carries the same authenticated lifecycle summary into HISTORYDIFFS alongside the edge-level ADDED/DELETED/MODIFIED/UNCHANGED counts. All lifecycle values are derived only after the strict HISTORYDAGSTATE parser has validated every node, state, commit, tree, edge count, and connectivity relation. No native C changes beyond M94 and no protected-data changes are involved.
