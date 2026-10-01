@@ -864,6 +864,12 @@ static int rec_history_dag_path(const unsigned char *starting,
   fputs("HISTORYDAGPATH PATHOID ",stdout);
   idx_print(stdout,results[j]);putchar('\n');
  }
+ for(j=0;j<count;j++)
+  for(k=0;k<count;k++)
+   if(edge[j][k])
+    printf("HISTORYDAGPATH EDGE CHILD %u PARENT %u\n",
+           j+1,k+1);
+ printf("HISTORYDAGPATH EDGES %u\n",edgecount);
  printf("HISTORYDAGPATH NODES %u\n",count);
  puts("HISTORYDAGPATH DATA END");
  return 0;
