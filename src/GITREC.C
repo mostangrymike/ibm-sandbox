@@ -2007,7 +2007,7 @@ int main(int argc,char **argv) {
    }
    d=d*10+(unsigned long)(argv[5][rc]-'0');
   }
-  if((d<1&&!historyfull&&!logfull)||d>16) {
+  if((d<1&&!(historyfull||logfull||historyfirststate))||d>16) {
    puts("ANCESTOR DEPTH MUST BE 1 THROUGH 16");return 4;
   }
   depth=(unsigned int)d;
