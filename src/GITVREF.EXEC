@@ -570,6 +570,10 @@ stateemit:
  say 'HISTORYSTATE NODES' snodes
  say 'HISTORYSTATE EDGES' sedgecount
  say 'HISTORYSTATE TRANSITIONS' stpairs
+ say 'HISTORYSTATE ADDED EDGES' stadd
+ say 'HISTORYSTATE DELETED EDGES' stdelete
+ say 'HISTORYSTATE MODIFIED EDGES' stmodify
+ say 'HISTORYSTATE UNCHANGED EDGES' stunchanged
  do ti=1 to stpairs
   say 'HISTORYSTATE TRANSITION' ti 'CHILDVERSION' stpairchild.ti,
       'PARENTVERSION' stpairparent.ti 'COUNT' stpaircount.ti
@@ -637,6 +641,8 @@ statediff:
   end
  end
  if sadd+sdelete+smodify+sunchanged\=sedgecount then return 8
+ if stadd\=sadd | stdelete\=sdelete | stmodify\=smodify |,
+    stunchanged\=sunchanged then return 8
  if schanged=sadd+sdelete+smodify then nop
  else return 8
  if schanged=0 then diffstatus='UNCHANGED'
