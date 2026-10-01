@@ -1113,6 +1113,8 @@ static int rec_history_first_state(const unsigned char *starting,
  }
  puts("HISTORYFIRSTSTATE FULL SNAPSHOTS VERIFIED");
  puts("HISTORYFIRSTSTATE DATA BEGIN");
+ for(j=0;j<=depth;j++) {
+ }
  return 0;
 }
 
