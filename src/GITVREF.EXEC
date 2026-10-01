@@ -533,6 +533,8 @@ stateemit:
  return 0
 
 statediff:
+ call stateversions
+ if result\='OK' then return 8
  drop sstatus.
  sadd=0
  sdelete=0
