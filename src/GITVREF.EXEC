@@ -1,4 +1,4 @@
-/* M90: read-only REF2 verified path edge analysis. */
+/* M96: read-only REF2 verified path-state edge analysis. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
