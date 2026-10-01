@@ -459,10 +459,13 @@ stateversions:
  end
  if spresentcount+sabsecount\=snodes then return 'ERROR'
  drop sverseen. sveroid. svercount. svermin. svermax.
- drop svertype. sversize.
+ drop svertype. sversize. snodever.
  sversions=0
  do ni=1 to snodes
-  if spresent.ni=0 then iterate
+  if spresent.ni=0 then do
+   snodever.ni=0
+   iterate
+  end
   poid=soid.ni
   vi=sverseen.poid
   if datatype(vi,'W')\=1 then do
@@ -483,6 +486,7 @@ stateversions:
    if sdepth.ni<svermin.vi then svermin.vi=sdepth.ni
    if sdepth.ni>svermax.vi then svermax.vi=sdepth.ni
   end
+  snodever.ni=vi
  end
  vtotal=0
  do vi=1 to sversions
