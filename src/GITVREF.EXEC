@@ -83,6 +83,90 @@ do i=1 to out.0
  if pos(marker,out.i)>0 then ok=1
 end
 if \ok then exit 8
+if command='HISTDIFF' then do
+ call statecheck
+ if result\='OK' then exit 8
+ changededges=0
+ unchangededges=0
+ addededges=0
+ deletededges=0
+ modifiededges=0
+ drop diffkind.
+ do ei=1 to edgecount
+  ec=edgechild.ei
+  ep=edgeparent.ei
+  cs=nstate.ec
+  ps=nstate.ep
+  if cs='ABSENT' & ps='ABSENT' then do
+   diffkind.ei='UNCHANGED'
+   unchangededges=unchangededges+1
+  end
+  else if cs='PRESENT' & ps='ABSENT' then do
+   diffkind.ei='ADDED'
+   changededges=changededges+1
+   addededges=addededges+1
+  end
+  else if cs='ABSENT' & ps='PRESENT' then do
+   diffkind.ei='DELETED'
+   changededges=changededges+1
+   deletededges=deletededges+1
+  end
+  else if cs='PRESENT' & ps='PRESENT' then do
+   if nodeoid.ec=nodeoid.ep then do
+    diffkind.ei='UNCHANGED'
+    unchangededges=unchangededges+1
+   end
+   else do
+    diffkind.ei='MODIFIED'
+    changededges=changededges+1
+    modifiededges=modifiededges+1
+   end
+  end
+  else exit 8
+ end
+ if changededges+unchangededges\=edgecount then exit 8
+ if addededges+deletededges+modifiededges\=changededges then exit 8
+ if changededges=0 then diffstatus='UNCHANGED'
+ else diffstatus='CHANGED'
+ say 'VERIFIED REF' spec oid
+ say 'HISTORYDIFFS FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYDIFFS DATA BEGIN'
+ say 'HISTORYDIFFS STATUS' diffstatus
+ say 'HISTORYDIFFS NODES' nodes
+ say 'HISTORYDIFFS EDGES' edgecount
+ say 'HISTORYDIFFS CHANGED EDGES' changededges
+ say 'HISTORYDIFFS UNCHANGED EDGES' unchangededges
+ say 'HISTORYDIFFS ADDED EDGES' addededges
+ say 'HISTORYDIFFS DELETED EDGES' deletededges
+ say 'HISTORYDIFFS MODIFIED EDGES' modifiededges
+ do ei=1 to edgecount
+  if diffkind.ei='UNCHANGED' then iterate
+  ec=edgechild.ei
+  ep=edgeparent.ei
+  say 'HISTORYDIFFS EDGE' ei 'CHILD' ec 'PARENT' ep
+  say 'HISTORYDIFFS EDGE' ei 'KIND' diffkind.ei
+  say 'HISTORYDIFFS EDGE' ei 'CHILDSTATE' nstate.ec
+  say 'HISTORYDIFFS EDGE' ei 'PARENTSTATE' nstate.ep
+  say 'HISTORYDIFFS EDGE' ei 'CHILDDEPTH' nodedepth.ec
+  say 'HISTORYDIFFS EDGE' ei 'PARENTDEPTH' nodedepth.ep
+  say 'HISTORYDIFFS EDGE' ei 'CHILDCOMMIT' nodecommit.ec
+  say 'HISTORYDIFFS EDGE' ei 'PARENTCOMMIT' nodecommit.ep
+  say 'HISTORYDIFFS EDGE' ei 'CHILDTREE' nodetree.ec
+  say 'HISTORYDIFFS EDGE' ei 'PARENTTREE' nodetree.ep
+  if nstate.ec='PRESENT' then do
+   say 'HISTORYDIFFS EDGE' ei 'CHILDOID' nodeoid.ec
+   say 'HISTORYDIFFS EDGE' ei 'CHILDTYPE' nodetype.ec,
+       'SIZE' nodesize.ec
+  end
+  if nstate.ep='PRESENT' then do
+   say 'HISTORYDIFFS EDGE' ei 'PARENTOID' nodeoid.ep
+   say 'HISTORYDIFFS EDGE' ei 'PARENTTYPE' nodetype.ep,
+       'SIZE' nodesize.ep
+  end
+ end
+ say 'HISTORYDIFFS DATA END'
+ exit 0
+end
 if command='HISTCHG' | command='HISTEDGE' then do
  call changecheck
  if result\='OK' then exit 8
