@@ -1852,6 +1852,8 @@ static int rec_history_first_cli(int argc,char **argv) {
  struct slot a,b;
  unsigned char oid[20],path[255];
  unsigned long pathlen=0,d=0;
+ unsigned int depth=0;
+ int rc,i;
  return 4;
 }
 /* SELECT stays read-only. GET adds a verified indexed object
