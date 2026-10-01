@@ -105,6 +105,7 @@ if command='HISTCHG' | command='HISTEDGE' |,
  drop edgestatus. edgecv. edgepv.
  changededges=0
  unchangededges=0
+ pairs=0
  do ei=1 to edgecount
   ec=edgechild.ei
   ep=edgeparent.ei
