@@ -346,6 +346,235 @@ do i=1 to out.0
 end
 exit 0
 
+
+statecheck:
+ parsednodes=0
+ snodes=-1
+ sedges=-1
+ sedgecount=0
+ drop spresent. soid. stype. ssize. scommit. stree. sdepth.
+ drop sedgechild. sedgeparent. sedgekey. sparentseen.
+ drop sseencommit.
+ curnode=-1
+ curdepth=-1
+ curcommit=''
+ curtree=''
+ curtype=-1
+ cursize=-1
+ curpresent=-1
+ havecommit=1
+ havetree=1
+ havestate=1
+ do ci=1 to out.0
+  if words(out.ci)=5 & word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='NODE' & word(out.ci,4)='DEPTH' then do
+   if havestate=0 | havecommit=0 | havetree=0 then return 'ERROR'
+   parsednodes=parsednodes+1
+   curnode=word(out.ci,3)
+   curdepth=word(out.ci,5)
+   if datatype(curnode,'W')\=1 | curnode\=parsednodes then,
+    return 'ERROR'
+   if curnode<1 | curnode>64 then return 'ERROR'
+   if datatype(curdepth,'W')\=1 | curdepth<0 | curdepth>8 then,
+    return 'ERROR'
+   curcommit=''
+   curtree=''
+   curtype=-1
+   cursize=-1
+   curpresent=-1
+   havecommit=0
+   havetree=0
+   havestate=0
+  end
+  else if words(out.ci)=3 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='COMMIT' then do
+   if curnode<1 | havecommit=1 then return 'ERROR'
+   curcommit=translate(word(out.ci,3))
+   if length(curcommit)\=40 then return 'ERROR'
+   if verify(curcommit,'0123456789ABCDEF')\=0 then return 'ERROR'
+   if sseencommit.curcommit=1 then return 'ERROR'
+   sseencommit.curcommit=1
+   havecommit=1
+  end
+  else if words(out.ci)=3 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='TREE' then do
+   if havecommit=0 | havetree=1 then return 'ERROR'
+   curtree=translate(word(out.ci,3))
+   if length(curtree)\=40 then return 'ERROR'
+   if verify(curtree,'0123456789ABCDEF')\=0 then return 'ERROR'
+   havetree=1
+  end
+  else if words(out.ci)=3 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='PATH' & word(out.ci,3)='ABSENT' then do
+   if havecommit=0 | havetree=0 | havestate=1 then return 'ERROR'
+   spresent.curnode=0
+   scommit.curnode=curcommit
+   stree.curnode=curtree
+   sdepth.curnode=curdepth
+   havestate=1
+  end
+  else if words(out.ci)=7 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='PATH' & word(out.ci,3)='PRESENT' then do
+   if havecommit=0 | havetree=0 | havestate=1 then return 'ERROR'
+   if word(out.ci,4)\='TYPE' | word(out.ci,6)\='SIZE' then,
+    return 'ERROR'
+   curtype=word(out.ci,5)
+   cursize=word(out.ci,7)
+   if datatype(curtype,'W')\=1 | curtype<1 | curtype>3 then,
+    return 'ERROR'
+   if datatype(cursize,'W')\=1 | cursize<0 then return 'ERROR'
+   curpresent=1
+  end
+  else if words(out.ci)=3 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='PATHOID' then do
+   if curpresent\=1 | havestate=1 then return 'ERROR'
+   poid=translate(word(out.ci,3))
+   if length(poid)\=40 then return 'ERROR'
+   if verify(poid,'0123456789ABCDEF')\=0 then return 'ERROR'
+   spresent.curnode=1
+   soid.curnode=poid
+   stype.curnode=curtype
+   ssize.curnode=cursize
+   scommit.curnode=curcommit
+   stree.curnode=curtree
+   sdepth.curnode=curdepth
+   havestate=1
+  end
+  else if words(out.ci)=6 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='EDGE' then do
+   if word(out.ci,3)\='CHILD' | word(out.ci,5)\='PARENT' then,
+    return 'ERROR'
+   ec=word(out.ci,4)
+   ep=word(out.ci,6)
+   if datatype(ec,'W')\=1 | datatype(ep,'W')\=1 then,
+    return 'ERROR'
+   if ec<1 | ep<1 | ec>parsednodes | ep>parsednodes then,
+    return 'ERROR'
+   if ec=ep | sedgekey.ec.ep=1 then return 'ERROR'
+   sedgekey.ec.ep=1
+   sedgecount=sedgecount+1
+   sedgechild.sedgecount=ec
+   sedgeparent.sedgecount=ep
+   sparentseen.ep=1
+  end
+  else if words(out.ci)=3 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='EDGES' then do
+   if sedges\=-1 then return 'ERROR'
+   sedges=word(out.ci,3)
+   if datatype(sedges,'W')\=1 | sedges<0 then return 'ERROR'
+   if sedges\=sedgecount then return 'ERROR'
+  end
+  else if words(out.ci)=3 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='NODES' then do
+   if snodes\=-1 then return 'ERROR'
+   snodes=word(out.ci,3)
+   if datatype(snodes,'W')\=1 | snodes<1 then return 'ERROR'
+  end
+ end
+ if havestate=0 | havecommit=0 | havetree=0 then return 'ERROR'
+ if snodes\=parsednodes | sedges\=sedgecount then return 'ERROR'
+ if sparentseen.1=1 then return 'ERROR'
+ do ni=1 to snodes
+  if datatype(spresent.ni,'W')\=1 then return 'ERROR'
+  if spresent.ni\=0 & spresent.ni\=1 then return 'ERROR'
+  if ni>1 & sparentseen.ni\=1 then return 'ERROR'
+ end
+ return 'OK'
+
+statediff:
+ drop sstatus.
+ sadd=0
+ sdelete=0
+ smodify=0
+ sunchanged=0
+ schanged=0
+ do ei=1 to sedgecount
+  ec=sedgechild.ei
+  ep=sedgeparent.ei
+  cp=spresent.ec
+  pp=spresent.ep
+  if cp=1 & pp=1 then do
+   if soid.ec=soid.ep then do
+    sstatus.ei='UNCHANGED'
+    sunchanged=sunchanged+1
+   end
+   else do
+    sstatus.ei='MODIFIED'
+    smodify=smodify+1
+    schanged=schanged+1
+   end
+  end
+  else if cp=1 & pp=0 then do
+   sstatus.ei='ADDED'
+   sadd=sadd+1
+   schanged=schanged+1
+  end
+  else if cp=0 & pp=1 then do
+   sstatus.ei='DELETED'
+   sdelete=sdelete+1
+   schanged=schanged+1
+  end
+  else do
+   sstatus.ei='UNCHANGED'
+   sunchanged=sunchanged+1
+  end
+ end
+ if sadd+sdelete+smodify+sunchanged\=sedgecount then return 8
+ if schanged=sadd+sdelete+smodify then nop
+ else return 8
+ if schanged=0 then diffstatus='UNCHANGED'
+ else diffstatus='CHANGED'
+ say 'VERIFIED REF' spec oid
+ say 'HISTORYDIFFS FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYDIFFS DATA BEGIN'
+ say 'HISTORYDIFFS STATUS' diffstatus
+ say 'HISTORYDIFFS NODES' snodes
+ say 'HISTORYDIFFS EDGES' sedgecount
+ say 'HISTORYDIFFS CHANGED EDGES' schanged
+ say 'HISTORYDIFFS ADDED EDGES' sadd
+ say 'HISTORYDIFFS DELETED EDGES' sdelete
+ say 'HISTORYDIFFS MODIFIED EDGES' smodify
+ say 'HISTORYDIFFS UNCHANGED EDGES' sunchanged
+ do ei=1 to sedgecount
+  if sstatus.ei='UNCHANGED' then iterate
+  ec=sedgechild.ei
+  ep=sedgeparent.ei
+  say 'HISTORYDIFFS EDGE' ei 'CHILD' ec 'PARENT' ep
+  if spresent.ec=1 then cs='PRESENT'
+  else cs='ABSENT'
+  if spresent.ep=1 then ps='PRESENT'
+  else ps='ABSENT'
+  say 'HISTORYDIFFS EDGE' ei 'CHILDSTATE' cs,
+      'PARENTSTATE' ps
+  say 'HISTORYDIFFS EDGE' ei 'CHILDDEPTH' sdepth.ec
+  say 'HISTORYDIFFS EDGE' ei 'PARENTDEPTH' sdepth.ep
+  say 'HISTORYDIFFS EDGE' ei 'CHILDCOMMIT' scommit.ec
+  say 'HISTORYDIFFS EDGE' ei 'PARENTCOMMIT' scommit.ep
+  say 'HISTORYDIFFS EDGE' ei 'CHILDTREE' stree.ec
+  say 'HISTORYDIFFS EDGE' ei 'PARENTTREE' stree.ep
+  if spresent.ec=1 then do
+   say 'HISTORYDIFFS EDGE' ei 'CHILDOID' soid.ec
+   say 'HISTORYDIFFS EDGE' ei 'CHILDTYPE' stype.ec,
+       'SIZE' ssize.ec
+  end
+  if spresent.ep=1 then do
+   say 'HISTORYDIFFS EDGE' ei 'PARENTOID' soid.ep
+   say 'HISTORYDIFFS EDGE' ei 'PARENTTYPE' stype.ep,
+       'SIZE' ssize.ep
+  end
+  say 'HISTORYDIFFS EDGE' ei 'STATUS' sstatus.ei
+ end
+ say 'HISTORYDIFFS DATA END'
+ return 0
+
 changecheck:
  pathoids=0
  parsednodes=0
