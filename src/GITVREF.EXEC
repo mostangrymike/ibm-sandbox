@@ -254,6 +254,7 @@ changecheck:
      maxcommit.vi=curcommit
     end
    end
+   nodeversion.curnode=vi
   end
   if left(out.ci,21)='HISTORYDAGPATH NODES ' then do
    if nodes\=-1 then return 'ERROR'
