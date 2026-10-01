@@ -1,4 +1,4 @@
-/* M76: read-only REF2 verified path-version commit sets. */
+/* M77: read-only REF2 verified commit-depth membership. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
@@ -82,6 +82,8 @@ if command='HISTCHG' then do
   depthtext.vi=result
   do ci=1 to freq.vi
    if length(vcommit.vi.ci)\=40 then exit 8
+   if datatype(vdepth.vi.ci,'W')\=1 then exit 8
+   if vdepth.vi.ci<0 | vdepth.vi.ci>8 then exit 8
   end
  end
  say 'VERIFIED REF' spec oid
@@ -103,7 +105,8 @@ if command='HISTCHG' then do
       'MAXDEPTH' maxdepth.vi
   say 'HISTORYCHANGES VERSION' vi 'DEPTHS' depthtext.vi
   do ci=1 to freq.vi
-   say 'HISTORYCHANGES VERSION' vi 'COMMIT' vcommit.vi.ci
+   say 'HISTORYCHANGES VERSION' vi 'COMMIT' vcommit.vi.ci,
+       'DEPTH' vdepth.vi.ci
   end
   say 'HISTORYCHANGES VERSION' vi 'TYPE' vtype.vi 'SIZE' vsize.vi
   say 'HISTORYCHANGES VERSION' vi 'MINDEPTHCOMMIT' mincommit.vi
@@ -131,7 +134,7 @@ changecheck:
  distinct=0
  nodes=-1
  drop seen. version. freq. mindepth. maxdepth. mincommit. maxcommit.
- drop vtype. vsize. depthseen. vcommit.
+ drop vtype. vsize. depthseen. vcommit. vdepth.
  curdepth=-1
  curcommit=''
  curtype=-1
@@ -192,6 +195,7 @@ changecheck:
     vsize.distinct=cursize
     depthseen.distinct.curdepth=1
     vcommit.distinct.1=curcommit
+    vdepth.distinct.1=curdepth
    end
    else do
     if vtype.vi\=curtype | vsize.vi\=cursize then return 'ERROR'
@@ -199,6 +203,7 @@ changecheck:
     depthseen.vi.curdepth=1
     vcidx=freq.vi
     vcommit.vi.vcidx=curcommit
+    vdepth.vi.vcidx=curdepth
     if curdepth<mindepth.vi then do
      mindepth.vi=curdepth
      mincommit.vi=curcommit

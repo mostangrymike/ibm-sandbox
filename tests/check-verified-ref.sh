@@ -1,5 +1,5 @@
 #!/bin/sh
-# M76 verified-ref bridge must stay read-only and CMS-record-safe.
+# M77 verified-ref bridge must stay read-only and CMS-record-safe.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -55,9 +55,13 @@ grep -Fq "if vtype.vi\\=curtype | vsize.vi\\=cursize then return 'ERROR'" "$v"
 grep -Fq "HISTORYCHANGES VERSION' vi 'DEPTHS' depthtext.vi" "$v"
 grep -Fq "depthtext.vi=result" "$v"
 grep -Fq "vcommit.distinct.1=curcommit" "$v"
+grep -Fq "vdepth.distinct.1=curdepth" "$v"
 grep -Fq "vcidx=freq.vi" "$v"
 grep -Fq "vcommit.vi.vcidx=curcommit" "$v"
+grep -Fq "vdepth.vi.vcidx=curdepth" "$v"
 grep -Fq "HISTORYCHANGES VERSION' vi 'COMMIT' vcommit.vi.ci" "$v"
+grep -Fq "'DEPTH' vdepth.vi.ci" "$v"
+grep -Fq "datatype(vdepth.vi.ci,'W')" "$v"
 grep -Fq "depthseen.distinct.curdepth=1" "$v"
 grep -Fq "depthseen.vi.curdepth=1" "$v"
 grep -Fq "depthlist:" "$v"
@@ -89,4 +93,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M72 FIXED REF2 VERSION-DEPTH RANGE GUARDS PASSED"
+echo "M77 VERIFIED REF2 COMMIT-DEPTH MEMBERSHIP GUARDS PASSED"
