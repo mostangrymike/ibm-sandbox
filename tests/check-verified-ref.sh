@@ -1,5 +1,5 @@
 #!/bin/sh
-# M99 verified path-state lifecycle and diff guards.
+# M100 authenticated path change-log guards.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -34,6 +34,8 @@ grep -Fq "command = 'HISTORYDIFFS-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF HISTDIFF' rest" "$g"
 grep -Fq "command = 'HISTORYSTATE-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF HISTSTATE' rest" "$g"
+grep -Fq "command = 'HISTORYLOG-REF-FULL'" "$g"
+grep -Fq "'EXEC GITVREF HISTLOG' rest" "$g"
 grep -Fq "'EXEC GITVREF HISTEDGE' rest" "$g"
 grep -Fq "command='HISTCHG'" "$v"
 grep -Fq "HISTORYCHANGES FULL SNAPSHOTS VERIFIED" "$v"
@@ -129,6 +131,12 @@ grep -Fq "HISTORYDAGSTATE PATH ABSENT" "$rec"
 grep -Fq "rec_root_path_state" "$rec"
 grep -Fq "statecheck:" "$v"
 grep -Fq "stateemit:" "$v"
+grep -Fq "statelog:" "$v"
+grep -Fq "HISTORYLOG FULL SNAPSHOTS VERIFIED" "$v"
+grep -Fq "HISTORYLOG CHANGES' changes" "$v"
+grep -Fq "HISTORYLOG CHANGE' ei 'STATUS' lstatus.ei" "$v"
+grep -Fq "HISTORYLOG CHANGE' ei 'CHILDCOMMIT' scommit.ec" "$v"
+grep -Fq "HISTORYLOG CHANGE' ei 'PARENTCOMMIT' scommit.ep" "$v"
 grep -Fq "HISTORYSTATE FULL SNAPSHOTS VERIFIED" "$v"
 grep -Fq "HISTORYSTATE STATUS' slifecycle" "$v"
 grep -Fq "HISTORYSTATE PRESENT' spresentcount" "$v"
@@ -178,4 +186,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M99 VERIFIED PATH-STATE LIFECYCLE AND DIFF GUARDS PASSED"
+echo "M100 AUTHENTICATED PATH CHANGE-LOG GUARDS PASSED"
