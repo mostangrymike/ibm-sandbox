@@ -103,8 +103,10 @@ if command='HISTCHG' | command='HISTEDGE' |,
  end
  if members\=nodes then exit 8
  drop edgestatus. edgecv. edgepv.
+ drop pairno. pairchild. pairparent. paircount.
  changededges=0
  unchangededges=0
+ pairs=0
  do ei=1 to edgecount
   ec=edgechild.ei
   ep=edgeparent.ei
@@ -122,10 +124,53 @@ if command='HISTCHG' | command='HISTEDGE' |,
    edgestatus.ei='CHANGED'
    changededges=changededges+1
   end
+  tk=cv||'.'||pv
+  ti=pairno.tk
+  if datatype(ti,'W')\=1 then do
+   pairs=pairs+1
+   pairno.tk=pairs
+   pairchild.pairs=cv
+   pairparent.pairs=pv
+   paircount.pairs=1
+  end
+  else paircount.ti=paircount.ti+1
  end
  if changededges+unchangededges\=edgecount then exit 8
+ tsum=0
+ do ti=1 to pairs
+  tsum=tsum+paircount.ti
+ end
+ if tsum\=edgecount then exit 8
  if distinct=1 & changededges\=0 then exit 8
  if distinct>1 & changededges=0 then exit 8
+ if command='HISTDIFF' then do
+  say 'VERIFIED REF' spec oid
+  say 'HISTORYDIFFS FULL SNAPSHOTS VERIFIED'
+  say 'HISTORYDIFFS DATA BEGIN'
+  say 'HISTORYDIFFS VERSIONS' distinct
+  do vi=1 to distinct
+   say 'HISTORYDIFFS VERSION' vi 'OID' version.vi
+  end
+  say 'HISTORYDIFFS NODES' nodes
+  say 'HISTORYDIFFS EDGES' edgecount
+  say 'HISTORYDIFFS CHANGED EDGES' changededges
+  do ei=1 to edgecount
+   if edgestatus.ei\='CHANGED' then iterate
+   ec=edgechild.ei
+   ep=edgeparent.ei
+   say 'HISTORYDIFFS EDGE' ei 'CHILD' ec 'PARENT' ep
+   say 'HISTORYDIFFS EDGE' ei 'CHILDVERSION' edgecv.ei,
+       'PARENTVERSION' edgepv.ei
+   say 'HISTORYDIFFS EDGE' ei 'CHILDDEPTH' nodedepth.ec
+   say 'HISTORYDIFFS EDGE' ei 'PARENTDEPTH' nodedepth.ep
+   say 'HISTORYDIFFS EDGE' ei 'CHILDCOMMIT' nodecommit.ec
+   say 'HISTORYDIFFS EDGE' ei 'PARENTCOMMIT' nodecommit.ep
+   say 'HISTORYDIFFS EDGE' ei 'CHILDTREE' nodetree.ec
+   say 'HISTORYDIFFS EDGE' ei 'PARENTTREE' nodetree.ep
+  end
+  say 'HISTORYDIFFS DATA END'
+  exit 0
+ end
  if command='HISTEDGE' then do
   if distinct=1 then status='UNCHANGED'
   else status='CHANGED'
@@ -141,6 +186,11 @@ if command='HISTCHG' | command='HISTEDGE' |,
   say 'HISTORYEDGES EDGES' edgecount
   say 'HISTORYEDGES CHANGED EDGES' changededges
   say 'HISTORYEDGES UNCHANGED EDGES' unchangededges
+  say 'HISTORYEDGES TRANSITIONS' pairs
+  do ti=1 to pairs
+   say 'HISTORYEDGES TRANSITION' ti 'CHILDVERSION' pairchild.ti,
+       'PARENTVERSION' pairparent.ti 'COUNT' paircount.ti
+  end
   do ei=1 to edgecount
    ec=edgechild.ei
    ep=edgeparent.ei
@@ -174,6 +224,11 @@ if command='HISTCHG' | command='HISTEDGE' |,
  say 'HISTORYCHANGES EDGES' edgecount
  say 'HISTORYCHANGES CHANGED EDGES' changededges
  say 'HISTORYCHANGES UNCHANGED EDGES' unchangededges
+ say 'HISTORYCHANGES TRANSITIONS' pairs
+ do ti=1 to pairs
+  say 'HISTORYCHANGES TRANSITION' ti 'CHILDVERSION' pairchild.ti,
+      'PARENTVERSION' pairparent.ti 'COUNT' paircount.ti
+ end
  do ei=1 to edgecount
   ec=edgechild.ei
   ep=edgeparent.ei
