@@ -76,6 +76,7 @@ if command='HISTCHG' then do
  call changecheck
  if result\='OK' then exit 8
  drop depthtext.
+ members=0
  do vi=1 to distinct
   call depthlist vi
   if result='ERROR' then exit 8
