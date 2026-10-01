@@ -146,10 +146,13 @@ changecheck:
  pathoids=0
  parsednodes=0
  distinct=0
+ edgecount=0
  nodes=-1
+ edges=-1
  drop seen. seencommit. version. freq. mindepth. maxdepth.
  drop mincommit. maxcommit. vtype. vsize. depthseen.
- drop vcommit. vdepth. vnode. vtree.
+ drop vcommit. vdepth. vnode. vtree. nodeversion.
+ drop edgechild. edgeparent. edgekey.
  curnode=-1
  curdepth=-1
  curcommit=''
