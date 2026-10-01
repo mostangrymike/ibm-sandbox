@@ -69,10 +69,6 @@ if command = 'HISTORYEDGES-REF-FULL' then do
    'EXEC GITVREF HISTEDGE' rest
    exit rc
 end
-if command = 'HISTORYDIFFS-REF-FULL' then do
-   'EXEC GITVREF HISTDIFF' rest
-   exit rc
-end
 if command = 'READ-REF-FULL' then do
    'EXEC GITVREF READ' rest
    exit rc
