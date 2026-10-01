@@ -1130,6 +1130,7 @@ static int rec_history_first_state(const unsigned char *starting,
   if(present[j]) {
    printf("HISTORYFIRSTSTATE PATH PRESENT TYPE %d SIZE %lu\n",
           types[j],sizes[j]);
+   fputs("HISTORYFIRSTSTATE PATHOID ",stdout);
   }
   if(!present[j]) puts("HISTORYFIRSTSTATE PATH ABSENT");
  }
