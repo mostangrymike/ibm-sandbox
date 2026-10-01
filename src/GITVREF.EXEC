@@ -538,6 +538,8 @@ statetransitions:
 stateemit:
  call stateversions
  if result\='OK' then return 8
+ call statetransitions
+ if result\='OK' then return 8
  say 'VERIFIED REF' spec oid
  say 'HISTORYSTATE FULL SNAPSHOTS VERIFIED'
  say 'HISTORYSTATE DATA BEGIN'
@@ -575,6 +577,8 @@ stateemit:
 
 statediff:
  call stateversions
+ if result\='OK' then return 8
+ call statetransitions
  if result\='OK' then return 8
  drop sstatus.
  sadd=0
