@@ -1127,6 +1127,8 @@ static int rec_history_first_state(const unsigned char *starting,
   idx_print(stdout,commits[j]);putchar('\n');
   fputs("HISTORYFIRSTSTATE TREE ",stdout);
   idx_print(stdout,trees[j]);putchar('\n');
+  if(present[j]) {
+  }
   if(!present[j]) puts("HISTORYFIRSTSTATE PATH ABSENT");
  }
  for(j=0;j<depth;j++)
