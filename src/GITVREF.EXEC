@@ -142,16 +142,17 @@ if command='HISTCHG' | command='HISTEDGE' |,
   say 'HISTORYEDGES CHANGED EDGES' changededges
   say 'HISTORYEDGES UNCHANGED EDGES' unchangededges
   do ei=1 to edgecount
-   say 'HISTORYEDGES EDGE' ei 'CHILD' edgechild.ei,
-       'PARENT' edgeparent.ei
+   ec=edgechild.ei
+   ep=edgeparent.ei
+   say 'HISTORYEDGES EDGE' ei 'CHILD' ec 'PARENT' ep
    say 'HISTORYEDGES EDGE' ei 'CHILDVERSION' edgecv.ei,
        'PARENTVERSION' edgepv.ei
-   say 'HISTORYEDGES EDGE' ei 'CHILDDEPTH' nodedepth.edgechild.ei
-   say 'HISTORYEDGES EDGE' ei 'PARENTDEPTH' nodedepth.edgeparent.ei
-   say 'HISTORYEDGES EDGE' ei 'CHILDCOMMIT' nodecommit.edgechild.ei
-   say 'HISTORYEDGES EDGE' ei 'PARENTCOMMIT' nodecommit.edgeparent.ei
-   say 'HISTORYEDGES EDGE' ei 'CHILDTREE' nodetree.edgechild.ei
-   say 'HISTORYEDGES EDGE' ei 'PARENTTREE' nodetree.edgeparent.ei
+   say 'HISTORYEDGES EDGE' ei 'CHILDDEPTH' nodedepth.ec
+   say 'HISTORYEDGES EDGE' ei 'PARENTDEPTH' nodedepth.ep
+   say 'HISTORYEDGES EDGE' ei 'CHILDCOMMIT' nodecommit.ec
+   say 'HISTORYEDGES EDGE' ei 'PARENTCOMMIT' nodecommit.ep
+   say 'HISTORYEDGES EDGE' ei 'CHILDTREE' nodetree.ec
+   say 'HISTORYEDGES EDGE' ei 'PARENTTREE' nodetree.ep
    say 'HISTORYEDGES EDGE' ei 'STATUS' edgestatus.ei
   end
   say 'HISTORYEDGES DATA END'
