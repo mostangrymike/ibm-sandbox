@@ -602,3 +602,7 @@ Real CMS proved the EXEC-only M100-M101 batch. HISTORYSTATUS on HEAD/README.md r
 ## M102-M105: shared classification and change-depth bounds
 
 The state-aware output paths now share one fail-closed `stateclass` routine after the target-proven HISTORYDAGSTATE parser. It derives lifecycle/version data, exact ADDED/DELETED/MODIFIED/UNCHANGED counts, per-edge status, and the minimum/maximum child depth among changed edges. HISTORYSTATUS, HISTORYLOG and HISTORYDIFFS expose nearest/farthest change-depth records when changes exist. M105 adds `GIT HISTORYNEAREST-REF-FULL <ref> <depth> <path>`, which emits every changed parent edge tied at the minimum child depth. This is explicitly graph distance from the requested ref, not a wall-clock chronology claim. No native C or protected-data changes.
+
+## M106-M108: authenticated state transition matrix
+
+M106 extends the shared state-version aggregation so every verified snapshot node receives a state ID: 0 is authenticated ABSENT, while 1..N identify authenticated PRESENT PATHOIDs. M108 adds `GIT HISTORYTRANSITIONS-REF-FULL <ref> <depth> <path>`, reusing the target-proven HISTORYDAGSTATE parser and shared state classifier. It aggregates every native parent edge into exact child-state -> parent-state pairs, validates pair counts sum to the authenticated edge total, labels each pair UNCHANGED/ADDED/DELETED/MODIFIED, and emits direct OIDs for present endpoints. This generalizes the older all-present transition report to lifecycle transitions without a new native traversal.
