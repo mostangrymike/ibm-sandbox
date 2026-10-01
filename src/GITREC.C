@@ -1995,7 +1995,8 @@ int main(int argc,char **argv) {
   puts("GET REQUIRES 40 HEX DIGITS");
   return 4;
  }
- if(ancestor||history||historyfull||logfull||parent_cmd) {
+ if(ancestor||history||historyfull||logfull||parent_cmd||
+    historyfirststate) {
   if(!argv[5][0]||strlen(argv[5])>2) {
    puts("ANCESTOR DEPTH MUST BE 1 THROUGH 16");return 4;
   }
