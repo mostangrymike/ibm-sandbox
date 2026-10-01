@@ -1851,9 +1851,10 @@ static int rec_batch(const unsigned char *commit,
 static int rec_history_first_cli(int argc,char **argv) {
  struct slot a,b;
  unsigned char oid[20],path[255];
- unsigned long pathlen=0,d=0;
+ unsigned long pathlen=0;
  unsigned int depth=0;
- int rc,i;
+ int rc;
+ char extra;
  if(!proper_name(argv[2])||!proper_name(argv[3])) return 4;
  if(strcmp(argv[2],argv[3])==0) return 4;
  if(strlen(argv[4])!=40||!idx_hex(argv[4],oid)) return 4;
