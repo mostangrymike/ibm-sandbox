@@ -530,10 +530,23 @@ statediff:
  else return 8
  if schanged=0 then diffstatus='UNCHANGED'
  else diffstatus='CHANGED'
+ spresentcount=0
+ sabsecount=0
+ do ni=1 to snodes
+  if spresent.ni=1 then spresentcount=spresentcount+1
+  else sabsecount=sabsecount+1
+ end
+ if spresentcount+sabsecount\=snodes then return 8
+ if spresentcount=snodes then slifecycle='ALLPRESENT'
+ else if sabsecount=snodes then slifecycle='ALLABSENT'
+ else slifecycle='MIXED'
  say 'VERIFIED REF' spec oid
  say 'HISTORYDIFFS FULL SNAPSHOTS VERIFIED'
  say 'HISTORYDIFFS DATA BEGIN'
  say 'HISTORYDIFFS STATUS' diffstatus
+ say 'HISTORYDIFFS PATH STATUS' slifecycle
+ say 'HISTORYDIFFS PRESENT' spresentcount
+ say 'HISTORYDIFFS ABSENT' sabsecount
  say 'HISTORYDIFFS NODES' snodes
  say 'HISTORYDIFFS EDGES' sedgecount
  say 'HISTORYDIFFS CHANGED EDGES' schanged
