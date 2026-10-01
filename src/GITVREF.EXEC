@@ -256,6 +256,28 @@ changecheck:
    end
    nodeversion.curnode=vi
   end
+  if words(out.ci)=6 & word(out.ci,1)='HISTORYDAGPATH' &,
+     word(out.ci,2)='EDGE' then do
+   if word(out.ci,3)\='CHILD' | word(out.ci,5)\='PARENT' then,
+    return 'ERROR'
+   ec=word(out.ci,4)
+   ep=word(out.ci,6)
+   if datatype(ec,'W')\=1 | datatype(ep,'W')\=1 then return 'ERROR'
+   if ec<1 | ep<1 | ec>parsednodes | ep>parsednodes then return 'ERROR'
+   if ec=ep then return 'ERROR'
+   if edgekey.ec.ep=1 then return 'ERROR'
+   edgekey.ec.ep=1
+   edgecount=edgecount+1
+   edgechild.edgecount=ec
+   edgeparent.edgecount=ep
+  end
+  if words(out.ci)=3 & word(out.ci,1)='HISTORYDAGPATH' &,
+     word(out.ci,2)='EDGES' then do
+   if edges\=-1 then return 'ERROR'
+   edges=word(out.ci,3)
+   if datatype(edges,'W')\=1 | edges<0 then return 'ERROR'
+   if edges\=edgecount then return 'ERROR'
+  end
   if left(out.ci,21)='HISTORYDAGPATH NODES ' then do
    if nodes\=-1 then return 'ERROR'
    nodes=word(out.ci,3)
@@ -264,6 +286,7 @@ changecheck:
  end
  if havepath=0 | havecommit=0 | havetree=0 | havemeta=0 then,
   return 'ERROR'
+ if edges<0 | edges\=edgecount then return 'ERROR'
  if nodes<1 | pathoids\=nodes then return 'ERROR'
  if parsednodes\=nodes then return 'ERROR'
  return 'OK'
