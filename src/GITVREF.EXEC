@@ -139,13 +139,17 @@ changecheck:
  parsednodes=0
  distinct=0
  nodes=-1
- drop seen. version. freq. mindepth. maxdepth. mincommit. maxcommit.
- drop vtype. vsize. depthseen. vcommit. vdepth.
+ drop seen. seencommit. version. freq. mindepth. maxdepth.
+ drop mincommit. maxcommit. vtype. vsize. depthseen.
+ drop vcommit. vdepth. vnode. vtree.
+ curnode=-1
  curdepth=-1
  curcommit=''
+ curtree=''
  curtype=-1
  cursize=-1
  havecommit=1
+ havetree=1
  havemeta=1
  havepath=1
  do ci=1 to out.0
