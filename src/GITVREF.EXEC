@@ -197,7 +197,8 @@ changecheck:
     if vtype.vi\=curtype | vsize.vi\=cursize then return 'ERROR'
     freq.vi=freq.vi+1
     depthseen.vi.curdepth=1
-    vcommit.vi.freq.vi=curcommit
+    vcidx=freq.vi
+    vcommit.vi.vcidx=curcommit
     if curdepth<mindepth.vi then do
      mindepth.vi=curdepth
      mincommit.vi=curcommit
