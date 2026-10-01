@@ -1,5 +1,5 @@
 #!/bin/sh
-# M108 change bounds, nearest view and state-transition guards.
+# M110 consolidated history report guards.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -42,6 +42,8 @@ grep -Fq "command = 'HISTORYNEAREST-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF HISTNEAR' rest" "$g"
 grep -Fq "command = 'HISTORYTRANSITIONS-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF HISTTRANS' rest" "$g"
+grep -Fq "command = 'HISTORYREPORT-REF-FULL'" "$g"
+grep -Fq "'EXEC GITVREF HISTREPORT' rest" "$g"
 grep -Fq "'EXEC GITVREF HISTEDGE' rest" "$g"
 grep -Fq "command='HISTCHG'" "$v"
 grep -Fq "HISTORYCHANGES FULL SNAPSHOTS VERIFIED" "$v"
@@ -188,6 +190,11 @@ grep -Fq "HISTORYDIFFS NEAREST CHANGE DEPTH' schangemin" "$v"
 grep -Fq "HISTORYDIFFS FARTHEST CHANGE DEPTH' schangemax" "$v"
 grep -Fq "statetrans:" "$v"
 grep -Fq "HISTORYTRANSITIONS FULL SNAPSHOTS VERIFIED" "$v"
+grep -Fq "statereport:" "$v"
+grep -Fq "HISTORYREPORT FULL SNAPSHOTS VERIFIED" "$v"
+grep -Fq "HISTORYREPORT TRANSITIONS' trpairs" "$v"
+grep -Fq "HISTORYREPORT CHANGE' change 'EDGE' ei" "$v"
+grep -Fq "HISTORYREPORT NEAREST CHANGE DEPTH' schangemin" "$v"
 grep -Fq "HISTORYTRANSITIONS STATE 0 ABSENT" "$v"
 grep -Fq "HISTORYTRANSITIONS TRANSITIONS' trpairs" "$v"
 grep -Fq "HISTORYTRANSITIONS CHANGED TRANSITIONS' trchanged" "$v"
@@ -226,4 +233,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M108 CHANGE-BOUND AND STATE-TRANSITION GUARDS PASSED"
+echo "M110 CONSOLIDATED HISTORY REPORT GUARDS PASSED"

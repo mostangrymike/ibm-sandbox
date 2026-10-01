@@ -1,4 +1,4 @@
-/* M108: read-only REF2 verified path-state transitions. */
+/* M110: read-only REF2 verified consolidated path report. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
@@ -8,7 +8,7 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTEDGE' & command\='HISTDIFF' &,
    command\='HISTSTATE' & command\='HISTLOG' &,
    command\='HISTSTATUS' & command\='HISTNEAR' &,
-   command\='HISTTRANS' then do
+   command\='HISTTRANS' & command\='HISTREPORT' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -17,7 +17,7 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTEDGE' | command='HISTDIFF' |,
    command='HISTSTATE' | command='HISTLOG' |,
    command='HISTSTATUS' | command='HISTNEAR' |,
-   command='HISTTRANS' then do
+   command='HISTTRANS' | command='HISTREPORT' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -25,7 +25,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTCHG' | command='HISTEDGE' |,
    command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTLOG' | command='HISTSTATUS' |,
-   command='HISTNEAR' | command='HISTTRANS' then do
+   command='HISTNEAR' | command='HISTTRANS' |,
+   command='HISTREPORT' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -38,11 +39,12 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTSTATUS' & depth+0>8 then exit 4
  if command='HISTNEAR' & depth+0>8 then exit 4
  if command='HISTTRANS' & depth+0>8 then exit 4
+ if command='HISTREPORT' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
     command='HISTSTATUS' | command='HISTNEAR' |,
-    command='HISTTRANS' then do
+    command='HISTTRANS' | command='HISTREPORT' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -72,7 +74,8 @@ else if command='DAG' then do
 end
 else if command='HISTDIFF' | command='HISTSTATE' |,
         command='HISTLOG' | command='HISTSTATUS' |,
-        command='HISTNEAR' | command='HISTTRANS' then do
+        command='HISTNEAR' | command='HISTTRANS' |,
+        command='HISTREPORT' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -103,7 +106,8 @@ end
 if \ok then exit 8
 if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTLOG' | command='HISTSTATUS' |,
-   command='HISTNEAR' | command='HISTTRANS' then do
+   command='HISTNEAR' | command='HISTTRANS' |,
+   command='HISTREPORT' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -124,6 +128,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTTRANS' then do
   call statetrans
+  exit result
+ end
+ if command='HISTREPORT' then do
+  call statereport
   exit result
  end
  call statediff
@@ -831,6 +839,89 @@ statetrans:
    say 'HISTORYTRANSITIONS TRANSITION' ti 'PARENTOID' sveroid.pv
  end
  say 'HISTORYTRANSITIONS DATA END'
+ return 0
+
+
+statereport:
+ call stateclass
+ if result\='OK' then return 8
+ call statepairs
+ if result\='OK' then return 8
+ say 'VERIFIED REF' spec oid
+ say 'HISTORYREPORT FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYREPORT DATA BEGIN'
+ say 'HISTORYREPORT STATUS' diffstatus
+ say 'HISTORYREPORT PATH STATUS' slifecycle
+ say 'HISTORYREPORT PRESENT' spresentcount
+ say 'HISTORYREPORT ABSENT' sabsecount
+ say 'HISTORYREPORT VERSIONS' sversions
+ say 'HISTORYREPORT STATE 0 ABSENT'
+ do vi=1 to sversions
+  say 'HISTORYREPORT STATE' vi 'PRESENT OID' sveroid.vi
+  say 'HISTORYREPORT STATE' vi 'TYPE' svertype.vi,
+      'SIZE' sversize.vi
+  say 'HISTORYREPORT STATE' vi 'COUNT' svercount.vi,
+      'MINDEPTH' svermin.vi 'MAXDEPTH' svermax.vi
+ end
+ say 'HISTORYREPORT NODES' snodes
+ say 'HISTORYREPORT EDGES' sedgecount
+ say 'HISTORYREPORT TRANSITIONS' trpairs
+ say 'HISTORYREPORT CHANGED TRANSITIONS' trchanged
+ say 'HISTORYREPORT CHANGED EDGES' schanged
+ say 'HISTORYREPORT ADDED EDGES' sadd
+ say 'HISTORYREPORT DELETED EDGES' sdelete
+ say 'HISTORYREPORT MODIFIED EDGES' smodify
+ say 'HISTORYREPORT UNCHANGED EDGES' sunchanged
+ if schanged>0 then do
+  say 'HISTORYREPORT NEAREST CHANGE DEPTH' schangemin
+  say 'HISTORYREPORT FARTHEST CHANGE DEPTH' schangemax
+  say 'HISTORYREPORT NEAREST CHANGES' snearcount
+ end
+ do ti=1 to trpairs
+  cv=trchild.ti
+  pv=trparent.ti
+  say 'HISTORYREPORT TRANSITION' ti 'CHILDSTATE' cv,
+      'PARENTSTATE' pv 'COUNT' trcount.ti
+  say 'HISTORYREPORT TRANSITION' ti 'STATUS' trstatus.ti
+  if cv>0 then,
+   say 'HISTORYREPORT TRANSITION' ti 'CHILDOID' sveroid.cv
+  if pv>0 then,
+   say 'HISTORYREPORT TRANSITION' ti 'PARENTOID' sveroid.pv
+ end
+ change=0
+ do ei=1 to sedgecount
+  if sstatus.ei='UNCHANGED' then iterate
+  ec=sedgechild.ei
+  ep=sedgeparent.ei
+  change=change+1
+  say 'HISTORYREPORT CHANGE' change 'EDGE' ei,
+      'STATUS' sstatus.ei
+  say 'HISTORYREPORT CHANGE' change 'CHILD' ec 'PARENT' ep
+  say 'HISTORYREPORT CHANGE' change 'CHILDDEPTH' sdepth.ec,
+      'PARENTDEPTH' sdepth.ep
+  say 'HISTORYREPORT CHANGE' change 'CHILDCOMMIT' scommit.ec
+  say 'HISTORYREPORT CHANGE' change 'PARENTCOMMIT' scommit.ep
+  say 'HISTORYREPORT CHANGE' change 'CHILDTREE' stree.ec
+  say 'HISTORYREPORT CHANGE' change 'PARENTTREE' stree.ep
+  if spresent.ec=1 then cs='PRESENT'
+  else cs='ABSENT'
+  if spresent.ep=1 then ps='PRESENT'
+  else ps='ABSENT'
+  say 'HISTORYREPORT CHANGE' change 'CHILDSTATE' cs,
+      'PARENTSTATE' ps
+  if spresent.ec=1 then do
+   say 'HISTORYREPORT CHANGE' change 'CHILDOID' soid.ec
+   say 'HISTORYREPORT CHANGE' change 'CHILDTYPE' stype.ec,
+       'SIZE' ssize.ec
+  end
+  if spresent.ep=1 then do
+   say 'HISTORYREPORT CHANGE' change 'PARENTOID' soid.ep
+   say 'HISTORYREPORT CHANGE' change 'PARENTTYPE' stype.ep,
+       'SIZE' ssize.ep
+  end
+ end
+ if change\=schanged then return 8
+ say 'HISTORYREPORT DATA END'
  return 0
 
 statediff:
