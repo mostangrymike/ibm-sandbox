@@ -6,20 +6,21 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='DAG' & command\='READ' & command\='DIR' &,
    command\='HISTPATH' & command\='HISTCHG' &,
    command\='HISTEDGE' & command\='HISTDIFF' &,
-   command\='HISTSTATE' then do
+   command\='HISTSTATE' & command\='HISTLOG' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
 if spec='' then exit 4
 if command='HISTPATH' | command='HISTCHG' |,
    command='HISTEDGE' | command='HISTDIFF' |,
-   command='HISTSTATE' then do
+   command='HISTSTATE' | command='HISTLOG' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
 if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTCHG' | command='HISTEDGE' |,
-   command='HISTDIFF' | command='HISTSTATE' then do
+   command='HISTDIFF' | command='HISTSTATE' |,
+   command='HISTLOG' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -28,9 +29,10 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTEDGE' & depth+0>8 then exit 4
  if command='HISTDIFF' & depth+0>8 then exit 4
  if command='HISTSTATE' & depth+0>8 then exit 4
+ if command='HISTLOG' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
-    command='HISTSTATE' then do
+    command='HISTSTATE' | command='HISTLOG' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -58,7 +60,8 @@ else if command='DAG' then do
  cmd='GITREC LOGDAGFULL GITFIX M15NEW' oid depth
  marker='LOGDAG FULL SNAPSHOTS VERIFIED'
 end
-else if command='HISTDIFF' | command='HISTSTATE' then do
+else if command='HISTDIFF' | command='HISTSTATE' |,
+        command='HISTLOG' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -87,11 +90,16 @@ do i=1 to out.0
  if pos(marker,out.i)>0 then ok=1
 end
 if \ok then exit 8
-if command='HISTDIFF' | command='HISTSTATE' then do
+if command='HISTDIFF' | command='HISTSTATE' |,
+   command='HISTLOG' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
   call stateemit
+  exit result
+ end
+ if command='HISTLOG' then do
+  call statelog
   exit result
  end
  call statediff
@@ -530,6 +538,60 @@ stateemit:
       'PARENT' sedgeparent.ei
  end
  say 'HISTORYSTATE DATA END'
+ return 0
+
+
+statelog:
+ changes=0
+ drop lstatus.
+ do ei=1 to sedgecount
+  ec=sedgechild.ei
+  ep=sedgeparent.ei
+  cp=spresent.ec
+  pp=spresent.ep
+  if cp=1 & pp=1 then do
+   if soid.ec=soid.ep then lstatus.ei='UNCHANGED'
+   else lstatus.ei='MODIFIED'
+  end
+  else if cp=1 & pp=0 then lstatus.ei='ADDED'
+  else if cp=0 & pp=1 then lstatus.ei='DELETED'
+  else lstatus.ei='UNCHANGED'
+  if lstatus.ei\='UNCHANGED' then changes=changes+1
+ end
+ say 'VERIFIED REF' spec oid
+ say 'HISTORYLOG FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYLOG DATA BEGIN'
+ say 'HISTORYLOG NODES' snodes
+ say 'HISTORYLOG EDGES' sedgecount
+ say 'HISTORYLOG CHANGES' changes
+ do ei=1 to sedgecount
+  if lstatus.ei='UNCHANGED' then iterate
+  ec=sedgechild.ei
+  ep=sedgeparent.ei
+  say 'HISTORYLOG CHANGE' ei 'STATUS' lstatus.ei
+  say 'HISTORYLOG CHANGE' ei 'CHILD' ec 'PARENT' ep
+  say 'HISTORYLOG CHANGE' ei 'CHILDDEPTH' sdepth.ec,
+      'PARENTDEPTH' sdepth.ep
+  say 'HISTORYLOG CHANGE' ei 'CHILDCOMMIT' scommit.ec
+  say 'HISTORYLOG CHANGE' ei 'PARENTCOMMIT' scommit.ep
+  if spresent.ec=1 then cs='PRESENT'
+  else cs='ABSENT'
+  if spresent.ep=1 then ps='PRESENT'
+  else ps='ABSENT'
+  say 'HISTORYLOG CHANGE' ei 'CHILDSTATE' cs,
+      'PARENTSTATE' ps
+  if spresent.ec=1 then do
+   say 'HISTORYLOG CHANGE' ei 'CHILDOID' soid.ec
+   say 'HISTORYLOG CHANGE' ei 'CHILDTYPE' stype.ec,
+       'SIZE' ssize.ec
+  end
+  if spresent.ep=1 then do
+   say 'HISTORYLOG CHANGE' ei 'PARENTOID' soid.ep
+   say 'HISTORYLOG CHANGE' ei 'PARENTTYPE' stype.ep,
+       'SIZE' ssize.ep
+  end
+ end
+ say 'HISTORYLOG DATA END'
  return 0
 
 statediff:

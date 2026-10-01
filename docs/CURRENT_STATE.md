@@ -586,3 +586,7 @@ Actual z/VM 4.4 CMS validation passed after `CMSCLNK GITREC PLAIN` completed wit
 - `HISTORYDIFFS-REF-FULL HEAD 1 src/M9JOBJ.EXEC`: MIXED, CHANGED, exactly one ADDED edge, child PRESENT / parent ABSENT, expected child blob/type/size and snapshot metadata; 115.52 CPU / 118.43 elapsed.
 
 Therefore M94-M99 are NATIVE CMS TARGET-PROVEN for authenticated PRESENT/ABSENT history plus UNCHANGED, MODIFIED, and ADDED edge classification. DELETED remains implemented and host-CI-proven but has no deletion fixture in the current depth-8 reachable window.
+
+## M100: authenticated path change log
+
+M100 adds `GIT HISTORYLOG-REF-FULL <ref> <depth> <path>`. It reuses the native CMS-target-proven HISTORYDAGSTATE graph and strict state parser, then emits only child-to-parent edges whose authenticated path state or PATHOID changes. Records are explicitly edge-oriented, not chronological claims: each change includes status ADDED/DELETED/MODIFIED, child/parent node and depth, child/parent commit, PRESENT/ABSENT state, and OID/type/size for present endpoints. Unchanged edges are counted in the verified graph but omitted from the concise log. No native C or protected-data changes.
