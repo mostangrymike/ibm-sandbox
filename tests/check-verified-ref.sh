@@ -1,13 +1,15 @@
 #!/bin/sh
-# M80 verified-ref bridge must stay read-only and CMS-record-safe.
+# M83 verified-ref bridge must stay read-only and CMS-record-safe.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
 g="$root/src/GIT.EXEC"
 r="$root/src/GITREF2.REPO"
+rec="$root/src/GITREC.C"
 test -s "$v"
 test -s "$g"
 test -s "$r"
+test -s "$rec"
 grep -Fxq "REF2 1" "$r"
 grep -Fxq "HEAD refs/heads/main" "$r"
 grep -Fxq "REF refs/heads/main 00D8D63229305230C8D37F884CE87F9E1A89468C" "$r"
@@ -86,6 +88,18 @@ grep -Fq "freq.vi=freq.vi+1" "$v"
 grep -Fq "pathoids\\=nodes" "$v"
 grep -Fq "GITREC HISTORYDAGPATH GITFIX M15NEW" "$v"
 grep -Fq "HISTORYDAGPATH FULL SNAPSHOTS VERIFIED" "$v"
+grep -Fq "HISTORYDAGPATH EDGE CHILD %u PARENT %u" "$rec"
+grep -Fq "HISTORYDAGPATH EDGES %u" "$rec"
+grep -Fq "edge[head][pidx]=1" "$rec"
+grep -Fq "nodeversion.curnode=vi" "$v"
+grep -Fq "edgekey.ec.ep=1" "$v"
+grep -Fq "parentseen.ep=1" "$v"
+grep -Fq "if parentseen.1=1 then return 'ERROR'" "$v"
+grep -Fq "HISTORYCHANGES CHANGED EDGES" "$v"
+grep -Fq "HISTORYCHANGES UNCHANGED EDGES" "$v"
+grep -Fq "CHILDVERSION' edgecv.ei" "$v"
+grep -Fq "PARENTVERSION' edgepv.ei" "$v"
+grep -Fq "STATUS' edgestatus.ei" "$v"
 grep -Fq "GITREC LOGDAGFULL GITFIX M15NEW" "$v"
 grep -Fq "LOGDAG FULL SNAPSHOTS VERIFIED" "$v"
 grep -Fq "GITREC LOGFULL GITFIX M15NEW" "$v"
@@ -108,4 +122,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M80 VERIFIED REF2 SNAPSHOT-MEMBERSHIP GUARDS PASSED"
+echo "M83 VERIFIED REF2 PATH-EDGE CHANGE GUARDS PASSED"
