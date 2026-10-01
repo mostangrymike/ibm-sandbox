@@ -584,6 +584,7 @@ statediff:
  say 'HISTORYDIFFS PATH STATUS' slifecycle
  say 'HISTORYDIFFS PRESENT' spresentcount
  say 'HISTORYDIFFS ABSENT' sabsecount
+ say 'HISTORYDIFFS VERSIONS' sversions
  say 'HISTORYDIFFS NODES' snodes
  say 'HISTORYDIFFS EDGES' sedgecount
  say 'HISTORYDIFFS CHANGED EDGES' schanged
