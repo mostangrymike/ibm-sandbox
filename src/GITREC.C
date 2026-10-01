@@ -1111,6 +1111,7 @@ static int rec_history_first_state(const unsigned char *starting,
   if(rc!=0) return rc;
   if(hop<depth) memcpy(commits[hop+1],next,20);
  }
+ puts("HISTORYFIRSTSTATE FULL SNAPSHOTS VERIFIED");
  return 0;
 }
 
