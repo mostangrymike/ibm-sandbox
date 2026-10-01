@@ -141,6 +141,16 @@ if command='HISTCHG' | command='HISTEDGE' |,
   tsum=tsum+paircount.ti
  end
  if tsum\=edgecount then exit 8
+ changedpairs=0
+ drop changepair.
+ do ti=1 to pairs
+  if pairchild.ti\=pairparent.ti then do
+   changedpairs=changedpairs+1
+   changepair.changedpairs=ti
+  end
+ end
+ if changededges=0 & changedpairs\=0 then exit 8
+ if changededges>0 & changedpairs=0 then exit 8
  if distinct=1 & changededges\=0 then exit 8
  if distinct>1 & changededges=0 then exit 8
  if command='HISTDIFF' then do
