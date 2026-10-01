@@ -547,6 +547,7 @@ stateemit:
  say 'HISTORYSTATE PRESENT' spresentcount
  say 'HISTORYSTATE ABSENT' sabsecount
  say 'HISTORYSTATE VERSIONS' sversions
+ say 'HISTORYSTATE VERSION 0 STATE ABSENT COUNT' sabsecount
  do vi=1 to sversions
   say 'HISTORYSTATE VERSION' vi 'OID' sveroid.vi,
       'COUNT' svercount.vi 'MINDEPTH' svermin.vi,
@@ -556,6 +557,7 @@ stateemit:
  end
  say 'HISTORYSTATE NODES' snodes
  say 'HISTORYSTATE EDGES' sedgecount
+ say 'HISTORYSTATE TRANSITIONS' stpairs
  do ni=1 to snodes
   say 'HISTORYSTATE NODE' ni 'DEPTH' sdepth.ni
   say 'HISTORYSTATE NODE' ni 'COMMIT' scommit.ni
