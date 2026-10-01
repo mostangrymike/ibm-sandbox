@@ -73,6 +73,10 @@ if command = 'HISTORYDIFFS-REF-FULL' then do
    'EXEC GITVREF HISTDIFF' rest
    exit rc
 end
+if command = 'HISTORYSTATE-REF-FULL' then do
+   'EXEC GITVREF HISTSTATE' rest
+   exit rc
+end
 if command = 'READ-REF-FULL' then do
    'EXEC GITVREF READ' rest
    exit rc
