@@ -1131,6 +1131,7 @@ static int rec_history_first_state(const unsigned char *starting,
  for(j=0;j<depth;j++)
   printf("HISTORYFIRSTSTATE EDGE CHILD %u PARENT %u\n",
          j+1,j+2);
+ printf("HISTORYFIRSTSTATE EDGES %u\n",depth);
  return 0;
 }
 
