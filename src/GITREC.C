@@ -965,7 +965,7 @@ static int rec_history_dag_path(const unsigned char *starting,
 }
 
 
-/* M94: all-parent history with authenticated PRESENT/ABSENT path state. */
+/* M94: all-parent history with authenticated path state. */
 static int rec_history_dag_state(const unsigned char *starting,
                                 unsigned int depth,
                                 const unsigned char *path,
@@ -1047,10 +1047,13 @@ static int rec_history_dag_state(const unsigned char *starting,
   idx_print(stdout,commits[j]);putchar('\n');
   fputs("HISTORYDAGSTATE TREE ",stdout);
   idx_print(stdout,trees[j]);putchar('\n');
-  printf("HISTORYDAGSTATE PATH TYPE %d SIZE %lu\n",
-         types[j],sizes[j]);
-  fputs("HISTORYDAGSTATE PATHOID ",stdout);
-  idx_print(stdout,results[j]);putchar('\n');
+  if(present[j]) {
+   printf("HISTORYDAGSTATE PATH PRESENT TYPE %d SIZE %lu\n",
+          types[j],sizes[j]);
+   fputs("HISTORYDAGSTATE PATHOID ",stdout);
+   idx_print(stdout,results[j]);putchar('\n');
+  }
+  else puts("HISTORYDAGSTATE PATH ABSENT");
  }
  for(j=0;j<count;j++)
   for(k=0;k<count;k++)
