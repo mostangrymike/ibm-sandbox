@@ -223,6 +223,7 @@ changecheck:
  drop seen. seencommit. version. freq. mindepth. maxdepth.
  drop mincommit. maxcommit. vtype. vsize. depthseen.
  drop vcommit. vdepth. vnode. vtree. nodeversion.
+ drop nodecommit. nodedepth. nodetree.
  drop edgechild. edgeparent. edgekey. parentseen.
  curnode=-1
  curdepth=-1
@@ -327,6 +328,9 @@ changecheck:
     end
    end
    nodeversion.curnode=vi
+   nodecommit.curnode=curcommit
+   nodedepth.curnode=curdepth
+   nodetree.curnode=curtree
   end
   if words(out.ci)=6 & word(out.ci,1)='HISTORYDAGPATH' &,
      word(out.ci,2)='EDGE' then do
