@@ -136,6 +136,11 @@ if command='HISTCHG' | command='HISTEDGE' |,
   else paircount.ti=paircount.ti+1
  end
  if changededges+unchangededges\=edgecount then exit 8
+ tsum=0
+ do ti=1 to pairs
+  tsum=tsum+paircount.ti
+ end
+ if tsum\=edgecount then exit 8
  if distinct=1 & changededges\=0 then exit 8
  if distinct>1 & changededges=0 then exit 8
  if command='HISTEDGE' then do
