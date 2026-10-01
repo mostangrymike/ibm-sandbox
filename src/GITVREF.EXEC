@@ -1,23 +1,25 @@
-/* M96: read-only REF2 verified path-state edge analysis. */
+/* M97: read-only REF2 verified path-state history and diffs. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='DAG' & command\='READ' & command\='DIR' &,
    command\='HISTPATH' & command\='HISTCHG' &,
-   command\='HISTEDGE' & command\='HISTDIFF' then do
+   command\='HISTEDGE' & command\='HISTDIFF' &,
+   command\='HISTSTATE' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
 if spec='' then exit 4
 if command='HISTPATH' | command='HISTCHG' |,
-   command='HISTEDGE' | command='HISTDIFF' then do
+   command='HISTEDGE' | command='HISTDIFF' |,
+   command='HISTSTATE' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
 if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTCHG' | command='HISTEDGE' |,
-   command='HISTDIFF' then do
+   command='HISTDIFF' | command='HISTSTATE' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -25,8 +27,10 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTCHG' & depth+0>8 then exit 4
  if command='HISTEDGE' & depth+0>8 then exit 4
  if command='HISTDIFF' & depth+0>8 then exit 4
+ if command='HISTSTATE' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
-    command='HISTEDGE' | command='HISTDIFF' then do
+    command='HISTEDGE' | command='HISTDIFF' |,
+    command='HISTSTATE' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -54,7 +58,7 @@ else if command='DAG' then do
  cmd='GITREC LOGDAGFULL GITFIX M15NEW' oid depth
  marker='LOGDAG FULL SNAPSHOTS VERIFIED'
 end
-else if command='HISTDIFF' then do
+else if command='HISTDIFF' | command='HISTSTATE' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -83,9 +87,13 @@ do i=1 to out.0
  if pos(marker,out.i)>0 then ok=1
 end
 if \ok then exit 8
-if command='HISTDIFF' then do
+if command='HISTDIFF' | command='HISTSTATE' then do
  call statecheck
  if result\='OK' then exit 8
+ if command='HISTSTATE' then do
+  call stateemit
+  exit result
+ end
  call statediff
  exit result
 end
