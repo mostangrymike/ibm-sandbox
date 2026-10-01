@@ -449,6 +449,51 @@ statecheck:
  return 'OK'
 
 
+
+stateversions:
+ spresentcount=0
+ sabsecount=0
+ do ni=1 to snodes
+  if spresent.ni=1 then spresentcount=spresentcount+1
+  else sabsecount=sabsecount+1
+ end
+ if spresentcount+sabsecount\=snodes then return 'ERROR'
+ drop sverseen. sveroid. svercount. svermin. svermax.
+ drop svertype. sversize.
+ sversions=0
+ do ni=1 to snodes
+  if spresent.ni=0 then iterate
+  poid=soid.ni
+  vi=sverseen.poid
+  if datatype(vi,'W')\=1 then do
+   sversions=sversions+1
+   vi=sversions
+   sverseen.poid=vi
+   sveroid.vi=poid
+   svercount.vi=1
+   svermin.vi=sdepth.ni
+   svermax.vi=sdepth.ni
+   svertype.vi=stype.ni
+   sversize.vi=ssize.ni
+  end
+  else do
+   if svertype.vi\=stype.ni | sversize.vi\=ssize.ni then,
+    return 'ERROR'
+   svercount.vi=svercount.vi+1
+   if sdepth.ni<svermin.vi then svermin.vi=sdepth.ni
+   if sdepth.ni>svermax.vi then svermax.vi=sdepth.ni
+  end
+ end
+ vtotal=0
+ do vi=1 to sversions
+  vtotal=vtotal+svercount.vi
+ end
+ if vtotal\=spresentcount then return 'ERROR'
+ if spresentcount=snodes then slifecycle='ALLPRESENT'
+ else if sabsecount=snodes then slifecycle='ALLABSENT'
+ else slifecycle='MIXED'
+ return 'OK'
+
 stateemit:
  spresentcount=0
  sabsecount=0
