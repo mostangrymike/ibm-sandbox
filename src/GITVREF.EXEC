@@ -549,6 +549,56 @@ stateemit:
  return 0
 
 
+
+statestatus:
+ spresentcount=0
+ sabsecount=0
+ sadd=0
+ sdelete=0
+ smodify=0
+ sunchanged=0
+ do ni=1 to snodes
+  if spresent.ni=1 then spresentcount=spresentcount+1
+  else sabsecount=sabsecount+1
+ end
+ if spresentcount+sabsecount\=snodes then return 8
+ do ei=1 to sedgecount
+  ec=sedgechild.ei
+  ep=sedgeparent.ei
+  cp=spresent.ec
+  pp=spresent.ep
+  if cp=1 & pp=1 then do
+   if soid.ec=soid.ep then sunchanged=sunchanged+1
+   else smodify=smodify+1
+  end
+  else if cp=1 & pp=0 then sadd=sadd+1
+  else if cp=0 & pp=1 then sdelete=sdelete+1
+  else sunchanged=sunchanged+1
+ end
+ schanged=sadd+sdelete+smodify
+ if schanged+sunchanged\=sedgecount then return 8
+ if spresentcount=snodes then slifecycle='ALLPRESENT'
+ else if sabsecount=snodes then slifecycle='ALLABSENT'
+ else slifecycle='MIXED'
+ if schanged=0 then diffstatus='UNCHANGED'
+ else diffstatus='CHANGED'
+ say 'VERIFIED REF' spec oid
+ say 'HISTORYSTATUS FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYSTATUS DATA BEGIN'
+ say 'HISTORYSTATUS STATUS' diffstatus
+ say 'HISTORYSTATUS PATH STATUS' slifecycle
+ say 'HISTORYSTATUS PRESENT' spresentcount
+ say 'HISTORYSTATUS ABSENT' sabsecount
+ say 'HISTORYSTATUS NODES' snodes
+ say 'HISTORYSTATUS EDGES' sedgecount
+ say 'HISTORYSTATUS CHANGED EDGES' schanged
+ say 'HISTORYSTATUS ADDED EDGES' sadd
+ say 'HISTORYSTATUS DELETED EDGES' sdelete
+ say 'HISTORYSTATUS MODIFIED EDGES' smodify
+ say 'HISTORYSTATUS UNCHANGED EDGES' sunchanged
+ say 'HISTORYSTATUS DATA END'
+ return 0
+
 statelog:
  changes=0
  drop lstatus.
