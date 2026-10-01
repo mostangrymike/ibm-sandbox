@@ -491,10 +491,13 @@ stateversions:
  end
  if spresentcount+sabsecount\=snodes then return 'ERROR'
  drop sverseen. sveroid. svercount. svermin. svermax.
- drop svertype. sversize.
+ drop svertype. sversize. snodever.
  sversions=0
  do ni=1 to snodes
-  if spresent.ni=0 then iterate
+  if spresent.ni=0 then do
+   snodever.ni=0
+   iterate
+  end
   poid=soid.ni
   vi=sverseen.poid
   if datatype(vi,'W')\=1 then do
@@ -507,6 +510,7 @@ stateversions:
    svermax.vi=sdepth.ni
    svertype.vi=stype.ni
    sversize.vi=ssize.ni
+   snodever.ni=vi
   end
   else do
    if svertype.vi\=stype.ni | sversize.vi\=ssize.ni then,
@@ -514,6 +518,7 @@ stateversions:
    svercount.vi=svercount.vi+1
    if sdepth.ni<svermin.vi then svermin.vi=sdepth.ni
    if sdepth.ni>svermax.vi then svermax.vi=sdepth.ni
+   snodever.ni=vi
   end
  end
  vtotal=0
@@ -521,6 +526,10 @@ stateversions:
   vtotal=vtotal+svercount.vi
  end
  if vtotal\=spresentcount then return 'ERROR'
+ do ni=1 to snodes
+  if datatype(snodever.ni,'W')\=1 then return 'ERROR'
+  if snodever.ni<0 | snodever.ni>sversions then return 'ERROR'
+ end
  if spresentcount=snodes then slifecycle='ALLPRESENT'
  else if sabsecount=snodes then slifecycle='ALLABSENT'
  else slifecycle='MIXED'
