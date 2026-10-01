@@ -1128,6 +1128,8 @@ static int rec_history_first_state(const unsigned char *starting,
   fputs("HISTORYFIRSTSTATE TREE ",stdout);
   idx_print(stdout,trees[j]);putchar('\n');
   if(present[j]) {
+   printf("HISTORYFIRSTSTATE PATH PRESENT TYPE %d SIZE %lu\n",
+          types[j],sizes[j]);
   }
   if(!present[j]) puts("HISTORYFIRSTSTATE PATH ABSENT");
  }
