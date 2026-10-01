@@ -775,6 +775,90 @@ static int rec_root_path_meta(const unsigned char *root,
  return 8;
 }
 
+/* M94: authenticate one path state, including verified absence. */
+static int rec_root_path_state(const unsigned char *root,
+                               const unsigned char *path,
+                               unsigned long length,
+                               unsigned char found[20],
+                               int *found_type,
+                               unsigned long *found_size,
+                               int *present) {
+ unsigned char next[20];
+ unsigned long start=0,end,at,ms,ml,ns,nl,sz;
+ int pos,rc,type,islink;
+ *present=0;
+ memcpy(next,root,20);
+ while(start<length) {
+  end=start;
+  while(end<length&&path[end]!=0x2f) end++;
+  pos=sidx_locate(next);
+  if(pos<0) {
+   puts("HISTORYDAGSTATE TREE NOT FOUND");return 4;
+  }
+  if(sidx[pos].type!=2) {
+   puts("HISTORYDAGSTATE COMPONENT NOT TREE");return 8;
+  }
+  sz=sidx[pos].size;
+  sidx_silent=1;
+  rc=sidx_get(next);
+  sidx_silent=0;
+  if(rc!=0) return rc;
+  if(!rec_tree_walk(sz,0)) {
+   puts("HISTORYDAGSTATE TREE INVALID");return 8;
+  }
+  at=0;pos=-1;type=0;islink=0;
+  while(at<sz) {
+   ms=at;
+   while(at<sz&&idx_body[at]!=0x20) at++;
+   ml=at-ms;at++;
+   ns=at;
+   while(at<sz&&idx_body[at]!=0) at++;
+   nl=at-ns;at++;
+   if(nl==end-start&&
+      memcmp(idx_body+ns,path+start,(size_t)nl)==0) {
+    islink=(ml==6&&
+      memcmp(idx_body+ms,"\x31\x36\x30\x30\x30\x30",6)==0);
+    type=(ml==5)?2:(islink?1:3);
+    memcpy(found,idx_body+at,20);
+    pos=1;break;
+   }
+   at+=20;
+  }
+  if(pos<0) return 0;
+  if(end<length) {
+   if(type!=2) return 0;
+   memcpy(next,found,20);
+   start=end+1;
+   continue;
+  }
+  if(islink) {
+   *present=1;
+   *found_type=1;
+   *found_size=0;
+   return 0;
+  }
+  pos=sidx_locate(found);
+  if(pos<0) {
+   puts("HISTORYDAGSTATE OBJECT NOT FOUND");return 4;
+  }
+  if(sidx[pos].type!=type) {
+   puts("HISTORYDAGSTATE OBJECT TYPE MISMATCH");return 8;
+  }
+  *found_type=type;
+  *found_size=sidx[pos].size;
+  sidx_silent=1;
+  rc=sidx_get(found);
+  sidx_silent=0;
+  if(rc!=0) return rc;
+  if(type==2&&!rec_tree_walk(*found_size,0)) {
+   puts("HISTORYDAGSTATE RESULT TREE INVALID");return 8;
+  }
+  *present=1;
+  return 0;
+ }
+ return 8;
+}
+
 /* M59: all-parent history where every snapshot and named path
  * must authenticate before any node/path metadata is released.
  */
