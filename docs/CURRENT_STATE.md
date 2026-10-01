@@ -527,3 +527,9 @@ HISTORYPATH also passed and preserved the previously proven output surface with 
 Real CMS `GIT HISTORYEDGES-REF-FULL HEAD 1 README.md` passed with authenticated edge endpoint metadata: child depth 0, parent depth 1, child commit `00D8D63229305230C8D37F884CE87F9E1A89468C`, parent commit `2D5038C551318997B865497E04CF4C037DE4135E`, child tree `204E1D6968FB81C35BF830D63A611AC64C072945`, and parent tree `F3EF36AAD778D5DA84857D8DED46495C75F4CAB0`. Edge 1 remained child node 1 -> parent node 2, version 1 -> 1, status UNCHANGED. CPU 115.72 / elapsed 118.63 sec at 12:50:24.
 
 `GIT HISTORYCHANGES-REF-FULL HEAD 1 README.md` also emitted the same authenticated edge endpoint metadata while preserving the existing M80-M86 path-version and snapshot-membership report. M87 is now NATIVE CMS TARGET-PROVEN.
+
+## M88-M90: transition matrix and changed-edge report
+
+M87 native CMS passed on 2026-10-01. M88 aggregates the already authenticated edge graph into a version-transition matrix: each distinct child-version -> parent-version pair carries an exact edge count, and the matrix total must equal the verified native edge count before trusted output. HISTORYEDGES and HISTORYCHANGES now emit `TRANSITIONS N` plus bounded `TRANSITION N CHILDVERSION x PARENTVERSION y COUNT n` records.
+
+M89 adds `GIT HISTORYDIFFS-REF-FULL <ref> <depth> <path>`. It reuses the same target-proven HISTORYDAGPATH traversal and all M80-M87 parsing, graph, membership, endpoint, and status checks, but emits only edges whose authenticated child and parent PATHOID versions differ. An unchanged window succeeds with `HISTORYDIFFS CHANGED EDGES 0` and no edge records; a changed window emits only the changed edges with node, version, depth, commit, and tree endpoint metadata. M90 locks both features behind the existing fail-closed atomic output path. No native C, REF2 data, selector, sealed generation, or PACK changes are involved; next target gate is EXEC-only.
