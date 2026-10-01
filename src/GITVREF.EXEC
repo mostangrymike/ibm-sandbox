@@ -483,6 +483,11 @@ stateemit:
    if sdepth.ni>svermax.vi then svermax.vi=sdepth.ni
   end
  end
+ vtotal=0
+ do vi=1 to sversions
+  vtotal=vtotal+svercount.vi
+ end
+ if vtotal\=spresentcount then return 8
  if spresentcount=snodes then slifecycle='ALLPRESENT'
  else if sabsecount=snodes then slifecycle='ALLABSENT'
  else slifecycle='MIXED'
