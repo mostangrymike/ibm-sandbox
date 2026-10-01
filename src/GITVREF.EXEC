@@ -81,6 +81,7 @@ if command='HISTCHG' then do
   call depthlist vi
   if result='ERROR' then exit 8
   depthtext.vi=result
+  members=members+freq.vi
   do ci=1 to freq.vi
    if length(vcommit.vi.ci)\=40 then exit 8
    if datatype(vdepth.vi.ci,'W')\=1 then exit 8
