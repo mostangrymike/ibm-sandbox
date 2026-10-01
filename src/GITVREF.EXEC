@@ -124,6 +124,16 @@ if command='HISTCHG' | command='HISTEDGE' |,
    edgestatus.ei='CHANGED'
    changededges=changededges+1
   end
+  tk=cv||'.'||pv
+  ti=pairno.tk
+  if datatype(ti,'W')\=1 then do
+   pairs=pairs+1
+   pairno.tk=pairs
+   pairchild.pairs=cv
+   pairparent.pairs=pv
+   paircount.pairs=1
+  end
+  else paircount.ti=paircount.ti+1
  end
  if changededges+unchangededges\=edgecount then exit 8
  if distinct=1 & changededges\=0 then exit 8
