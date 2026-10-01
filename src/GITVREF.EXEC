@@ -54,8 +54,12 @@ else if command='DAG' then do
  cmd='GITREC LOGDAGFULL GITFIX M15NEW' oid depth
  marker='LOGDAG FULL SNAPSHOTS VERIFIED'
 end
+else if command='HISTDIFF' then do
+ cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
+ marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
+end
 else if command='HISTPATH' | command='HISTCHG' |,
-        command='HISTEDGE' | command='HISTDIFF' then do
+        command='HISTEDGE' then do
  cmd='GITREC HISTORYDAGPATH GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGPATH FULL SNAPSHOTS VERIFIED'
 end
@@ -79,8 +83,13 @@ do i=1 to out.0
  if pos(marker,out.i)>0 then ok=1
 end
 if \ok then exit 8
-if command='HISTCHG' | command='HISTEDGE' |,
-   command='HISTDIFF' then do
+if command='HISTDIFF' then do
+ call statecheck
+ if result\='OK' then exit 8
+ call statediff
+ exit result
+end
+if command='HISTCHG' | command='HISTEDGE' then do
  call changecheck
  if result\='OK' then exit 8
  drop depthtext.
