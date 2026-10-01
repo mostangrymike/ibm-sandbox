@@ -594,3 +594,11 @@ M100 adds `GIT HISTORYLOG-REF-FULL <ref> <depth> <path>`. It reuses the native C
 ## M101: compact authenticated path status
 
 M101 adds `GIT HISTORYSTATUS-REF-FULL <ref> <depth> <path>`. It runs the same CMS-target-proven HISTORYDAGSTATE traversal and strict parser, but emits only a compact verified summary: CHANGED/UNCHANGED, ALLPRESENT/ALLABSENT/MIXED, PRESENT/ABSENT snapshot counts, node/edge counts, and exact ADDED/DELETED/MODIFIED/UNCHANGED edge totals. It is intended for low-noise CMS use when per-edge details are unnecessary. No native C or protected-data changes.
+
+## M100-M101 native CMS target proof
+
+Real CMS proved the EXEC-only M100-M101 batch. HISTORYSTATUS on HEAD/README.md returned UNCHANGED, ALLPRESENT, PRESENT 2, ABSENT 0, NODES 2, EDGES 1, changed/added/deleted/modified 0 and unchanged 1; CPU 115.48 / elapsed 118.33 sec. HISTORYLOG on HEAD/src returned one MODIFIED edge with child path tree A41B3EA7758F301B7E30BD3CFDF264300C02AE35 type 2 size 3690 and parent 884916539208F673916FBD6988DE6B028C355723 type 2 size 3651; CPU 115.33 / elapsed 118.23 sec. HISTORYLOG on HEAD/src/M9JOBJ.EXEC returned one ADDED edge, child PRESENT / parent ABSENT, child blob 775F6C809889E3497D8837379B37A706DFD101CA type 3 size 646; CPU 115.31 / elapsed 118.18 sec. M100-M101 are NATIVE CMS TARGET-PROVEN.
+
+## M102-M105: shared classification and change-depth bounds
+
+The state-aware output paths now share one fail-closed `stateclass` routine after the target-proven HISTORYDAGSTATE parser. It derives lifecycle/version data, exact ADDED/DELETED/MODIFIED/UNCHANGED counts, per-edge status, and the minimum/maximum child depth among changed edges. HISTORYSTATUS, HISTORYLOG and HISTORYDIFFS expose nearest/farthest change-depth records when changes exist. M105 adds `GIT HISTORYNEAREST-REF-FULL <ref> <depth> <path>`, which emits every changed parent edge tied at the minimum child depth. This is explicitly graph distance from the requested ref, not a wall-clock chronology claim. No native C or protected-data changes.
