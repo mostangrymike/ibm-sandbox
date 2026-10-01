@@ -175,10 +175,17 @@ if command='HISTCHG' | command='HISTEDGE' |,
  say 'HISTORYCHANGES CHANGED EDGES' changededges
  say 'HISTORYCHANGES UNCHANGED EDGES' unchangededges
  do ei=1 to edgecount
-  say 'HISTORYCHANGES EDGE' ei 'CHILD' edgechild.ei,
-      'PARENT' edgeparent.ei
+  ec=edgechild.ei
+  ep=edgeparent.ei
+  say 'HISTORYCHANGES EDGE' ei 'CHILD' ec 'PARENT' ep
   say 'HISTORYCHANGES EDGE' ei 'CHILDVERSION' edgecv.ei,
       'PARENTVERSION' edgepv.ei
+  say 'HISTORYCHANGES EDGE' ei 'CHILDDEPTH' nodedepth.ec
+  say 'HISTORYCHANGES EDGE' ei 'PARENTDEPTH' nodedepth.ep
+  say 'HISTORYCHANGES EDGE' ei 'CHILDCOMMIT' nodecommit.ec
+  say 'HISTORYCHANGES EDGE' ei 'PARENTCOMMIT' nodecommit.ep
+  say 'HISTORYCHANGES EDGE' ei 'CHILDTREE' nodetree.ec
+  say 'HISTORYCHANGES EDGE' ei 'PARENTTREE' nodetree.ep
   say 'HISTORYCHANGES EDGE' ei 'STATUS' edgestatus.ei
  end
  do vi=1 to distinct
