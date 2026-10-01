@@ -1,4 +1,4 @@
-/* M105: read-only REF2 verified path-state change bounds. */
+/* M108: read-only REF2 verified path-state transitions. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
@@ -7,7 +7,8 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTPATH' & command\='HISTCHG' &,
    command\='HISTEDGE' & command\='HISTDIFF' &,
    command\='HISTSTATE' & command\='HISTLOG' &,
-   command\='HISTSTATUS' & command\='HISTNEAR' then do
+   command\='HISTSTATUS' & command\='HISTNEAR' &,
+   command\='HISTTRANS' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -15,7 +16,8 @@ if spec='' then exit 4
 if command='HISTPATH' | command='HISTCHG' |,
    command='HISTEDGE' | command='HISTDIFF' |,
    command='HISTSTATE' | command='HISTLOG' |,
-   command='HISTSTATUS' | command='HISTNEAR' then do
+   command='HISTSTATUS' | command='HISTNEAR' |,
+   command='HISTTRANS' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -23,7 +25,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTCHG' | command='HISTEDGE' |,
    command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTLOG' | command='HISTSTATUS' |,
-   command='HISTNEAR' then do
+   command='HISTNEAR' | command='HISTTRANS' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -35,10 +37,12 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTLOG' & depth+0>8 then exit 4
  if command='HISTSTATUS' & depth+0>8 then exit 4
  if command='HISTNEAR' & depth+0>8 then exit 4
+ if command='HISTTRANS' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
-    command='HISTSTATUS' | command='HISTNEAR' then do
+    command='HISTSTATUS' | command='HISTNEAR' |,
+    command='HISTTRANS' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -68,7 +72,7 @@ else if command='DAG' then do
 end
 else if command='HISTDIFF' | command='HISTSTATE' |,
         command='HISTLOG' | command='HISTSTATUS' |,
-        command='HISTNEAR' then do
+        command='HISTNEAR' | command='HISTTRANS' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -99,7 +103,7 @@ end
 if \ok then exit 8
 if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTLOG' | command='HISTSTATUS' |,
-   command='HISTNEAR' then do
+   command='HISTNEAR' | command='HISTTRANS' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -116,6 +120,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTNEAR' then do
   call statenear
+  exit result
+ end
+ if command='HISTTRANS' then do
+  call statetrans
   exit result
  end
  call statediff
