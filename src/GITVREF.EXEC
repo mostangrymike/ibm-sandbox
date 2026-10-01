@@ -497,6 +497,14 @@ stateemit:
  say 'HISTORYSTATE STATUS' slifecycle
  say 'HISTORYSTATE PRESENT' spresentcount
  say 'HISTORYSTATE ABSENT' sabsecount
+ say 'HISTORYSTATE VERSIONS' sversions
+ do vi=1 to sversions
+  say 'HISTORYSTATE VERSION' vi 'OID' sveroid.vi,
+      'COUNT' svercount.vi 'MINDEPTH' svermin.vi,
+      'MAXDEPTH' svermax.vi
+  say 'HISTORYSTATE VERSION' vi 'TYPE' svertype.vi,
+      'SIZE' sversize.vi
+ end
  say 'HISTORYSTATE NODES' snodes
  say 'HISTORYSTATE EDGES' sedgecount
  do ni=1 to snodes
