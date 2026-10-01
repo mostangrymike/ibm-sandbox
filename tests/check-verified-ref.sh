@@ -1,5 +1,5 @@
 #!/bin/sh
-# M90 verified-ref bridge must stay read-only and CMS-record-safe.
+# M93 verified-ref bridge must stay read-only and CMS-record-safe.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -122,6 +122,16 @@ grep -Fq "HISTORYEDGES TRANSITIONS" "$v"
 grep -Fq "HISTORYCHANGES TRANSITIONS" "$v"
 grep -Fq "HISTORYDIFFS FULL SNAPSHOTS VERIFIED" "$v"
 grep -Fq "HISTORYDIFFS CHANGED EDGES" "$v"
+grep -Fq "HISTORYDIFFS STATUS" "$v"
+grep -Fq "HISTORYDIFFS TRANSITIONS" "$v"
+grep -Fq "HISTORYDIFFS EDGE' ei 'CHILDOID' version.cv" "$v"
+grep -Fq "HISTORYDIFFS EDGE' ei 'PARENTOID' version.pv" "$v"
+grep -Fq "HISTORYDIFFS EDGE' ei 'CHILDTYPE' vtype.cv" "$v"
+grep -Fq "HISTORYDIFFS EDGE' ei 'PARENTTYPE' vtype.pv" "$v"
+grep -Fq "changedpairs=changedpairs+1" "$v"
+grep -Fq "changepair.changedpairs=ti" "$v"
+grep -Fq "HISTORYEDGES TRANSITION' ti 'CHILDOID' version.cv" "$v"
+grep -Fq "HISTORYCHANGES TRANSITION' ti 'PARENTOID' version.pv" "$v"
 grep -Fq "edgestatus.ei\\='CHANGED'" "$v"
 grep -Fq "if distinct=1 & changededges\\=0 then exit 8" "$v"
 grep -Fq "if distinct>1 & changededges=0 then exit 8" "$v"
@@ -147,4 +157,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M90 VERIFIED REF2 EDGE-ANALYSIS GUARDS PASSED"
+echo "M93 VERIFIED REF2 SELF-CONTAINED DIFF GUARDS PASSED"
