@@ -609,6 +609,10 @@ static int rec_history_dag(const unsigned char *starting,
    printf("HISTORYFIRSTSTATE PATH PRESENT TYPE %d SIZE %lu\n",
           types[j],sizes[j]);
   else puts("HISTORYFIRSTSTATE PATH ABSENT");
+  if(present[j]) {
+   fputs("HISTORYFIRSTSTATE PATHOID ",stdout);
+   idx_print(stdout,results[j]);putchar('\n');
+  }
  }
  printf("HISTORYDAG NODES %u\n",count);
  puts("HISTORYDAG DATA END");
