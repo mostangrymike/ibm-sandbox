@@ -1,4 +1,4 @@
-/* M80: read-only REF2 verified snapshot membership. */
+/* M82: read-only REF2 verified path edge changes. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
@@ -94,6 +94,30 @@ if command='HISTCHG' then do
   end
  end
  if members\=nodes then exit 8
+ drop edgestatus. edgecv. edgepv.
+ changededges=0
+ unchangededges=0
+ do ei=1 to edgecount
+  ec=edgechild.ei
+  ep=edgeparent.ei
+  cv=nodeversion.ec
+  pv=nodeversion.ep
+  if datatype(cv,'W')\=1 | datatype(pv,'W')\=1 then exit 8
+  if cv<1 | pv<1 | cv>distinct | pv>distinct then exit 8
+  edgecv.ei=cv
+  edgepv.ei=pv
+  if cv=pv then do
+   edgestatus.ei='UNCHANGED'
+   unchangededges=unchangededges+1
+  end
+  else do
+   edgestatus.ei='CHANGED'
+   changededges=changededges+1
+  end
+ end
+ if changededges+unchangededges\=edgecount then exit 8
+ if distinct=1 & changededges\=0 then exit 8
+ if distinct>1 & changededges=0 then exit 8
  say 'VERIFIED REF' spec oid
  say 'HISTORYCHANGES FULL SNAPSHOTS VERIFIED'
  say 'HISTORYCHANGES DATA BEGIN'
@@ -107,6 +131,16 @@ if command='HISTCHG' then do
  if distinct=1 then status='UNCHANGED'
  else status='CHANGED'
  say 'HISTORYCHANGES STATUS' status
+ say 'HISTORYCHANGES EDGES' edgecount
+ say 'HISTORYCHANGES CHANGED EDGES' changededges
+ say 'HISTORYCHANGES UNCHANGED EDGES' unchangededges
+ do ei=1 to edgecount
+  say 'HISTORYCHANGES EDGE' ei 'CHILD' edgechild.ei,
+      'PARENT' edgeparent.ei
+  say 'HISTORYCHANGES EDGE' ei 'CHILDVERSION' edgecv.ei,
+      'PARENTVERSION' edgepv.ei
+  say 'HISTORYCHANGES EDGE' ei 'STATUS' edgestatus.ei
+ end
  do vi=1 to distinct
   say 'HISTORYCHANGES VERSION' vi 'OID' version.vi,
       'COUNT' freq.vi 'MINDEPTH' mindepth.vi,
@@ -146,10 +180,13 @@ changecheck:
  pathoids=0
  parsednodes=0
  distinct=0
+ edgecount=0
  nodes=-1
+ edges=-1
  drop seen. seencommit. version. freq. mindepth. maxdepth.
  drop mincommit. maxcommit. vtype. vsize. depthseen.
- drop vcommit. vdepth. vnode. vtree.
+ drop vcommit. vdepth. vnode. vtree. nodeversion.
+ drop edgechild. edgeparent. edgekey. parentseen.
  curnode=-1
  curdepth=-1
  curcommit=''
@@ -251,6 +288,30 @@ changecheck:
      maxcommit.vi=curcommit
     end
    end
+   nodeversion.curnode=vi
+  end
+  if words(out.ci)=6 & word(out.ci,1)='HISTORYDAGPATH' &,
+     word(out.ci,2)='EDGE' then do
+   if word(out.ci,3)\='CHILD' | word(out.ci,5)\='PARENT' then,
+    return 'ERROR'
+   ec=word(out.ci,4)
+   ep=word(out.ci,6)
+   if datatype(ec,'W')\=1 | datatype(ep,'W')\=1 then return 'ERROR'
+   if ec<1 | ep<1 | ec>parsednodes | ep>parsednodes then return 'ERROR'
+   if ec=ep then return 'ERROR'
+   if edgekey.ec.ep=1 then return 'ERROR'
+   edgekey.ec.ep=1
+   edgecount=edgecount+1
+   edgechild.edgecount=ec
+   edgeparent.edgecount=ep
+   parentseen.ep=1
+  end
+  if words(out.ci)=3 & word(out.ci,1)='HISTORYDAGPATH' &,
+     word(out.ci,2)='EDGES' then do
+   if edges\=-1 then return 'ERROR'
+   edges=word(out.ci,3)
+   if datatype(edges,'W')\=1 | edges<0 then return 'ERROR'
+   if edges\=edgecount then return 'ERROR'
   end
   if left(out.ci,21)='HISTORYDAGPATH NODES ' then do
    if nodes\=-1 then return 'ERROR'
@@ -260,8 +321,13 @@ changecheck:
  end
  if havepath=0 | havecommit=0 | havetree=0 | havemeta=0 then,
   return 'ERROR'
+ if edges<0 | edges\=edgecount then return 'ERROR'
  if nodes<1 | pathoids\=nodes then return 'ERROR'
  if parsednodes\=nodes then return 'ERROR'
+ if parentseen.1=1 then return 'ERROR'
+ do ni=2 to nodes
+  if parentseen.ni\=1 then return 'ERROR'
+ end
  return 'OK'
 
 depthlist:

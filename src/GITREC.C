@@ -784,11 +784,14 @@ static int rec_history_dag_path(const unsigned char *starting,
                                 unsigned long pathlen) {
  unsigned char commits[64][20],trees[64][20],levels[64];
  unsigned char results[64][20],parent[20];
+ unsigned char edge[64][64];
  unsigned long sizes[64],sz,at,begin,len;
  int types[64];
- unsigned int count=1,head=0,j,k,budget;
+ unsigned int count=1,head=0,j,k,budget,pidx;
+ unsigned int edgecount=0;
  int pos,rc,dup;
  if(rec_sidx_read()!=0) return 8;
+ memset(edge,0,sizeof(edge));
  memcpy(commits[0],starting,20);
  levels[0]=0;
  while(head<count) {
@@ -817,10 +820,10 @@ static int rec_history_dag_path(const unsigned char *starting,
     len=at-begin;
     if(!rec_ascii_key(idx_body+begin,len,"parent")) break;
     if(!rec_ascii_oid(idx_body+begin+7,parent)) return 8;
-    dup=0;
+    dup=0;pidx=count;
     for(k=0;k<count;k++)
      if(memcmp(commits[k],parent,20)==0) {
-      dup=1;break;
+      dup=1;pidx=k;break;
      }
     if(!dup) {
      if(count==64) {
@@ -830,6 +833,10 @@ static int rec_history_dag_path(const unsigned char *starting,
      memcpy(commits[count],parent,20);
      levels[count]=(unsigned char)(levels[head]+1);
      count++;
+    }
+    if(!edge[head][pidx]) {
+     edge[head][pidx]=1;
+     edgecount++;
     }
     at++;
    }
@@ -857,6 +864,12 @@ static int rec_history_dag_path(const unsigned char *starting,
   fputs("HISTORYDAGPATH PATHOID ",stdout);
   idx_print(stdout,results[j]);putchar('\n');
  }
+ for(j=0;j<count;j++)
+  for(k=0;k<count;k++)
+   if(edge[j][k])
+    printf("HISTORYDAGPATH EDGE CHILD %u PARENT %u\n",
+           j+1,k+1);
+ printf("HISTORYDAGPATH EDGES %u\n",edgecount);
  printf("HISTORYDAGPATH NODES %u\n",count);
  puts("HISTORYDAGPATH DATA END");
  return 0;
