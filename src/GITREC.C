@@ -1105,6 +1105,10 @@ static int rec_history_first_state(const unsigned char *starting,
   budget=1024;
   rc=rec_root_closure(trees[hop],&budget);
   if(rc!=0) return rc;
+  rc=rec_root_path_state(trees[hop],path,pathlen,
+                         results[hop],&types[hop],
+                         &sizes[hop],&present[hop]);
+  if(rc!=0) return rc;
   if(hop<depth) memcpy(commits[hop+1],next,20);
  }
  return 0;
