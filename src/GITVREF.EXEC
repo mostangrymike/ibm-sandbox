@@ -1,4 +1,4 @@
-/* M100: read-only REF2 verified path-state lifecycle and versions. */
+/* M108: read-only REF2 verified path-state transitions. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
@@ -7,7 +7,8 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTPATH' & command\='HISTCHG' &,
    command\='HISTEDGE' & command\='HISTDIFF' &,
    command\='HISTSTATE' & command\='HISTLOG' &,
-   command\='HISTSTATUS' then do
+   command\='HISTSTATUS' & command\='HISTNEAR' &,
+   command\='HISTTRANS' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -15,14 +16,16 @@ if spec='' then exit 4
 if command='HISTPATH' | command='HISTCHG' |,
    command='HISTEDGE' | command='HISTDIFF' |,
    command='HISTSTATE' | command='HISTLOG' |,
-   command='HISTSTATUS' then do
+   command='HISTSTATUS' | command='HISTNEAR' |,
+   command='HISTTRANS' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
 if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTCHG' | command='HISTEDGE' |,
    command='HISTDIFF' | command='HISTSTATE' |,
-   command='HISTLOG' | command='HISTSTATUS' then do
+   command='HISTLOG' | command='HISTSTATUS' |,
+   command='HISTNEAR' | command='HISTTRANS' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -33,10 +36,13 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTSTATE' & depth+0>8 then exit 4
  if command='HISTLOG' & depth+0>8 then exit 4
  if command='HISTSTATUS' & depth+0>8 then exit 4
+ if command='HISTNEAR' & depth+0>8 then exit 4
+ if command='HISTTRANS' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
-    command='HISTSTATUS' then do
+    command='HISTSTATUS' | command='HISTNEAR' |,
+    command='HISTTRANS' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -65,7 +71,8 @@ else if command='DAG' then do
  marker='LOGDAG FULL SNAPSHOTS VERIFIED'
 end
 else if command='HISTDIFF' | command='HISTSTATE' |,
-        command='HISTLOG' | command='HISTSTATUS' then do
+        command='HISTLOG' | command='HISTSTATUS' |,
+        command='HISTNEAR' | command='HISTTRANS' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -95,7 +102,8 @@ do i=1 to out.0
 end
 if \ok then exit 8
 if command='HISTDIFF' | command='HISTSTATE' |,
-   command='HISTLOG' | command='HISTSTATUS' then do
+   command='HISTLOG' | command='HISTSTATUS' |,
+   command='HISTNEAR' | command='HISTTRANS' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -108,6 +116,14 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTSTATUS' then do
   call statestatus
+  exit result
+ end
+ if command='HISTNEAR' then do
+  call statenear
+  exit result
+ end
+ if command='HISTTRANS' then do
+  call statetrans
   exit result
  end
  call statediff
@@ -475,10 +491,13 @@ stateversions:
  end
  if spresentcount+sabsecount\=snodes then return 'ERROR'
  drop sverseen. sveroid. svercount. svermin. svermax.
- drop svertype. sversize.
+ drop svertype. sversize. snodever.
  sversions=0
  do ni=1 to snodes
-  if spresent.ni=0 then iterate
+  if spresent.ni=0 then do
+   snodever.ni=0
+   iterate
+  end
   poid=soid.ni
   vi=sverseen.poid
   if datatype(vi,'W')\=1 then do
@@ -491,6 +510,7 @@ stateversions:
    svermax.vi=sdepth.ni
    svertype.vi=stype.ni
    sversize.vi=ssize.ni
+   snodever.ni=vi
   end
   else do
    if svertype.vi\=stype.ni | sversize.vi\=ssize.ni then,
@@ -498,6 +518,7 @@ stateversions:
    svercount.vi=svercount.vi+1
    if sdepth.ni<svermin.vi then svermin.vi=sdepth.ni
    if sdepth.ni>svermax.vi then svermax.vi=sdepth.ni
+   snodever.ni=vi
   end
  end
  vtotal=0
@@ -505,6 +526,10 @@ stateversions:
   vtotal=vtotal+svercount.vi
  end
  if vtotal\=spresentcount then return 'ERROR'
+ do ni=1 to snodes
+  if datatype(snodever.ni,'W')\=1 then return 'ERROR'
+  if snodever.ni<0 | snodever.ni>sversions then return 'ERROR'
+ end
  if spresentcount=snodes then slifecycle='ALLPRESENT'
  else if sabsecount=snodes then slifecycle='ALLABSENT'
  else slifecycle='MIXED'
@@ -550,38 +575,69 @@ stateemit:
 
 
 
-statestatus:
- spresentcount=0
- sabsecount=0
+
+stateclass:
+ call stateversions
+ if result\='OK' then return 'ERROR'
+ drop sstatus.
  sadd=0
  sdelete=0
  smodify=0
  sunchanged=0
- do ni=1 to snodes
-  if spresent.ni=1 then spresentcount=spresentcount+1
-  else sabsecount=sabsecount+1
- end
- if spresentcount+sabsecount\=snodes then return 8
+ schanged=0
+ schangemin=9
+ schangemax=-1
+ snearcount=0
  do ei=1 to sedgecount
   ec=sedgechild.ei
   ep=sedgeparent.ei
   cp=spresent.ec
   pp=spresent.ep
   if cp=1 & pp=1 then do
-   if soid.ec=soid.ep then sunchanged=sunchanged+1
-   else smodify=smodify+1
+   if soid.ec=soid.ep then sstatus.ei='UNCHANGED'
+   else sstatus.ei='MODIFIED'
   end
-  else if cp=1 & pp=0 then sadd=sadd+1
-  else if cp=0 & pp=1 then sdelete=sdelete+1
+  else if cp=1 & pp=0 then sstatus.ei='ADDED'
+  else if cp=0 & pp=1 then sstatus.ei='DELETED'
+  else sstatus.ei='UNCHANGED'
+  if sstatus.ei='ADDED' then sadd=sadd+1
+  else if sstatus.ei='DELETED' then sdelete=sdelete+1
+  else if sstatus.ei='MODIFIED' then smodify=smodify+1
   else sunchanged=sunchanged+1
+  if sstatus.ei\='UNCHANGED' then do
+   schanged=schanged+1
+   cd=sdepth.ec
+   if cd<schangemin then do
+    schangemin=cd
+    snearcount=1
+   end
+   else if cd=schangemin then snearcount=snearcount+1
+   if cd>schangemax then schangemax=cd
+  end
  end
- schanged=sadd+sdelete+smodify
- if schanged+sunchanged\=sedgecount then return 8
- if spresentcount=snodes then slifecycle='ALLPRESENT'
- else if sabsecount=snodes then slifecycle='ALLABSENT'
- else slifecycle='MIXED'
- if schanged=0 then diffstatus='UNCHANGED'
- else diffstatus='CHANGED'
+ if sadd+sdelete+smodify+sunchanged\=sedgecount then,
+  return 'ERROR'
+ if schanged\=sadd+sdelete+smodify then return 'ERROR'
+ if schanged+sunchanged\=sedgecount then return 'ERROR'
+ if schanged=0 then do
+  schangemin=-1
+  schangemax=-1
+  snearcount=0
+  diffstatus='UNCHANGED'
+ end
+ else do
+  if schangemin<0 | schangemin>8 then return 'ERROR'
+  if schangemax<schangemin | schangemax>8 then return 'ERROR'
+  if snearcount<1 | snearcount>schanged then return 'ERROR'
+  diffstatus='CHANGED'
+ end
+ return 'OK'
+
+statestatus:
+ call stateclass
+ if result\='OK' then return 8
+ call statepairs
+ if result\='OK' then return 8
  say 'VERIFIED REF' spec oid
  say 'HISTORYSTATUS FULL SNAPSHOTS VERIFIED'
  say 'HISTORYSTATUS DATA BEGIN'
@@ -589,6 +645,9 @@ statestatus:
  say 'HISTORYSTATUS PATH STATUS' slifecycle
  say 'HISTORYSTATUS PRESENT' spresentcount
  say 'HISTORYSTATUS ABSENT' sabsecount
+ say 'HISTORYSTATUS VERSIONS' sversions
+ say 'HISTORYSTATUS TRANSITIONS' trpairs
+ say 'HISTORYSTATUS CHANGED TRANSITIONS' trchanged
  say 'HISTORYSTATUS NODES' snodes
  say 'HISTORYSTATUS EDGES' sedgecount
  say 'HISTORYSTATUS CHANGED EDGES' schanged
@@ -596,37 +655,33 @@ statestatus:
  say 'HISTORYSTATUS DELETED EDGES' sdelete
  say 'HISTORYSTATUS MODIFIED EDGES' smodify
  say 'HISTORYSTATUS UNCHANGED EDGES' sunchanged
+ if schanged>0 then do
+  say 'HISTORYSTATUS NEAREST CHANGE DEPTH' schangemin
+  say 'HISTORYSTATUS FARTHEST CHANGE DEPTH' schangemax
+  say 'HISTORYSTATUS NEAREST CHANGES' snearcount
+ end
  say 'HISTORYSTATUS DATA END'
  return 0
 
 statelog:
- changes=0
- drop lstatus.
- do ei=1 to sedgecount
-  ec=sedgechild.ei
-  ep=sedgeparent.ei
-  cp=spresent.ec
-  pp=spresent.ep
-  if cp=1 & pp=1 then do
-   if soid.ec=soid.ep then lstatus.ei='UNCHANGED'
-   else lstatus.ei='MODIFIED'
-  end
-  else if cp=1 & pp=0 then lstatus.ei='ADDED'
-  else if cp=0 & pp=1 then lstatus.ei='DELETED'
-  else lstatus.ei='UNCHANGED'
-  if lstatus.ei\='UNCHANGED' then changes=changes+1
- end
+ call stateclass
+ if result\='OK' then return 8
  say 'VERIFIED REF' spec oid
  say 'HISTORYLOG FULL SNAPSHOTS VERIFIED'
  say 'HISTORYLOG DATA BEGIN'
  say 'HISTORYLOG NODES' snodes
  say 'HISTORYLOG EDGES' sedgecount
- say 'HISTORYLOG CHANGES' changes
+ say 'HISTORYLOG CHANGES' schanged
+ if schanged>0 then do
+  say 'HISTORYLOG NEAREST CHANGE DEPTH' schangemin
+  say 'HISTORYLOG FARTHEST CHANGE DEPTH' schangemax
+  say 'HISTORYLOG NEAREST CHANGES' snearcount
+ end
  do ei=1 to sedgecount
-  if lstatus.ei='UNCHANGED' then iterate
+  if sstatus.ei='UNCHANGED' then iterate
   ec=sedgechild.ei
   ep=sedgeparent.ei
-  say 'HISTORYLOG CHANGE' ei 'STATUS' lstatus.ei
+  say 'HISTORYLOG CHANGE' ei 'STATUS' sstatus.ei
   say 'HISTORYLOG CHANGE' ei 'CHILD' ec 'PARENT' ep
   say 'HISTORYLOG CHANGE' ei 'CHILDDEPTH' sdepth.ec,
       'PARENTDEPTH' sdepth.ep
@@ -652,51 +707,137 @@ statelog:
  say 'HISTORYLOG DATA END'
  return 0
 
-statediff:
- call stateversions
+statenear:
+ call stateclass
  if result\='OK' then return 8
- drop sstatus.
- sadd=0
- sdelete=0
- smodify=0
- sunchanged=0
- schanged=0
+ say 'VERIFIED REF' spec oid
+ say 'HISTORYNEAREST FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYNEAREST DATA BEGIN'
+ say 'HISTORYNEAREST STATUS' diffstatus
+ say 'HISTORYNEAREST PATH STATUS' slifecycle
+ say 'HISTORYNEAREST NODES' snodes
+ say 'HISTORYNEAREST EDGES' sedgecount
+ say 'HISTORYNEAREST CHANGES' schanged
+ if schanged>0 then do
+  say 'HISTORYNEAREST DEPTH' schangemin
+  say 'HISTORYNEAREST MATCHES' snearcount
+  match=0
+  do ei=1 to sedgecount
+   if sstatus.ei='UNCHANGED' then iterate
+   ec=sedgechild.ei
+   if sdepth.ec\=schangemin then iterate
+   ep=sedgeparent.ei
+   match=match+1
+   say 'HISTORYNEAREST CHANGE' match 'EDGE' ei,
+       'STATUS' sstatus.ei
+   say 'HISTORYNEAREST CHANGE' match 'CHILD' ec,
+       'PARENT' ep
+   say 'HISTORYNEAREST CHANGE' match 'CHILDDEPTH' sdepth.ec,
+       'PARENTDEPTH' sdepth.ep
+   say 'HISTORYNEAREST CHANGE' match 'CHILDCOMMIT' scommit.ec
+   say 'HISTORYNEAREST CHANGE' match 'PARENTCOMMIT' scommit.ep
+   if spresent.ec=1 then cs='PRESENT'
+   else cs='ABSENT'
+   if spresent.ep=1 then ps='PRESENT'
+   else ps='ABSENT'
+   say 'HISTORYNEAREST CHANGE' match 'CHILDSTATE' cs,
+       'PARENTSTATE' ps
+   if spresent.ec=1 then do
+    say 'HISTORYNEAREST CHANGE' match 'CHILDOID' soid.ec
+    say 'HISTORYNEAREST CHANGE' match 'CHILDTYPE' stype.ec,
+        'SIZE' ssize.ec
+   end
+   if spresent.ep=1 then do
+    say 'HISTORYNEAREST CHANGE' match 'PARENTOID' soid.ep
+    say 'HISTORYNEAREST CHANGE' match 'PARENTTYPE' stype.ep,
+        'SIZE' ssize.ep
+   end
+  end
+  if match\=snearcount then return 8
+ end
+ say 'HISTORYNEAREST DATA END'
+ return 0
+
+
+statepairs:
+ drop trno. trchild. trparent. trcount. trstatus.
+ trpairs=0
+ trtotal=0
+ trchanged=0
  do ei=1 to sedgecount
   ec=sedgechild.ei
   ep=sedgeparent.ei
-  cp=spresent.ec
-  pp=spresent.ep
-  if cp=1 & pp=1 then do
-   if soid.ec=soid.ep then do
-    sstatus.ei='UNCHANGED'
-    sunchanged=sunchanged+1
-   end
-   else do
-    sstatus.ei='MODIFIED'
-    smodify=smodify+1
-    schanged=schanged+1
-   end
+  cv=snodever.ec
+  pv=snodever.ep
+  tk=cv||'.'||pv
+  ti=trno.tk
+  if datatype(ti,'W')\=1 then do
+   trpairs=trpairs+1
+   ti=trpairs
+   trno.tk=ti
+   trchild.ti=cv
+   trparent.ti=pv
+   trcount.ti=1
+   if cv=pv then trstatus.ti='UNCHANGED'
+   else if cv>0 & pv=0 then trstatus.ti='ADDED'
+   else if cv=0 & pv>0 then trstatus.ti='DELETED'
+   else trstatus.ti='MODIFIED'
+   if trstatus.ti\='UNCHANGED' then trchanged=trchanged+1
   end
-  else if cp=1 & pp=0 then do
-   sstatus.ei='ADDED'
-   sadd=sadd+1
-   schanged=schanged+1
-  end
-  else if cp=0 & pp=1 then do
-   sstatus.ei='DELETED'
-   sdelete=sdelete+1
-   schanged=schanged+1
-  end
-  else do
-   sstatus.ei='UNCHANGED'
-   sunchanged=sunchanged+1
-  end
+  else trcount.ti=trcount.ti+1
  end
- if sadd+sdelete+smodify+sunchanged\=sedgecount then return 8
- if schanged=sadd+sdelete+smodify then nop
- else return 8
- if schanged=0 then diffstatus='UNCHANGED'
- else diffstatus='CHANGED'
+ do ti=1 to trpairs
+  trtotal=trtotal+trcount.ti
+ end
+ if trtotal\=sedgecount then return 'ERROR'
+ if schanged=0 & trchanged\=0 then return 'ERROR'
+ if schanged>0 & trchanged=0 then return 'ERROR'
+ return 'OK'
+
+statetrans:
+ call stateclass
+ if result\='OK' then return 8
+ call statepairs
+ if result\='OK' then return 8
+ say 'VERIFIED REF' spec oid
+ say 'HISTORYTRANSITIONS FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYTRANSITIONS DATA BEGIN'
+ say 'HISTORYTRANSITIONS STATUS' diffstatus
+ say 'HISTORYTRANSITIONS PATH STATUS' slifecycle
+ say 'HISTORYTRANSITIONS VERSIONS' sversions
+ say 'HISTORYTRANSITIONS STATE 0 ABSENT'
+ do vi=1 to sversions
+  say 'HISTORYTRANSITIONS STATE' vi 'PRESENT OID' sveroid.vi
+  say 'HISTORYTRANSITIONS STATE' vi 'TYPE' svertype.vi,
+      'SIZE' sversize.vi
+ end
+ say 'HISTORYTRANSITIONS NODES' snodes
+ say 'HISTORYTRANSITIONS EDGES' sedgecount
+ say 'HISTORYTRANSITIONS TRANSITIONS' trpairs
+ say 'HISTORYTRANSITIONS CHANGED TRANSITIONS' trchanged
+ say 'HISTORYTRANSITIONS ADDED EDGES' sadd
+ say 'HISTORYTRANSITIONS DELETED EDGES' sdelete
+ say 'HISTORYTRANSITIONS MODIFIED EDGES' smodify
+ say 'HISTORYTRANSITIONS UNCHANGED EDGES' sunchanged
+ do ti=1 to trpairs
+  cv=trchild.ti
+  pv=trparent.ti
+  say 'HISTORYTRANSITIONS TRANSITION' ti 'CHILDSTATE' cv,
+      'PARENTSTATE' pv 'COUNT' trcount.ti
+  say 'HISTORYTRANSITIONS TRANSITION' ti 'STATUS' trstatus.ti
+  if cv>0 then,
+   say 'HISTORYTRANSITIONS TRANSITION' ti 'CHILDOID' sveroid.cv
+  if pv>0 then,
+   say 'HISTORYTRANSITIONS TRANSITION' ti 'PARENTOID' sveroid.pv
+ end
+ say 'HISTORYTRANSITIONS DATA END'
+ return 0
+
+statediff:
+ call stateclass
+ if result\='OK' then return 8
+ call statepairs
+ if result\='OK' then return 8
  say 'VERIFIED REF' spec oid
  say 'HISTORYDIFFS FULL SNAPSHOTS VERIFIED'
  say 'HISTORYDIFFS DATA BEGIN'
@@ -714,11 +855,29 @@ statediff:
  end
  say 'HISTORYDIFFS NODES' snodes
  say 'HISTORYDIFFS EDGES' sedgecount
+ say 'HISTORYDIFFS TRANSITIONS' trpairs
+ say 'HISTORYDIFFS CHANGED TRANSITIONS' trchanged
+ do ti=1 to trpairs
+  cv=trchild.ti
+  pv=trparent.ti
+  say 'HISTORYDIFFS TRANSITION' ti 'CHILDSTATE' cv,
+      'PARENTSTATE' pv 'COUNT' trcount.ti
+  say 'HISTORYDIFFS TRANSITION' ti 'STATUS' trstatus.ti
+  if cv>0 then,
+   say 'HISTORYDIFFS TRANSITION' ti 'CHILDOID' sveroid.cv
+  if pv>0 then,
+   say 'HISTORYDIFFS TRANSITION' ti 'PARENTOID' sveroid.pv
+ end
  say 'HISTORYDIFFS CHANGED EDGES' schanged
  say 'HISTORYDIFFS ADDED EDGES' sadd
  say 'HISTORYDIFFS DELETED EDGES' sdelete
  say 'HISTORYDIFFS MODIFIED EDGES' smodify
  say 'HISTORYDIFFS UNCHANGED EDGES' sunchanged
+ if schanged>0 then do
+  say 'HISTORYDIFFS NEAREST CHANGE DEPTH' schangemin
+  say 'HISTORYDIFFS FARTHEST CHANGE DEPTH' schangemax
+  say 'HISTORYDIFFS NEAREST CHANGES' snearcount
+ end
  do ei=1 to sedgecount
   if sstatus.ei='UNCHANGED' then iterate
   ec=sedgechild.ei

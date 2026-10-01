@@ -85,6 +85,14 @@ if command = 'HISTORYSTATUS-REF-FULL' then do
    'EXEC GITVREF HISTSTATUS' rest
    exit rc
 end
+if command = 'HISTORYNEAREST-REF-FULL' then do
+   'EXEC GITVREF HISTNEAR' rest
+   exit rc
+end
+if command = 'HISTORYTRANSITIONS-REF-FULL' then do
+   'EXEC GITVREF HISTTRANS' rest
+   exit rc
+end
 if command = 'READ-REF-FULL' then do
    'EXEC GITVREF READ' rest
    exit rc
