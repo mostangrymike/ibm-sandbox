@@ -381,6 +381,8 @@ statecheck:
  nodes=-1
  edges=-1
  edgephase=0
+ databegin=0
+ dataend=0
  drop seencommit. nstate. nodeoid. nodetype. nodesize.
  drop nodecommit. nodedepth. nodetree.
  drop edgechild. edgeparent. edgekey. parentseen.
@@ -395,6 +397,22 @@ statecheck:
  havetree=1
  havestate=1
  do ci=1 to out.0
+  if words(out.ci)=3 & word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='DATA' & word(out.ci,3)='BEGIN' then do
+   if databegin=1 | dataend=1 then return 'ERROR'
+   databegin=1
+   iterate
+  end
+  if words(out.ci)=3 & word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)='DATA' & word(out.ci,3)='END' then do
+   if databegin\=1 | dataend=1 then return 'ERROR'
+   dataend=1
+   iterate
+  end
+  if word(out.ci,1)='HISTORYDAGSTATE' &,
+     word(out.ci,2)\='FULL' & databegin\=1 then return 'ERROR'
+  if dataend=1 & word(out.ci,1)='HISTORYDAGSTATE' then,
+   return 'ERROR'
   if word(out.ci,1)='HISTORYDAGSTATE' &,
      word(out.ci,2)='NODE' then do
    if edgephase=1 then return 'ERROR'
@@ -506,6 +524,7 @@ statecheck:
    if datatype(nodes,'W')\=1 | nodes<1 then return 'ERROR'
   end
  end
+ if databegin\=1 | dataend\=1 then return 'ERROR'
  if havecommit=0 | havetree=0 | havestate=0 | pending=1 then,
   return 'ERROR'
  if edges<0 | edges\=edgecount then return 'ERROR'
