@@ -1,5 +1,5 @@
 #!/bin/sh
-# M86 repaired verified-ref bridge must stay read-only and CMS-record-safe.
+# M90 verified-ref bridge must stay read-only and CMS-record-safe.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -30,6 +30,8 @@ grep -Fq "'EXEC GITVREF HISTPATH' rest" "$g"
 grep -Fq "command = 'HISTORYCHANGES-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF HISTCHG' rest" "$g"
 grep -Fq "command = 'HISTORYEDGES-REF-FULL'" "$g"
+grep -Fq "command = 'HISTORYDIFFS-REF-FULL'" "$g"
+grep -Fq "'EXEC GITVREF HISTDIFF' rest" "$g"
 grep -Fq "'EXEC GITVREF HISTEDGE' rest" "$g"
 grep -Fq "command='HISTCHG'" "$v"
 grep -Fq "HISTORYCHANGES FULL SNAPSHOTS VERIFIED" "$v"
@@ -113,6 +115,14 @@ grep -Fq "HISTORYEDGES CHANGED EDGES" "$v"
 grep -Fq "HISTORYEDGES UNCHANGED EDGES" "$v"
 grep -Fq "HISTORYEDGES EDGE' ei 'CHILDVERSION' edgecv.ei" "$v"
 grep -Fq "HISTORYEDGES EDGE' ei 'STATUS' edgestatus.ei" "$v"
+grep -Fq "pairchild.pairs=cv" "$v"
+grep -Fq "pairparent.pairs=pv" "$v"
+grep -Fq "paircount.pairs=1" "$v"
+grep -Fq "HISTORYEDGES TRANSITIONS" "$v"
+grep -Fq "HISTORYCHANGES TRANSITIONS" "$v"
+grep -Fq "HISTORYDIFFS FULL SNAPSHOTS VERIFIED" "$v"
+grep -Fq "HISTORYDIFFS CHANGED EDGES" "$v"
+grep -Fq "edgestatus.ei\\='CHANGED'" "$v"
 grep -Fq "if distinct=1 & changededges\\=0 then exit 8" "$v"
 grep -Fq "if distinct>1 & changededges=0 then exit 8" "$v"
 grep -Fq "GITREC LOGDAGFULL GITFIX M15NEW" "$v"
@@ -137,4 +147,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M86 REPAIRED REF2 PATH-EDGE HISTORY GUARDS PASSED"
+echo "M90 VERIFIED REF2 EDGE-ANALYSIS GUARDS PASSED"
