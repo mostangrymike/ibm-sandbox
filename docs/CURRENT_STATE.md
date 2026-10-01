@@ -507,3 +507,9 @@ Repair sets `vi=distinct` immediately after allocating the first occurrence of a
 ## M86 repair also preserves HISTORYPATH compatibility
 
 Because native HISTORYDAGPATH now carries internal EDGE/EDGES records, the generic HISTPATH pass-through would otherwise have changed the previously target-proven `GIT HISTORYPATH-REF-FULL` output surface. The repaired GITVREF now filters only native `HISTORYDAGPATH EDGE ...` and `HISTORYDAGPATH EDGES ...` records when command mode is HISTPATH. HISTORYCHANGES and HISTORYEDGES still parse those records internally. This keeps the M68 HISTORYPATH user-visible format stable while retaining the new edge engine.
+
+## M86 repair merged and host CI green
+
+Repair PR #65 passed native-stage workflow `36893598554` and squash-merged as `a7948adc69587f6ce179e4238a48ba8e2757b116`. The first-occurrence PATHOID bug is fixed by assigning `vi=distinct` immediately after allocating a new version, before `nodeversion.curnode=vi`. The repair also preserves the previously target-proven HISTORYPATH output surface by filtering only internal native `HISTORYDAGPATH EDGE` and `HISTORYDAGPATH EDGES` records in HISTPATH mode. GITREC.C and GIT.EXEC are unchanged from the already uploaded/rebuilt M86 gate; only GITVREF.EXEC must be refreshed for target retest. No compile and no GITRUN are required.
+
+NEXT target retest: from Mac `ibm-sandbox/src`, `git pull`, then `CMS_SCRIPT_PORT=3272 ./cms-upload.sh GITVREF.EXEC`. On CMS run `GIT HISTORYCHANGES-REF-FULL HEAD 1 README.md` and `GIT HISTORYEDGES-REF-FULL HEAD 1 README.md`. Optional compatibility check in the same session: `GIT HISTORYPATH-REF-FULL HEAD 1 README.md`; it should retain the old M68-style output without native EDGE/EDGES records. If the two edge-aware commands pass, M80-M86 can be marked NATIVE CMS TARGET-PROVEN based on the already successful GITREC rebuild plus this repaired wrapper run.
