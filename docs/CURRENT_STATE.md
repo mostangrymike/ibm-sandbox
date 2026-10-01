@@ -521,3 +521,9 @@ Real CMS passed the repaired combined gate. HISTORYCHANGES reported one authenti
 HISTORYEDGES independently passed with status UNCHANGED, versions 1, nodes 2, edges 1, changed edges 0, unchanged edges 1, and the same node/version edge mapping. CPU 115.74 / elapsed 118.64 sec at 12:33:45.
 
 HISTORYPATH also passed and preserved the previously proven output surface with no EDGE/EDGES records exposed. CPU 116.00 / elapsed 118.91 sec at 12:37:07. Together with the successful GITREC rebuild from the prior gate, M80-M86 are now NATIVE CMS TARGET-PROVEN.
+
+## 2026-10-01 actual M87 native CMS PASS
+
+Real CMS `GIT HISTORYEDGES-REF-FULL HEAD 1 README.md` passed with authenticated edge endpoint metadata: child depth 0, parent depth 1, child commit `00D8D63229305230C8D37F884CE87F9E1A89468C`, parent commit `2D5038C551318997B865497E04CF4C037DE4135E`, child tree `204E1D6968FB81C35BF830D63A611AC64C072945`, and parent tree `F3EF36AAD778D5DA84857D8DED46495C75F4CAB0`. Edge 1 remained child node 1 -> parent node 2, version 1 -> 1, status UNCHANGED. CPU 115.72 / elapsed 118.63 sec at 12:50:24.
+
+`GIT HISTORYCHANGES-REF-FULL HEAD 1 README.md` also emitted the same authenticated edge endpoint metadata while preserving the existing M80-M86 path-version and snapshot-membership report. M87 is now NATIVE CMS TARGET-PROVEN.
