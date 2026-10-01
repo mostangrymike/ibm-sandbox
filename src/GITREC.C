@@ -1985,7 +1985,7 @@ int main(int argc,char **argv) {
      lsdirdepth||lsdirfull||
      firstpar||ancestor||history||historyfull||logfull||
      logdagfull||
-     historydag||historydagpath||historydagstate||
+     historydag||historydagpath||historydagstate||historyfirststate||
      parent_cmd||parents_cmd||roots_cmd||
      commitroots_cmd||linkroots_cmd||nestedlinks_cmd||
      deeplinks_cmd||depthlinks_cmd||linkbatch_cmd||
