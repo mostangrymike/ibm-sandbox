@@ -1,5 +1,5 @@
 #!/bin/sh
-# M73 verified-ref bridge must stay read-only and CMS-record-safe.
+# M74 verified-ref bridge must stay read-only and CMS-record-safe.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -47,6 +47,11 @@ grep -Fq "MINDEPTHCOMMIT' mincommit.vi" "$v"
 grep -Fq "MAXDEPTHCOMMIT' maxcommit.vi" "$v"
 grep -Fq "mincommit.distinct=curcommit" "$v"
 grep -Fq "maxcommit.distinct=curcommit" "$v"
+grep -Fq "HISTORYCHANGES VERSION' vi 'TYPE' vtype.vi 'SIZE' vsize.vi" "$v"
+grep -Fq "curtype=word(out.ci,4)" "$v"
+grep -Fq "cursize=word(out.ci,6)" "$v"
+grep -Fq "if curtype<1 | curtype>3 then return 'ERROR'" "$v"
+grep -Fq "if vtype.vi\\=curtype | vsize.vi\\=cursize then return 'ERROR'" "$v"
 grep -Fq "version.distinct=poid" "$v"
 grep -Fq "freq.distinct=1" "$v"
 grep -Fq "freq.vi=freq.vi+1" "$v"
