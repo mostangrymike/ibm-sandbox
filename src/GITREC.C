@@ -1077,6 +1077,36 @@ static int rec_history_first_state(const unsigned char *starting,
  int types[17],present[17];
  unsigned int hop,j,budget;
  int pos,rc;
+ if(rec_sidx_read()!=0) return 8;
+ memcpy(commits[0],starting,20);
+ for(hop=0;hop<=depth;hop++) {
+  pos=sidx_locate(commits[hop]);
+  if(pos<0) {
+   puts("HISTORYFIRSTSTATE COMMIT NOT FOUND");return 4;
+  }
+  if(sidx[pos].type!=1) {
+   puts("HISTORYFIRSTSTATE OBJECT IS NOT A COMMIT");return 8;
+  }
+  sz=sidx[pos].size;
+  sidx_silent=1;
+  rc=sidx_get(commits[hop]);
+  sidx_silent=0;
+  if(rc!=0) return rc;
+  if(!rec_commit_walk(sz,0)) {
+   puts("HISTORYFIRSTSTATE COMMIT INVALID");return 8;
+  }
+  if(!rec_ascii_oid(idx_body+5,trees[hop])) return 8;
+  if(hop<depth) {
+   if(sz<=46||!rec_ascii_key(idx_body+46,sz-46,"parent")) {
+    puts("HISTORYFIRSTSTATE ROOT REACHED");return 4;
+   }
+   if(!rec_ascii_oid(idx_body+53,next)) return 8;
+  }
+  budget=1024;
+  rc=rec_root_closure(trees[hop],&budget);
+  if(rc!=0) return rc;
+  if(hop<depth) memcpy(commits[hop+1],next,20);
+ }
  return 0;
 }
 
