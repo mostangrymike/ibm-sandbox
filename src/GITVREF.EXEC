@@ -116,6 +116,8 @@ if command='HISTCHG' then do
   end
  end
  if changededges+unchangededges\=edgecount then exit 8
+ if distinct=1 & changededges\=0 then exit 8
+ if distinct>1 & changededges=0 then exit 8
  say 'VERIFIED REF' spec oid
  say 'HISTORYCHANGES FULL SNAPSHOTS VERIFIED'
  say 'HISTORYCHANGES DATA BEGIN'
