@@ -1114,6 +1114,9 @@ static int rec_history_first_state(const unsigned char *starting,
  puts("HISTORYFIRSTSTATE FULL SNAPSHOTS VERIFIED");
  puts("HISTORYFIRSTSTATE DATA BEGIN");
  for(j=0;j<=depth;j++) {
+  printf("HISTORYFIRSTSTATE NODE %u DEPTH %u\n",j+1,j);
+  fputs("HISTORYFIRSTSTATE COMMIT ",stdout);
+  idx_print(stdout,commits[j]);putchar('\n');
  }
  return 0;
 }
