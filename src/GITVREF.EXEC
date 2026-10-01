@@ -189,7 +189,7 @@ changecheck:
    havetree=1
   end
   if left(out.ci,25)='HISTORYDAGPATH PATH TYPE ' then do
-   if havemeta=1 | havecommit=0 then return 'ERROR'
+   if havemeta=1 | havecommit=0 | havetree=0 then return 'ERROR'
    if word(out.ci,5)\='SIZE' then return 'ERROR'
    curtype=word(out.ci,4)
    cursize=word(out.ci,6)
@@ -203,7 +203,8 @@ changecheck:
    poid=translate(word(out.ci,3))
    if length(poid)\=40 then return 'ERROR'
    if verify(poid,'0123456789ABCDEF')\=0 then return 'ERROR'
-   if curdepth<0 | havecommit=0 | havemeta=0 then return 'ERROR'
+   if curnode<1 | curdepth<0 | havecommit=0 | havetree=0 |,
+      havemeta=0 then return 'ERROR'
    havepath=1
    pathoids=pathoids+1
    vi=seen.poid
@@ -245,7 +246,8 @@ changecheck:
    if datatype(nodes,'W')\=1 | nodes<1 then return 'ERROR'
   end
  end
- if havepath=0 | havecommit=0 | havemeta=0 then return 'ERROR'
+ if havepath=0 | havecommit=0 | havetree=0 | havemeta=0 then,
+  return 'ERROR'
  if nodes<1 | pathoids\=nodes then return 'ERROR'
  if parsednodes\=nodes then return 'ERROR'
  return 'OK'
