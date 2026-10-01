@@ -1,5 +1,5 @@
 #!/bin/sh
-# M97 verified path-state history and edge-diff guards.
+# M99 verified path-state lifecycle and diff guards.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -130,6 +130,12 @@ grep -Fq "rec_root_path_state" "$rec"
 grep -Fq "statecheck:" "$v"
 grep -Fq "stateemit:" "$v"
 grep -Fq "HISTORYSTATE FULL SNAPSHOTS VERIFIED" "$v"
+grep -Fq "HISTORYSTATE STATUS' slifecycle" "$v"
+grep -Fq "HISTORYSTATE PRESENT' spresentcount" "$v"
+grep -Fq "HISTORYSTATE ABSENT' sabsecount" "$v"
+grep -Fq "HISTORYDIFFS PATH STATUS' slifecycle" "$v"
+grep -Fq "HISTORYDIFFS PRESENT' spresentcount" "$v"
+grep -Fq "HISTORYDIFFS ABSENT' sabsecount" "$v"
 grep -Fq "HISTORYSTATE NODE' ni 'STATE' ns" "$v"
 grep -Fq "HISTORYSTATE NODE' ni 'OID' soid.ni" "$v"
 grep -Fq "HISTORYSTATE EDGE' ei 'CHILD' sedgechild.ei" "$v"
@@ -172,4 +178,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M97 VERIFIED PATH-STATE HISTORY AND DIFF GUARDS PASSED"
+echo "M99 VERIFIED PATH-STATE LIFECYCLE AND DIFF GUARDS PASSED"
