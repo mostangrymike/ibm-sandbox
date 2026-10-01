@@ -529,8 +529,20 @@ statetransitions:
   else stpaircount.ti=stpaircount.ti+1
  end
  sttotal=0
+ stadd=0
+ stdelete=0
+ stmodify=0
+ stunchanged=0
  do ti=1 to stpairs
   sttotal=sttotal+stpaircount.ti
+  if stpairstatus.ti='ADDED' then stadd=stadd+stpaircount.ti
+  else if stpairstatus.ti='DELETED' then,
+   stdelete=stdelete+stpaircount.ti
+  else if stpairstatus.ti='MODIFIED' then,
+   stmodify=stmodify+stpaircount.ti
+  else if stpairstatus.ti='UNCHANGED' then,
+   stunchanged=stunchanged+stpaircount.ti
+  else return 'ERROR'
  end
  if sttotal\=sedgecount then return 'ERROR'
  return 'OK'
