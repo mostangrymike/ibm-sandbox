@@ -1,5 +1,5 @@
 #!/bin/sh
-# M86 verified-ref bridge must stay read-only and CMS-record-safe.
+# M86 repaired verified-ref bridge must stay read-only and CMS-record-safe.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -85,6 +85,9 @@ grep -Fq "depthseen.distinct.curdepth=1" "$v"
 grep -Fq "depthseen.vi.curdepth=1" "$v"
 grep -Fq "depthlist:" "$v"
 grep -Fq "version.distinct=poid" "$v"
+grep -Fq "vi=distinct" "$v"
+grep -Fq "command='HISTPATH' & word(out.i,1)='HISTORYDAGPATH'" "$v"
+grep -Fq "(word(out.i,2)='EDGE' | word(out.i,2)='EDGES')" "$v"
 grep -Fq "freq.distinct=1" "$v"
 grep -Fq "freq.vi=freq.vi+1" "$v"
 grep -Fq "pathoids\\=nodes" "$v"
@@ -134,4 +137,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M86 VERIFIED REF2 PATH-EDGE HISTORY GUARDS PASSED"
+echo "M86 REPAIRED REF2 PATH-EDGE HISTORY GUARDS PASSED"

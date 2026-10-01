@@ -202,7 +202,11 @@ emit=0
 say 'VERIFIED REF' spec oid
 do i=1 to out.0
  if pos(marker,out.i)>0 then emit=1
- if emit then say out.i
+ if emit then do
+  if command='HISTPATH' & word(out.i,1)='HISTORYDAGPATH' &,
+     (word(out.i,2)='EDGE' | word(out.i,2)='EDGES') then iterate
+  say out.i
+ end
 end
 exit 0
 
@@ -286,6 +290,7 @@ changecheck:
    if datatype(vi,'W')\=1 then do
     distinct=distinct+1
     seen.poid=distinct
+    vi=distinct
     version.distinct=poid
     freq.distinct=1
     mindepth.distinct=curdepth
