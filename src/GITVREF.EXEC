@@ -222,6 +222,8 @@ changecheck:
     depthseen.distinct.curdepth=1
     vcommit.distinct.1=curcommit
     vdepth.distinct.1=curdepth
+    vnode.distinct.1=curnode
+    vtree.distinct.1=curtree
    end
    else do
     if vtype.vi\=curtype | vsize.vi\=cursize then return 'ERROR'
@@ -230,6 +232,8 @@ changecheck:
     vcidx=freq.vi
     vcommit.vi.vcidx=curcommit
     vdepth.vi.vcidx=curdepth
+    vnode.vi.vcidx=curnode
+    vtree.vi.vcidx=curtree
     if curdepth<mindepth.vi then do
      mindepth.vi=curdepth
      mincommit.vi=curcommit
