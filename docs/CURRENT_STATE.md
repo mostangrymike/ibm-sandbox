@@ -503,3 +503,7 @@ Real CMS rebuilt `GITREC MODULE` successfully with `CMSCLNK GITREC PLAIN` (12.36
 ## M86 node-version binding repair
 
 Repair sets `vi=distinct` immediately after allocating the first occurrence of a new PATHOID and before `nodeversion.curnode=vi`. This preserves all existing M80-M86 checks and fixes only the first-occurrence version binding used by edge classification. No GITREC.C, GIT.EXEC, REF2 data, sealed generations, selectors, or PACK are changed by the repair. Because the already uploaded GITREC native edge engine built successfully on CMS, the retest requires only corrected `GITVREF.EXEC`; no rebuild and no GITRUN.
+
+## M86 repair also preserves HISTORYPATH compatibility
+
+Because native HISTORYDAGPATH now carries internal EDGE/EDGES records, the generic HISTPATH pass-through would otherwise have changed the previously target-proven `GIT HISTORYPATH-REF-FULL` output surface. The repaired GITVREF now filters only native `HISTORYDAGPATH EDGE ...` and `HISTORYDAGPATH EDGES ...` records when command mode is HISTPATH. HISTORYCHANGES and HISTORYEDGES still parse those records internally. This keeps the M68 HISTORYPATH user-visible format stable while retaining the new edge engine.
