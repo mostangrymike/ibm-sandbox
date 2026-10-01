@@ -1863,6 +1863,8 @@ static int rec_history_first_cli(int argc,char **argv) {
   return 4;
  if(!rec_path_hex(argv[6],path,&pathlen)) return 4;
  rec_expected[0]=argv[2];rec_expected[1]=argv[3];
+ slot_read("dd:SEL0",&a);
+ slot_read("dd:SEL1",&b);
  return 4;
 }
 /* SELECT stays read-only. GET adds a verified indexed object
