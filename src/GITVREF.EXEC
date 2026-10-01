@@ -161,6 +161,12 @@ if command='HISTCHG' | command='HISTEDGE' |,
    say 'HISTORYDIFFS EDGE' ei 'CHILD' ec 'PARENT' ep
    say 'HISTORYDIFFS EDGE' ei 'CHILDVERSION' edgecv.ei,
        'PARENTVERSION' edgepv.ei
+   say 'HISTORYDIFFS EDGE' ei 'CHILDOID' version.edgecv.ei
+   say 'HISTORYDIFFS EDGE' ei 'PARENTOID' version.edgepv.ei
+   say 'HISTORYDIFFS EDGE' ei 'CHILDTYPE' vtype.edgecv.ei,
+       'SIZE' vsize.edgecv.ei
+   say 'HISTORYDIFFS EDGE' ei 'PARENTTYPE' vtype.edgepv.ei,
+       'SIZE' vsize.edgepv.ei
    say 'HISTORYDIFFS EDGE' ei 'CHILDDEPTH' nodedepth.ec
    say 'HISTORYDIFFS EDGE' ei 'PARENTDEPTH' nodedepth.ep
    say 'HISTORYDIFFS EDGE' ei 'CHILDCOMMIT' nodecommit.ec
@@ -197,6 +203,12 @@ if command='HISTCHG' | command='HISTEDGE' |,
    say 'HISTORYEDGES EDGE' ei 'CHILD' ec 'PARENT' ep
    say 'HISTORYEDGES EDGE' ei 'CHILDVERSION' edgecv.ei,
        'PARENTVERSION' edgepv.ei
+   say 'HISTORYEDGES EDGE' ei 'CHILDOID' version.edgecv.ei
+   say 'HISTORYEDGES EDGE' ei 'PARENTOID' version.edgepv.ei
+   say 'HISTORYEDGES EDGE' ei 'CHILDTYPE' vtype.edgecv.ei,
+       'SIZE' vsize.edgecv.ei
+   say 'HISTORYEDGES EDGE' ei 'PARENTTYPE' vtype.edgepv.ei,
+       'SIZE' vsize.edgepv.ei
    say 'HISTORYEDGES EDGE' ei 'CHILDDEPTH' nodedepth.ec
    say 'HISTORYEDGES EDGE' ei 'PARENTDEPTH' nodedepth.ep
    say 'HISTORYEDGES EDGE' ei 'CHILDCOMMIT' nodecommit.ec
@@ -235,6 +247,12 @@ if command='HISTCHG' | command='HISTEDGE' |,
   say 'HISTORYCHANGES EDGE' ei 'CHILD' ec 'PARENT' ep
   say 'HISTORYCHANGES EDGE' ei 'CHILDVERSION' edgecv.ei,
       'PARENTVERSION' edgepv.ei
+  say 'HISTORYCHANGES EDGE' ei 'CHILDOID' version.edgecv.ei
+  say 'HISTORYCHANGES EDGE' ei 'PARENTOID' version.edgepv.ei
+  say 'HISTORYCHANGES EDGE' ei 'CHILDTYPE' vtype.edgecv.ei,
+      'SIZE' vsize.edgecv.ei
+  say 'HISTORYCHANGES EDGE' ei 'PARENTTYPE' vtype.edgepv.ei,
+      'SIZE' vsize.edgepv.ei
   say 'HISTORYCHANGES EDGE' ei 'CHILDDEPTH' nodedepth.ec
   say 'HISTORYCHANGES EDGE' ei 'PARENTDEPTH' nodedepth.ep
   say 'HISTORYCHANGES EDGE' ei 'CHILDCOMMIT' nodecommit.ec
