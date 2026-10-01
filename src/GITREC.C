@@ -964,6 +964,105 @@ static int rec_history_dag_path(const unsigned char *starting,
  return 0;
 }
 
+
+/* M94: all-parent history with authenticated PRESENT/ABSENT path state. */
+static int rec_history_dag_state(const unsigned char *starting,
+                                unsigned int depth,
+                                const unsigned char *path,
+                                unsigned long pathlen) {
+ unsigned char commits[64][20],trees[64][20],levels[64];
+ unsigned char results[64][20],parent[20];
+ unsigned char edge[64][64];
+ unsigned long sizes[64],sz,at,begin,len;
+ int types[64],present[64];
+ unsigned int count=1,head=0,j,k,budget,pidx;
+ unsigned int edgecount=0;
+ int pos,rc,dup;
+ if(rec_sidx_read()!=0) return 8;
+ memset(edge,0,sizeof(edge));
+ memcpy(commits[0],starting,20);
+ levels[0]=0;
+ while(head<count) {
+  pos=sidx_locate(commits[head]);
+  if(pos<0) {
+   puts("HISTORYDAGSTATE COMMIT NOT FOUND");return 4;
+  }
+  if(sidx[pos].type!=1) {
+   puts("HISTORYDAGSTATE OBJECT IS NOT A COMMIT");return 8;
+  }
+  sz=sidx[pos].size;
+  sidx_silent=1;
+  rc=sidx_get(commits[head]);
+  sidx_silent=0;
+  if(rc!=0) return rc;
+  if(!rec_commit_walk(sz,0)) {
+   puts("HISTORYDAGSTATE COMMIT INVALID");return 8;
+  }
+  if(!rec_ascii_oid(idx_body+5,trees[head])) return 8;
+  if(levels[head]<depth) {
+   at=46;
+   while(at<sz) {
+    begin=at;
+    while(at<sz&&idx_body[at]!=0x0a) at++;
+    if(at==sz) return 8;
+    len=at-begin;
+    if(!rec_ascii_key(idx_body+begin,len,"parent")) break;
+    if(!rec_ascii_oid(idx_body+begin+7,parent)) return 8;
+    dup=0;pidx=count;
+    for(k=0;k<count;k++)
+     if(memcmp(commits[k],parent,20)==0) {
+      dup=1;pidx=k;break;
+     }
+    if(!dup) {
+     if(count==64) {
+      puts("HISTORYDAGSTATE COMMIT LIMIT EXCEEDED");
+      return 8;
+     }
+     memcpy(commits[count],parent,20);
+     levels[count]=(unsigned char)(levels[head]+1);
+     count++;
+    }
+    if(!edge[head][pidx]) {
+     edge[head][pidx]=1;
+     edgecount++;
+    }
+    at++;
+   }
+  }
+  budget=1024;
+  rc=rec_root_closure(trees[head],&budget);
+  if(rc!=0) return rc;
+  rc=rec_root_path_meta(trees[head],path,pathlen,
+                        results[head],&types[head],
+                        &sizes[head]);
+  if(rc!=0) return rc;
+  head++;
+ }
+ puts("HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED");
+ puts("HISTORYDAGSTATE DATA BEGIN");
+ for(j=0;j<count;j++) {
+  printf("HISTORYDAGSTATE NODE %u DEPTH %u\n",
+         j+1,(unsigned int)levels[j]);
+  fputs("HISTORYDAGSTATE COMMIT ",stdout);
+  idx_print(stdout,commits[j]);putchar('\n');
+  fputs("HISTORYDAGSTATE TREE ",stdout);
+  idx_print(stdout,trees[j]);putchar('\n');
+  printf("HISTORYDAGSTATE PATH TYPE %d SIZE %lu\n",
+         types[j],sizes[j]);
+  fputs("HISTORYDAGSTATE PATHOID ",stdout);
+  idx_print(stdout,results[j]);putchar('\n');
+ }
+ for(j=0;j<count;j++)
+  for(k=0;k<count;k++)
+   if(edge[j][k])
+    printf("HISTORYDAGSTATE EDGE CHILD %u PARENT %u\n",
+           j+1,k+1);
+ printf("HISTORYDAGSTATE EDGES %u\n",edgecount);
+ printf("HISTORYDAGSTATE NODES %u\n",count);
+ puts("HISTORYDAGSTATE DATA END");
+ return 0;
+}
+
 /* M30: numbered parent of a fully verified Git commit.
  * Parent ordinals are 1 based and include merge's second parent.
  * Never output a parent OID until its body authenticates.
