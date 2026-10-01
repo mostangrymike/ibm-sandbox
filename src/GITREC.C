@@ -1929,13 +1929,32 @@ int main(int argc,char **argv) {
   }
   depth=(unsigned int)d;
  }
- if(historydag||historydagpath||historydagstate||logdagfull) {
+ if(historydag||historydagpath||logdagfull) {
   if(strlen(argv[5])!=1||
      argv[5][0]<'0'||argv[5][0]>'8') {
    puts("HISTORYDAG DEPTH MUST BE 0 THROUGH 8");
    return 4;
   }
   depth=(unsigned int)(argv[5][0]-'0');
+ }
+ if(historydagstate) {
+  if(!argv[5][0]||strlen(argv[5])>2) {
+   puts("HISTORYDAGSTATE DEPTH MUST BE 0 THROUGH 16");
+   return 4;
+  }
+  d=0;
+  for(rc=0;argv[5][rc];rc++) {
+   if(argv[5][rc]<'0'||argv[5][rc]>'9') {
+    puts("HISTORYDAGSTATE DEPTH MUST BE 0 THROUGH 16");
+    return 4;
+   }
+   d=d*10+(unsigned long)(argv[5][rc]-'0');
+  }
+  if(d>16) {
+   puts("HISTORYDAGSTATE DEPTH MUST BE 0 THROUGH 16");
+   return 4;
+  }
+  depth=(unsigned int)d;
  }
  if(depthlinks_cmd) {
   if(strlen(argv[5])!=1||
