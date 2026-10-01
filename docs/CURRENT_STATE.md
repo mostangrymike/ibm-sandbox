@@ -555,3 +555,13 @@ M97 adds `GIT HISTORYSTATE-REF-FULL <ref> <depth> <path>`, routed through the sa
 ## M98-M99: authenticated lifecycle summaries
 
 M98 extends HISTORYSTATE with pre-output snapshot counts and lifecycle status: `ALLPRESENT`, `ALLABSENT`, or `MIXED`, plus exact PRESENT and ABSENT counts. M99 carries the same authenticated lifecycle summary into HISTORYDIFFS alongside the edge-level ADDED/DELETED/MODIFIED/UNCHANGED counts. All lifecycle values are derived only after the strict HISTORYDAGSTATE parser has validated every node, state, commit, tree, edge count, and connectivity relation. No native C changes beyond M94 and no protected-data changes are involved.
+
+## M94-M99 merged and strict host CI green
+
+M94-M97 PR #69 passed full native-stage workflow `36910918273` and squash-merged as `bbbeb20da43ab96fd6226e3ebb0cceaaae79240d`. M98-M99 PR #70 passed full native-stage workflow `36911543205` and squash-merged as `3d9dcc8b3a3bcf3664c86c48b7589f365ba5556c`.
+
+The merged batch adds native `GITREC HISTORYDAGSTATE`, preserving existing HISTORYDAGPATH semantics unchanged. HISTORYDAGSTATE authenticates the same all-parent commit/snapshot graph but permits an explicitly authenticated ABSENT path state. `GIT HISTORYSTATE-REF-FULL` emits the raw PRESENT/ABSENT timeline with lifecycle status/counts. `GIT HISTORYDIFFS-REF-FULL` now classifies verified child-to-parent edges as ADDED, DELETED, MODIFIED, or UNCHANGED and emits only changed edges, with exact status totals and endpoint depth/commit/tree plus OID/type/size when present. C physical source lines remain <=72 and CMS EXEC lines <=80. No protected REF2/selector/generation/PACK data changed.
+
+Exact next target proofs from HEAD `00D8D632...` and parent `2D5038C...`: README.md is ALLPRESENT and UNCHANGED with blob `1BA7AE46...D1F5`, size 567. `src` is ALLPRESENT and MODIFIED, changing tree OID from parent `884916539208F673916FBD6988DE6B028C355723` to child `A41B3EA7758F301B7E30BD3CFDF264300C02AE35`. `src/M9JOBJ.EXEC` is MIXED and ADDED: child PRESENT blob `775F6C809889E3497D8837379B37A706DFD101CA`, size 646; parent ABSENT. No deletion occurs in the reachable depth-8 first-parent window, so DELETED remains host-proven but lacks a real target fixture in this window.
+
+NEXT combined CMS gate: upload `GITREC.C`, `GITVREF.EXEC`, and `GIT.EXEC`, rebuild only `GITREC` with `CMSCLNK GITREC PLAIN`, no GITRUN. Then validate HISTORYSTATE/HISTORYDIFFS on README.md, src, and src/M9JOBJ.EXEC. This is the next genuine target dependency; additional host-only work would stack more presentation logic on an unproven native HISTORYDAGSTATE foundation.
