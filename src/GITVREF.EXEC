@@ -1,4 +1,4 @@
-/* M77: read-only REF2 verified commit-depth membership. */
+/* M80: read-only REF2 verified snapshot membership. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
