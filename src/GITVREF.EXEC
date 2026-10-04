@@ -1,4 +1,4 @@
-/* M117: verified direct commit history with chronology. */
+/* M118: verified direct commit history with subject prefix. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
