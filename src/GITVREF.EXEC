@@ -1,10 +1,10 @@
-/* M117: verified direct commit history with chronology. */
+/* M118: verified direct commit history with subject prefix. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M117'
+ say 'GITVREF EXEC LEVEL M118'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -366,6 +366,7 @@ statecheck:
  sedgecount=0
  drop spresent. soid. stype. ssize. scommit. stree. sdepth.
  drop sauthorwhen. sauthtz. scommitwhen. scommittz. smsgbytes.
+ drop ssubbytes. ssubprefix. ssubhex.
  drop sedgechild. sedgeparent. sedgekey. sparentseen.
  drop sseencommit.
  curnode=-1
@@ -380,12 +381,15 @@ statecheck:
  haveauthor=1
  havecommitter=1
  havemsg=1
+ havesubmeta=1
+ havesubhex=1
  havestate=1
  do ci=1 to out.0
   if words(out.ci)=5 & word(out.ci,1)='HISTORYDAGSTATE' &,
      word(out.ci,2)='NODE' & word(out.ci,4)='DEPTH' then do
    if havestate=0 | havecommit=0 | havetree=0 |,
-      haveauthor=0 | havecommitter=0 | havemsg=0 then,
+      haveauthor=0 | havecommitter=0 | havemsg=0 |,
+      havesubmeta=0 | havesubhex=0 then,
     return 'ERROR'
    parsednodes=parsednodes+1
    curnode=word(out.ci,3)
@@ -405,6 +409,8 @@ statecheck:
    haveauthor=0
    havecommitter=0
    havemsg=0
+   havesubmeta=0
+   havesubhex=0
    havestate=0
   end
   else if words(out.ci)=3 &,
@@ -464,11 +470,42 @@ statecheck:
    smsgbytes.curnode=mb
    havemsg=1
   end
+  else if words(out.ci)=6 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='SUBJECT' & word(out.ci,3)='BYTES' &,
+          word(out.ci,5)='PREFIXBYTES' then do
+   if havemsg=0 | havesubmeta=1 then return 'ERROR'
+   sb=word(out.ci,4)
+   sp=word(out.ci,6)
+   if datatype(sb,'W')\=1 | sb<0 then return 'ERROR'
+   if datatype(sp,'W')\=1 | sp<0 | sp>20 | sp>sb then,
+    return 'ERROR'
+   ssubbytes.curnode=sb
+   ssubprefix.curnode=sp
+   havesubmeta=1
+  end
+  else if words(out.ci)=3 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='SUBJECTHEX' then do
+   if havesubmeta=0 | havesubhex=1 then return 'ERROR'
+   sh=translate(word(out.ci,3))
+   sp=ssubprefix.curnode
+   if sp=0 then do
+    if sh\='EMPTY' then return 'ERROR'
+   end
+   else do
+    if length(sh)\=sp*2 then return 'ERROR'
+    if verify(sh,'0123456789ABCDEF')\=0 then return 'ERROR'
+   end
+   ssubhex.curnode=sh
+   havesubhex=1
+  end
   else if words(out.ci)=3 &,
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='PATH' & word(out.ci,3)='ABSENT' then do
    if havecommit=0 | havetree=0 | haveauthor=0 |,
-      havecommitter=0 | havemsg=0 | havestate=1 then,
+      havecommitter=0 | havemsg=0 | havesubmeta=0 |,
+      havesubhex=0 | havestate=1 then,
     return 'ERROR'
    spresent.curnode=0
    scommit.curnode=curcommit
@@ -480,7 +517,8 @@ statecheck:
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='PATH' & word(out.ci,3)='PRESENT' then do
    if havecommit=0 | havetree=0 | haveauthor=0 |,
-      havecommitter=0 | havemsg=0 | havestate=1 then,
+      havecommitter=0 | havemsg=0 | havesubmeta=0 |,
+      havesubhex=0 | havestate=1 then,
     return 'ERROR'
    if word(out.ci,4)\='TYPE' | word(out.ci,6)\='SIZE' then,
     return 'ERROR'
@@ -542,7 +580,8 @@ statecheck:
   end
  end
  if havestate=0 | havecommit=0 | havetree=0 |,
-    haveauthor=0 | havecommitter=0 | havemsg=0 then return 'ERROR'
+    haveauthor=0 | havecommitter=0 | havemsg=0 |,
+    havesubmeta=0 | havesubhex=0 then return 'ERROR'
  if snodes\=parsednodes | sedges\=sedgecount then return 'ERROR'
  if sparentseen.1=1 then return 'ERROR'
  do ni=1 to snodes
@@ -555,6 +594,10 @@ statecheck:
   if datatype(scommittz.ni,'W')\=1 then return 'ERROR'
   if scommittz.ni<(-1439) | scommittz.ni>1439 then return 'ERROR'
   if datatype(smsgbytes.ni,'W')\=1 then return 'ERROR'
+  if datatype(ssubbytes.ni,'W')\=1 then return 'ERROR'
+  if datatype(ssubprefix.ni,'W')\=1 then return 'ERROR'
+  if ssubprefix.ni<0 | ssubprefix.ni>20 then return 'ERROR'
+  if ssubprefix.ni>ssubbytes.ni then return 'ERROR'
   if ni>1 & sparentseen.ni\=1 then return 'ERROR'
  end
  return 'OK'
@@ -622,6 +665,8 @@ emitnodechron:
  say kind 'NODE' ni 'COMMITTER TIME' scommitwhen.ni,
      'TZMIN' scommittz.ni
  say kind 'NODE' ni 'MESSAGE BYTES' smsgbytes.ni
+ say kind 'NODE' ni 'SUBJECT BYTES' ssubbytes.ni,
+     'PREFIXHEX' ssubhex.ni
  return
 
 emitpairchron:
@@ -638,6 +683,10 @@ emitpairchron:
  say kind record num 'COMMITTER DELTA SECONDS' delta
  say kind record num 'CHILDMESSAGE BYTES' smsgbytes.ec
  say kind record num 'PARENTMESSAGE BYTES' smsgbytes.ep
+ say kind record num 'CHILDSUBJECT BYTES' ssubbytes.ec,
+     'PREFIXHEX' ssubhex.ec
+ say kind record num 'PARENTSUBJECT BYTES' ssubbytes.ep,
+     'PREFIXHEX' ssubhex.ep
  return
 
 stateemit:
