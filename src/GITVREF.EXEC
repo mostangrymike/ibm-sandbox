@@ -14,7 +14,7 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTSTATE' & command\='HISTLOG' &,
    command\='HISTSTATUS' & command\='HISTNEAR' &,
    command\='HISTTRANS' & command\='HISTREPORT' &,
-   command\='HISTBOUNDS' then do
+   command\='HISTBOUNDS' & command\='HISTCHRON' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -24,7 +24,7 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTSTATE' | command='HISTLOG' |,
    command='HISTSTATUS' | command='HISTNEAR' |,
    command='HISTTRANS' | command='HISTREPORT' |,
-   command='HISTBOUNDS' then do
+   command='HISTBOUNDS' | command='HISTCHRON' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -33,7 +33,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTLOG' | command='HISTSTATUS' |,
    command='HISTNEAR' | command='HISTTRANS' |,
-   command='HISTREPORT' | command='HISTBOUNDS' then do
+   command='HISTREPORT' | command='HISTBOUNDS' |,
+   command='HISTCHRON' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -48,12 +49,13 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTTRANS' & depth+0>8 then exit 4
  if command='HISTREPORT' & depth+0>8 then exit 4
  if command='HISTBOUNDS' & depth+0>8 then exit 4
+ if command='HISTCHRON' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
     command='HISTSTATUS' | command='HISTNEAR' |,
     command='HISTTRANS' | command='HISTREPORT' |,
-    command='HISTBOUNDS' then do
+    command='HISTBOUNDS' | command='HISTCHRON' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -84,7 +86,8 @@ end
 else if command='HISTDIFF' | command='HISTSTATE' |,
         command='HISTLOG' | command='HISTSTATUS' |,
         command='HISTNEAR' | command='HISTTRANS' |,
-        command='HISTREPORT' | command='HISTBOUNDS' then do
+        command='HISTREPORT' | command='HISTBOUNDS' |,
+        command='HISTCHRON' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -116,7 +119,8 @@ if \ok then exit 8
 if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTLOG' | command='HISTSTATUS' |,
    command='HISTNEAR' | command='HISTTRANS' |,
-   command='HISTREPORT' | command='HISTBOUNDS' then do
+   command='HISTREPORT' | command='HISTBOUNDS' |,
+   command='HISTCHRON' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -145,6 +149,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTBOUNDS' then do
   call statebounds
+  exit result
+ end
+ if command='HISTCHRON' then do
+  call statechron
   exit result
  end
  call statediff
