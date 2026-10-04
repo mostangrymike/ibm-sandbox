@@ -1,10 +1,12 @@
-/* M123: verified transition chronology aggregation. */
+/* M124: CMS REXX precision for authenticated Git epoch arithmetic. */
 address cms
+/* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
+numeric digits 20
 parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M123'
+ say 'GITVREF EXEC LEVEL M124'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
