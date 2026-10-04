@@ -273,7 +273,8 @@ static int rec_ident_when(const unsigned char *line,
                           unsigned long *when,int *tzmin,
                           unsigned long *ident_bytes,
                           unsigned char *ident_prefix,
-                          unsigned int *prefix_bytes) {
+                          unsigned int *prefix_bytes,
+                          unsigned char ident_blobid[20]) {
  unsigned long p,end,start,j,value=0,maxv=~0UL;
  unsigned long ident_end,copy;
  int sign,hh,mm,d;
@@ -300,6 +301,8 @@ static int rec_ident_when(const unsigned char *line,
  *prefix_bytes=(unsigned int)copy;
  if(copy>0)
   memcpy(ident_prefix,line+keybytes,(size_t)copy);
+ if(!idx_hash(3,line+keybytes,*ident_bytes,ident_blobid))
+  return 0;
  for(j=start;j<end;j++) {
   if(line[j]<0x30||line[j]>0x39) return 0;
   d=line[j]-0x30;
@@ -317,11 +320,13 @@ static int rec_commit_times(unsigned long n,
                             unsigned long *author_ident_bytes,
                             unsigned char *author_ident_prefix,
                             unsigned int *author_prefix_bytes,
+                            unsigned char author_ident_blobid[20],
                             unsigned long *commit_when,
                             int *commit_tz,
                             unsigned long *commit_ident_bytes,
                             unsigned char *commit_ident_prefix,
                             unsigned int *commit_prefix_bytes,
+                            unsigned char commit_ident_blobid[20],
                             unsigned long *message_bytes,
                             unsigned long *subject_bytes,
                             unsigned char *subject_prefix,
@@ -356,7 +361,8 @@ static int rec_commit_times(unsigned long n,
    if(!rec_ident_when(idx_body+begin,len,7UL,
                       author_when,author_tz,
                       author_ident_bytes,author_ident_prefix,
-                      author_prefix_bytes)) return 0;
+                      author_prefix_bytes,author_ident_blobid))
+    return 0;
    author=1;
   }
   if(rec_ascii_key(idx_body+begin,len,"committer")) {
@@ -364,7 +370,8 @@ static int rec_commit_times(unsigned long n,
    if(!rec_ident_when(idx_body+begin,len,10UL,
                       commit_when,commit_tz,
                       commit_ident_bytes,commit_ident_prefix,
-                      commit_prefix_bytes)) return 0;
+                      commit_prefix_bytes,commit_ident_blobid))
+    return 0;
    committer=1;
   }
   at++;
@@ -1081,6 +1088,8 @@ static int rec_history_dag_state(const unsigned char *starting,
  unsigned char subject_prefix[64][20];
  unsigned char author_ident_prefix[64][20];
  unsigned char commit_ident_prefix[64][20];
+ unsigned char author_ident_blobid[64][20];
+ unsigned char commit_ident_blobid[64][20];
  unsigned char edge[64][64];
  unsigned long sizes[64],sz,at,begin,len;
  unsigned long author_when[64],commit_when[64],msgbytes[64];
@@ -1119,10 +1128,12 @@ static int rec_history_dag_state(const unsigned char *starting,
                        &author_ident_bytes[head],
                        author_ident_prefix[head],
                        &author_ident_prefix_bytes[head],
+                       author_ident_blobid[head],
                        &commit_when[head],&commit_tz[head],
                        &commit_ident_bytes[head],
                        commit_ident_prefix[head],
                        &commit_ident_prefix_bytes[head],
+                       commit_ident_blobid[head],
                        &msgbytes[head],&subject_bytes[head],
                        subject_prefix[head],
                        &subject_prefix_bytes[head])) {
@@ -1187,6 +1198,8 @@ static int rec_history_dag_state(const unsigned char *starting,
    for(k=0;k<author_ident_prefix_bytes[j];k++)
     printf("%02X",(unsigned int)author_ident_prefix[j][k]);
   putchar('\n');
+  fputs("HISTORYDAGSTATE AIDENT BLOBID ",stdout);
+  idx_print(stdout,author_ident_blobid[j]);putchar('\n');
   printf("HISTORYDAGSTATE COMMITTER TIME %lu TZMIN %d\n",
          commit_when[j],commit_tz[j]);
   printf("HISTORYDAGSTATE CIDENT BYTES %lu PREFIXBYTES %u\n",
@@ -1197,6 +1210,8 @@ static int rec_history_dag_state(const unsigned char *starting,
    for(k=0;k<commit_ident_prefix_bytes[j];k++)
     printf("%02X",(unsigned int)commit_ident_prefix[j][k]);
   putchar('\n');
+  fputs("HISTORYDAGSTATE CIDENT BLOBID ",stdout);
+  idx_print(stdout,commit_ident_blobid[j]);putchar('\n');
   printf("HISTORYDAGSTATE MESSAGE BYTES %lu\n",msgbytes[j]);
   printf("HISTORYDAGSTATE SUBJECT BYTES %lu PREFIXBYTES %u\n",
          subject_bytes[j],subject_prefix_bytes[j]);
