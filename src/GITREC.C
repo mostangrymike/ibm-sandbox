@@ -303,8 +303,12 @@ static int rec_commit_times(unsigned long n,
                             int *author_tz,
                             unsigned long *commit_when,
                             int *commit_tz,
-                            unsigned long *message_bytes) {
- unsigned long at=0,begin,len;
+                            unsigned long *message_bytes,
+                            unsigned long *subject_bytes,
+                            unsigned char *subject_prefix,
+                            unsigned int *prefix_bytes) {
+ unsigned long at=0,begin,len,message,subject_end;
+ unsigned long copy;
  int author=0,committer=0;
  while(at<n&&idx_body[at]!=0x0a) at++;
  if(at==n) return 0;
@@ -315,7 +319,17 @@ static int rec_commit_times(unsigned long n,
   if(at==n) return 0;
   len=at-begin;
   if(len==0) {
-   *message_bytes=n-(at+1);
+   message=at+1;
+   *message_bytes=n-message;
+   subject_end=message;
+   while(subject_end<n&&idx_body[subject_end]!=0x0a)
+    subject_end++;
+   *subject_bytes=subject_end-message;
+   copy=*subject_bytes;
+   if(copy>20UL) copy=20UL;
+   *prefix_bytes=(unsigned int)copy;
+   if(copy>0)
+    memcpy(subject_prefix,idx_body+message,(size_t)copy);
    return author&&committer;
   }
   if(rec_ascii_key(idx_body+begin,len,"author")) {
@@ -1041,9 +1055,12 @@ static int rec_history_dag_state(const unsigned char *starting,
                                 unsigned long pathlen) {
  unsigned char commits[64][20],trees[64][20],levels[64];
  unsigned char results[64][20],parent[20];
+ unsigned char subject_prefix[64][20];
  unsigned char edge[64][64];
  unsigned long sizes[64],sz,at,begin,len;
  unsigned long author_when[64],commit_when[64],msgbytes[64];
+ unsigned long subject_bytes[64];
+ unsigned int subject_prefix_bytes[64];
  int author_tz[64],commit_tz[64];
  int types[64],present[64];
  unsigned int count=1,head=0,j,k,budget,pidx;
@@ -1071,7 +1088,9 @@ static int rec_history_dag_state(const unsigned char *starting,
   }
   if(!rec_commit_times(sz,&author_when[head],&author_tz[head],
                        &commit_when[head],&commit_tz[head],
-                       &msgbytes[head])) {
+                       &msgbytes[head],&subject_bytes[head],
+                       subject_prefix[head],
+                       &subject_prefix_bytes[head])) {
    puts("HISTORYDAGSTATE COMMIT META INVALID");return 8;
   }
   if(!rec_ascii_oid(idx_body+5,trees[head])) return 8;
@@ -1128,6 +1147,14 @@ static int rec_history_dag_state(const unsigned char *starting,
   printf("HISTORYDAGSTATE COMMITTER TIME %lu TZMIN %d\n",
          commit_when[j],commit_tz[j]);
   printf("HISTORYDAGSTATE MESSAGE BYTES %lu\n",msgbytes[j]);
+  printf("HISTORYDAGSTATE SUBJECT BYTES %lu PREFIXBYTES %u\n",
+         subject_bytes[j],subject_prefix_bytes[j]);
+  fputs("HISTORYDAGSTATE SUBJECTHEX ",stdout);
+  if(subject_prefix_bytes[j]==0) fputs("EMPTY",stdout);
+  else
+   for(k=0;k<subject_prefix_bytes[j];k++)
+    printf("%02X",(unsigned int)subject_prefix[j][k]);
+  putchar('\n');
   if(present[j]) {
    printf("HISTORYDAGSTATE PATH PRESENT TYPE %d SIZE %lu\n",
           types[j],sizes[j]);
