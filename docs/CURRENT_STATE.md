@@ -630,3 +630,7 @@ NEXT combined CMS target gate requires only refreshed `GITVREF.EXEC` and `GIT.EX
 `GIT HISTORYSTATUS-REF-FULL HEAD 1 src` passed on real CMS and proves the refreshed GITVREF worker is current through the shared M102-M110 logic: CHANGED / ALLPRESENT, PRESENT 2, ABSENT 0, VERSIONS 2, TRANSITIONS 1, CHANGED TRANSITIONS 1, NODES 2, EDGES 1, exactly one MODIFIED edge, nearest/farthest change depth 0, nearest changes 1. CPU 115.04 / elapsed 117.90 sec at 11:25:15.
 
 The subsequent public commands `HISTORYNEAREST-REF-FULL`, `HISTORYTRANSITIONS-REF-FULL`, `HISTORYREPORT-REF-FULL`, and `HISTORYBOUNDS-REF-FULL` all failed immediately in `GIT EXEC` with `unknown command` RC4, before GITVREF/native traversal. Current repository `GIT.EXEC` contains all four routes, while HISTORYSTATUS is an older route. Therefore the target is executing a stale GIT router alongside a current GITVREF worker. No native or sealed-data fault is indicated. M102 shared classifier/status is target-proven; M105/M108/M110/M111 public routing remains pending target proof.
+
+## M112: fail-closed EXEC level identity
+
+M112 adds `GIT LEVEL`. The router invokes `GITVREF LEVEL`, expects exactly `GITVREF EXEC LEVEL M112`, prints `GIT EXEC LEVEL M112` plus the worker level, and fails RC8 with `GITVREF EXEC LEVEL MISMATCH` if the worker is stale or otherwise inconsistent. This directly diagnoses mixed-level router/worker target states like the partial M102-M111 gate. No native C or protected-data changes.
