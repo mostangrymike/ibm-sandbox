@@ -1,5 +1,5 @@
 #!/bin/sh
-# M117 direct commit history and chronology guards.
+# M118 direct commit history, chronology and subject guards.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -46,9 +46,9 @@ grep -Fq "command = 'HISTORYREPORT-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF HISTREPORT' rest" "$g"
 grep -Fq "command = 'HISTORYBOUNDS-REF-FULL'" "$g"
 grep -Fq "command = 'LEVEL'" "$g"
-grep -Fq "GIT EXEC LEVEL M117" "$g"
+grep -Fq "GIT EXEC LEVEL M118" "$g"
 grep -Fq "GITVREF EXEC LEVEL MISMATCH" "$g"
-grep -Fq "GITVREF EXEC LEVEL M117" "$v"
+grep -Fq "GITVREF EXEC LEVEL M118" "$v"
 grep -Fq "rawwanted=wanted" "$v"
 grep -Fq "length(direct)=40" "$v"
 grep -Fq "call directinput command" "$v"
@@ -61,6 +61,14 @@ grep -Fq "rec_commit_times" "$rec"
 grep -Fq "HISTORYDAGSTATE AUTHOR TIME %lu TZMIN %d" "$rec"
 grep -Fq "HISTORYDAGSTATE COMMITTER TIME %lu TZMIN %d" "$rec"
 grep -Fq "HISTORYDAGSTATE MESSAGE BYTES %lu" "$rec"
+grep -Fq "HISTORYDAGSTATE SUBJECT BYTES %lu PREFIXBYTES %u" "$rec"
+grep -Fq "HISTORYDAGSTATE SUBJECTHEX" "$rec"
+grep -Fq "subject_prefix_bytes" "$rec"
+grep -Fq "ssubbytes.curnode=sb" "$v"
+grep -Fq "ssubprefix.curnode=sp" "$v"
+grep -Fq "ssubhex.curnode=sh" "$v"
+grep -Fq "CHILDSUBJECT BYTES" "$v"
+grep -Fq "PARENTSUBJECT BYTES" "$v"
 grep -Fq "sauthorwhen.curnode=aw" "$v"
 grep -Fq "scommitwhen.curnode=cw" "$v"
 grep -Fq "smsgbytes.curnode=mb" "$v"
@@ -264,4 +272,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M117 DIRECT COMMIT HISTORY AND CHRONOLOGY GUARDS PASSED"
+echo "M118 DIRECT COMMIT HISTORY CHRONOLOGY SUBJECT GUARDS PASSED"
