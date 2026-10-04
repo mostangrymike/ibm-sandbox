@@ -467,7 +467,9 @@ statecheck:
   else if words(out.ci)=3 &,
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='PATH' & word(out.ci,3)='ABSENT' then do
-   if havecommit=0 | havetree=0 | havestate=1 then return 'ERROR'
+   if havecommit=0 | havetree=0 | haveauthor=0 |,
+      havecommitter=0 | havemsg=0 | havestate=1 then,
+    return 'ERROR'
    spresent.curnode=0
    scommit.curnode=curcommit
    stree.curnode=curtree
@@ -477,7 +479,9 @@ statecheck:
   else if words(out.ci)=7 &,
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='PATH' & word(out.ci,3)='PRESENT' then do
-   if havecommit=0 | havetree=0 | havestate=1 then return 'ERROR'
+   if havecommit=0 | havetree=0 | haveauthor=0 |,
+      havecommitter=0 | havemsg=0 | havestate=1 then,
+    return 'ERROR'
    if word(out.ci,4)\='TYPE' | word(out.ci,6)\='SIZE' then,
     return 'ERROR'
    curtype=word(out.ci,5)
@@ -537,12 +541,20 @@ statecheck:
    if datatype(snodes,'W')\=1 | snodes<1 then return 'ERROR'
   end
  end
- if havestate=0 | havecommit=0 | havetree=0 then return 'ERROR'
+ if havestate=0 | havecommit=0 | havetree=0 |,
+    haveauthor=0 | havecommitter=0 | havemsg=0 then return 'ERROR'
  if snodes\=parsednodes | sedges\=sedgecount then return 'ERROR'
  if sparentseen.1=1 then return 'ERROR'
  do ni=1 to snodes
   if datatype(spresent.ni,'W')\=1 then return 'ERROR'
   if spresent.ni\=0 & spresent.ni\=1 then return 'ERROR'
+  if datatype(sauthorwhen.ni,'W')\=1 then return 'ERROR'
+  if datatype(sauthtz.ni,'W')\=1 then return 'ERROR'
+  if sauthtz.ni<(-1439) | sauthtz.ni>1439 then return 'ERROR'
+  if datatype(scommitwhen.ni,'W')\=1 then return 'ERROR'
+  if datatype(scommittz.ni,'W')\=1 then return 'ERROR'
+  if scommittz.ni<(-1439) | scommittz.ni>1439 then return 'ERROR'
+  if datatype(smsgbytes.ni,'W')\=1 then return 'ERROR'
   if ni>1 & sparentseen.ni\=1 then return 'ERROR'
  end
  return 'OK'
