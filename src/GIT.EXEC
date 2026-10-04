@@ -12,6 +12,23 @@ if command = 'VERSION' then do
    'GITCORE VERSION'
    exit rc
 end
+if command = 'LEVEL' then do
+   parse var rest extra
+   if extra \= '' then do
+      say 'Usage: GIT LEVEL'
+      exit 4
+   end
+   lvl.0 = 0
+   'PIPE CMS EXEC GITVREF LEVEL | STEM lvl.'
+   if rc \= 0 then exit rc
+   say 'GIT EXEC LEVEL M112'
+   if lvl.0 \= 1 | lvl.1 \= 'GITVREF EXEC LEVEL M112' then do
+      say 'GITVREF EXEC LEVEL MISMATCH'
+      exit 8
+   end
+   say lvl.1
+   exit 0
+end
 if command = 'INIT' then do
    parse var rest extra
    if extra \= '' then do
