@@ -640,3 +640,17 @@ M112 adds `GIT LEVEL`. The router invokes `GITVREF LEVEL`, expects exactly `GITV
 M112 PR #77 passed full native-stage workflow `37217089033` and squash-merged as `1edc4551d245953c5cfb701388d34bc7a783b654`. `GIT LEVEL` now invokes `GITVREF LEVEL`, expects exactly `GITVREF EXEC LEVEL M112`, prints `GIT EXEC LEVEL M112` plus the worker level, and returns RC8 with `GITVREF EXEC LEVEL MISMATCH` if the router and worker are inconsistent. This directly addresses the mixed target level observed during the partial M102-M111 gate. No native C or protected-data changes.
 
 NEXT target repair: refresh both `GIT.EXEC` and `GITVREF.EXEC`, then run `GIT LEVEL`. Expected RC0 output is exactly `GIT EXEC LEVEL M112` followed by `GITVREF EXEC LEVEL M112`. Once level identity passes, rerun the previously blocked public commands: HISTORYNEAREST on HEAD/1/src, HISTORYTRANSITIONS on HEAD/1/src/M9JOBJ.EXEC, HISTORYREPORT on HEAD/1/src, and HISTORYBOUNDS on HEAD/1/src. No compile and no GITRUN.
+
+## 2026-10-04 M102-M112 native CMS target proof
+
+`GIT LEVEL` passed with exact RC0 identity `GIT EXEC LEVEL M112` and `GITVREF EXEC LEVEL M112`, eliminating the stale-router/current-worker condition from the previous partial gate.
+
+`GIT HISTORYNEAREST-REF-FULL HEAD 1 src` passed: CHANGED / ALLPRESENT, NODES 2, EDGES 1, CHANGES 1, nearest DEPTH 0, MATCHES 1, one MODIFIED edge child node 1 -> parent node 2, child depth 0 / parent depth 1, commits `00D8D63229305230C8D37F884CE87F9E1A89468C` -> `2D5038C551318997B865497E04CF4C037DE4135E`, PRESENT/PRESENT, child path tree `A41B3EA7758F301B7E30BD3CFDF264300C02AE35` type 2 size 3690, parent `884916539208F673916FBD6988DE6B028C355723` type 2 size 3651. CPU 115.24 / elapsed 118.13.
+
+`GIT HISTORYTRANSITIONS-REF-FULL HEAD 1 src/M9JOBJ.EXEC` passed: CHANGED / MIXED, VERSIONS 1, state 0 ABSENT, state 1 PRESENT blob `775F6C809889E3497D8837379B37A706DFD101CA` type 3 size 646, one transition child state 1 -> parent state 0 count 1, status ADDED, ADDED edges 1 and all other edge classes 0. CPU 115.79 / elapsed 118.72.
+
+`GIT HISTORYREPORT-REF-FULL HEAD 1 src` passed the consolidated report: CHANGED / ALLPRESENT, PRESENT 2 / ABSENT 0, two authenticated present states with expected OIDs/type/size/depth bounds, one changed transition 1->2 MODIFIED, one changed edge with exact commit/root-tree/path-object endpoint metadata, nearest=farthest change depth 0 and nearest changes 1. CPU 115.42 / elapsed 118.34.
+
+`GIT HISTORYBOUNDS-REF-FULL HEAD 1 src` passed: CHANGED / ALLPRESENT, one change, nearest depth 0 matches 1, farthest depth 0 matches 1, one boundary change, edge 1 labeled `BOUND BOTH`, status MODIFIED, with expected endpoint commits/states/OIDs/type/size. CPU 114.96 / elapsed 117.84.
+
+Together with the earlier `HISTORYSTATUS-REF-FULL HEAD 1 src` target pass, M102-M112 are NATIVE CMS TARGET-PROVEN. No outstanding target defect remains in the shared classifier, nearest/farthest depth logic, lifecycle transition matrix, consolidated report, boundary report, or EXEC-level identity handshake.
