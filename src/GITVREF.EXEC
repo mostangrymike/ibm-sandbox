@@ -959,6 +959,91 @@ statetrans:
 
 
 
+
+statechron:
+ call stateclass
+ if result\='OK' then return 8
+ apos=0
+ azero=0
+ aneg=0
+ cpos=0
+ czero=0
+ cneg=0
+ lpos=0
+ lzero=0
+ lneg=0
+ haveedge=0
+ havenode=0
+ do ni=1 to snodes
+  lag=scommitwhen.ni-sauthorwhen.ni
+  if lag>0 then lpos=lpos+1
+  else if lag=0 then lzero=lzero+1
+  else lneg=lneg+1
+  if havenode=0 then do
+   lagmin=lag
+   lagmax=lag
+   havenode=1
+  end
+  else do
+   if lag<lagmin then lagmin=lag
+   if lag>lagmax then lagmax=lag
+  end
+ end
+ do ei=1 to sedgecount
+  ec=sedgechild.ei
+  ep=sedgeparent.ei
+  ad=sauthorwhen.ec-sauthorwhen.ep
+  cd=scommitwhen.ec-scommitwhen.ep
+  if ad>0 then apos=apos+1
+  else if ad=0 then azero=azero+1
+  else aneg=aneg+1
+  if cd>0 then cpos=cpos+1
+  else if cd=0 then czero=czero+1
+  else cneg=cneg+1
+  if haveedge=0 then do
+   admin=ad
+   admax=ad
+   cdmin=cd
+   cdmax=cd
+   haveedge=1
+  end
+  else do
+   if ad<admin then admin=ad
+   if ad>admax then admax=ad
+   if cd<cdmin then cdmin=cd
+   if cd>cdmax then cdmax=cd
+  end
+ end
+ if apos+azero+aneg\=sedgecount then return 8
+ if cpos+czero+cneg\=sedgecount then return 8
+ if lpos+lzero+lneg\=snodes then return 8
+ call emitverified
+ say 'HISTORYCHRONOLOGY FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYCHRONOLOGY DATA BEGIN'
+ say 'HISTORYCHRONOLOGY NODES' snodes
+ say 'HISTORYCHRONOLOGY EDGES' sedgecount
+ say 'HISTORYCHRONOLOGY AUTHOR POSITIVE EDGES' apos
+ say 'HISTORYCHRONOLOGY AUTHOR ZERO EDGES' azero
+ say 'HISTORYCHRONOLOGY AUTHOR NEGATIVE EDGES' aneg
+ say 'HISTORYCHRONOLOGY COMMITTER POSITIVE EDGES' cpos
+ say 'HISTORYCHRONOLOGY COMMITTER ZERO EDGES' czero
+ say 'HISTORYCHRONOLOGY COMMITTER NEGATIVE EDGES' cneg
+ if haveedge then do
+  say 'HISTORYCHRONOLOGY AUTHOR MIN DELTA SECONDS' admin
+  say 'HISTORYCHRONOLOGY AUTHOR MAX DELTA SECONDS' admax
+  say 'HISTORYCHRONOLOGY COMMITTER MIN DELTA SECONDS' cdmin
+  say 'HISTORYCHRONOLOGY COMMITTER MAX DELTA SECONDS' cdmax
+ end
+ say 'HISTORYCHRONOLOGY LAG POSITIVE NODES' lpos
+ say 'HISTORYCHRONOLOGY LAG ZERO NODES' lzero
+ say 'HISTORYCHRONOLOGY LAG NEGATIVE NODES' lneg
+ if havenode then do
+  say 'HISTORYCHRONOLOGY LAG MIN SECONDS' lagmin
+  say 'HISTORYCHRONOLOGY LAG MAX SECONDS' lagmax
+ end
+ say 'HISTORYCHRONOLOGY DATA END'
+ return 0
+
 statebounds:
  call stateclass
  if result\='OK' then return 8
