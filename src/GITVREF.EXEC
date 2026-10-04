@@ -675,6 +675,8 @@ emitnodechron:
  lag=scommitwhen.ni-sauthorwhen.ni
  say kind 'NODE' ni 'AUTHOR TO COMMITTER LAG SECONDS' lag
  say kind 'NODE' ni 'MESSAGE BYTES' smsgbytes.ni
+ say kind 'NODE' ni 'SUBJECT BYTES' ssubbytes.ni,
+     'PREFIXHEX' ssubhex.ni
  return
 
 emitpairchron:
