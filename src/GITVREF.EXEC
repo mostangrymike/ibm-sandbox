@@ -1,10 +1,10 @@
-/* M117: verified direct commit history with chronology. */
+/* M120: verified direct commit history chronology summary. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M117'
+ say 'GITVREF EXEC LEVEL M120'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -621,6 +621,8 @@ emitnodechron:
      'TZMIN' sauthtz.ni
  say kind 'NODE' ni 'COMMITTER TIME' scommitwhen.ni,
      'TZMIN' scommittz.ni
+ lag=scommitwhen.ni-sauthorwhen.ni
+ say kind 'NODE' ni 'AUTHOR TO COMMITTER LAG SECONDS' lag
  say kind 'NODE' ni 'MESSAGE BYTES' smsgbytes.ni
  return
 
@@ -634,8 +636,14 @@ emitpairchron:
      'TZMIN' scommittz.ec
  say kind record num 'PARENTCOMMITTER TIME' scommitwhen.ep,
      'TZMIN' scommittz.ep
+ adelta=sauthorwhen.ec-sauthorwhen.ep
+ say kind record num 'AUTHOR DELTA SECONDS' adelta
  delta=scommitwhen.ec-scommitwhen.ep
  say kind record num 'COMMITTER DELTA SECONDS' delta
+ clag=scommitwhen.ec-sauthorwhen.ec
+ plag=scommitwhen.ep-sauthorwhen.ep
+ say kind record num 'CHILD AUTHOR TO COMMITTER LAG SECONDS' clag
+ say kind record num 'PARENT AUTHOR TO COMMITTER LAG SECONDS' plag
  say kind record num 'CHILDMESSAGE BYTES' smsgbytes.ec
  say kind record num 'PARENTMESSAGE BYTES' smsgbytes.ep
  return
