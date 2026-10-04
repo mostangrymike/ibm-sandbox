@@ -303,8 +303,12 @@ static int rec_commit_times(unsigned long n,
                             int *author_tz,
                             unsigned long *commit_when,
                             int *commit_tz,
-                            unsigned long *message_bytes) {
- unsigned long at=0,begin,len;
+                            unsigned long *message_bytes,
+                            unsigned long *subject_bytes,
+                            unsigned char *subject_prefix,
+                            unsigned int *prefix_bytes) {
+ unsigned long at=0,begin,len,message,subject_end;
+ unsigned long copy;
  int author=0,committer=0;
  while(at<n&&idx_body[at]!=0x0a) at++;
  if(at==n) return 0;
@@ -315,7 +319,17 @@ static int rec_commit_times(unsigned long n,
   if(at==n) return 0;
   len=at-begin;
   if(len==0) {
-   *message_bytes=n-(at+1);
+   message=at+1;
+   *message_bytes=n-message;
+   subject_end=message;
+   while(subject_end<n&&idx_body[subject_end]!=0x0a)
+    subject_end++;
+   *subject_bytes=subject_end-message;
+   copy=*subject_bytes;
+   if(copy>20UL) copy=20UL;
+   *prefix_bytes=(unsigned int)copy;
+   if(copy>0)
+    memcpy(subject_prefix,idx_body+message,(size_t)copy);
    return author&&committer;
   }
   if(rec_ascii_key(idx_body+begin,len,"author")) {
