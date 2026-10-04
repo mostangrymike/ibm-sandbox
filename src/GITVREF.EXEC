@@ -427,6 +427,43 @@ statecheck:
    if verify(curtree,'0123456789ABCDEF')\=0 then return 'ERROR'
    havetree=1
   end
+  else if words(out.ci)=6 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='AUTHOR' & word(out.ci,3)='TIME' &,
+          word(out.ci,5)='TZMIN' then do
+   if havetree=0 | haveauthor=1 then return 'ERROR'
+   aw=word(out.ci,4)
+   az=word(out.ci,6)
+   if datatype(aw,'W')\=1 | aw<0 then return 'ERROR'
+   if datatype(az,'W')\=1 | az< -1439 | az>1439 then,
+    return 'ERROR'
+   sauthorwhen.curnode=aw
+   sauthtz.curnode=az
+   haveauthor=1
+  end
+  else if words(out.ci)=6 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='COMMITTER' & word(out.ci,3)='TIME' &,
+          word(out.ci,5)='TZMIN' then do
+   if havetree=0 | havecommitter=1 then return 'ERROR'
+   cw=word(out.ci,4)
+   cz=word(out.ci,6)
+   if datatype(cw,'W')\=1 | cw<0 then return 'ERROR'
+   if datatype(cz,'W')\=1 | cz< -1439 | cz>1439 then,
+    return 'ERROR'
+   scommitwhen.curnode=cw
+   scommittz.curnode=cz
+   havecommitter=1
+  end
+  else if words(out.ci)=4 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='MESSAGE' & word(out.ci,3)='BYTES' then do
+   if havetree=0 | havemsg=1 then return 'ERROR'
+   mb=word(out.ci,4)
+   if datatype(mb,'W')\=1 | mb<0 then return 'ERROR'
+   smsgbytes.curnode=mb
+   havemsg=1
+  end
   else if words(out.ci)=3 &,
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='PATH' & word(out.ci,3)='ABSENT' then do
