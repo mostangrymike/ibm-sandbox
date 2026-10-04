@@ -1043,6 +1043,8 @@ static int rec_history_dag_state(const unsigned char *starting,
  unsigned char results[64][20],parent[20];
  unsigned char edge[64][64];
  unsigned long sizes[64],sz,at,begin,len;
+ unsigned long author_when[64],commit_when[64],msgbytes[64];
+ int author_tz[64],commit_tz[64];
  int types[64],present[64];
  unsigned int count=1,head=0,j,k,budget,pidx;
  unsigned int edgecount=0;
@@ -1066,6 +1068,11 @@ static int rec_history_dag_state(const unsigned char *starting,
   if(rc!=0) return rc;
   if(!rec_commit_walk(sz,0)) {
    puts("HISTORYDAGSTATE COMMIT INVALID");return 8;
+  }
+  if(!rec_commit_times(sz,&author_when[head],&author_tz[head],
+                       &commit_when[head],&commit_tz[head],
+                       &msgbytes[head])) {
+   puts("HISTORYDAGSTATE COMMIT META INVALID");return 8;
   }
   if(!rec_ascii_oid(idx_body+5,trees[head])) return 8;
   if(levels[head]<depth) {
@@ -1116,6 +1123,11 @@ static int rec_history_dag_state(const unsigned char *starting,
   idx_print(stdout,commits[j]);putchar('\n');
   fputs("HISTORYDAGSTATE TREE ",stdout);
   idx_print(stdout,trees[j]);putchar('\n');
+  printf("HISTORYDAGSTATE AUTHOR TIME %lu TZMIN %d\n",
+         author_when[j],author_tz[j]);
+  printf("HISTORYDAGSTATE COMMITTER TIME %lu TZMIN %d\n",
+         commit_when[j],commit_tz[j]);
+  printf("HISTORYDAGSTATE MESSAGE BYTES %lu\n",msgbytes[j]);
   if(present[j]) {
    printf("HISTORYDAGSTATE PATH PRESENT TYPE %d SIZE %lu\n",
           types[j],sizes[j]);
