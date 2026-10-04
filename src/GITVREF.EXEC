@@ -1,7 +1,12 @@
-/* M111: read-only REF2 verified path change bounds. */
+/* M112: read-only REF2 verified EXEC level identity. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
+if command='LEVEL' then do
+ if spec\='' | depth\='' | extra\='' then exit 4
+ say 'GITVREF EXEC LEVEL M112'
+ exit 0
+end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='DAG' & command\='READ' & command\='DIR' &,
    command\='HISTPATH' & command\='HISTCHG' &,
