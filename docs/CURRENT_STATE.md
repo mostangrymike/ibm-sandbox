@@ -688,3 +688,11 @@ Actual CMS validation completed the previously partial M102-M111 gate and proved
 `HISTORYBOUNDS-REF-FULL HEAD 1 src` passed with CHANGES 1, nearest depth 0 / matches 1, farthest depth 0 / matches 1, boundary changes 1, and the single MODIFIED edge labeled `BOUND BOTH`, with authenticated endpoint metadata. CPU 114.96 / elapsed 117.84 sec.
 
 Therefore M102-M112 are NATIVE CMS TARGET-PROVEN. The shared classifier, change-depth bounds, HISTORYNEAREST, lifecycle transition matrix, HISTORYREPORT, HISTORYBOUNDS, and fail-closed EXEC level handshake are all proven on real z/VM CMS.
+
+## M118: bounded authenticated commit-subject prefix
+
+M118 extends the M114 native chronology extraction with commit subject metadata. For every HISTORYDAGSTATE node, native C records the exact first-line subject byte count and a bounded prefix of at most 20 raw ASCII bytes. Trusted native records are `HISTORYDAGSTATE SUBJECT BYTES <n> PREFIXBYTES <p>` followed by `HISTORYDAGSTATE SUBJECTHEX <hex|EMPTY>`. Long subjects are not rejected; only the displayed prefix is bounded, while the commit object remains fully authenticated and the total subject byte count remains exact.
+
+The strict GITVREF parser requires subject metadata and hex to agree exactly before PATH state may be accepted. HISTORYSTATE exposes node subject bytes/prefix hex; changed-edge chronology emitted by HISTORYLOG, HISTORYNEAREST, HISTORYBOUNDS, HISTORYREPORT and HISTORYDIFFS includes child/parent subject bytes and prefix hex. Router/worker identity advances to M118.
+
+For the real DELETED fixture, GitHub commit messages independently give subject length 37 and prefix hex `52656D6F7665206F7665726C656E67746820434D` for removal commit `486ADAA5...AA87`, and subject length 28 with prefix hex `55736520434D532D73616665204D39462077616C` for parent `91913EA4...896E`. Git commit message bodies normally retain a trailing newline, so MESSAGE BYTES may be one greater than the subject length; target output will establish the exact native value.
