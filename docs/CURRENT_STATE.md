@@ -769,3 +769,10 @@ PR #81 (`M118 add authenticated commit subject prefix`) is still OPEN and is not
 
 ### Standing execution rules
 Continue autonomously through GitHub work with maximum work per turn. Do not pause except for a genuine CMS target gate. Keep CMS commands minimal and batch gates. Preserve immutable GITFIX/M15NEW STAGE/INDEX/SEEK/GEN, protected selector PTRs, GITPBUF PACK, and read-only REF2. Never represent host CI as native CMS proof. C source physical lines <=72; CMS EXEC records <=80. Fail closed and emit no trusted partial output before requested verification completes.
+
+
+## 2026-10-04 M124 target repair: CMS REXX epoch precision
+
+The first real M123 native gate reached the correct M123/M123 level handshake, but both direct sealed-commit HISTORYSTATE and HISTORYDIFFS returned RC8 with no trusted output. The shared new chronology parser handles 10-digit Unix epoch seconds. CMS REXX defaults NUMERIC DIGITS to 9, so validating and subtracting values such as 1789695393 can fail or lose the three-second edge on target even though source/host guards pass.
+
+M124 is an EXEC-only target compatibility repair: GITVREF now executes `numeric digits 20` before parsing any native history records, preserving exact 10-digit epoch values and signed chronology deltas. GIT/GITVREF level identity advances together to M124. Native C and sealed data are unchanged. The next target retry needs only GITVREF.EXEC and GIT.EXEC; do not rebuild GITREC. M113-M123 remain host-CI proven but not yet target-proven until this repaired gate passes.
