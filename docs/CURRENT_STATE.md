@@ -654,3 +654,9 @@ NEXT target repair: refresh both `GIT.EXEC` and `GITVREF.EXEC`, then run `GIT LE
 `GIT HISTORYBOUNDS-REF-FULL HEAD 1 src` passed: CHANGED / ALLPRESENT, one change, nearest depth 0 matches 1, farthest depth 0 matches 1, one boundary change, edge 1 labeled `BOUND BOTH`, status MODIFIED, with expected endpoint commits/states/OIDs/type/size. CPU 114.96 / elapsed 117.84.
 
 Together with the earlier `HISTORYSTATUS-REF-FULL HEAD 1 src` target pass, M102-M112 are NATIVE CMS TARGET-PROVEN. No outstanding target defect remains in the shared classifier, nearest/farthest depth logic, lifecycle transition matrix, consolidated report, boundary report, or EXEC-level identity handshake.
+
+## M113: verified direct commit-OID history input
+
+M113 extends read-only verified revision input in GITVREF. Existing refs resolve first and retain exact `VERIFIED REF <spec> <oid>` output. If no ref matches and the supplied spec is exactly 40 hexadecimal characters, SHOW/LOG/DAG/READ/DIR and every HIST* mode may use it directly as a sealed commit OID; trusted output is labeled `VERIFIED COMMIT <oid>`. VERIFY-REF/RESOLVE remains ref-only. Native lookup, hashing, type validation, and full snapshot authentication still apply, so direct input does not bypass verification.
+
+This unlocks a real DELETED fixture already in the sealed ancestry: commit `486ADAA5B02080720F4B329C6F68550B13C6AA87` removes `src/GITPBWALK.EXEC` relative to parent `91913EA4028B795707AA67EDB1ED17A74D1B896E`. Child root tree is `909B1D31C377F42158F1591AB3FA130105186FD7` with the path absent. Parent root tree is `AE65405CF230B9FB0992544773B3CF7197015A47` and contains blob `A0C91615ABA9689C365159205E8CBA26EF6E16F4`, size 1869. A depth-1 state/diff/report from the removal commit should classify one DELETED edge: child ABSENT / parent PRESENT.
