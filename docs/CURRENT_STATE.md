@@ -634,3 +634,9 @@ The subsequent public commands `HISTORYNEAREST-REF-FULL`, `HISTORYTRANSITIONS-RE
 ## M112: fail-closed EXEC level identity
 
 M112 adds `GIT LEVEL`. The router invokes `GITVREF LEVEL`, expects exactly `GITVREF EXEC LEVEL M112`, prints `GIT EXEC LEVEL M112` plus the worker level, and fails RC8 with `GITVREF EXEC LEVEL MISMATCH` if the worker is stale or otherwise inconsistent. This directly diagnoses mixed-level router/worker target states like the partial M102-M111 gate. No native C or protected-data changes.
+
+## M112 merged: fail-closed EXEC level identity
+
+M112 PR #77 passed full native-stage workflow `37217089033` and squash-merged as `1edc4551d245953c5cfb701388d34bc7a783b654`. `GIT LEVEL` now invokes `GITVREF LEVEL`, expects exactly `GITVREF EXEC LEVEL M112`, prints `GIT EXEC LEVEL M112` plus the worker level, and returns RC8 with `GITVREF EXEC LEVEL MISMATCH` if the router and worker are inconsistent. This directly addresses the mixed target level observed during the partial M102-M111 gate. No native C or protected-data changes.
+
+NEXT target repair: refresh both `GIT.EXEC` and `GITVREF.EXEC`, then run `GIT LEVEL`. Expected RC0 output is exactly `GIT EXEC LEVEL M112` followed by `GITVREF EXEC LEVEL M112`. Once level identity passes, rerun the previously blocked public commands: HISTORYNEAREST on HEAD/1/src, HISTORYTRANSITIONS on HEAD/1/src/M9JOBJ.EXEC, HISTORYREPORT on HEAD/1/src, and HISTORYBOUNDS on HEAD/1/src. No compile and no GITRUN.
