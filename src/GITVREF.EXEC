@@ -850,6 +850,75 @@ statetrans:
  return 0
 
 
+
+statebounds:
+ call stateclass
+ if result\='OK' then return 8
+ say 'VERIFIED REF' spec oid
+ say 'HISTORYBOUNDS FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYBOUNDS DATA BEGIN'
+ say 'HISTORYBOUNDS STATUS' diffstatus
+ say 'HISTORYBOUNDS PATH STATUS' slifecycle
+ say 'HISTORYBOUNDS NODES' snodes
+ say 'HISTORYBOUNDS EDGES' sedgecount
+ say 'HISTORYBOUNDS CHANGES' schanged
+ if schanged>0 then do
+  farcount=0
+  boundcount=0
+  do ei=1 to sedgecount
+   if sstatus.ei='UNCHANGED' then iterate
+   ec=sedgechild.ei
+   if sdepth.ec=schangemax then farcount=farcount+1
+   if sdepth.ec=schangemin | sdepth.ec=schangemax then,
+    boundcount=boundcount+1
+  end
+  if farcount<1 | farcount>schanged then return 8
+  if boundcount<1 | boundcount>schanged then return 8
+  say 'HISTORYBOUNDS NEAREST DEPTH' schangemin
+  say 'HISTORYBOUNDS NEAREST MATCHES' snearcount
+  say 'HISTORYBOUNDS FARTHEST DEPTH' schangemax
+  say 'HISTORYBOUNDS FARTHEST MATCHES' farcount
+  say 'HISTORYBOUNDS BOUNDARY CHANGES' boundcount
+  match=0
+  do ei=1 to sedgecount
+   if sstatus.ei='UNCHANGED' then iterate
+   ec=sedgechild.ei
+   if sdepth.ec\=schangemin & sdepth.ec\=schangemax then,
+    iterate
+   ep=sedgeparent.ei
+   match=match+1
+   if schangemin=schangemax then bound='BOTH'
+   else if sdepth.ec=schangemin then bound='NEAREST'
+   else bound='FARTHEST'
+   say 'HISTORYBOUNDS CHANGE' match 'EDGE' ei 'BOUND' bound
+   say 'HISTORYBOUNDS CHANGE' match 'STATUS' sstatus.ei
+   say 'HISTORYBOUNDS CHANGE' match 'CHILD' ec 'PARENT' ep
+   say 'HISTORYBOUNDS CHANGE' match 'CHILDDEPTH' sdepth.ec,
+       'PARENTDEPTH' sdepth.ep
+   say 'HISTORYBOUNDS CHANGE' match 'CHILDCOMMIT' scommit.ec
+   say 'HISTORYBOUNDS CHANGE' match 'PARENTCOMMIT' scommit.ep
+   if spresent.ec=1 then cs='PRESENT'
+   else cs='ABSENT'
+   if spresent.ep=1 then ps='PRESENT'
+   else ps='ABSENT'
+   say 'HISTORYBOUNDS CHANGE' match 'CHILDSTATE' cs,
+       'PARENTSTATE' ps
+   if spresent.ec=1 then do
+    say 'HISTORYBOUNDS CHANGE' match 'CHILDOID' soid.ec
+    say 'HISTORYBOUNDS CHANGE' match 'CHILDTYPE' stype.ec,
+        'SIZE' ssize.ec
+   end
+   if spresent.ep=1 then do
+    say 'HISTORYBOUNDS CHANGE' match 'PARENTOID' soid.ep
+    say 'HISTORYBOUNDS CHANGE' match 'PARENTTYPE' stype.ep,
+        'SIZE' ssize.ep
+   end
+  end
+  if match\=boundcount then return 8
+ end
+ say 'HISTORYBOUNDS DATA END'
+ return 0
+
 statereport:
  call stateclass
  if result\='OK' then return 8
