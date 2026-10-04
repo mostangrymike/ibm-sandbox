@@ -365,6 +365,7 @@ statecheck:
  sedges=-1
  sedgecount=0
  drop spresent. soid. stype. ssize. scommit. stree. sdepth.
+ drop sauthorwhen. sauthtz. scommitwhen. scommittz. smsgbytes.
  drop sedgechild. sedgeparent. sedgekey. sparentseen.
  drop sseencommit.
  curnode=-1
@@ -376,11 +377,16 @@ statecheck:
  curpresent=-1
  havecommit=1
  havetree=1
+ haveauthor=1
+ havecommitter=1
+ havemsg=1
  havestate=1
  do ci=1 to out.0
   if words(out.ci)=5 & word(out.ci,1)='HISTORYDAGSTATE' &,
      word(out.ci,2)='NODE' & word(out.ci,4)='DEPTH' then do
-   if havestate=0 | havecommit=0 | havetree=0 then return 'ERROR'
+   if havestate=0 | havecommit=0 | havetree=0 |,
+      haveauthor=0 | havecommitter=0 | havemsg=0 then,
+    return 'ERROR'
    parsednodes=parsednodes+1
    curnode=word(out.ci,3)
    curdepth=word(out.ci,5)
@@ -396,6 +402,9 @@ statecheck:
    curpresent=-1
    havecommit=0
    havetree=0
+   haveauthor=0
+   havecommitter=0
+   havemsg=0
    havestate=0
   end
   else if words(out.ci)=3 &,
