@@ -1,5 +1,5 @@
 #!/bin/sh
-# M111 authenticated history-bound guards.
+# M112 EXEC level identity guards.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -45,6 +45,11 @@ grep -Fq "'EXEC GITVREF HISTTRANS' rest" "$g"
 grep -Fq "command = 'HISTORYREPORT-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF HISTREPORT' rest" "$g"
 grep -Fq "command = 'HISTORYBOUNDS-REF-FULL'" "$g"
+grep -Fq "command = 'LEVEL'" "$g"
+grep -Fq "GIT EXEC LEVEL M112" "$g"
+grep -Fq "GITVREF EXEC LEVEL MISMATCH" "$g"
+grep -Fq "GITVREF EXEC LEVEL M112" "$v"
+grep -Fq "if command='LEVEL' then do" "$v"
 grep -Fq "'EXEC GITVREF HISTBOUNDS' rest" "$g"
 grep -Fq "'EXEC GITVREF HISTEDGE' rest" "$g"
 grep -Fq "command='HISTCHG'" "$v"
@@ -241,4 +246,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M111 AUTHENTICATED HISTORY-BOUND GUARDS PASSED"
+echo "M112 EXEC LEVEL IDENTITY GUARDS PASSED"
