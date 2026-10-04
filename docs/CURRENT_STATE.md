@@ -688,3 +688,9 @@ Actual CMS validation completed the previously partial M102-M111 gate and proved
 `HISTORYBOUNDS-REF-FULL HEAD 1 src` passed with CHANGES 1, nearest depth 0 / matches 1, farthest depth 0 / matches 1, boundary changes 1, and the single MODIFIED edge labeled `BOUND BOTH`, with authenticated endpoint metadata. CPU 114.96 / elapsed 117.84 sec.
 
 Therefore M102-M112 are NATIVE CMS TARGET-PROVEN. The shared classifier, change-depth bounds, HISTORYNEAREST, lifecycle transition matrix, HISTORYREPORT, HISTORYBOUNDS, and fail-closed EXEC level handshake are all proven on real z/VM CMS.
+
+## M118-M120: authenticated chronology deltas and summary
+
+M118 extends verified chronology output with signed AUTHOR DELTA SECONDS on every changed parent edge plus per-node and per-endpoint AUTHOR TO COMMITTER LAG SECONDS. Existing signed COMMITTER DELTA SECONDS remains unchanged. Negative deltas and lags are reported rather than rejected so Git clock skew remains observable.
+
+M119-M120 add `GIT HISTORYCHRONOLOGY-REF-FULL <ref|commit40> <depth> <path>`. It reuses the strict HISTORYDAGSTATE parser and authenticated chronology from M114-M117, then summarizes all verified parent edges by AUTHOR and COMMITTER delta sign (positive/zero/negative), records min/max signed deltas, and summarizes per-node author-to-committer lag sign plus min/max seconds. Counts are cross-checked against authenticated node/edge totals before trusted output. Router/worker identity advances to M120. No native C changes beyond M114-M117 and no protected-data changes.
