@@ -97,6 +97,10 @@ if command = 'HISTORYREPORT-REF-FULL' then do
    'EXEC GITVREF HISTREPORT' rest
    exit rc
 end
+if command = 'HISTORYBOUNDS-REF-FULL' then do
+   'EXEC GITVREF HISTBOUNDS' rest
+   exit rc
+end
 if command = 'READ-REF-FULL' then do
    'EXEC GITVREF READ' rest
    exit rc
