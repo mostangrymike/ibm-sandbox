@@ -1413,7 +1413,7 @@ directinput:
 
 emitverified:
  if reskind='COMMIT' then say 'VERIFIED COMMIT' oid
- else call emitverified
+ else say 'VERIFIED REF' spec oid
  return
 
 pathasciihex:
