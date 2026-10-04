@@ -694,3 +694,9 @@ Therefore M102-M112 are NATIVE CMS TARGET-PROVEN. The shared classifier, change-
 M118 extends verified chronology output with signed AUTHOR DELTA SECONDS on every changed parent edge plus per-node and per-endpoint AUTHOR TO COMMITTER LAG SECONDS. Existing signed COMMITTER DELTA SECONDS remains unchanged. Negative deltas and lags are reported rather than rejected so Git clock skew remains observable.
 
 M119-M120 add `GIT HISTORYCHRONOLOGY-REF-FULL <ref|commit40> <depth> <path>`. It reuses the strict HISTORYDAGSTATE parser and authenticated chronology from M114-M117, then summarizes all verified parent edges by AUTHOR and COMMITTER delta sign (positive/zero/negative), records min/max signed deltas, and summarizes per-node author-to-committer lag sign plus min/max seconds. Counts are cross-checked against authenticated node/edge totals before trusted output. Router/worker identity advances to M120. No native C changes beyond M114-M117 and no protected-data changes.
+
+## M121-M123: chronology aggregates per authenticated transition
+
+M121 extends shared state transition aggregation with signed author and committer delta bounds per child-state -> parent-state pair, plus positive/zero/negative edge counts for each clock. Every per-transition sign total must equal the authenticated transition edge count or output fails closed.
+
+M122-M123 expose those chronology aggregates in HISTORYTRANSITIONS, HISTORYREPORT, and HISTORYDIFFS through one shared `emittranschron` path. This makes transition-level clock behavior inspectable without duplicating graph traversal or classification. Router/worker identity advances to M123. These milestones are EXEC-only on top of the M114-M117 native chronology records; no additional native C or protected-data changes.

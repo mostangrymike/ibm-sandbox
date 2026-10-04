@@ -1,10 +1,10 @@
-/* M120: verified direct commit history chronology summary. */
+/* M123: verified transition chronology aggregation. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M120'
+ say 'GITVREF EXEC LEVEL M123'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -885,6 +885,8 @@ statenear:
 
 statepairs:
  drop trno. trchild. trparent. trcount. trstatus.
+ drop tradmin. tradmax. trcdmin. trcdmax.
+ drop trapos. trazero. traneg. trcpos. trczero. trcneg.
  trpairs=0
  trtotal=0
  trchanged=0
@@ -893,6 +895,8 @@ statepairs:
   ep=sedgeparent.ei
   cv=snodever.ec
   pv=snodever.ep
+  ad=sauthorwhen.ec-sauthorwhen.ep
+  cd=scommitwhen.ec-scommitwhen.ep
   tk=cv||'.'||pv
   ti=trno.tk
   if datatype(ti,'W')\=1 then do
@@ -901,22 +905,64 @@ statepairs:
    trno.tk=ti
    trchild.ti=cv
    trparent.ti=pv
-   trcount.ti=1
+   trcount.ti=0
+   trapos.ti=0
+   trazero.ti=0
+   traneg.ti=0
+   trcpos.ti=0
+   trczero.ti=0
+   trcneg.ti=0
    if cv=pv then trstatus.ti='UNCHANGED'
    else if cv>0 & pv=0 then trstatus.ti='ADDED'
    else if cv=0 & pv>0 then trstatus.ti='DELETED'
    else trstatus.ti='MODIFIED'
    if trstatus.ti\='UNCHANGED' then trchanged=trchanged+1
   end
-  else trcount.ti=trcount.ti+1
+  trcount.ti=trcount.ti+1
+  if trcount.ti=1 then do
+   tradmin.ti=ad
+   tradmax.ti=ad
+   trcdmin.ti=cd
+   trcdmax.ti=cd
+  end
+  else do
+   if ad<tradmin.ti then tradmin.ti=ad
+   if ad>tradmax.ti then tradmax.ti=ad
+   if cd<trcdmin.ti then trcdmin.ti=cd
+   if cd>trcdmax.ti then trcdmax.ti=cd
+  end
+  if ad>0 then trapos.ti=trapos.ti+1
+  else if ad=0 then trazero.ti=trazero.ti+1
+  else traneg.ti=traneg.ti+1
+  if cd>0 then trcpos.ti=trcpos.ti+1
+  else if cd=0 then trczero.ti=trczero.ti+1
+  else trcneg.ti=trcneg.ti+1
  end
  do ti=1 to trpairs
   trtotal=trtotal+trcount.ti
+  if trapos.ti+trazero.ti+traneg.ti\=trcount.ti then,
+   return 'ERROR'
+  if trcpos.ti+trczero.ti+trcneg.ti\=trcount.ti then,
+   return 'ERROR'
  end
  if trtotal\=sedgecount then return 'ERROR'
  if schanged=0 & trchanged\=0 then return 'ERROR'
  if schanged>0 & trchanged=0 then return 'ERROR'
  return 'OK'
+
+emittranschron:
+ parse arg kind,ti
+ say kind 'TRANSITION' ti 'AUTHOR MIN DELTA SECONDS' tradmin.ti
+ say kind 'TRANSITION' ti 'AUTHOR MAX DELTA SECONDS' tradmax.ti
+ say kind 'TRANSITION' ti 'AUTHOR POSITIVE EDGES' trapos.ti
+ say kind 'TRANSITION' ti 'AUTHOR ZERO EDGES' trazero.ti
+ say kind 'TRANSITION' ti 'AUTHOR NEGATIVE EDGES' traneg.ti
+ say kind 'TRANSITION' ti 'COMMITTER MIN DELTA SECONDS' trcdmin.ti
+ say kind 'TRANSITION' ti 'COMMITTER MAX DELTA SECONDS' trcdmax.ti
+ say kind 'TRANSITION' ti 'COMMITTER POSITIVE EDGES' trcpos.ti
+ say kind 'TRANSITION' ti 'COMMITTER ZERO EDGES' trczero.ti
+ say kind 'TRANSITION' ti 'COMMITTER NEGATIVE EDGES' trcneg.ti
+ return
 
 statetrans:
  call stateclass
@@ -953,6 +999,7 @@ statetrans:
    say 'HISTORYTRANSITIONS TRANSITION' ti 'CHILDOID' sveroid.cv
   if pv>0 then,
    say 'HISTORYTRANSITIONS TRANSITION' ti 'PARENTOID' sveroid.pv
+  call emittranschron 'HISTORYTRANSITIONS',ti
  end
  say 'HISTORYTRANSITIONS DATA END'
  return 0
@@ -1158,6 +1205,7 @@ statereport:
    say 'HISTORYREPORT TRANSITION' ti 'CHILDOID' sveroid.cv
   if pv>0 then,
    say 'HISTORYREPORT TRANSITION' ti 'PARENTOID' sveroid.pv
+  call emittranschron 'HISTORYREPORT',ti
  end
  change=0
  do ei=1 to sedgecount
@@ -1230,6 +1278,7 @@ statediff:
    say 'HISTORYDIFFS TRANSITION' ti 'CHILDOID' sveroid.cv
   if pv>0 then,
    say 'HISTORYDIFFS TRANSITION' ti 'PARENTOID' sveroid.pv
+  call emittranschron 'HISTORYDIFFS',ti
  end
  say 'HISTORYDIFFS CHANGED EDGES' schanged
  say 'HISTORYDIFFS ADDED EDGES' sadd
