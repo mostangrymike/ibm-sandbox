@@ -1,5 +1,5 @@
 #!/bin/sh
-# M110 consolidated history report guards.
+# M111 authenticated history-bound guards.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -44,6 +44,8 @@ grep -Fq "command = 'HISTORYTRANSITIONS-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF HISTTRANS' rest" "$g"
 grep -Fq "command = 'HISTORYREPORT-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF HISTREPORT' rest" "$g"
+grep -Fq "command = 'HISTORYBOUNDS-REF-FULL'" "$g"
+grep -Fq "'EXEC GITVREF HISTBOUNDS' rest" "$g"
 grep -Fq "'EXEC GITVREF HISTEDGE' rest" "$g"
 grep -Fq "command='HISTCHG'" "$v"
 grep -Fq "HISTORYCHANGES FULL SNAPSHOTS VERIFIED" "$v"
@@ -191,6 +193,12 @@ grep -Fq "HISTORYDIFFS FARTHEST CHANGE DEPTH' schangemax" "$v"
 grep -Fq "statetrans:" "$v"
 grep -Fq "HISTORYTRANSITIONS FULL SNAPSHOTS VERIFIED" "$v"
 grep -Fq "statereport:" "$v"
+grep -Fq "statebounds:" "$v"
+grep -Fq "HISTORYBOUNDS FULL SNAPSHOTS VERIFIED" "$v"
+grep -Fq "HISTORYBOUNDS NEAREST DEPTH' schangemin" "$v"
+grep -Fq "HISTORYBOUNDS FARTHEST DEPTH' schangemax" "$v"
+grep -Fq "HISTORYBOUNDS BOUNDARY CHANGES' boundcount" "$v"
+grep -Fq "'BOUND' bound" "$v"
 grep -Fq "HISTORYREPORT FULL SNAPSHOTS VERIFIED" "$v"
 grep -Fq "HISTORYREPORT TRANSITIONS' trpairs" "$v"
 grep -Fq "HISTORYREPORT CHANGE' change 'EDGE' ei" "$v"
@@ -233,4 +241,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M110 CONSOLIDATED HISTORY REPORT GUARDS PASSED"
+echo "M111 AUTHENTICATED HISTORY-BOUND GUARDS PASSED"

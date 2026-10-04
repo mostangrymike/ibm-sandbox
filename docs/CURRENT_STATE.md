@@ -614,3 +614,7 @@ Actual CMS validation passed for the EXEC-only M100-M101 batch with no rebuild r
 `GIT HISTORYLOG-REF-FULL HEAD 1 src` returned one authenticated MODIFIED change edge, child node 1 -> parent node 2, depths 0/1, expected commits, PRESENT/PRESENT state, child tree/path OID `A41B3EA7758F301B7E30BD3CFDF264300C02AE35` type 2 size 3690 and parent `884916539208F673916FBD6988DE6B028C355723` type 2 size 3651; 115.33 CPU / 118.23 elapsed.
 
 `GIT HISTORYLOG-REF-FULL HEAD 1 src/M9JOBJ.EXEC` returned one authenticated ADDED change edge with PRESENT/ABSENT state, expected commits, child blob `775F6C809889E3497D8837379B37A706DFD101CA` type 3 size 646; 115.31 CPU / 118.18 elapsed. M100-M101 are now NATIVE CMS TARGET-PROVEN.
+
+## M111: authenticated nearest/farthest change bounds
+
+M111 adds `GIT HISTORYBOUNDS-REF-FULL <ref> <depth> <path>`. It reuses the CMS-target-proven HISTORYDAGSTATE parser plus shared state classification, then emits only changed parent edges at the minimum and maximum child depth from the requested ref. Summary records include nearest/farthest depths, exact match counts, and total unique boundary changes. Each boundary edge is labeled `NEAREST`, `FARTHEST`, or `BOTH` when the two depths coincide, with authenticated node/depth/commit/state and endpoint OID/type/size metadata. This is graph-distance boundary reporting, not a wall-clock chronology claim. No native C or protected-data changes.
