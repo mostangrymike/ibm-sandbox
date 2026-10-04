@@ -265,6 +265,75 @@ static int rec_commit_walk(unsigned long n,int emit) {
  }
  return 1;
 }
+/* M114: extract authenticated raw Git identity times.
+ * The commit body is ASCII; avoid host character literals here.
+ */
+static int rec_ident_when(const unsigned char *line,
+                          unsigned long n,
+                          unsigned long *when,int *tzmin) {
+ unsigned long p,end,start,j,value=0,maxv=~0UL;
+ int sign,hh,mm,d;
+ if(n<8) return 0;
+ p=n-5;
+ if(p<1||line[p-1]!=0x20) return 0;
+ sign=line[p];
+ if(sign!=0x2b&&sign!=0x2d) return 0;
+ for(j=p+1;j<n;j++)
+  if(line[j]<0x30||line[j]>0x39) return 0;
+ hh=(line[p+1]-0x30)*10+(line[p+2]-0x30);
+ mm=(line[p+3]-0x30)*10+(line[p+4]-0x30);
+ if(hh>23||mm>59) return 0;
+ end=p-1;
+ start=end;
+ while(start>0&&line[start-1]!=0x20) start--;
+ if(start==end) return 0;
+ for(j=start;j<end;j++) {
+  if(line[j]<0x30||line[j]>0x39) return 0;
+  d=line[j]-0x30;
+  if(value>(maxv-(unsigned long)d)/10UL) return 0;
+  value=value*10UL+(unsigned long)d;
+ }
+ *when=value;
+ *tzmin=hh*60+mm;
+ if(sign==0x2d) *tzmin=-*tzmin;
+ return 1;
+}
+static int rec_commit_times(unsigned long n,
+                            unsigned long *author_when,
+                            int *author_tz,
+                            unsigned long *commit_when,
+                            int *commit_tz,
+                            unsigned long *message_bytes) {
+ unsigned long at=0,begin,len;
+ int author=0,committer=0;
+ while(at<n&&idx_body[at]!=0x0a) at++;
+ if(at==n) return 0;
+ at++;
+ while(at<n) {
+  begin=at;
+  while(at<n&&idx_body[at]!=0x0a) at++;
+  if(at==n) return 0;
+  len=at-begin;
+  if(len==0) {
+   *message_bytes=n-(at+1);
+   return author&&committer;
+  }
+  if(rec_ascii_key(idx_body+begin,len,"author")) {
+   if(author) return 0;
+   if(!rec_ident_when(idx_body+begin,len,
+                      author_when,author_tz)) return 0;
+   author=1;
+  }
+  if(rec_ascii_key(idx_body+begin,len,"committer")) {
+   if(committer) return 0;
+   if(!rec_ident_when(idx_body+begin,len,
+                      commit_when,commit_tz)) return 0;
+   committer=1;
+  }
+  at++;
+ }
+ return 0;
+}
 static int rec_root_closure(const unsigned char *root,
                             unsigned int *budget);
 /* M60: git-show style commit metadata only after its complete
