@@ -606,3 +606,11 @@ The state-aware output paths now share one fail-closed `stateclass` routine afte
 ## M106-M108: authenticated state transition matrix
 
 M106 extends the shared state-version aggregation so every verified snapshot node receives a state ID: 0 is authenticated ABSENT, while 1..N identify authenticated PRESENT PATHOIDs. M108 adds `GIT HISTORYTRANSITIONS-REF-FULL <ref> <depth> <path>`, reusing the target-proven HISTORYDAGSTATE parser and shared state classifier. It aggregates every native parent edge into exact child-state -> parent-state pairs, validates pair counts sum to the authenticated edge total, labels each pair UNCHANGED/ADDED/DELETED/MODIFIED, and emits direct OIDs for present endpoints. This generalizes the older all-present transition report to lifecycle transitions without a new native traversal.
+
+## M100-M101 native CMS target proof
+
+Actual CMS validation passed for the EXEC-only M100-M101 batch with no rebuild required. `GIT HISTORYSTATUS-REF-FULL HEAD 1 README.md` returned the expected compact verified summary: UNCHANGED, ALLPRESENT, PRESENT 2, ABSENT 0, NODES 2, EDGES 1, CHANGED 0, ADDED/DELETED/MODIFIED 0, UNCHANGED 1; 115.48 CPU / 118.33 elapsed.
+
+`GIT HISTORYLOG-REF-FULL HEAD 1 src` returned one authenticated MODIFIED change edge, child node 1 -> parent node 2, depths 0/1, expected commits, PRESENT/PRESENT state, child tree/path OID `A41B3EA7758F301B7E30BD3CFDF264300C02AE35` type 2 size 3690 and parent `884916539208F673916FBD6988DE6B028C355723` type 2 size 3651; 115.33 CPU / 118.23 elapsed.
+
+`GIT HISTORYLOG-REF-FULL HEAD 1 src/M9JOBJ.EXEC` returned one authenticated ADDED change edge with PRESENT/ABSENT state, expected commits, child blob `775F6C809889E3497D8837379B37A706DFD101CA` type 3 size 646; 115.31 CPU / 118.18 elapsed. M100-M101 are now NATIVE CMS TARGET-PROVEN.
