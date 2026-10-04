@@ -674,3 +674,11 @@ For the real DELETED fixture, GitHub's normalized commit metadata independently 
 ## M113-M117 merged and host-CI green
 
 PR #78 passed exact-head native-stage workflow `37239289291` after fixing and guarding a pre-merge `emitverified` recursion regression, then squash-merged as `6428b91791172da6d63e948f3bcf6fdec09f087b`. The merged batch supports ref-first direct sealed commit input (`VERIFIED COMMIT`), keeps VERIFY-REF ref-only, adds native authenticated author/committer epoch plus timezone-minute and message-byte metadata to HISTORYDAGSTATE, requires those records in the strict wrapper parser, emits chronology across detailed history surfaces, and derives signed committer-time deltas. Router/worker level identity is M117. Native C89 compilation and the complete host staging/index/PACK suite are green. Target proof is pending and will be batched with subsequent native metadata work.
+
+## M118: bounded authenticated commit-subject prefix
+
+M118 extends the M114 native chronology extraction with commit subject metadata. For every HISTORYDAGSTATE node, native C records the exact first-line subject byte count and a bounded prefix of at most 20 raw ASCII bytes. Trusted native records are `HISTORYDAGSTATE SUBJECT BYTES <n> PREFIXBYTES <p>` followed by `HISTORYDAGSTATE SUBJECTHEX <hex|EMPTY>`. Long subjects are not rejected; only the displayed prefix is bounded, while the commit object remains fully authenticated and the total subject byte count remains exact.
+
+The strict GITVREF parser requires subject metadata and hex to agree exactly before PATH state may be accepted. HISTORYSTATE exposes node subject bytes/prefix hex; changed-edge chronology emitted by HISTORYLOG, HISTORYNEAREST, HISTORYBOUNDS, HISTORYREPORT and HISTORYDIFFS includes child/parent subject bytes and prefix hex. Router/worker identity advances to M118.
+
+For the real DELETED fixture, GitHub commit messages independently give subject length 37 and prefix hex `52656D6F7665206F7665726C656E67746820434D` for removal commit `486ADAA5...AA87`, and subject length 28 with prefix hex `55736520434D532D73616665204D39462077616C` for parent `91913EA4...896E`. Git commit message bodies normally retain a trailing newline, so MESSAGE BYTES may be one greater than the subject length; target output will establish the exact native value.
