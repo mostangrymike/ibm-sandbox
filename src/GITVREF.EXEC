@@ -577,7 +577,7 @@ statecheck:
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='PATH' & word(out.ci,3)='ABSENT' then do
    if havecommit=0 | havetree=0 | haveauthor=0 |,
-      haveauthor=0 | haveaidentmeta=0 | haveaidenthex=0 |,
+      haveaidentmeta=0 | haveaidenthex=0 |,
       havecommitter=0 | havecidentmeta=0 | havecidenthex=0 |,
       havemsg=0 | havesubmeta=0 | havesubhex=0 |,
       havestate=1 then,
@@ -592,7 +592,7 @@ statecheck:
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='PATH' & word(out.ci,3)='PRESENT' then do
    if havecommit=0 | havetree=0 | haveauthor=0 |,
-      haveauthor=0 | haveaidentmeta=0 | haveaidenthex=0 |,
+      haveaidentmeta=0 | haveaidenthex=0 |,
       havecommitter=0 | havecidentmeta=0 | havecidenthex=0 |,
       havemsg=0 | havesubmeta=0 | havesubhex=0 |,
       havestate=1 then,
