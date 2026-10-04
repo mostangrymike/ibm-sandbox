@@ -447,6 +447,9 @@ def main():
         assert "HISTORYDAGSTATE CIDENT BYTES 39 PREFIXBYTES 20" in identity
         assert "HISTORYDAGSTATE AIDENTHEX " + ident_hex in identity
         assert "HISTORYDAGSTATE CIDENTHEX " + ident_hex in identity
+        ident_oid = git_oid("blob", LONG_IDENT)
+        assert "HISTORYDAGSTATE AIDENT BLOBID " + ident_oid in identity
+        assert "HISTORYDAGSTATE CIDENT BLOBID " + ident_oid in identity
         assert "HISTORYDAGSTATE SUBJECT BYTES 8 PREFIXBYTES 8" in identity
         bad_identity = run(
             rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",
