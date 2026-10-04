@@ -614,6 +614,30 @@ stateversions:
  else slifecycle='MIXED'
  return 'OK'
 
+
+emitnodechron:
+ parse arg kind,ni
+ say kind 'NODE' ni 'AUTHOR TIME' sauthorwhen.ni,
+     'TZMIN' sauthtz.ni
+ say kind 'NODE' ni 'COMMITTER TIME' scommitwhen.ni,
+     'TZMIN' scommittz.ni
+ say kind 'NODE' ni 'MESSAGE BYTES' smsgbytes.ni
+ return
+
+emitpairchron:
+ parse arg kind,record,num,ec,ep
+ say kind record num 'CHILDAUTHOR TIME' sauthorwhen.ec,
+     'TZMIN' sauthtz.ec
+ say kind record num 'PARENTAUTHOR TIME' sauthorwhen.ep,
+     'TZMIN' sauthtz.ep
+ say kind record num 'CHILDCOMMITTER TIME' scommitwhen.ec,
+     'TZMIN' scommittz.ec
+ say kind record num 'PARENTCOMMITTER TIME' scommitwhen.ep,
+     'TZMIN' scommittz.ep
+ say kind record num 'CHILDMESSAGE BYTES' smsgbytes.ec
+ say kind record num 'PARENTMESSAGE BYTES' smsgbytes.ep
+ return
+
 stateemit:
  call stateversions
  if result\='OK' then return 8
@@ -637,6 +661,7 @@ stateemit:
   say 'HISTORYSTATE NODE' ni 'DEPTH' sdepth.ni
   say 'HISTORYSTATE NODE' ni 'COMMIT' scommit.ni
   say 'HISTORYSTATE NODE' ni 'TREE' stree.ni
+  call emitnodechron 'HISTORYSTATE',ni
   if spresent.ni=1 then ns='PRESENT'
   else ns='ABSENT'
   say 'HISTORYSTATE NODE' ni 'STATE' ns
@@ -766,6 +791,7 @@ statelog:
       'PARENTDEPTH' sdepth.ep
   say 'HISTORYLOG CHANGE' ei 'CHILDCOMMIT' scommit.ec
   say 'HISTORYLOG CHANGE' ei 'PARENTCOMMIT' scommit.ep
+  call emitpairchron 'HISTORYLOG','CHANGE',ei,ec,ep
   if spresent.ec=1 then cs='PRESENT'
   else cs='ABSENT'
   if spresent.ep=1 then ps='PRESENT'
@@ -815,6 +841,7 @@ statenear:
        'PARENTDEPTH' sdepth.ep
    say 'HISTORYNEAREST CHANGE' match 'CHILDCOMMIT' scommit.ec
    say 'HISTORYNEAREST CHANGE' match 'PARENTCOMMIT' scommit.ep
+   call emitpairchron 'HISTORYNEAREST','CHANGE',match,ec,ep
    if spresent.ec=1 then cs='PRESENT'
    else cs='ABSENT'
    if spresent.ep=1 then ps='PRESENT'
@@ -960,6 +987,7 @@ statebounds:
        'PARENTDEPTH' sdepth.ep
    say 'HISTORYBOUNDS CHANGE' match 'CHILDCOMMIT' scommit.ec
    say 'HISTORYBOUNDS CHANGE' match 'PARENTCOMMIT' scommit.ep
+   call emitpairchron 'HISTORYBOUNDS','CHANGE',match,ec,ep
    if spresent.ec=1 then cs='PRESENT'
    else cs='ABSENT'
    if spresent.ep=1 then ps='PRESENT'
@@ -1041,6 +1069,7 @@ statereport:
       'PARENTDEPTH' sdepth.ep
   say 'HISTORYREPORT CHANGE' change 'CHILDCOMMIT' scommit.ec
   say 'HISTORYREPORT CHANGE' change 'PARENTCOMMIT' scommit.ep
+  call emitpairchron 'HISTORYREPORT','CHANGE',change,ec,ep
   say 'HISTORYREPORT CHANGE' change 'CHILDTREE' stree.ec
   say 'HISTORYREPORT CHANGE' change 'PARENTTREE' stree.ep
   if spresent.ec=1 then cs='PRESENT'
@@ -1124,6 +1153,7 @@ statediff:
   say 'HISTORYDIFFS EDGE' ei 'PARENTDEPTH' sdepth.ep
   say 'HISTORYDIFFS EDGE' ei 'CHILDCOMMIT' scommit.ec
   say 'HISTORYDIFFS EDGE' ei 'PARENTCOMMIT' scommit.ep
+  call emitpairchron 'HISTORYDIFFS','EDGE',ei,ec,ep
   say 'HISTORYDIFFS EDGE' ei 'CHILDTREE' stree.ec
   say 'HISTORYDIFFS EDGE' ei 'PARENTTREE' stree.ep
   if spresent.ec=1 then do
