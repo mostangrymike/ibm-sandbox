@@ -634,6 +634,8 @@ emitpairchron:
      'TZMIN' scommittz.ec
  say kind record num 'PARENTCOMMITTER TIME' scommitwhen.ep,
      'TZMIN' scommittz.ep
+ delta=scommitwhen.ec-scommitwhen.ep
+ say kind record num 'COMMITTER DELTA SECONDS' delta
  say kind record num 'CHILDMESSAGE BYTES' smsgbytes.ec
  say kind record num 'PARENTMESSAGE BYTES' smsgbytes.ep
  return
