@@ -1,10 +1,10 @@
-/* M120: verified direct commit history chronology summary. */
+/* M123: verified transition chronology aggregation. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M120'
+ say 'GITVREF EXEC LEVEL M123'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -999,6 +999,7 @@ statetrans:
    say 'HISTORYTRANSITIONS TRANSITION' ti 'CHILDOID' sveroid.cv
   if pv>0 then,
    say 'HISTORYTRANSITIONS TRANSITION' ti 'PARENTOID' sveroid.pv
+  call emittranschron 'HISTORYTRANSITIONS',ti
  end
  say 'HISTORYTRANSITIONS DATA END'
  return 0
@@ -1204,6 +1205,7 @@ statereport:
    say 'HISTORYREPORT TRANSITION' ti 'CHILDOID' sveroid.cv
   if pv>0 then,
    say 'HISTORYREPORT TRANSITION' ti 'PARENTOID' sveroid.pv
+  call emittranschron 'HISTORYREPORT',ti
  end
  change=0
  do ei=1 to sedgecount
@@ -1276,6 +1278,7 @@ statediff:
    say 'HISTORYDIFFS TRANSITION' ti 'CHILDOID' sveroid.cv
   if pv>0 then,
    say 'HISTORYDIFFS TRANSITION' ti 'PARENTOID' sveroid.pv
+  call emittranschron 'HISTORYDIFFS',ti
  end
  say 'HISTORYDIFFS CHANGED EDGES' schanged
  say 'HISTORYDIFFS ADDED EDGES' sadd
