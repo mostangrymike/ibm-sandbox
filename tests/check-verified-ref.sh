@@ -1,5 +1,5 @@
 #!/bin/sh
-# M123 transition chronology aggregation guards.
+# M124 CMS REXX epoch precision guards.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -48,11 +48,12 @@ grep -Fq "command = 'HISTORYBOUNDS-REF-FULL'" "$g"
 grep -Fq "command = 'LEVEL'" "$g"
 grep -Fq "command = 'HISTORYCHRONOLOGY-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF HISTCHRON' rest" "$g"
-grep -Fq "GIT EXEC LEVEL M123" "$g"
-grep -Fq "GITVREF EXEC LEVEL M123" "$v"
-grep -Fq "GIT EXEC LEVEL M123" "$g"
+grep -Fq "GIT EXEC LEVEL M124" "$g"
+grep -Fq "GITVREF EXEC LEVEL M124" "$v"
+grep -Fq "GIT EXEC LEVEL M124" "$g"
 grep -Fq "GITVREF EXEC LEVEL MISMATCH" "$g"
-grep -Fq "GITVREF EXEC LEVEL M123" "$v"
+grep -Fq "GITVREF EXEC LEVEL M124" "$v"
+grep -Fxq "numeric digits 20" "$v"
 grep -Fq "rawwanted=wanted" "$v"
 grep -Fq "length(direct)=40" "$v"
 grep -Fq "call directinput command" "$v"
@@ -285,4 +286,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M123 TRANSITION CHRONOLOGY AGGREGATION GUARDS PASSED"
+echo "M124 CMS REXX EPOCH PRECISION GUARDS PASSED"
