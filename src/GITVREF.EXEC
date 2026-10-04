@@ -1,10 +1,10 @@
-/* M112: read-only REF2 verified EXEC level identity. */
+/* M117: verified direct commit history with chronology. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M112'
+ say 'GITVREF EXEC LEVEL M117'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -226,7 +226,7 @@ if command='HISTCHG' | command='HISTEDGE' then do
  if command='HISTEDGE' then do
   if distinct=1 then status='UNCHANGED'
   else status='CHANGED'
-  say 'VERIFIED REF' spec oid
+  call emitverified
   say 'HISTORYEDGES FULL SNAPSHOTS VERIFIED'
   say 'HISTORYEDGES DATA BEGIN'
   say 'HISTORYEDGES STATUS' status
@@ -272,7 +272,7 @@ if command='HISTCHG' | command='HISTEDGE' then do
   say 'HISTORYEDGES DATA END'
   exit 0
  end
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYCHANGES FULL SNAPSHOTS VERIFIED'
  say 'HISTORYCHANGES DATA BEGIN'
  do i=1 to out.0
@@ -343,11 +343,11 @@ if command='HISTCHG' | command='HISTEDGE' then do
  exit 0
 end
 if command='RESOLVE' then do
- say 'VERIFIED REF' spec oid
+ call emitverified
  exit 0
 end
 emit=0
-say 'VERIFIED REF' spec oid
+call emitverified
 do i=1 to out.0
  if pos(marker,out.i)>0 then emit=1
  if emit then do
@@ -365,6 +365,7 @@ statecheck:
  sedges=-1
  sedgecount=0
  drop spresent. soid. stype. ssize. scommit. stree. sdepth.
+ drop sauthorwhen. sauthtz. scommitwhen. scommittz. smsgbytes.
  drop sedgechild. sedgeparent. sedgekey. sparentseen.
  drop sseencommit.
  curnode=-1
@@ -376,11 +377,16 @@ statecheck:
  curpresent=-1
  havecommit=1
  havetree=1
+ haveauthor=1
+ havecommitter=1
+ havemsg=1
  havestate=1
  do ci=1 to out.0
   if words(out.ci)=5 & word(out.ci,1)='HISTORYDAGSTATE' &,
      word(out.ci,2)='NODE' & word(out.ci,4)='DEPTH' then do
-   if havestate=0 | havecommit=0 | havetree=0 then return 'ERROR'
+   if havestate=0 | havecommit=0 | havetree=0 |,
+      haveauthor=0 | havecommitter=0 | havemsg=0 then,
+    return 'ERROR'
    parsednodes=parsednodes+1
    curnode=word(out.ci,3)
    curdepth=word(out.ci,5)
@@ -396,6 +402,9 @@ statecheck:
    curpresent=-1
    havecommit=0
    havetree=0
+   haveauthor=0
+   havecommitter=0
+   havemsg=0
    havestate=0
   end
   else if words(out.ci)=3 &,
@@ -418,10 +427,49 @@ statecheck:
    if verify(curtree,'0123456789ABCDEF')\=0 then return 'ERROR'
    havetree=1
   end
+  else if words(out.ci)=6 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='AUTHOR' & word(out.ci,3)='TIME' &,
+          word(out.ci,5)='TZMIN' then do
+   if havetree=0 | haveauthor=1 then return 'ERROR'
+   aw=word(out.ci,4)
+   az=word(out.ci,6)
+   if datatype(aw,'W')\=1 | aw<0 then return 'ERROR'
+   if datatype(az,'W')\=1 | az<(-1439) | az>1439 then,
+    return 'ERROR'
+   sauthorwhen.curnode=aw
+   sauthtz.curnode=az
+   haveauthor=1
+  end
+  else if words(out.ci)=6 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='COMMITTER' & word(out.ci,3)='TIME' &,
+          word(out.ci,5)='TZMIN' then do
+   if havetree=0 | havecommitter=1 then return 'ERROR'
+   cw=word(out.ci,4)
+   cz=word(out.ci,6)
+   if datatype(cw,'W')\=1 | cw<0 then return 'ERROR'
+   if datatype(cz,'W')\=1 | cz<(-1439) | cz>1439 then,
+    return 'ERROR'
+   scommitwhen.curnode=cw
+   scommittz.curnode=cz
+   havecommitter=1
+  end
+  else if words(out.ci)=4 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='MESSAGE' & word(out.ci,3)='BYTES' then do
+   if havetree=0 | havemsg=1 then return 'ERROR'
+   mb=word(out.ci,4)
+   if datatype(mb,'W')\=1 | mb<0 then return 'ERROR'
+   smsgbytes.curnode=mb
+   havemsg=1
+  end
   else if words(out.ci)=3 &,
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='PATH' & word(out.ci,3)='ABSENT' then do
-   if havecommit=0 | havetree=0 | havestate=1 then return 'ERROR'
+   if havecommit=0 | havetree=0 | haveauthor=0 |,
+      havecommitter=0 | havemsg=0 | havestate=1 then,
+    return 'ERROR'
    spresent.curnode=0
    scommit.curnode=curcommit
    stree.curnode=curtree
@@ -431,7 +479,9 @@ statecheck:
   else if words(out.ci)=7 &,
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='PATH' & word(out.ci,3)='PRESENT' then do
-   if havecommit=0 | havetree=0 | havestate=1 then return 'ERROR'
+   if havecommit=0 | havetree=0 | haveauthor=0 |,
+      havecommitter=0 | havemsg=0 | havestate=1 then,
+    return 'ERROR'
    if word(out.ci,4)\='TYPE' | word(out.ci,6)\='SIZE' then,
     return 'ERROR'
    curtype=word(out.ci,5)
@@ -491,12 +541,20 @@ statecheck:
    if datatype(snodes,'W')\=1 | snodes<1 then return 'ERROR'
   end
  end
- if havestate=0 | havecommit=0 | havetree=0 then return 'ERROR'
+ if havestate=0 | havecommit=0 | havetree=0 |,
+    haveauthor=0 | havecommitter=0 | havemsg=0 then return 'ERROR'
  if snodes\=parsednodes | sedges\=sedgecount then return 'ERROR'
  if sparentseen.1=1 then return 'ERROR'
  do ni=1 to snodes
   if datatype(spresent.ni,'W')\=1 then return 'ERROR'
   if spresent.ni\=0 & spresent.ni\=1 then return 'ERROR'
+  if datatype(sauthorwhen.ni,'W')\=1 then return 'ERROR'
+  if datatype(sauthtz.ni,'W')\=1 then return 'ERROR'
+  if sauthtz.ni<(-1439) | sauthtz.ni>1439 then return 'ERROR'
+  if datatype(scommitwhen.ni,'W')\=1 then return 'ERROR'
+  if datatype(scommittz.ni,'W')\=1 then return 'ERROR'
+  if scommittz.ni<(-1439) | scommittz.ni>1439 then return 'ERROR'
+  if datatype(smsgbytes.ni,'W')\=1 then return 'ERROR'
   if ni>1 & sparentseen.ni\=1 then return 'ERROR'
  end
  return 'OK'
@@ -556,10 +614,36 @@ stateversions:
  else slifecycle='MIXED'
  return 'OK'
 
+
+emitnodechron:
+ parse arg kind,ni
+ say kind 'NODE' ni 'AUTHOR TIME' sauthorwhen.ni,
+     'TZMIN' sauthtz.ni
+ say kind 'NODE' ni 'COMMITTER TIME' scommitwhen.ni,
+     'TZMIN' scommittz.ni
+ say kind 'NODE' ni 'MESSAGE BYTES' smsgbytes.ni
+ return
+
+emitpairchron:
+ parse arg kind,record,num,ec,ep
+ say kind record num 'CHILDAUTHOR TIME' sauthorwhen.ec,
+     'TZMIN' sauthtz.ec
+ say kind record num 'PARENTAUTHOR TIME' sauthorwhen.ep,
+     'TZMIN' sauthtz.ep
+ say kind record num 'CHILDCOMMITTER TIME' scommitwhen.ec,
+     'TZMIN' scommittz.ec
+ say kind record num 'PARENTCOMMITTER TIME' scommitwhen.ep,
+     'TZMIN' scommittz.ep
+ delta=scommitwhen.ec-scommitwhen.ep
+ say kind record num 'COMMITTER DELTA SECONDS' delta
+ say kind record num 'CHILDMESSAGE BYTES' smsgbytes.ec
+ say kind record num 'PARENTMESSAGE BYTES' smsgbytes.ep
+ return
+
 stateemit:
  call stateversions
  if result\='OK' then return 8
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYSTATE FULL SNAPSHOTS VERIFIED'
  say 'HISTORYSTATE DATA BEGIN'
  say 'HISTORYSTATE STATUS' slifecycle
@@ -579,6 +663,7 @@ stateemit:
   say 'HISTORYSTATE NODE' ni 'DEPTH' sdepth.ni
   say 'HISTORYSTATE NODE' ni 'COMMIT' scommit.ni
   say 'HISTORYSTATE NODE' ni 'TREE' stree.ni
+  call emitnodechron 'HISTORYSTATE',ni
   if spresent.ni=1 then ns='PRESENT'
   else ns='ABSENT'
   say 'HISTORYSTATE NODE' ni 'STATE' ns
@@ -659,7 +744,7 @@ statestatus:
  if result\='OK' then return 8
  call statepairs
  if result\='OK' then return 8
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYSTATUS FULL SNAPSHOTS VERIFIED'
  say 'HISTORYSTATUS DATA BEGIN'
  say 'HISTORYSTATUS STATUS' diffstatus
@@ -687,7 +772,7 @@ statestatus:
 statelog:
  call stateclass
  if result\='OK' then return 8
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYLOG FULL SNAPSHOTS VERIFIED'
  say 'HISTORYLOG DATA BEGIN'
  say 'HISTORYLOG NODES' snodes
@@ -708,6 +793,7 @@ statelog:
       'PARENTDEPTH' sdepth.ep
   say 'HISTORYLOG CHANGE' ei 'CHILDCOMMIT' scommit.ec
   say 'HISTORYLOG CHANGE' ei 'PARENTCOMMIT' scommit.ep
+  call emitpairchron 'HISTORYLOG','CHANGE',ei,ec,ep
   if spresent.ec=1 then cs='PRESENT'
   else cs='ABSENT'
   if spresent.ep=1 then ps='PRESENT'
@@ -731,7 +817,7 @@ statelog:
 statenear:
  call stateclass
  if result\='OK' then return 8
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYNEAREST FULL SNAPSHOTS VERIFIED'
  say 'HISTORYNEAREST DATA BEGIN'
  say 'HISTORYNEAREST STATUS' diffstatus
@@ -757,6 +843,7 @@ statenear:
        'PARENTDEPTH' sdepth.ep
    say 'HISTORYNEAREST CHANGE' match 'CHILDCOMMIT' scommit.ec
    say 'HISTORYNEAREST CHANGE' match 'PARENTCOMMIT' scommit.ep
+   call emitpairchron 'HISTORYNEAREST','CHANGE',match,ec,ep
    if spresent.ec=1 then cs='PRESENT'
    else cs='ABSENT'
    if spresent.ep=1 then ps='PRESENT'
@@ -820,7 +907,7 @@ statetrans:
  if result\='OK' then return 8
  call statepairs
  if result\='OK' then return 8
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYTRANSITIONS FULL SNAPSHOTS VERIFIED'
  say 'HISTORYTRANSITIONS DATA BEGIN'
  say 'HISTORYTRANSITIONS STATUS' diffstatus
@@ -859,7 +946,7 @@ statetrans:
 statebounds:
  call stateclass
  if result\='OK' then return 8
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYBOUNDS FULL SNAPSHOTS VERIFIED'
  say 'HISTORYBOUNDS DATA BEGIN'
  say 'HISTORYBOUNDS STATUS' diffstatus
@@ -902,6 +989,7 @@ statebounds:
        'PARENTDEPTH' sdepth.ep
    say 'HISTORYBOUNDS CHANGE' match 'CHILDCOMMIT' scommit.ec
    say 'HISTORYBOUNDS CHANGE' match 'PARENTCOMMIT' scommit.ep
+   call emitpairchron 'HISTORYBOUNDS','CHANGE',match,ec,ep
    if spresent.ec=1 then cs='PRESENT'
    else cs='ABSENT'
    if spresent.ep=1 then ps='PRESENT'
@@ -929,7 +1017,7 @@ statereport:
  if result\='OK' then return 8
  call statepairs
  if result\='OK' then return 8
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYREPORT FULL SNAPSHOTS VERIFIED'
  say 'HISTORYREPORT DATA BEGIN'
  say 'HISTORYREPORT STATUS' diffstatus
@@ -983,6 +1071,7 @@ statereport:
       'PARENTDEPTH' sdepth.ep
   say 'HISTORYREPORT CHANGE' change 'CHILDCOMMIT' scommit.ec
   say 'HISTORYREPORT CHANGE' change 'PARENTCOMMIT' scommit.ep
+  call emitpairchron 'HISTORYREPORT','CHANGE',change,ec,ep
   say 'HISTORYREPORT CHANGE' change 'CHILDTREE' stree.ec
   say 'HISTORYREPORT CHANGE' change 'PARENTTREE' stree.ep
   if spresent.ec=1 then cs='PRESENT'
@@ -1011,7 +1100,7 @@ statediff:
  if result\='OK' then return 8
  call statepairs
  if result\='OK' then return 8
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYDIFFS FULL SNAPSHOTS VERIFIED'
  say 'HISTORYDIFFS DATA BEGIN'
  say 'HISTORYDIFFS STATUS' diffstatus
@@ -1066,6 +1155,7 @@ statediff:
   say 'HISTORYDIFFS EDGE' ei 'PARENTDEPTH' sdepth.ep
   say 'HISTORYDIFFS EDGE' ei 'CHILDCOMMIT' scommit.ec
   say 'HISTORYDIFFS EDGE' ei 'PARENTCOMMIT' scommit.ep
+  call emitpairchron 'HISTORYDIFFS','EDGE',ei,ec,ep
   say 'HISTORYDIFFS EDGE' ei 'CHILDTREE' stree.ec
   say 'HISTORYDIFFS EDGE' ei 'PARENTTREE' stree.ep
   if spresent.ec=1 then do
@@ -1293,14 +1383,38 @@ readrefs:
 
 resolve:
  parse arg wanted
+ rawwanted=wanted
  if translate(wanted)='HEAD' then wanted=headref
  else if left(wanted,11)\='refs/heads/' then,
   wanted='refs/heads/'||wanted
  do i=1 to refcount
-  if refname.i=wanted then return refoid.i
+  if refname.i=wanted then do
+   reskind='REF'
+   return refoid.i
+  end
+ end
+ direct=translate(rawwanted)
+ if length(direct)=40 & verify(direct,'0123456789ABCDEF')=0 then do
+  call directinput command
+  if result=1 then do
+   reskind='COMMIT'
+   return direct
+  end
  end
  say 'GITVREF: ref not found' wanted
  return 'ERROR'
+
+directinput:
+ parse arg c
+ if c='SHOW' | c='LOG' | c='DAG' | c='READ' | c='DIR' then,
+  return 1
+ if left(c,4)='HIST' then return 1
+ return 0
+
+emitverified:
+ if reskind='COMMIT' then say 'VERIFIED COMMIT' oid
+ else say 'VERIFIED REF' spec oid
+ return
 
 pathasciihex:
  parse arg text

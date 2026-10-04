@@ -1,5 +1,5 @@
 #!/bin/sh
-# M112 EXEC level identity guards.
+# M117 direct commit history and chronology guards.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -46,9 +46,27 @@ grep -Fq "command = 'HISTORYREPORT-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF HISTREPORT' rest" "$g"
 grep -Fq "command = 'HISTORYBOUNDS-REF-FULL'" "$g"
 grep -Fq "command = 'LEVEL'" "$g"
-grep -Fq "GIT EXEC LEVEL M112" "$g"
+grep -Fq "GIT EXEC LEVEL M117" "$g"
 grep -Fq "GITVREF EXEC LEVEL MISMATCH" "$g"
-grep -Fq "GITVREF EXEC LEVEL M112" "$v"
+grep -Fq "GITVREF EXEC LEVEL M117" "$v"
+grep -Fq "rawwanted=wanted" "$v"
+grep -Fq "length(direct)=40" "$v"
+grep -Fq "call directinput command" "$v"
+grep -Fq "reskind='COMMIT'" "$v"
+grep -Fq "if left(c,4)='HIST' then return 1" "$v"
+grep -Fq "VERIFIED COMMIT" "$v"
+grep -Fq "else say 'VERIFIED REF' spec oid" "$v"
+grep -Fq "rec_ident_when" "$rec"
+grep -Fq "rec_commit_times" "$rec"
+grep -Fq "HISTORYDAGSTATE AUTHOR TIME %lu TZMIN %d" "$rec"
+grep -Fq "HISTORYDAGSTATE COMMITTER TIME %lu TZMIN %d" "$rec"
+grep -Fq "HISTORYDAGSTATE MESSAGE BYTES %lu" "$rec"
+grep -Fq "sauthorwhen.curnode=aw" "$v"
+grep -Fq "scommitwhen.curnode=cw" "$v"
+grep -Fq "smsgbytes.curnode=mb" "$v"
+grep -Fq "emitnodechron:" "$v"
+grep -Fq "emitpairchron:" "$v"
+grep -Fq "COMMITTER DELTA SECONDS" "$v"
 grep -Fq "if command='LEVEL' then do" "$v"
 grep -Fq "'EXEC GITVREF HISTBOUNDS' rest" "$g"
 grep -Fq "'EXEC GITVREF HISTEDGE' rest" "$g"
@@ -246,4 +264,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M112 EXEC LEVEL IDENTITY GUARDS PASSED"
+echo "M117 DIRECT COMMIT HISTORY AND CHRONOLOGY GUARDS PASSED"
