@@ -1,4 +1,4 @@
-/* M125: authenticated bounded commit subject metadata. */
+/* M126: authenticated bounded Git identity metadata. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M125'
+ say 'GITVREF EXEC LEVEL M126'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -376,6 +376,8 @@ statecheck:
  sedgecount=0
  drop spresent. soid. stype. ssize. scommit. stree. sdepth.
  drop sauthorwhen. sauthtz. scommitwhen. scommittz. smsgbytes.
+ drop saidentbytes. saidentprefix. saidenthex.
+ drop scidentbytes. scidentprefix. scidenthex.
  drop ssubbytes. ssubprefix. ssubhex.
  drop sedgechild. sedgeparent. sedgekey. sparentseen.
  drop sseencommit.
@@ -389,7 +391,11 @@ statecheck:
  havecommit=1
  havetree=1
  haveauthor=1
+ haveaidentmeta=1
+ haveaidenthex=1
  havecommitter=1
+ havecidentmeta=1
+ havecidenthex=1
  havemsg=1
  havesubmeta=1
  havesubhex=1
@@ -398,8 +404,9 @@ statecheck:
   if words(out.ci)=5 & word(out.ci,1)='HISTORYDAGSTATE' &,
      word(out.ci,2)='NODE' & word(out.ci,4)='DEPTH' then do
    if havestate=0 | havecommit=0 | havetree=0 |,
-      haveauthor=0 | havecommitter=0 | havemsg=0 |,
-      havesubmeta=0 | havesubhex=0 then,
+      haveauthor=0 | haveaidentmeta=0 | haveaidenthex=0 |,
+      havecommitter=0 | havecidentmeta=0 | havecidenthex=0 |,
+      havemsg=0 | havesubmeta=0 | havesubhex=0 then,
     return 'ERROR'
    parsednodes=parsednodes+1
    curnode=word(out.ci,3)
@@ -417,7 +424,11 @@ statecheck:
    havecommit=0
    havetree=0
    haveauthor=0
+   haveaidentmeta=0
+   haveaidenthex=0
    havecommitter=0
+   havecidentmeta=0
+   havecidenthex=0
    havemsg=0
    havesubmeta=0
    havesubhex=0
@@ -459,9 +470,35 @@ statecheck:
   end
   else if words(out.ci)=6 &,
           word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='AIDENT' & word(out.ci,3)='BYTES' &,
+          word(out.ci,5)='PREFIXBYTES' then do
+   if haveauthor=0 | haveaidentmeta=1 then return 'ERROR'
+   ib=word(out.ci,4)
+   ip=word(out.ci,6)
+   if datatype(ib,'W')\=1 | ib<1 then return 'ERROR'
+   if datatype(ip,'W')\=1 | ip<1 | ip>20 | ip>ib then,
+    return 'ERROR'
+   saidentbytes.curnode=ib
+   saidentprefix.curnode=ip
+   haveaidentmeta=1
+  end
+  else if words(out.ci)=3 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='AIDENTHEX' then do
+   if haveaidentmeta=0 | haveaidenthex=1 then return 'ERROR'
+   ih=translate(word(out.ci,3))
+   ip=saidentprefix.curnode
+   if length(ih)\=ip*2 then return 'ERROR'
+   if verify(ih,'0123456789ABCDEF')\=0 then return 'ERROR'
+   saidenthex.curnode=ih
+   haveaidenthex=1
+  end
+  else if words(out.ci)=6 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='COMMITTER' & word(out.ci,3)='TIME' &,
           word(out.ci,5)='TZMIN' then do
-   if havetree=0 | havecommitter=1 then return 'ERROR'
+   if havetree=0 | havecommitter=1 | haveaidentmeta=0 |,
+      haveaidenthex=0 then return 'ERROR'
    cw=word(out.ci,4)
    cz=word(out.ci,6)
    if datatype(cw,'W')\=1 | cw<0 then return 'ERROR'
@@ -471,10 +508,36 @@ statecheck:
    scommittz.curnode=cz
    havecommitter=1
   end
+  else if words(out.ci)=6 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='CIDENT' & word(out.ci,3)='BYTES' &,
+          word(out.ci,5)='PREFIXBYTES' then do
+   if havecommitter=0 | havecidentmeta=1 then return 'ERROR'
+   ib=word(out.ci,4)
+   ip=word(out.ci,6)
+   if datatype(ib,'W')\=1 | ib<1 then return 'ERROR'
+   if datatype(ip,'W')\=1 | ip<1 | ip>20 | ip>ib then,
+    return 'ERROR'
+   scidentbytes.curnode=ib
+   scidentprefix.curnode=ip
+   havecidentmeta=1
+  end
+  else if words(out.ci)=3 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='CIDENTHEX' then do
+   if havecidentmeta=0 | havecidenthex=1 then return 'ERROR'
+   ih=translate(word(out.ci,3))
+   ip=scidentprefix.curnode
+   if length(ih)\=ip*2 then return 'ERROR'
+   if verify(ih,'0123456789ABCDEF')\=0 then return 'ERROR'
+   scidenthex.curnode=ih
+   havecidenthex=1
+  end
   else if words(out.ci)=4 &,
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='MESSAGE' & word(out.ci,3)='BYTES' then do
-   if havetree=0 | havemsg=1 then return 'ERROR'
+   if havetree=0 | havemsg=1 | havecidentmeta=0 |,
+      havecidenthex=0 then return 'ERROR'
    mb=word(out.ci,4)
    if datatype(mb,'W')\=1 | mb<0 then return 'ERROR'
    smsgbytes.curnode=mb
@@ -514,8 +577,10 @@ statecheck:
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='PATH' & word(out.ci,3)='ABSENT' then do
    if havecommit=0 | havetree=0 | haveauthor=0 |,
-      havecommitter=0 | havemsg=0 | havesubmeta=0 |,
-      havesubhex=0 | havestate=1 then,
+      haveaidentmeta=0 | haveaidenthex=0 |,
+      havecommitter=0 | havecidentmeta=0 | havecidenthex=0 |,
+      havemsg=0 | havesubmeta=0 | havesubhex=0 |,
+      havestate=1 then,
     return 'ERROR'
    spresent.curnode=0
    scommit.curnode=curcommit
@@ -527,8 +592,10 @@ statecheck:
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='PATH' & word(out.ci,3)='PRESENT' then do
    if havecommit=0 | havetree=0 | haveauthor=0 |,
-      havecommitter=0 | havemsg=0 | havesubmeta=0 |,
-      havesubhex=0 | havestate=1 then,
+      haveaidentmeta=0 | haveaidenthex=0 |,
+      havecommitter=0 | havecidentmeta=0 | havecidenthex=0 |,
+      havemsg=0 | havesubmeta=0 | havesubhex=0 |,
+      havestate=1 then,
     return 'ERROR'
    if word(out.ci,4)\='TYPE' | word(out.ci,6)\='SIZE' then,
     return 'ERROR'
@@ -590,8 +657,9 @@ statecheck:
   end
  end
  if havestate=0 | havecommit=0 | havetree=0 |,
-    haveauthor=0 | havecommitter=0 | havemsg=0 |,
-    havesubmeta=0 | havesubhex=0 then return 'ERROR'
+    haveauthor=0 | haveaidentmeta=0 | haveaidenthex=0 |,
+    havecommitter=0 | havecidentmeta=0 | havecidenthex=0 |,
+    havemsg=0 | havesubmeta=0 | havesubhex=0 then return 'ERROR'
  if snodes\=parsednodes | sedges\=sedgecount then return 'ERROR'
  if sparentseen.1=1 then return 'ERROR'
  do ni=1 to snodes
@@ -603,6 +671,16 @@ statecheck:
   if datatype(scommitwhen.ni,'W')\=1 then return 'ERROR'
   if datatype(scommittz.ni,'W')\=1 then return 'ERROR'
   if scommittz.ni<(-1439) | scommittz.ni>1439 then return 'ERROR'
+  if datatype(saidentbytes.ni,'W')\=1 then return 'ERROR'
+  if datatype(saidentprefix.ni,'W')\=1 then return 'ERROR'
+  if saidentbytes.ni<1 | saidentprefix.ni<1 then return 'ERROR'
+  if saidentprefix.ni>20 | saidentprefix.ni>saidentbytes.ni then,
+   return 'ERROR'
+  if datatype(scidentbytes.ni,'W')\=1 then return 'ERROR'
+  if datatype(scidentprefix.ni,'W')\=1 then return 'ERROR'
+  if scidentbytes.ni<1 | scidentprefix.ni<1 then return 'ERROR'
+  if scidentprefix.ni>20 | scidentprefix.ni>scidentbytes.ni then,
+   return 'ERROR'
   if datatype(smsgbytes.ni,'W')\=1 then return 'ERROR'
   if datatype(ssubbytes.ni,'W')\=1 then return 'ERROR'
   if datatype(ssubprefix.ni,'W')\=1 then return 'ERROR'
@@ -672,8 +750,14 @@ emitnodechron:
  parse arg kind,ni
  say kind 'NODE' ni 'AUTHOR TIME' sauthorwhen.ni,
      'TZMIN' sauthtz.ni
+ say kind 'NODE' ni 'AIDENT BYTES' saidentbytes.ni,
+     'PREFIXBYTES' saidentprefix.ni
+ say kind 'NODE' ni 'AIDENTHEX' saidenthex.ni
  say kind 'NODE' ni 'COMMITTER TIME' scommitwhen.ni,
      'TZMIN' scommittz.ni
+ say kind 'NODE' ni 'CIDENT BYTES' scidentbytes.ni,
+     'PREFIXBYTES' scidentprefix.ni
+ say kind 'NODE' ni 'CIDENTHEX' scidenthex.ni
  lag=scommitwhen.ni-sauthorwhen.ni
  say kind 'NODE' ni 'AUTHOR TO COMMITTER LAG SECONDS' lag
  say kind 'NODE' ni 'MESSAGE BYTES' smsgbytes.ni
@@ -687,10 +771,22 @@ emitpairchron:
      'TZMIN' sauthtz.ec
  say kind record num 'PARENTAUTHOR TIME' sauthorwhen.ep,
      'TZMIN' sauthtz.ep
+ say kind record num 'CAIDENT BYTES' saidentbytes.ec,
+     'PREFIXBYTES' saidentprefix.ec
+ say kind record num 'CAIDENTHEX' saidenthex.ec
+ say kind record num 'PAIDENT BYTES' saidentbytes.ep,
+     'PREFIXBYTES' saidentprefix.ep
+ say kind record num 'PAIDENTHEX' saidenthex.ep
  say kind record num 'CHILDCOMMITTER TIME' scommitwhen.ec,
      'TZMIN' scommittz.ec
  say kind record num 'PARENTCOMMITTER TIME' scommitwhen.ep,
      'TZMIN' scommittz.ep
+ say kind record num 'CCIDENT BYTES' scidentbytes.ec,
+     'PREFIXBYTES' scidentprefix.ec
+ say kind record num 'CCIDENTHEX' scidenthex.ec
+ say kind record num 'PCIDENT BYTES' scidentbytes.ep,
+     'PREFIXBYTES' scidentprefix.ep
+ say kind record num 'PCIDENTHEX' scidenthex.ep
  adelta=sauthorwhen.ec-sauthorwhen.ep
  say kind record num 'AUTHOR DELTA SECONDS' adelta
  delta=scommitwhen.ec-scommitwhen.ep

@@ -58,6 +58,12 @@ HIST_TREE = b"".join(m + b" " + n + b"\x00" + oid
 FIRST_COMMIT = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
         + b"\nauthor A <a@b> 123 +0000\n"
         + b"committer A <a@b> 123 +0000\n\nhello\n")
+LONG_IDENT = b"mostangrymike <mikewommack86@gmail.com>"
+IDENT_COMMIT = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
+        + b"\nauthor " + LONG_IDENT + b" 456 -0500\n"
+        + b"committer " + LONG_IDENT + b" 459 -0500\n\nidentity\n")
+BAD_IDENT_COMMIT = IDENT_COMMIT.replace(
+    b"author " + LONG_IDENT, b"author ", 1)
 MERGE = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
          + b"\nparent " + git_oid("commit", FIRST_COMMIT).lower().encode("ascii")
          + b"\nparent " + b"1"*40
@@ -286,7 +292,8 @@ MALFORMED_FIRST = MERGE.replace(
     b"parent " + git_oid("commit", BAD_COMMIT).lower().encode("ascii"), 1)
 SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
            (2, SUBTREE), (3, BLOB),
-           (1, FIRST_COMMIT), (1, MERGE), (1, BAD_PARENT), (1, BAD_COMMIT),
+           (1, FIRST_COMMIT), (1, IDENT_COMMIT), (1, BAD_IDENT_COMMIT),
+           (1, MERGE), (1, BAD_PARENT), (1, BAD_COMMIT),
            (1, REAL_COMMIT), (1, BAD_LINK), (1, BAD_TREE_LINK),
            (3, EMPTY), (3, BINARY), (3, BIG),
            (2, HIST_TREE), (3, HIST_README),
@@ -428,6 +435,25 @@ def main():
         tree_oid = git_oid("tree", TREE)
         result = run(rec, "TREE", "GENOLD", "GENNEW", tree_oid, cwd=d)
         verify_tree(result, "SELECTED 52 GENNEW", ENTRIES)
+        # M126: exact raw identity bytes are authenticated and bounded.
+        identity = run(
+            rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",
+            git_oid("commit", IDENT_COMMIT), "0",
+            b"README.md".hex().upper(), cwd=d)
+        ident_hex = LONG_IDENT[:20].hex().upper()
+        assert "HISTORYDAGSTATE AUTHOR TIME 456 TZMIN -300" in identity
+        assert "HISTORYDAGSTATE COMMITTER TIME 459 TZMIN -300" in identity
+        assert "HISTORYDAGSTATE AIDENT BYTES 39 PREFIXBYTES 20" in identity
+        assert "HISTORYDAGSTATE CIDENT BYTES 39 PREFIXBYTES 20" in identity
+        assert "HISTORYDAGSTATE AIDENTHEX " + ident_hex in identity
+        assert "HISTORYDAGSTATE CIDENTHEX " + ident_hex in identity
+        assert "HISTORYDAGSTATE SUBJECT BYTES 8 PREFIXBYTES 8" in identity
+        bad_identity = run(
+            rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",
+            git_oid("commit", BAD_IDENT_COMMIT), "0",
+            b"README.md".hex().upper(), cwd=d, expected=8)
+        assert "HISTORYDAGSTATE COMMIT META INVALID" in bad_identity
+        assert "HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED" not in bad_identity
         # M24: follow an authenticated commit into its root tree.
         lsroot = run(rec, "LSROOT", "GENOLD", "GENNEW",
                      git_oid("commit", FIRST_COMMIT), cwd=d)
