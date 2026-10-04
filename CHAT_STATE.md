@@ -4759,3 +4759,12 @@ The new authenticated subject metadata matched the sealed commits byte-for-byte.
 M125 is now actual native CMS target-proven. M126 advances read-only authenticated history metadata by preserving each commit's raw Git author and committer identity field (the bytes between the `author `/`committer ` key and the timestamp). Native C records the exact identity byte count plus at most 20 raw ASCII prefix bytes and emits compact `AIDENT`/`CIDENT` metadata and HEX records only after the commit object has authenticated. GITVREF requires the identity count/prefix records to be present, ordered and internally consistent before accepting the node's path state.
 
 HISTORYSTATE exposes per-node AIDENT/CIDENT byte counts and prefix hex. Detailed changed-edge output exposes compact CAIDENT/PAIDENT/CCIDENT/PCIDENT records while retaining M125 subject metadata and all M124/M123 chronology arithmetic and transition aggregates. Router/worker identity advances to M126. For both sealed DELETED-fixture commits, GitHub's raw commit metadata reports author and committer identity `mostangrymike <mikewommack86@gmail.com>`, 39 bytes, with the first 20 ASCII bytes expected as hex `6D6F7374616E6772796D696B65203C6D696B6577`. This expected value is independent reference data; M126 remains host-only until native CMS output confirms it.
+
+
+## 2026-10-04 M126 REAL CMS TARGET PASS
+
+The real z/VM CMS target compiled M126 `GITREC.C` cleanly with `CMSCLNK GITREC PLAIN`: ASSEMBLER (XF) DONE, no statements flagged, MODULE PLAIN built. `GIT LEVEL` returned exactly `GIT EXEC LEVEL M126` and `GITVREF EXEC LEVEL M126`.
+
+For sealed direct commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`, depth 1, path `src/GITPBWALK.EXEC`, HISTORYSTATE and HISTORYDIFFS both returned full-snapshot verified RC0 output. M126 raw identity metadata matched independent Git commit metadata exactly for child and parent, author and committer: identity byte count 39, prefix bytes 20, prefix hex `6D6F7374616E6772796D696B65203C6D696B6577` (first 20 bytes of `mostangrymike <mikewommack86@gmail.com>`). HISTORYDIFFS emitted matching CAIDENT, PAIDENT, CCIDENT and PCIDENT records.
+
+All prior invariants remained exact: child ABSENT / parent PRESENT, one DELETED edge, child/parent epochs 1789695393 / 1789695390 at TZMIN -300, author delta +3, committer delta +3, author-to-committer lag 0 for both nodes, message bytes 37 / 28, and M125 subject metadata 37/28 with their previously target-proven prefixes. Therefore M126 is NATIVE CMS TARGET-PROVEN. Do not repeat this standalone gate.
