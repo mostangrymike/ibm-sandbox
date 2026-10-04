@@ -1,4 +1,4 @@
-/* M112: read-only REF2 verified EXEC level identity. */
+/* M113: read-only REF2 or direct commit history input. */
 address cms
 parse arg command spec depth extra
 command=translate(command)
@@ -226,7 +226,7 @@ if command='HISTCHG' | command='HISTEDGE' then do
  if command='HISTEDGE' then do
   if distinct=1 then status='UNCHANGED'
   else status='CHANGED'
-  say 'VERIFIED REF' spec oid
+  call emitverified
   say 'HISTORYEDGES FULL SNAPSHOTS VERIFIED'
   say 'HISTORYEDGES DATA BEGIN'
   say 'HISTORYEDGES STATUS' status
@@ -272,7 +272,7 @@ if command='HISTCHG' | command='HISTEDGE' then do
   say 'HISTORYEDGES DATA END'
   exit 0
  end
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYCHANGES FULL SNAPSHOTS VERIFIED'
  say 'HISTORYCHANGES DATA BEGIN'
  do i=1 to out.0
@@ -343,11 +343,11 @@ if command='HISTCHG' | command='HISTEDGE' then do
  exit 0
 end
 if command='RESOLVE' then do
- say 'VERIFIED REF' spec oid
+ call emitverified
  exit 0
 end
 emit=0
-say 'VERIFIED REF' spec oid
+call emitverified
 do i=1 to out.0
  if pos(marker,out.i)>0 then emit=1
  if emit then do
@@ -559,7 +559,7 @@ stateversions:
 stateemit:
  call stateversions
  if result\='OK' then return 8
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYSTATE FULL SNAPSHOTS VERIFIED'
  say 'HISTORYSTATE DATA BEGIN'
  say 'HISTORYSTATE STATUS' slifecycle
@@ -659,7 +659,7 @@ statestatus:
  if result\='OK' then return 8
  call statepairs
  if result\='OK' then return 8
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYSTATUS FULL SNAPSHOTS VERIFIED'
  say 'HISTORYSTATUS DATA BEGIN'
  say 'HISTORYSTATUS STATUS' diffstatus
@@ -687,7 +687,7 @@ statestatus:
 statelog:
  call stateclass
  if result\='OK' then return 8
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYLOG FULL SNAPSHOTS VERIFIED'
  say 'HISTORYLOG DATA BEGIN'
  say 'HISTORYLOG NODES' snodes
@@ -731,7 +731,7 @@ statelog:
 statenear:
  call stateclass
  if result\='OK' then return 8
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYNEAREST FULL SNAPSHOTS VERIFIED'
  say 'HISTORYNEAREST DATA BEGIN'
  say 'HISTORYNEAREST STATUS' diffstatus
@@ -820,7 +820,7 @@ statetrans:
  if result\='OK' then return 8
  call statepairs
  if result\='OK' then return 8
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYTRANSITIONS FULL SNAPSHOTS VERIFIED'
  say 'HISTORYTRANSITIONS DATA BEGIN'
  say 'HISTORYTRANSITIONS STATUS' diffstatus
@@ -859,7 +859,7 @@ statetrans:
 statebounds:
  call stateclass
  if result\='OK' then return 8
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYBOUNDS FULL SNAPSHOTS VERIFIED'
  say 'HISTORYBOUNDS DATA BEGIN'
  say 'HISTORYBOUNDS STATUS' diffstatus
@@ -929,7 +929,7 @@ statereport:
  if result\='OK' then return 8
  call statepairs
  if result\='OK' then return 8
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYREPORT FULL SNAPSHOTS VERIFIED'
  say 'HISTORYREPORT DATA BEGIN'
  say 'HISTORYREPORT STATUS' diffstatus
@@ -1011,7 +1011,7 @@ statediff:
  if result\='OK' then return 8
  call statepairs
  if result\='OK' then return 8
- say 'VERIFIED REF' spec oid
+ call emitverified
  say 'HISTORYDIFFS FULL SNAPSHOTS VERIFIED'
  say 'HISTORYDIFFS DATA BEGIN'
  say 'HISTORYDIFFS STATUS' diffstatus
@@ -1293,14 +1293,38 @@ readrefs:
 
 resolve:
  parse arg wanted
+ rawwanted=wanted
  if translate(wanted)='HEAD' then wanted=headref
  else if left(wanted,11)\='refs/heads/' then,
   wanted='refs/heads/'||wanted
  do i=1 to refcount
-  if refname.i=wanted then return refoid.i
+  if refname.i=wanted then do
+   reskind='REF'
+   return refoid.i
+  end
+ end
+ direct=translate(rawwanted)
+ if length(direct)=40 & verify(direct,'0123456789ABCDEF')=0 then do
+  call directinput command
+  if result=1 then do
+   reskind='COMMIT'
+   return direct
+  end
  end
  say 'GITVREF: ref not found' wanted
  return 'ERROR'
+
+directinput:
+ parse arg c
+ if c='SHOW' | c='LOG' | c='DAG' | c='READ' | c='DIR' then,
+  return 1
+ if left(c,4)='HIST' then return 1
+ return 0
+
+emitverified:
+ if reskind='COMMIT' then say 'VERIFIED COMMIT' oid
+ else call emitverified
+ return
 
 pathasciihex:
  parse arg text
