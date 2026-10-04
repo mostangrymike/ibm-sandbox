@@ -1,5 +1,5 @@
 #!/bin/sh
-# M124 CMS REXX epoch precision guards.
+# M125 authenticated commit subject prefix guards.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -48,11 +48,11 @@ grep -Fq "command = 'HISTORYBOUNDS-REF-FULL'" "$g"
 grep -Fq "command = 'LEVEL'" "$g"
 grep -Fq "command = 'HISTORYCHRONOLOGY-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF HISTCHRON' rest" "$g"
-grep -Fq "GIT EXEC LEVEL M124" "$g"
-grep -Fq "GITVREF EXEC LEVEL M124" "$v"
-grep -Fq "GIT EXEC LEVEL M124" "$g"
+grep -Fq "GIT EXEC LEVEL M125" "$g"
+grep -Fq "GITVREF EXEC LEVEL M125" "$v"
+grep -Fq "GIT EXEC LEVEL M125" "$g"
 grep -Fq "GITVREF EXEC LEVEL MISMATCH" "$g"
-grep -Fq "GITVREF EXEC LEVEL M124" "$v"
+grep -Fq "GITVREF EXEC LEVEL M125" "$v"
 grep -Fxq "numeric digits 20" "$v"
 grep -Fq "rawwanted=wanted" "$v"
 grep -Fq "length(direct)=40" "$v"
@@ -66,6 +66,14 @@ grep -Fq "rec_commit_times" "$rec"
 grep -Fq "HISTORYDAGSTATE AUTHOR TIME %lu TZMIN %d" "$rec"
 grep -Fq "HISTORYDAGSTATE COMMITTER TIME %lu TZMIN %d" "$rec"
 grep -Fq "HISTORYDAGSTATE MESSAGE BYTES %lu" "$rec"
+grep -Fq "HISTORYDAGSTATE SUBJECT BYTES %lu PREFIXBYTES %u" "$rec"
+grep -Fq "HISTORYDAGSTATE SUBJECTHEX" "$rec"
+grep -Fq "subject_prefix_bytes" "$rec"
+grep -Fq "ssubbytes.curnode=sb" "$v"
+grep -Fq "ssubprefix.curnode=sp" "$v"
+grep -Fq "ssubhex.curnode=sh" "$v"
+grep -Fq "CHILDSUBJECT BYTES" "$v"
+grep -Fq "PARENTSUBJECT BYTES" "$v"
 grep -Fq "sauthorwhen.curnode=aw" "$v"
 grep -Fq "scommitwhen.curnode=cw" "$v"
 grep -Fq "smsgbytes.curnode=mb" "$v"
@@ -286,4 +294,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M124 CMS REXX EPOCH PRECISION GUARDS PASSED"
+echo "M125 AUTHENTICATED COMMIT SUBJECT GUARDS PASSED"
