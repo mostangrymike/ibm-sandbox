@@ -956,7 +956,6 @@ static int rec_history_dag_path(const unsigned char *starting,
                                 unsigned long pathlen) {
  unsigned char commits[64][20],trees[64][20],levels[64];
  unsigned char results[64][20],parent[20];
- unsigned char subject_prefix[64][20];
  unsigned char edge[64][64];
  unsigned long sizes[64],sz,at,begin,len;
  int types[64];
@@ -1056,6 +1055,7 @@ static int rec_history_dag_state(const unsigned char *starting,
                                 unsigned long pathlen) {
  unsigned char commits[64][20],trees[64][20],levels[64];
  unsigned char results[64][20],parent[20];
+ unsigned char subject_prefix[64][20];
  unsigned char edge[64][64];
  unsigned long sizes[64],sz,at,begin,len;
  unsigned long author_when[64],commit_when[64],msgbytes[64];
