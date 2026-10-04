@@ -675,6 +675,20 @@ For the real DELETED fixture, GitHub's normalized commit metadata independently 
 
 PR #78 passed exact-head native-stage workflow `37239289291` after fixing and guarding a pre-merge `emitverified` recursion regression, then squash-merged as `6428b91791172da6d63e948f3bcf6fdec09f087b`. The merged batch supports ref-first direct sealed commit input (`VERIFIED COMMIT`), keeps VERIFY-REF ref-only, adds native authenticated author/committer epoch plus timezone-minute and message-byte metadata to HISTORYDAGSTATE, requires those records in the strict wrapper parser, emits chronology across detailed history surfaces, and derives signed committer-time deltas. Router/worker level identity is M117. Native C89 compilation and the complete host staging/index/PACK suite are green. Target proof is pending and will be batched with subsequent native metadata work.
 
+## M102-M112 native CMS target proof
+
+Actual CMS validation completed the previously partial M102-M111 gate and proved M112 level identity. `GIT LEVEL` returned exactly `GIT EXEC LEVEL M112` and `GITVREF EXEC LEVEL M112` with RC0, eliminating the stale-router/current-worker condition.
+
+`HISTORYNEAREST-REF-FULL HEAD 1 src` passed as CHANGED / ALLPRESENT with NODES 2, EDGES 1, CHANGES 1, nearest depth 0, one match, and one MODIFIED edge from child node 1 to parent node 2. Endpoint commits and path OIDs/types/sizes matched the target-proven HEAD/parent pair. CPU 115.24 / elapsed 118.13 sec.
+
+`HISTORYTRANSITIONS-REF-FULL HEAD 1 src/M9JOBJ.EXEC` passed as CHANGED / MIXED with one PRESENT version (`775F6C809889E3497D8837379B37A706DFD101CA`, type 3 size 646), one transition, one changed transition, exactly one ADDED edge, and transition state 1 -> 0 (child PRESENT, parent ABSENT). CPU 115.79 / elapsed 118.72 sec.
+
+`HISTORYREPORT-REF-FULL HEAD 1 src` passed as CHANGED / ALLPRESENT with PRESENT 2, ABSENT 0, VERSIONS 2, one MODIFIED transition and one MODIFIED edge. State 1 is child tree `A41B3EA7758F301B7E30BD3CFDF264300C02AE35` type 2 size 3690 at depth 0; state 2 is parent tree `884916539208F673916FBD6988DE6B028C355723` type 2 size 3651 at depth 1. Root trees, commits, nearest/farthest depth 0 and all endpoint metadata matched. CPU 115.42 / elapsed 118.34 sec.
+
+`HISTORYBOUNDS-REF-FULL HEAD 1 src` passed with CHANGES 1, nearest depth 0 / matches 1, farthest depth 0 / matches 1, boundary changes 1, and the single MODIFIED edge labeled `BOUND BOTH`, with authenticated endpoint metadata. CPU 114.96 / elapsed 117.84 sec.
+
+Therefore M102-M112 are NATIVE CMS TARGET-PROVEN. The shared classifier, change-depth bounds, HISTORYNEAREST, lifecycle transition matrix, HISTORYREPORT, HISTORYBOUNDS, and fail-closed EXEC level handshake are all proven on real z/VM CMS.
+
 ## M118: bounded authenticated commit-subject prefix
 
 M118 extends the M114 native chronology extraction with commit subject metadata. For every HISTORYDAGSTATE node, native C records the exact first-line subject byte count and a bounded prefix of at most 20 raw ASCII bytes. Trusted native records are `HISTORYDAGSTATE SUBJECT BYTES <n> PREFIXBYTES <p>` followed by `HISTORYDAGSTATE SUBJECTHEX <hex|EMPTY>`. Long subjects are not rejected; only the displayed prefix is bounded, while the commit object remains fully authenticated and the total subject byte count remains exact.
