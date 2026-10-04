@@ -710,3 +710,62 @@ The combined M113-M123 target gate should use sealed direct commit `486ADAA5B020
 GitHub normalized metadata independently shows child author/committer time 2026-09-18T01:36:33Z (epoch 1789695393) and parent author/committer time 2026-09-18T01:36:30Z (epoch 1789695390). Therefore the native authenticated AUTHOR DELTA and COMMITTER DELTA across the deletion edge should both be +3 seconds, while child and parent AUTHOR TO COMMITTER LAG should each be 0 seconds. Raw Git timezone-minute values and exact message byte counts must be accepted from native output rather than inferred from GitHub normalization.
 
 NEXT genuine target gate requires uploading `GITREC.C`, `GITVREF.EXEC`, and `GIT.EXEC`, rebuilding only GITREC, then `GIT LEVEL` must report M123/M123. Minimal proof set: HISTORYSTATE on the direct commit/deleted path (direct commit input + native chronology + ABSENT/PRESENT state), HISTORYDIFFS on the same input (DELETED + detailed signed chronology), HISTORYCHRONOLOGY on the same input (author/committer sign and bounds + lag summary), and HISTORYTRANSITIONS on the same input (state 0 ABSENT -> parent present state, DELETED, plus M123 per-transition chronology aggregates). No GITRUN.
+
+
+## 2026-10-04 NEW CHAT HANDOFF — AUTHORITATIVE
+
+Current main head before this handoff: `5169a6e0d9325e658f15fcab0bc89db6addd42aa` (`Finalize M113-M123 combined native CMS gate`).
+
+### Proven through M112
+M102-M112 are NATIVE CMS TARGET-PROVEN on real z/VM 4.4. The repaired level handshake returned exactly:
+`GIT EXEC LEVEL M112`
+`GITVREF EXEC LEVEL M112`
+with RC0. HISTORYNEAREST on HEAD/1/src proved one MODIFIED edge at depth 0; HISTORYTRANSITIONS on HEAD/1/src/M9JOBJ.EXEC proved state 1 PRESENT -> state 0 ABSENT, status ADDED; HISTORYREPORT on HEAD/1/src proved two authenticated present states and one MODIFIED transition/edge; HISTORYBOUNDS on HEAD/1/src proved nearest=farthest depth 0, one boundary edge labeled BOTH. Do not repeat M102-M112 standalone.
+
+### Current merged development: M113-M123
+PR #78 merged M113-M117 as `6428b91791172da6d63e948f3bcf6fdec09f087b` after full native-stage CI. It adds ref-first direct sealed commit-OID input to verified read/history commands, keeps VERIFY-REF ref-only, and adds native authenticated author/committer epoch + timezone-minute, message-byte metadata, signed deltas, and detailed chronology output. Native C changed here.
+
+PR #80 merged M118-M120 as `cb561349716cd1b00f7d8263659ec9a8c59bc61f`, adding signed author deltas, author-to-committer lag, and `HISTORYCHRONOLOGY-REF-FULL` summaries.
+
+PR #82 merged M121-M123 as `522a006cf2424928e780229aba51d2dc86fd6997`, adding per-authenticated-transition chronology aggregates to HISTORYTRANSITIONS/HISTORYREPORT/HISTORYDIFFS. Router/worker identity is now M123.
+
+M113-M123 are FULL HOST-CI-PROVEN and merged, but NOT YET NATIVE CMS TARGET-PROVEN.
+
+### Exact next genuine CMS gate
+From Mac `ibm-sandbox/src`:
+`git pull`
+`CMS_SCRIPT_PORT=3272 ./cms-upload.sh GITREC.C GITVREF.EXEC GIT.EXEC`
+
+On CMS:
+`CMSCLNK GITREC PLAIN`
+`GIT LEVEL`
+`GIT HISTORYSTATE-REF-FULL 486ADAA5B02080720F4B329C6F68550B13C6AA87 1 src/GITPBWALK.EXEC`
+`GIT HISTORYDIFFS-REF-FULL 486ADAA5B02080720F4B329C6F68550B13C6AA87 1 src/GITPBWALK.EXEC`
+`GIT HISTORYCHRONOLOGY-REF-FULL 486ADAA5B02080720F4B329C6F68550B13C6AA87 1 src/GITPBWALK.EXEC`
+`GIT HISTORYTRANSITIONS-REF-FULL 486ADAA5B02080720F4B329C6F68550B13C6AA87 1 src/GITPBWALK.EXEC`
+
+No GITRUN.
+
+Expected level identity: M123/M123.
+
+Real sealed DELETED fixture:
+- child/removal commit: `486ADAA5B02080720F4B329C6F68550B13C6AA87`
+- parent: `91913EA4028B795707AA67EDB1ED17A74D1B896E`
+- path: `src/GITPBWALK.EXEC`
+- child root tree: `909B1D31C377F42158F1591AB3FA130105186FD7`, path ABSENT
+- parent root tree: `AE65405CF230B9FB0992544773B3CF7197015A47`
+- parent path blob: `A0C91615ABA9689C365159205E8CBA26EF6E16F4`, type 3, size 1869
+- expected edge classification: DELETED, child ABSENT / parent PRESENT
+- normalized GitHub author+committer epochs: child 1789695393, parent 1789695390
+- expected AUTHOR DELTA SECONDS: +3
+- expected COMMITTER DELTA SECONDS: +3
+- expected child and parent AUTHOR TO COMMITTER LAG SECONDS: 0
+- raw timezone-minute offsets and exact message byte counts must come from native output, not be guessed.
+
+The HISTORYTRANSITIONS proof should show child state 0 ABSENT -> a PRESENT parent state, status DELETED, and M123 per-transition author/committer sign/count/min/max chronology aggregates consistent with the single +3-second edge.
+
+### Important open-branch note
+PR #81 (`M118 add authenticated commit subject prefix`) is still OPEN and is not part of current main. It was based on an earlier M120-era base and overlaps milestone numbering. Do not treat it as merged or target-proven. Reconcile/rebase or close it only after the M113-M123 CMS gate; do not merge it blindly.
+
+### Standing execution rules
+Continue autonomously through GitHub work with maximum work per turn. Do not pause except for a genuine CMS target gate. Keep CMS commands minimal and batch gates. Preserve immutable GITFIX/M15NEW STAGE/INDEX/SEEK/GEN, protected selector PTRs, GITPBUF PACK, and read-only REF2. Never represent host CI as native CMS proof. C source physical lines <=72; CMS EXEC records <=80. Fail closed and emit no trusted partial output before requested verification completes.
