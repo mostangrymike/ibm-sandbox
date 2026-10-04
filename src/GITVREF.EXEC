@@ -699,6 +699,10 @@ emitpairchron:
  say kind record num 'PARENT AUTHOR TO COMMITTER LAG SECONDS' plag
  say kind record num 'CHILDMESSAGE BYTES' smsgbytes.ec
  say kind record num 'PARENTMESSAGE BYTES' smsgbytes.ep
+ say kind record num 'CHILDSUBJECT BYTES' ssubbytes.ec,
+     'PREFIXHEX' ssubhex.ec
+ say kind record num 'PARENTSUBJECT BYTES' ssubbytes.ep,
+     'PREFIXHEX' ssubhex.ep
  return
 
 stateemit:
