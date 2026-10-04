@@ -265,13 +265,17 @@ static int rec_commit_walk(unsigned long n,int emit) {
  }
  return 1;
 }
-/* M114: extract authenticated raw Git identity times.
- * The commit body is ASCII; avoid host character literals here.
+/* M126: extract authenticated raw Git identity and time.
+ * Identity stays raw ASCII bytes; CMS never reinterprets the payload.
  */
 static int rec_ident_when(const unsigned char *line,
-                          unsigned long n,
-                          unsigned long *when,int *tzmin) {
+                          unsigned long n,unsigned long keybytes,
+                          unsigned long *when,int *tzmin,
+                          unsigned long *ident_bytes,
+                          unsigned char *ident_prefix,
+                          unsigned int *prefix_bytes) {
  unsigned long p,end,start,j,value=0,maxv=~0UL;
+ unsigned long ident_end,copy;
  int sign,hh,mm,d;
  if(n<8) return 0;
  p=n-5;
@@ -287,6 +291,15 @@ static int rec_ident_when(const unsigned char *line,
  start=end;
  while(start>0&&line[start-1]!=0x20) start--;
  if(start==end) return 0;
+ if(start<=keybytes+1) return 0;
+ ident_end=start-1;
+ if(ident_end<=keybytes) return 0;
+ *ident_bytes=ident_end-keybytes;
+ copy=*ident_bytes;
+ if(copy>20UL) copy=20UL;
+ *prefix_bytes=(unsigned int)copy;
+ if(copy>0)
+  memcpy(ident_prefix,line+keybytes,(size_t)copy);
  for(j=start;j<end;j++) {
   if(line[j]<0x30||line[j]>0x39) return 0;
   d=line[j]-0x30;
@@ -301,8 +314,14 @@ static int rec_ident_when(const unsigned char *line,
 static int rec_commit_times(unsigned long n,
                             unsigned long *author_when,
                             int *author_tz,
+                            unsigned long *author_ident_bytes,
+                            unsigned char *author_ident_prefix,
+                            unsigned int *author_prefix_bytes,
                             unsigned long *commit_when,
                             int *commit_tz,
+                            unsigned long *commit_ident_bytes,
+                            unsigned char *commit_ident_prefix,
+                            unsigned int *commit_prefix_bytes,
                             unsigned long *message_bytes,
                             unsigned long *subject_bytes,
                             unsigned char *subject_prefix,
@@ -334,14 +353,18 @@ static int rec_commit_times(unsigned long n,
   }
   if(rec_ascii_key(idx_body+begin,len,"author")) {
    if(author) return 0;
-   if(!rec_ident_when(idx_body+begin,len,
-                      author_when,author_tz)) return 0;
+   if(!rec_ident_when(idx_body+begin,len,7UL,
+                      author_when,author_tz,
+                      author_ident_bytes,author_ident_prefix,
+                      author_prefix_bytes)) return 0;
    author=1;
   }
   if(rec_ascii_key(idx_body+begin,len,"committer")) {
    if(committer) return 0;
-   if(!rec_ident_when(idx_body+begin,len,
-                      commit_when,commit_tz)) return 0;
+   if(!rec_ident_when(idx_body+begin,len,10UL,
+                      commit_when,commit_tz,
+                      commit_ident_bytes,commit_ident_prefix,
+                      commit_prefix_bytes)) return 0;
    committer=1;
   }
   at++;
@@ -1056,11 +1079,16 @@ static int rec_history_dag_state(const unsigned char *starting,
  unsigned char commits[64][20],trees[64][20],levels[64];
  unsigned char results[64][20],parent[20];
  unsigned char subject_prefix[64][20];
+ unsigned char author_ident_prefix[64][20];
+ unsigned char commit_ident_prefix[64][20];
  unsigned char edge[64][64];
  unsigned long sizes[64],sz,at,begin,len;
  unsigned long author_when[64],commit_when[64],msgbytes[64];
  unsigned long subject_bytes[64];
+ unsigned long author_ident_bytes[64],commit_ident_bytes[64];
  unsigned int subject_prefix_bytes[64];
+ unsigned int author_ident_prefix_bytes[64];
+ unsigned int commit_ident_prefix_bytes[64];
  int author_tz[64],commit_tz[64];
  int types[64],present[64];
  unsigned int count=1,head=0,j,k,budget,pidx;
@@ -1086,8 +1114,15 @@ static int rec_history_dag_state(const unsigned char *starting,
   if(!rec_commit_walk(sz,0)) {
    puts("HISTORYDAGSTATE COMMIT INVALID");return 8;
   }
-  if(!rec_commit_times(sz,&author_when[head],&author_tz[head],
+  if(!rec_commit_times(sz,
+                       &author_when[head],&author_tz[head],
+                       &author_ident_bytes[head],
+                       author_ident_prefix[head],
+                       &author_ident_prefix_bytes[head],
                        &commit_when[head],&commit_tz[head],
+                       &commit_ident_bytes[head],
+                       commit_ident_prefix[head],
+                       &commit_ident_prefix_bytes[head],
                        &msgbytes[head],&subject_bytes[head],
                        subject_prefix[head],
                        &subject_prefix_bytes[head])) {
@@ -1144,8 +1179,24 @@ static int rec_history_dag_state(const unsigned char *starting,
   idx_print(stdout,trees[j]);putchar('\n');
   printf("HISTORYDAGSTATE AUTHOR TIME %lu TZMIN %d\n",
          author_when[j],author_tz[j]);
+  printf("HISTORYDAGSTATE AIDENT BYTES %lu PREFIXBYTES %u\n",
+         author_ident_bytes[j],author_ident_prefix_bytes[j]);
+  fputs("HISTORYDAGSTATE AIDENTHEX ",stdout);
+  if(author_ident_prefix_bytes[j]==0) fputs("EMPTY",stdout);
+  else
+   for(k=0;k<author_ident_prefix_bytes[j];k++)
+    printf("%02X",(unsigned int)author_ident_prefix[j][k]);
+  putchar('\n');
   printf("HISTORYDAGSTATE COMMITTER TIME %lu TZMIN %d\n",
          commit_when[j],commit_tz[j]);
+  printf("HISTORYDAGSTATE CIDENT BYTES %lu PREFIXBYTES %u\n",
+         commit_ident_bytes[j],commit_ident_prefix_bytes[j]);
+  fputs("HISTORYDAGSTATE CIDENTHEX ",stdout);
+  if(commit_ident_prefix_bytes[j]==0) fputs("EMPTY",stdout);
+  else
+   for(k=0;k<commit_ident_prefix_bytes[j];k++)
+    printf("%02X",(unsigned int)commit_ident_prefix[j][k]);
+  putchar('\n');
   printf("HISTORYDAGSTATE MESSAGE BYTES %lu\n",msgbytes[j]);
   printf("HISTORYDAGSTATE SUBJECT BYTES %lu PREFIXBYTES %u\n",
          subject_bytes[j],subject_prefix_bytes[j]);
