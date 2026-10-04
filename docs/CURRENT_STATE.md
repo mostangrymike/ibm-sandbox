@@ -700,3 +700,13 @@ M119-M120 add `GIT HISTORYCHRONOLOGY-REF-FULL <ref|commit40> <depth> <path>`. It
 M121 extends shared state transition aggregation with signed author and committer delta bounds per child-state -> parent-state pair, plus positive/zero/negative edge counts for each clock. Every per-transition sign total must equal the authenticated transition edge count or output fails closed.
 
 M122-M123 expose those chronology aggregates in HISTORYTRANSITIONS, HISTORYREPORT, and HISTORYDIFFS through one shared `emittranschron` path. This makes transition-level clock behavior inspectable without duplicating graph traversal or classification. Router/worker identity advances to M123. These milestones are EXEC-only on top of the M114-M117 native chronology records; no additional native C or protected-data changes.
+
+## M118-M123 merged and combined native CMS gate
+
+M118-M120 PR #80 passed full native-stage workflow `37239907692` and squash-merged as `cb561349716cd1b00f7d8263659ec9a8c59bc61f`. M121-M123 PR #82 passed full native-stage workflow `37240119880` and squash-merged as `522a006cf2424928e780229aba51d2dc86fd6997`. Router/worker identity is now M123.
+
+The combined M113-M123 target gate should use sealed direct commit `486ADAA5B02080720F4B329C6F68550B13C6AA87` at depth 1 for path `src/GITPBWALK.EXEC`. This commit removes that path relative to parent `91913EA4028B795707AA67EDB1ED17A74D1B896E`. Child root tree is `909B1D31C377F42158F1591AB3FA130105186FD7` with the path ABSENT. Parent root tree is `AE65405CF230B9FB0992544773B3CF7197015A47` and the path is PRESENT as blob `A0C91615ABA9689C365159205E8CBA26EF6E16F4`, size 1869.
+
+GitHub normalized metadata independently shows child author/committer time 2026-09-18T01:36:33Z (epoch 1789695393) and parent author/committer time 2026-09-18T01:36:30Z (epoch 1789695390). Therefore the native authenticated AUTHOR DELTA and COMMITTER DELTA across the deletion edge should both be +3 seconds, while child and parent AUTHOR TO COMMITTER LAG should each be 0 seconds. Raw Git timezone-minute values and exact message byte counts must be accepted from native output rather than inferred from GitHub normalization.
+
+NEXT genuine target gate requires uploading `GITREC.C`, `GITVREF.EXEC`, and `GIT.EXEC`, rebuilding only GITREC, then `GIT LEVEL` must report M123/M123. Minimal proof set: HISTORYSTATE on the direct commit/deleted path (direct commit input + native chronology + ABSENT/PRESENT state), HISTORYDIFFS on the same input (DELETED + detailed signed chronology), HISTORYCHRONOLOGY on the same input (author/committer sign and bounds + lag summary), and HISTORYTRANSITIONS on the same input (state 0 ABSENT -> parent present state, DELETED, plus M123 per-transition chronology aggregates). No GITRUN.
