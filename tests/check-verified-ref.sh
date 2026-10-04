@@ -1,5 +1,5 @@
 #!/bin/sh
-# M117 direct commit history and chronology guards.
+# M120 chronology summary and delta guards.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v="$root/src/GITVREF.EXEC"
@@ -46,6 +46,10 @@ grep -Fq "command = 'HISTORYREPORT-REF-FULL'" "$g"
 grep -Fq "'EXEC GITVREF HISTREPORT' rest" "$g"
 grep -Fq "command = 'HISTORYBOUNDS-REF-FULL'" "$g"
 grep -Fq "command = 'LEVEL'" "$g"
+grep -Fq "command = 'HISTORYCHRONOLOGY-REF-FULL'" "$g"
+grep -Fq "'EXEC GITVREF HISTCHRON' rest" "$g"
+grep -Fq "GIT EXEC LEVEL M120" "$g"
+grep -Fq "GITVREF EXEC LEVEL M120" "$v"
 grep -Fq "GIT EXEC LEVEL M117" "$g"
 grep -Fq "GITVREF EXEC LEVEL MISMATCH" "$g"
 grep -Fq "GITVREF EXEC LEVEL M117" "$v"
@@ -67,6 +71,13 @@ grep -Fq "smsgbytes.curnode=mb" "$v"
 grep -Fq "emitnodechron:" "$v"
 grep -Fq "emitpairchron:" "$v"
 grep -Fq "COMMITTER DELTA SECONDS" "$v"
+grep -Fq "AUTHOR DELTA SECONDS" "$v"
+grep -Fq "AUTHOR TO COMMITTER LAG SECONDS" "$v"
+grep -Fq "statechron:" "$v"
+grep -Fq "HISTORYCHRONOLOGY FULL SNAPSHOTS VERIFIED" "$v"
+grep -Fq "HISTORYCHRONOLOGY AUTHOR NEGATIVE EDGES" "$v"
+grep -Fq "HISTORYCHRONOLOGY COMMITTER NEGATIVE EDGES" "$v"
+grep -Fq "HISTORYCHRONOLOGY LAG NEGATIVE NODES" "$v"
 grep -Fq "if command='LEVEL' then do" "$v"
 grep -Fq "'EXEC GITVREF HISTBOUNDS' rest" "$g"
 grep -Fq "'EXEC GITVREF HISTEDGE' rest" "$g"
@@ -264,4 +275,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M117 DIRECT COMMIT HISTORY AND CHRONOLOGY GUARDS PASSED"
+echo "M120 CHRONOLOGY SUMMARY AND DELTA GUARDS PASSED"
