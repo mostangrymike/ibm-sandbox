@@ -776,3 +776,12 @@ Continue autonomously through GitHub work with maximum work per turn. Do not pau
 The first real M123 native gate reached the correct M123/M123 level handshake, but both direct sealed-commit HISTORYSTATE and HISTORYDIFFS returned RC8 with no trusted output. The shared new chronology parser handles 10-digit Unix epoch seconds. CMS REXX defaults NUMERIC DIGITS to 9, so validating and subtracting values such as 1789695393 can fail or lose the three-second edge on target even though source/host guards pass.
 
 M124 is an EXEC-only target compatibility repair: GITVREF now executes `numeric digits 20` before parsing any native history records, preserving exact 10-digit epoch values and signed chronology deltas. GIT/GITVREF level identity advances together to M124. Native C and sealed data are unchanged. The next target retry needs only GITVREF.EXEC and GIT.EXEC; do not rebuild GITREC. M113-M123 remain host-CI proven but not yet target-proven until this repaired gate passes.
+
+
+## 2026-10-04 M124 REAL CMS TARGET PASS
+
+The repaired M124 EXEC gate passed on real z/VM CMS. `GIT LEVEL` returned exactly `GIT EXEC LEVEL M124` and `GITVREF EXEC LEVEL M124`. Direct sealed commit `486ADAA5B02080720F4B329C6F68550B13C6AA87` against path `src/GITPBWALK.EXEC` then passed HISTORYSTATE, HISTORYDIFFS, HISTORYCHRONOLOGY and HISTORYTRANSITIONS.
+
+Native authenticated results matched the sealed fixture exactly: child tree `909B1D31C377F42158F1591AB3FA130105186FD7` had the path ABSENT; parent `91913EA4028B795707AA67EDB1ED17A74D1B896E` tree `AE65405CF230B9FB0992544773B3CF7197015A47` had blob `A0C91615ABA9689C365159205E8CBA26EF6E16F4`, type 3 size 1869. The single edge classified DELETED, child state 0 / parent state 1. Child author+committer epoch 1789695393 TZMIN -300, parent 1789695390 TZMIN -300; both author and committer deltas were +3 seconds; both author-to-committer lags were 0. Native exact message byte counts were child 37 and parent 28. Transition aggregates reported one positive author edge and one positive committer edge, min=max=3, with zero zero/negative edges.
+
+Therefore M113-M124 are now NATIVE CMS TARGET-PROVEN for the combined direct-commit chronology/history gate. Do not repeat the M113-M124 standalone gate. The M124 `NUMERIC DIGITS 20` compatibility repair is confirmed necessary and correct on target. Continue autonomous development from this baseline; preserve sealed generations, selectors, GITPBUF PACK and REF2.
