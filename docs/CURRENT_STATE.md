@@ -1170,3 +1170,55 @@ both author-to-committer lags 0, shared actor BLOBID
 1A55B22C5ABB8A8609B3F828119988B04BF2BFAC. M141-M142 are host-only until
 one combined real CMS wrapper gate passes.
 
+
+## 2026-10-05 M141-M142 MERGED; COMBINED REAL CMS GATE
+
+PR #100 (M141-M142 first-parent log and report) passed full native-stage
+workflow run 37348106620 and was squash-merged to main as
+`b4c0d77fdd2310e4e777d6d09495bc29f8c1b546`. Post-merge main workflow run
+`37348187095` also completed SUCCESS. M141-M142 are therefore
+HOST/NATIVE-STAGE CI PROVEN but are not yet real CMS target-proven.
+
+Both milestones are wrapper-only. Native `GITREC MODULE` remains the
+M132 target-proven worker; do not rebuild it. Current executable handshake is
+`GIT EXEC LEVEL M142` / `GITVREF EXEC LEVEL M142`.
+
+Next genuine target gate, from Mac `ibm-sandbox/src`:
+```sh
+git pull
+CMS_SCRIPT_PORT=3272 ./cms-upload.sh GITVREF.EXEC GIT.EXEC
+```
+
+Then on CMS:
+```text
+GIT LEVEL
+GIT HISTORYFIRSTLOG-REF-FULL 486ADAA5B02080720F4B329C6F68550B13C6AA87 1 src/GITPBWALK.EXEC
+GIT HISTORYFIRSTREPORT-REF-FULL 486ADAA5B02080720F4B329C6F68550B13C6AA87 1 src/GITPBWALK.EXEC
+```
+
+No `CMSCLNK`. No `GITRUN`. Do not rerun M134-M140 standalone.
+
+Expected M141 summary: NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1,
+OFFCHAIN NODES 0, OFFCHAIN EDGES 0, TRUNCATED 1. Step 1 is node 1,
+depth 0, commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`, tree
+`909B1D31C377F42158F1591AB3FA130105186FD7`, path ABSENT. Step 2 is node 2,
+depth 1, commit `91913EA4028B795707AA67EDB1ED17A74D1B896E`, tree
+`AE65405CF230B9FB0992544773B3CF7197015A47`, path PRESENT as blob
+`A0C91615ABA9689C365159205E8CBA26EF6E16F4`, type 3, size 1869. The existing
+authenticated per-node parent, chronology, actor, subject, and message metadata
+must also be present.
+
+Expected M142 summary: NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1,
+OFFCHAIN 0/0, TRUNCATED 1; ADDED 0, DELETED 1, MODIFIED 0, UNCHANGED 0;
+AUTHOR SAME 1 / CHANGED 0; COMMITTER SAME 1 / CHANGED 0; SUBJECT SAME 0 /
+CHANGED 1; MESSAGE SAME 0 / CHANGED 1. Edge 1 is child node 1 / parent node 2,
+STATUS DELETED, child ABSENT / parent PRESENT with parent blob
+`A0C91615ABA9689C365159205E8CBA26EF6E16F4`. Author and committer deltas are
++3 seconds, both author-to-committer lags are 0, actor BLOBIDs are
+`78C41780430F464791E67533C261358D0FEB071E`, child subject/message BLOBID is
+`6C1292461038798149F3636EE517BB6E4B35DAA5`, and parent subject/message BLOBID
+is `1A55B22C5ABB8A8609B3F828119988B04BF2BFAC`.
+
+If both commands pass, mark M141-M142 NATIVE CMS TARGET-PROVEN and continue
+autonomously with M143+ until the next genuine CMS validation boundary.
+
