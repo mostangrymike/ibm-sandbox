@@ -24,6 +24,8 @@ on:
       - 'tests/check-verified-ref.sh'
       - 'src/M155CHK.EXEC'
       - 'tests/check-m155-compact.sh'
+      - 'src/M156CHK.EXEC'
+      - 'tests/test-m156-presence-duration.py'
       - 'tests/check-readonly-gitrchk.sh'
       - 'scripts/backup-offline-dasd.sh'
       - 'scripts/inspect-hercules-config.sh'
@@ -60,6 +62,8 @@ on:
       - 'tests/check-verified-ref.sh'
       - 'src/M155CHK.EXEC'
       - 'tests/check-m155-compact.sh'
+      - 'src/M156CHK.EXEC'
+      - 'tests/test-m156-presence-duration.py'
       - 'tests/check-readonly-gitrchk.sh'
       - 'scripts/backup-offline-dasd.sh'
       - 'scripts/inspect-hercules-config.sh'
@@ -91,6 +95,8 @@ jobs:
         run: sh tests/check-verified-ref.sh
       - name: Check compact CMS target gate source
         run: sh tests/check-m155-compact.sh
+      - name: Check M156 authenticated presence duration
+        run: python3 tests/test-m156-presence-duration.py
       - name: Check neutral compiler EXEC source and F-disk setup
         run: sh tests/check-cmsclnk-source.sh
       - name: Reject native-text Git object headers in CMS C source
