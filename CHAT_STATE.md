@@ -5369,3 +5369,70 @@ No CMSCLNK. No GITRUN.
 After a matching CMS pass, immediately update BOTH canonical state files to
 mark M153-M154 NATIVE CMS TARGET-PROVEN, then continue M155+ autonomously until
 the next true CMS validation boundary.
+
+
+## 2026-10-05 M153-M154 REAL CMS TARGET PASS
+
+Real CMS GIT/GITVREF M154/M154 completed both pending gates RC0. M153
+HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL on sealed 486ADAA5... depth 1 path
+src/GITPBWALK.EXEC verified full snapshots, returned two presence runs,
+AUTHOR ZERO RUNS 2 and COMMITTER ZERO RUNS 2, with all positive/negative
+author and committer counts zero. M154 HISTORYFIRSTPRESENCEEVENTS-REF-FULL
+verified full snapshots and completed through DATA END with EVENTS 1, FROM
+RUN 1 TO RUN 2, EDGE 1 STATUS DELETED, plus the exact authenticated metadata
+already proven by M150/M152. M153-M154 are NATIVE CMS TARGET-PROVEN.
+
+User requested compact target transcripts. From M155 onward, successful CMS
+acceptance should normally use fail-closed checker EXECs that internally run
+the full authenticated commands but print only a few decisive PASS lines.
+Request verbose command output only when a compact checker fails.
+
+## M155 compact acceptance gate
+
+M155CHK EXEC captures M153/M154 output into STEMs, requires RC0 plus exact
+sealed chronology/event invariants, and emits only three success lines. PR
+#108 merged as 57c7bc44ad09abba669214a1fd141bfbba118ffe; post-merge native-stage
+run 37382621792 SUCCESS. M155 is host-proven pending compact CMS execution.
+
+## M156 closed presence duration
+
+M156 adds HISTORYFIRSTPRESENCEDURATION-REF-FULL and M156CHK. A closed run
+must have authenticated existence boundaries on both ends. PRESENT requires
+ADDED then DELETED; ABSENT requires DELETED then ADDED. Duration is the signed
+difference between the two boundary child commit times. On sealed commit
+486ADAA5... depth 5 path src/GITPBWALK.EXEC there are three presence runs;
+run 2 is PRESENT, begins edge 5 ADDED, ends edge 1 DELETED, and lasts 50
+author seconds / 50 committer seconds. PR #109 merged as
+591d57c456ca45e3ef0b0e812158cf67376918fc; post-merge native-stage run
+37383048532 SUCCESS. M156 is host-proven pending compact CMS execution.
+
+## M157 current presence age
+
+M157 adds HISTORYFIRSTPRESENCEAGE-REF-FULL and M157CHK. It reuses the
+target-proven current-presence origin parser. Known CHANGE/ROOT beginnings
+produce complete signed age; UNKNOWN truncated beginnings remain observed-only.
+Sealed target fixture: commit 6EF11911449C184457F3958ABE4CA7A0692CE8C9,
+depth 6, path src/GITPBWALK.EXEC. Expected current state ABSENT, nodes 6,
+exact runs 1, BEGIN KNOWN 1 / KIND CHANGE / EDGE 6 DELETED, author age 268
+seconds, committer age 268 seconds. M157 host validation is the next step,
+followed by one compact combined CMS gate for M155-M157.
+
+
+## 2026-10-05 M157 HOST PASS / COMPACT CMS GATE NEXT
+
+The first M157 host attempts exposed only a regression-test versioning defect:
+the M156 host model incorrectly required the current wrapper level to remain
+exactly M156. That guard now requires synchronized GIT/GITVREF levels at least
+M156, so later milestones preserve M156 regression coverage. No M156 command
+semantics changed.
+
+After that fix, full native-stage run 37383455466 completed SUCCESS on branch
+m157-presence-age. Current handshake is M157/M157. M155-M157 are wrapper/check
+changes only; native GITREC remains the unchanged M132 target-proven worker.
+
+Next real CMS gate is deliberately compact. Upload GITVREF.EXEC, GIT.EXEC,
+M155CHK.EXEC, M156CHK.EXEC, and M157CHK.EXEC. Run M155CHK with the sealed
+M153/M154 depth-1 arguments, then run M156CHK and M157CHK. Successful combined
+output is only nine PASS lines plus the Ready prompts; no verbose history
+command should be pasted unless one compact checker fails. No CMSCLNK. No
+GITRUN.
