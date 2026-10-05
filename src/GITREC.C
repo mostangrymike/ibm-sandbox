@@ -724,7 +724,6 @@ static int rec_history_dag(const unsigned char *starting,
    */
   if(levels[head]<depth) {
    at=46;
-   slotno=0;
    while(at<sz) {
     begin=at;
     while(at<sz&&idx_body[at]!=0x0a) at++;
@@ -1033,12 +1032,11 @@ static int rec_history_dag_path(const unsigned char *starting,
  unsigned char edge[64][64];
  unsigned long sizes[64],sz,at,begin,len;
  int types[64];
- unsigned int count=1,head=0,j,k,budget,pidx,slotno;
- unsigned int edgecount=0,slotcount=0;
+ unsigned int count=1,head=0,j,k,budget,pidx;
+ unsigned int edgecount=0;
  int pos,rc,dup;
  if(rec_sidx_read()!=0) return 8;
  memset(edge,0,sizeof(edge));
- memset(parent_slot_node,0,sizeof(parent_slot_node));
  memcpy(commits[0],starting,20);
  levels[0]=0;
  while(head<count) {
@@ -1067,8 +1065,6 @@ static int rec_history_dag_path(const unsigned char *starting,
     len=at-begin;
     if(!rec_ascii_key(idx_body+begin,len,"parent")) break;
     if(!rec_ascii_oid(idx_body+begin+7,parent)) return 8;
-    slotno++;
-    if(slotno>64) return 8;
     dup=0;pidx=count;
     for(k=0;k<count;k++)
      if(memcmp(commits[k],parent,20)==0) {
@@ -1087,11 +1083,8 @@ static int rec_history_dag_path(const unsigned char *starting,
      edge[head][pidx]=1;
      edgecount++;
     }
-    parent_slot_node[head][slotno-1]=(unsigned char)(pidx+1);
-    slotcount++;
     at++;
    }
-   if(slotno!=parent_count[head]) return 8;
   }
   budget=1024;
   rc=rec_root_closure(trees[head],&budget);
