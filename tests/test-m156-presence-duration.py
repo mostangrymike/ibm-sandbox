@@ -19,6 +19,7 @@ assert "statefirstpresenceduration:" in v
 assert "pdauth.ri=sauthorwhen.en-sauthorwhen.bn" in v
 assert "pdcomm.ri=scommitwhen.en-scommitwhen.bn" in v
 assert "M156 COMPACT TARGET GATE PASS" in c
+assert "gn\\=vn | gn<156" in c
 
 for path in (root / "src" / "GIT.EXEC",
              root / "src" / "GITVREF.EXEC",

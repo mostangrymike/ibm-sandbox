@@ -39,10 +39,10 @@ Upload `GITVREF.EXEC`, `GIT.EXEC`, and `M156CHK.EXEC`, then run only:
 
 `M156CHK`
 
-Success output is three lines:
+At the current M157 wrapper level, success output is three lines. The checker accepts any synchronized level M156 or newer:
 
 ```text
-M156 LEVEL PASS M156/M156
+M156 LEVEL PASS M157/M157
 M156 DURATION PASS RUN 2 PRESENT 50/50
 M156 COMPACT TARGET GATE PASS
 ```

@@ -14,10 +14,16 @@ if lrc\=0 then do
  exit lrc
 end
 if lvl.0\=2 then exit 8
-if lvl.1\='GIT EXEC LEVEL M157' then exit 8
-if lvl.2\='GITVREF EXEC LEVEL M157' then exit 8
-say 'M157 LEVEL PASS M157/M157'
-
+parse var lvl.1 g1 e1 l1 gv
+parse var lvl.2 g2 e2 l2 vv
+if g1\='GIT' | e1\='EXEC' | l1\='LEVEL' then exit 8
+if g2\='GITVREF' | e2\='EXEC' | l2\='LEVEL' then exit 8
+if left(gv,1)\='M' | left(vv,1)\='M' then exit 8
+gn=substr(gv,2)
+vn=substr(vv,2)
+if datatype(gn,'W')\=1 | datatype(vn,'W')\=1 then exit 8
+if gn\=vn | gn<157 then exit 8
+say 'M157 LEVEL PASS' gv'/'vv
 spec='6EF11911449C184457F3958ABE4CA7A0692CE8C9'
 path='src/GITPBWALK.EXEC'
 cmd='GIT HISTORYFIRSTPRESENCEAGE-REF-FULL' spec 6 path
