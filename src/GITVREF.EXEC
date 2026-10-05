@@ -455,7 +455,7 @@ statecheck:
      word(out.ci,2)='NODE' & word(out.ci,4)='DEPTH' then do
    if havestate=0 | havecommit=0 | havetree=0 |,
       haveparents=0 | havefirstparent=0 | haveparentseq=0 |,
-      haveauthor=0 |
+      haveauthor=0 |,
       haveaidentmeta=0 | haveaidenthex=0 |,
       haveaidentid=0 | havecommitter=0 |,
       havecidentmeta=0 | havecidenthex=0 | havecidentid=0 |,
@@ -802,7 +802,7 @@ statecheck:
  end
  if havestate=0 | havecommit=0 | havetree=0 |,
     haveparents=0 | havefirstparent=0 | haveparentseq=0 |,
-    haveauthor=0 |
+    haveauthor=0 |,
     haveaidentmeta=0 | haveaidenthex=0 |,
     haveaidentid=0 | havecommitter=0 |,
     havecidentmeta=0 | havecidenthex=0 | havecidentid=0 |,
