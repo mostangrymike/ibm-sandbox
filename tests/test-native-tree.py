@@ -59,9 +59,11 @@ FIRST_COMMIT = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
         + b"\nauthor A <a@b> 123 +0000\n"
         + b"committer A <a@b> 123 +0000\n\nhello\n")
 LONG_IDENT = b"mostangrymike <mikewommack86@gmail.com>"
+IDENT_BODY = b"identity\n\nbody line\n"
 IDENT_COMMIT = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
         + b"\nauthor " + LONG_IDENT + b" 456 -0500\n"
-        + b"committer " + LONG_IDENT + b" 459 -0500\n\nidentity\n")
+        + b"committer " + LONG_IDENT + b" 459 -0500\n\n"
+        + IDENT_BODY)
 BAD_IDENT_COMMIT = IDENT_COMMIT.replace(
     b"author " + LONG_IDENT, b"author ", 1)
 MERGE = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
@@ -450,6 +452,10 @@ def main():
         ident_oid = git_oid("blob", LONG_IDENT)
         assert "HISTORYDAGSTATE AIDENT BLOBID " + ident_oid in identity
         assert "HISTORYDAGSTATE CIDENT BLOBID " + ident_oid in identity
+        assert "HISTORYDAGSTATE MESSAGE BYTES 20" in identity
+        message_oid = git_oid("blob", IDENT_BODY)
+        assert "HISTORYDAGSTATE MESSAGE BLOBID " + message_oid in identity
+        assert message_oid != git_oid("blob", b"identity")
         assert "HISTORYDAGSTATE SUBJECT BYTES 8 PREFIXBYTES 8" in identity
         subject_oid = git_oid("blob", b"identity")
         assert "HISTORYDAGSTATE SUBJECT BLOBID " + subject_oid in identity
