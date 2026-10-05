@@ -5209,3 +5209,7 @@ expects MIXED state, PRESENT 1 / ABSENT 1 / VERSIONS 1, with version 1
 A0C91615... at depth 1; lifetime RUNS 2, TRANSITIONS 1, CHANGES 1, with
 RUN 1 ABSENT at child depth 0, RUN 2 PRESENT at parent depth 1, and transition
 EDGE 1 STATUS DELETED. Both remain wrapper-only; GITREC stays M132.
+
+## M147-M148 MERGED / NEXT CMS GATE
+
+PR #103 passed native-stage run 37362935282 and merged as 59c513d84bbf51f051aad5df28d2526db2bd1ac5. PR head and merge share exact tree c6ed9e6912de86dd747892e31b7b00436ffef4dc, so main contains the same tree that passed CI. Post-merge run 37363077634 was still queued at this checkpoint. M147-M148 are wrapper-only; GITREC remains M132; handshake is M148/M148. Next CMS gate uploads GITVREF.EXEC and GIT.EXEC, then runs HISTORYFIRSTVERSIONS-REF-FULL and HISTORYFIRSTLIFETIME-REF-FULL on sealed 486ADAA5... depth 1 path src/GITPBWALK.EXEC. Expected versions: MIXED, PRESENT 1, ABSENT 1, VERSIONS 1, A0C91615... at depth 1; expected lifetime: RUNS 2, TRANSITIONS 1, CHANGES 1, ABSENT run then PRESENT A0C91615... run, with transition edge 1 DELETED. No CMSCLNK or GITRUN.
