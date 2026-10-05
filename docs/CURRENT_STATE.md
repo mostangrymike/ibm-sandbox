@@ -1518,3 +1518,9 @@ tree AE65405C..., child ABSENT / parent PRESENT OID A0C91615... type 3 size
 author/committer deltas, zero lags, shared actor BLOBID 78C41780..., child
 subject/message BLOBID 6C129246..., and parent subject/message BLOBID
 1A55B22C....
+
+## 2026-10-05 M149 REAL CMS PASS / M150 TARGET FAILURE
+
+Real CMS ran GIT/GITVREF M150/M150 on sealed commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`, depth 1, path `src/GITPBWALK.EXEC`. `HISTORYFIRSTCURRENT-REF-FULL` completed RC0 after full-snapshot verification and exactly matched the sealed expectation: PATH STATUS MIXED; CHANGE STATUS CHANGED; NODES 2, EDGES 1, CHAIN 2/1, OFFCHAIN 0/0, TRUNCATED 1, RUNS 2, TRANSITIONS 1, CHANGES 1; CURRENT RUN 1 VERSION 0 NODES 1 STATE ABSENT; newest=oldest step 1 depth 0 commit 486ADAA5...; author and committer spans 0; BEGIN KNOWN 1 / KIND CHANGE / EDGE 1 STATUS DELETED; PRIOR RUN 2 VERSION 1 STATE PRESENT OID A0C91615... TYPE 3 SIZE 1869. M149 is NATIVE CMS TARGET-PROVEN.
+
+`HISTORYFIRSTORIGIN-REF-FULL` verified snapshots and emitted the same correct current-run summary plus EVENTS 1 / EVENT 1 CURRENT RUN 1 PRIOR RUN 2, then failed before the authenticated edge record with `DMSREX476E Error 41`, `Bad arithmetic conversion`, at GITVREF line 2270 (`fj=fi+1`). CMS traceback showed the call site split across physical lines at line 2773/2774. Root cause: the multi-line CALL to `emitfirstchange` did not deliver numeric `fcbeginedge` as the fourth argument under CMS REXX. M150 is NOT target-proven until the single-record CALL fix passes real CMS.
