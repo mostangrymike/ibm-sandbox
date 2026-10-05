@@ -1,4 +1,4 @@
-/* M140: authenticated first-parent message-body handoffs. */
+/* M142: authenticated first-parent log and consolidated report. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M140'
+ say 'GITVREF EXEC LEVEL M142'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -23,8 +23,8 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTROLES' & command\='HISTFIRST' &,
    command\='HISTFCHG' & command\='HISTFTRANS' &,
    command\='HISTFCHRON' & command\='HISTFACTORS' &,
-   command\='HISTFSUBJ' &,
-   command\='HISTFBODY' then do
+   command\='HISTFSUBJ' & command\='HISTFBODY' &,
+   command\='HISTFLOG' & command\='HISTFREPORT' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -41,7 +41,8 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTROLES' | command='HISTFIRST' |,
    command='HISTFCHG' | command='HISTFTRANS' |,
    command='HISTFCHRON' | command='HISTFACTORS' |,
-   command='HISTFSUBJ' | command='HISTFBODY' then do
+   command='HISTFSUBJ' | command='HISTFBODY' |,
+   command='HISTFLOG' | command='HISTFREPORT' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -58,7 +59,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFIRST' | command='HISTFCHG' |,
    command='HISTFTRANS' | command='HISTFCHRON' |,
    command='HISTFACTORS' | command='HISTFSUBJ' |,
-   command='HISTFBODY' then do
+   command='HISTFBODY' | command='HISTFLOG' |,
+   command='HISTFREPORT' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -88,6 +90,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTFACTORS' & depth+0>8 then exit 4
  if command='HISTFSUBJ' & depth+0>8 then exit 4
  if command='HISTFBODY' & depth+0>8 then exit 4
+ if command='HISTFLOG' & depth+0>8 then exit 4
+ if command='HISTFREPORT' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -100,7 +104,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTROLES' | command='HISTFIRST' |,
    command='HISTFCHG' | command='HISTFTRANS' |,
    command='HISTFCHRON' | command='HISTFACTORS' |,
-   command='HISTFSUBJ' | command='HISTFBODY' then do
+   command='HISTFSUBJ' | command='HISTFBODY' |,
+   command='HISTFLOG' | command='HISTFREPORT' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -139,7 +144,8 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFIRST' | command='HISTFCHG' |,
    command='HISTFTRANS' | command='HISTFCHRON' |,
    command='HISTFACTORS' | command='HISTFSUBJ' |,
-   command='HISTFBODY' then do
+   command='HISTFBODY' | command='HISTFLOG' |,
+   command='HISTFREPORT' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -179,7 +185,8 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFIRST' | command='HISTFCHG' |,
    command='HISTFTRANS' | command='HISTFCHRON' |,
    command='HISTFACTORS' | command='HISTFSUBJ' |,
-   command='HISTFBODY' then do
+   command='HISTFBODY' | command='HISTFLOG' |,
+   command='HISTFREPORT' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -268,6 +275,14 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTFBODY' then do
   call statefirstbodies
+  exit result
+ end
+ if command='HISTFLOG' then do
+  call statefirstlog
+  exit result
+ end
+ if command='HISTFREPORT' then do
+  call statefirstreport
   exit result
  end
  call statediff
@@ -2120,6 +2135,154 @@ statefirstparent:
   say 'HISTORYFIRSTPARENT STEP' fi 'COMMIT' scommit.ni
  end
  say 'HISTORYFIRSTPARENT DATA END'
+ return 0
+
+
+
+statefirstlog:
+ call buildfirstparent
+ if result\='OK' then return 8
+ call emitverified
+ say 'HISTORYFIRSTLOG FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTLOG DATA BEGIN'
+ say 'HISTORYFIRSTLOG NODES' snodes
+ say 'HISTORYFIRSTLOG EDGES' sedgecount
+ say 'HISTORYFIRSTLOG CHAIN NODES' fpcount
+ say 'HISTORYFIRSTLOG CHAIN EDGES' chainedges
+ say 'HISTORYFIRSTLOG OFFCHAIN NODES' offnodes
+ say 'HISTORYFIRSTLOG OFFCHAIN EDGES' offedges
+ say 'HISTORYFIRSTLOG TRUNCATED' truncated
+ do fi=1 to fpcount
+  ni=fpnode.fi
+  say 'HISTORYFIRSTLOG STEP' fi 'NODE' ni 'DEPTH' sdepth.ni
+  say 'HISTORYFIRSTLOG STEP' fi 'COMMIT' scommit.ni
+  say 'HISTORYFIRSTLOG STEP' fi 'TREE' stree.ni
+  call emitnodechron 'HISTORYFIRSTLOG',ni
+  if spresent.ni=1 then ns='PRESENT'
+  else ns='ABSENT'
+  say 'HISTORYFIRSTLOG NODE' ni 'STATE' ns
+  if spresent.ni=1 then do
+   say 'HISTORYFIRSTLOG NODE' ni 'OID' soid.ni
+   say 'HISTORYFIRSTLOG NODE' ni 'TYPE' stype.ni,
+       'SIZE' ssize.ni
+  end
+ end
+ say 'HISTORYFIRSTLOG DATA END'
+ return 0
+
+
+statefirstreport:
+ call buildfirstparent
+ if result\='OK' then return 8
+ drop frstatus.
+ fradd=0
+ frdelete=0
+ frmodify=0
+ frunchanged=0
+ frauthsame=0
+ frauthchanged=0
+ frcommsame=0
+ frcommchanged=0
+ frsubsame=0
+ frsubchanged=0
+ frbodysame=0
+ frbodychanged=0
+ do fi=1 to chainedges
+  ec=fpnode.fi
+  fj=fi+1
+  ep=fpnode.fj
+  cp=spresent.ec
+  pp=spresent.ep
+  if cp=1 & pp=1 then do
+   if soid.ec=soid.ep then frstatus.fi='UNCHANGED'
+   else frstatus.fi='MODIFIED'
+  end
+  else if cp=1 & pp=0 then frstatus.fi='ADDED'
+  else if cp=0 & pp=1 then frstatus.fi='DELETED'
+  else frstatus.fi='UNCHANGED'
+  if frstatus.fi='ADDED' then fradd=fradd+1
+  else if frstatus.fi='DELETED' then frdelete=frdelete+1
+  else if frstatus.fi='MODIFIED' then frmodify=frmodify+1
+  else frunchanged=frunchanged+1
+  if saidentid.ec=saidentid.ep then frauthsame=frauthsame+1
+  else frauthchanged=frauthchanged+1
+  if scidentid.ec=scidentid.ep then frcommsame=frcommsame+1
+  else frcommchanged=frcommchanged+1
+  if ssubid.ec=ssubid.ep then frsubsame=frsubsame+1
+  else frsubchanged=frsubchanged+1
+  if smsgid.ec=smsgid.ep then frbodysame=frbodysame+1
+  else frbodychanged=frbodychanged+1
+ end
+ if fradd+frdelete+frmodify+frunchanged\=chainedges then return 8
+ if frauthsame+frauthchanged\=chainedges then return 8
+ if frcommsame+frcommchanged\=chainedges then return 8
+ if frsubsame+frsubchanged\=chainedges then return 8
+ if frbodysame+frbodychanged\=chainedges then return 8
+ call emitverified
+ say 'HISTORYFIRSTREPORT FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTREPORT DATA BEGIN'
+ say 'HISTORYFIRSTREPORT NODES' snodes
+ say 'HISTORYFIRSTREPORT EDGES' sedgecount
+ say 'HISTORYFIRSTREPORT CHAIN NODES' fpcount
+ say 'HISTORYFIRSTREPORT CHAIN EDGES' chainedges
+ say 'HISTORYFIRSTREPORT OFFCHAIN NODES' offnodes
+ say 'HISTORYFIRSTREPORT OFFCHAIN EDGES' offedges
+ say 'HISTORYFIRSTREPORT TRUNCATED' truncated
+ say 'HISTORYFIRSTREPORT ADDED EDGES' fradd
+ say 'HISTORYFIRSTREPORT DELETED EDGES' frdelete
+ say 'HISTORYFIRSTREPORT MODIFIED EDGES' frmodify
+ say 'HISTORYFIRSTREPORT UNCHANGED EDGES' frunchanged
+ say 'HISTORYFIRSTREPORT AUTHOR SAME EDGES' frauthsame
+ say 'HISTORYFIRSTREPORT AUTHOR CHANGED EDGES' frauthchanged
+ say 'HISTORYFIRSTREPORT COMMITTER SAME EDGES' frcommsame
+ say 'HISTORYFIRSTREPORT COMMITTER CHANGED EDGES' frcommchanged
+ say 'HISTORYFIRSTREPORT SUBJECT SAME EDGES' frsubsame
+ say 'HISTORYFIRSTREPORT SUBJECT CHANGED EDGES' frsubchanged
+ say 'HISTORYFIRSTREPORT MESSAGE SAME EDGES' frbodysame
+ say 'HISTORYFIRSTREPORT MESSAGE CHANGED EDGES' frbodychanged
+ do fi=1 to chainedges
+  ec=fpnode.fi
+  fj=fi+1
+  ep=fpnode.fj
+  say 'HISTORYFIRSTREPORT EDGE' fi 'CHILD' ec 'PARENT' ep
+  say 'HISTORYFIRSTREPORT EDGE' fi 'STATUS' frstatus.fi
+  say 'HISTORYFIRSTREPORT EDGE' fi 'CHILDDEPTH' sdepth.ec,
+      'PARENTDEPTH' sdepth.ep
+  say 'HISTORYFIRSTREPORT EDGE' fi 'CHILDCOMMIT' scommit.ec
+  say 'HISTORYFIRSTREPORT EDGE' fi 'PARENTCOMMIT' scommit.ep
+  say 'HISTORYFIRSTREPORT EDGE' fi 'CHILDTREE' stree.ec
+  say 'HISTORYFIRSTREPORT EDGE' fi 'PARENTTREE' stree.ep
+  if spresent.ec=1 then cs='PRESENT'
+  else cs='ABSENT'
+  if spresent.ep=1 then ps='PRESENT'
+  else ps='ABSENT'
+  say 'HISTORYFIRSTREPORT EDGE' fi 'CHILDSTATE' cs,
+      'PARENTSTATE' ps
+  if spresent.ec=1 then do
+   say 'HISTORYFIRSTREPORT EDGE' fi 'CHILDOID' soid.ec
+   say 'HISTORYFIRSTREPORT EDGE' fi 'CHILDTYPE' stype.ec,
+       'SIZE' ssize.ec
+  end
+  if spresent.ep=1 then do
+   say 'HISTORYFIRSTREPORT EDGE' fi 'PARENTOID' soid.ep
+   say 'HISTORYFIRSTREPORT EDGE' fi 'PARENTTYPE' stype.ep,
+       'SIZE' ssize.ep
+  end
+  if saidentid.ec=saidentid.ep then ast='SAME'
+  else ast='CHANGED'
+  if scidentid.ec=scidentid.ep then cst='SAME'
+  else cst='CHANGED'
+  if ssubid.ec=ssubid.ep then sst='SAME'
+  else sst='CHANGED'
+  if smsgid.ec=smsgid.ep then mst='SAME'
+  else mst='CHANGED'
+  say 'HISTORYFIRSTREPORT EDGE' fi 'AUTHOR STATUS' ast
+  say 'HISTORYFIRSTREPORT EDGE' fi 'COMMITTER STATUS' cst
+  say 'HISTORYFIRSTREPORT EDGE' fi 'SUBJECT STATUS' sst
+  say 'HISTORYFIRSTREPORT EDGE' fi 'MESSAGE STATUS' mst
+  call emitpairchron 'HISTORYFIRSTREPORT','EDGE',fi,ec,ep
+ end
+ say 'HISTORYFIRSTREPORT DATA END'
  return 0
 
 statefirstsubjects:
