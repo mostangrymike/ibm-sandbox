@@ -1,4 +1,4 @@
-/* M154: authenticated first-parent presence chronology/events. */
+/* M156: authenticated first-parent presence duration. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M154'
+ say 'GITVREF EXEC LEVEL M156'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -30,7 +30,8 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTFVER' & command\='HISTFLIFE' &,
    command\='HISTFCUR' & command\='HISTFORIG' &,
    command\='HISTFPRES' & command\='HISTFPORIG' &,
-   command\='HISTFPCHR' & command\='HISTFPEVT' then do
+   command\='HISTFPCHR' & command\='HISTFPEVT' &,
+   command\='HISTFPDUR' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -54,7 +55,8 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTFVER' | command='HISTFLIFE' |,
    command='HISTFCUR' | command='HISTFORIG' |,
    command='HISTFPRES' | command='HISTFPORIG' |,
-   command='HISTFPCHR' | command='HISTFPEVT' then do
+   command='HISTFPCHR' | command='HISTFPEVT' |,
+   command='HISTFPDUR' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -78,7 +80,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFLIFE' | command='HISTFCUR' |,
    command='HISTFORIG' | command='HISTFPRES' |,
    command='HISTFPORIG' | command='HISTFPCHR' |,
-   command='HISTFPEVT' then do
+   command='HISTFPEVT' | command='HISTFPDUR' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -122,6 +124,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTFPORIG' & depth+0>8 then exit 4
  if command='HISTFPCHR' & depth+0>8 then exit 4
  if command='HISTFPEVT' & depth+0>8 then exit 4
+ if command='HISTFPDUR' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -141,7 +144,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFVER' | command='HISTFLIFE' |,
    command='HISTFCUR' | command='HISTFORIG' |,
    command='HISTFPRES' | command='HISTFPORIG' |,
-   command='HISTFPCHR' | command='HISTFPEVT' then do
+   command='HISTFPCHR' | command='HISTFPEVT' |,
+   command='HISTFPDUR' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -187,7 +191,7 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFLIFE' | command='HISTFCUR' |,
    command='HISTFORIG' | command='HISTFPRES' |,
    command='HISTFPORIG' | command='HISTFPCHR' |,
-   command='HISTFPEVT' then do
+   command='HISTFPEVT' | command='HISTFPDUR' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -234,7 +238,7 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFLIFE' | command='HISTFCUR' |,
    command='HISTFORIG' | command='HISTFPRES' |,
    command='HISTFPORIG' | command='HISTFPCHR' |,
-   command='HISTFPEVT' then do
+   command='HISTFPEVT' | command='HISTFPDUR' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -379,6 +383,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTFPEVT' then do
   call statefirstpresenceevents
+  exit result
+ end
+ if command='HISTFPDUR' then do
+  call statefirstpresenceduration
   exit result
  end
  call statediff
@@ -3140,6 +3148,84 @@ statefirstpresenceevents:
  end
  if event\=prtrans then return 8
  say 'HISTORYFIRSTPRESENCEEVENTS DATA END'
+ return 0
+
+
+preparepresenceduration:
+ call preparefirstpresence
+ if result\='OK' then return 'ERROR'
+ drop pdbegin. pdend. pdauth. pdcomm.
+ pdclosed=0
+ pdauthpos=0
+ pdauthzero=0
+ pdauthneg=0
+ pdcommpos=0
+ pdcommzero=0
+ pdcommneg=0
+ if prruns>2 then do ri=2 to prruns-1
+  newer=ri-1
+  ee=prend.newer
+  be=prend.ri
+  if ee<1 | ee>chainedges | be<1 | be>chainedges then return 'ERROR'
+  if ee>=be then return 'ERROR'
+  if prstate.ri=1 then do
+   if fdstatus.be\='ADDED' | fdstatus.ee\='DELETED' then return 'ERROR'
+  end
+  else do
+   if fdstatus.be\='DELETED' | fdstatus.ee\='ADDED' then return 'ERROR'
+  end
+  bn=fpnode.be
+  en=fpnode.ee
+  pdbegin.ri=be
+  pdend.ri=ee
+  pdauth.ri=sauthorwhen.en-sauthorwhen.bn
+  pdcomm.ri=scommitwhen.en-scommitwhen.bn
+  pdclosed=pdclosed+1
+  if pdauth.ri>0 then pdauthpos=pdauthpos+1
+  else if pdauth.ri=0 then pdauthzero=pdauthzero+1
+  else pdauthneg=pdauthneg+1
+  if pdcomm.ri>0 then pdcommpos=pdcommpos+1
+  else if pdcomm.ri=0 then pdcommzero=pdcommzero+1
+  else pdcommneg=pdcommneg+1
+ end
+ expected=prruns-2
+ if expected<0 then expected=0
+ if pdclosed\=expected then return 'ERROR'
+ if pdauthpos+pdauthzero+pdauthneg\=pdclosed then return 'ERROR'
+ if pdcommpos+pdcommzero+pdcommneg\=pdclosed then return 'ERROR'
+ return 'OK'
+
+
+statefirstpresenceduration:
+ call preparepresenceduration
+ if result\='OK' then return 8
+ call emitverified
+ say 'HISTORYFIRSTPRESENCEDURATION FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTPRESENCEDURATION DATA BEGIN'
+ say 'HISTORYFIRSTPRESENCEDURATION PATH STATUS' fvlifecycle
+ say 'HISTORYFIRSTPRESENCEDURATION EXISTENCE STATUS' prexiststatus
+ say 'HISTORYFIRSTPRESENCEDURATION PRESENCE RUNS' prruns
+ say 'HISTORYFIRSTPRESENCEDURATION CLOSED RUNS' pdclosed
+ say 'HISTORYFIRSTPRESENCEDURATION AUTHOR POSITIVE CLOSED' pdauthpos
+ say 'HISTORYFIRSTPRESENCEDURATION AUTHOR ZERO CLOSED' pdauthzero
+ say 'HISTORYFIRSTPRESENCEDURATION AUTHOR NEGATIVE CLOSED' pdauthneg
+ say 'HISTORYFIRSTPRESENCEDURATION COMMITTER POSITIVE CLOSED' pdcommpos
+ say 'HISTORYFIRSTPRESENCEDURATION COMMITTER ZERO CLOSED' pdcommzero
+ say 'HISTORYFIRSTPRESENCEDURATION COMMITTER NEGATIVE CLOSED' pdcommneg
+ if prruns>2 then do ri=2 to prruns-1
+  if prstate.ri=0 then ps='ABSENT'
+  else ps='PRESENT'
+  say 'HISTORYFIRSTPRESENCEDURATION RUN' ri 'STATE' ps
+  say 'HISTORYFIRSTPRESENCEDURATION RUN' ri 'BEGIN EDGE' pdbegin.ri,
+      'STATUS' fdstatus.pdbegin.ri
+  say 'HISTORYFIRSTPRESENCEDURATION RUN' ri 'END EDGE' pdend.ri,
+      'STATUS' fdstatus.pdend.ri
+  say 'HISTORYFIRSTPRESENCEDURATION RUN' ri,
+      'AUTHOR SECONDS' pdauth.ri
+  say 'HISTORYFIRSTPRESENCEDURATION RUN' ri,
+      'COMMITTER SECONDS' pdcomm.ri
+ end
+ say 'HISTORYFIRSTPRESENCEDURATION DATA END'
  return 0
 
 statefirstlog:
