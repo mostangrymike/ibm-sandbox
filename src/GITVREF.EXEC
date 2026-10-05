@@ -1,4 +1,4 @@
-/* M156: authenticated first-parent presence duration. */
+/* M157: authenticated first-parent current presence age. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M156'
+ say 'GITVREF EXEC LEVEL M157'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -31,7 +31,7 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTFCUR' & command\='HISTFORIG' &,
    command\='HISTFPRES' & command\='HISTFPORIG' &,
    command\='HISTFPCHR' & command\='HISTFPEVT' &,
-   command\='HISTFPDUR' then do
+   command\='HISTFPDUR' & command\='HISTFPAGE' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -56,7 +56,7 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTFCUR' | command='HISTFORIG' |,
    command='HISTFPRES' | command='HISTFPORIG' |,
    command='HISTFPCHR' | command='HISTFPEVT' |,
-   command='HISTFPDUR' then do
+   command='HISTFPDUR' | command='HISTFPAGE' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -80,7 +80,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFLIFE' | command='HISTFCUR' |,
    command='HISTFORIG' | command='HISTFPRES' |,
    command='HISTFPORIG' | command='HISTFPCHR' |,
-   command='HISTFPEVT' | command='HISTFPDUR' then do
+   command='HISTFPEVT' | command='HISTFPDUR' |,
+   command='HISTFPAGE' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -125,6 +126,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTFPCHR' & depth+0>8 then exit 4
  if command='HISTFPEVT' & depth+0>8 then exit 4
  if command='HISTFPDUR' & depth+0>8 then exit 4
+ if command='HISTFPAGE' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -145,7 +147,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFCUR' | command='HISTFORIG' |,
    command='HISTFPRES' | command='HISTFPORIG' |,
    command='HISTFPCHR' | command='HISTFPEVT' |,
-   command='HISTFPDUR' then do
+   command='HISTFPDUR' | command='HISTFPAGE' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -191,7 +193,8 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFLIFE' | command='HISTFCUR' |,
    command='HISTFORIG' | command='HISTFPRES' |,
    command='HISTFPORIG' | command='HISTFPCHR' |,
-   command='HISTFPEVT' | command='HISTFPDUR' then do
+   command='HISTFPEVT' | command='HISTFPDUR' |,
+   command='HISTFPAGE' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -238,7 +241,8 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFLIFE' | command='HISTFCUR' |,
    command='HISTFORIG' | command='HISTFPRES' |,
    command='HISTFPORIG' | command='HISTFPCHR' |,
-   command='HISTFPEVT' | command='HISTFPDUR' then do
+   command='HISTFPEVT' | command='HISTFPDUR' |,
+   command='HISTFPAGE' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -387,6 +391,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTFPDUR' then do
   call statefirstpresenceduration
+  exit result
+ end
+ if command='HISTFPAGE' then do
+  call statefirstpresenceage
   exit result
  end
  call statediff
@@ -3226,6 +3234,33 @@ statefirstpresenceduration:
       'COMMITTER SECONDS' pdcomm.ri
  end
  say 'HISTORYFIRSTPRESENCEDURATION DATA END'
+ return 0
+
+
+statefirstpresenceage:
+ call preparefirstpresencecurrent
+ if result\='OK' then return 8
+ call emitverified
+ say 'HISTORYFIRSTPRESENCEAGE FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTPRESENCEAGE DATA BEGIN'
+ if pcstate=0 then say 'HISTORYFIRSTPRESENCEAGE STATE ABSENT'
+ else say 'HISTORYFIRSTPRESENCEAGE STATE PRESENT'
+ say 'HISTORYFIRSTPRESENCEAGE NODES' pcnodes 'EXACTRUNS' pcexact
+ say 'HISTORYFIRSTPRESENCEAGE BEGIN KNOWN' pcbeginknown
+ say 'HISTORYFIRSTPRESENCEAGE BEGIN KIND' pcbeginkind
+ if pcbeginkind='CHANGE' then do
+  say 'HISTORYFIRSTPRESENCEAGE BEGIN EDGE' pcbeginedge,
+      'STATUS' fdstatus.pcbeginedge
+ end
+ if pcbeginknown=1 then do
+  say 'HISTORYFIRSTPRESENCEAGE AUTHOR SECONDS' pcauthspan
+  say 'HISTORYFIRSTPRESENCEAGE COMMITTER SECONDS' pccommspan
+ end
+ else do
+  say 'HISTORYFIRSTPRESENCEAGE AUTHOR OBSERVED SECONDS' pcauthspan
+  say 'HISTORYFIRSTPRESENCEAGE COMMITTER OBSERVED SECONDS' pccommspan
+ end
+ say 'HISTORYFIRSTPRESENCEAGE DATA END'
  return 0
 
 statefirstlog:
