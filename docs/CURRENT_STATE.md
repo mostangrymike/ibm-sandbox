@@ -1072,3 +1072,37 @@ authenticated full-subject continuity/change classification on the real CMS
 first-parent chain. M139 is NATIVE CMS TARGET-PROVEN. Do not repeat this
 standalone gate.
 
+
+## M140 authenticated first-parent message-body handoffs
+
+M139 is native CMS target-proven. M140 remains wrapper-only and reuses the
+authenticated first-parent chain plus the M129-proven exact full-message
+BLOBIDs; native GITREC remains unchanged from the M132 target-proven worker.
+New read-only GIT HISTORYFIRSTBODIES-REF-FULL reports full-message continuity
+only along the verified mainline: full DAG counts, chain/off-chain counts,
+truncation, SAME/CHANGED edge counts, grouped exact message handoff pairs with
+counts/status, and exact per-chain-edge child/parent message BLOBIDs and byte
+counts. Each edge also carries the authenticated M128 subject BLOBIDs so a
+same-subject/different-message case remains distinguishable. It fail-closes
+unless grouped handoff counts sum exactly to projected chain edges and
+SAME+CHANGED counts equal projected chain-edge cardinality.
+
+The existing production-native host fixture already contains a real
+parent/child pair whose first-line subject is the same `hello` subject while
+the complete messages differ (`hello\n` versus
+`hello\n\nbody differs\n`). M140 uses that independently authenticated
+substrate to prove subject identity is not being substituted for message
+identity. Router/worker EXEC identity advances to M140; GITREC is unchanged.
+
+For the sealed CMS depth-1 gate on commit
+486ADAA5B02080720F4B329C6F68550B13C6AA87 and path
+src/GITPBWALK.EXEC, both messages are single-line, so the independently proven
+M129 message BLOBIDs equal their M128 subject BLOBIDs. Expected M140 summary:
+NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN NODES 0,
+OFFCHAIN EDGES 0, TRUNCATED 1, SAME EDGES 0, CHANGED EDGES 1, HANDOFFS 1,
+CHANGED HANDOFFS 1. The child message BLOBID is
+6C1292461038798149F3636EE517BB6E4B35DAA5 with BYTES 37; the parent message
+BLOBID is 1A55B22C5ABB8A8609B3F828119988B04BF2BFAC with BYTES 28. Edge
+subject BLOBIDs must be the same corresponding child/parent values. M140 is
+host-only until its real CMS wrapper gate passes.
+

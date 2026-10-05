@@ -4984,3 +4984,50 @@ work per turn; stop only for real CMS validation; c3270 script listener uses
 CMS names/types <=8; preserve GITFIX/M15NEW, selector PTRs, GITPBUF PACK, and
 read-only GITREF2 REPO A; fail closed; never emit trusted partial output before
 full requested verification.
+
+
+## 2026-10-05 M139 REAL CMS TARGET PASS
+
+Real z/VM CMS ran the wrapper-only M139 gate with GIT/GITVREF levels M139/M139.
+HISTORYFIRSTSUBJECTS-REF-FULL on sealed commit
+486ADAA5B02080720F4B329C6F68550B13C6AA87 at depth 1 and path
+src/GITPBWALK.EXEC returned RC0 with full-snapshot verification: NODES 2,
+EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN NODES 0, OFFCHAIN EDGES 0,
+TRUNCATED 1, SAME EDGES 0, CHANGED EDGES 1, HANDOFFS 1, CHANGED HANDOFFS 1.
+The sole handoff and edge used child subject BLOBID
+6C1292461038798149F3636EE517BB6E4B35DAA5 and parent subject BLOBID
+1A55B22C5ABB8A8609B3F828119988B04BF2BFAC with STATUS CHANGED. Child subject
+metadata was BYTES 37 PREFIXHEX
+52656D6F7665206F7665726C656E67746820434D; parent subject metadata was
+BYTES 28 PREFIXHEX 55736520434D532D73616665204D39462077616C. This exactly confirms
+authenticated full-subject continuity/change classification on the real CMS
+first-parent chain. M139 is NATIVE CMS TARGET-PROVEN. Do not repeat this
+standalone gate.
+
+
+## M140 authenticated first-parent message-body handoffs
+
+M139 is native CMS target-proven. M140 remains wrapper-only and reuses the
+authenticated first-parent chain plus the M129-proven exact full-message
+BLOBIDs; native GITREC remains unchanged from the M132 target-proven worker.
+New read-only GIT HISTORYFIRSTBODIES-REF-FULL reports message continuity only
+along the verified mainline: full DAG counts, chain/off-chain counts,
+truncation, SAME/CHANGED edge counts, grouped exact message handoff pairs with
+counts/status, and exact per-chain-edge child/parent message BLOBIDs and byte
+counts. Each edge also emits the authenticated subject BLOBIDs. It fail-closes
+unless grouped handoff counts sum exactly to chain edges and SAME+CHANGED
+counts equal chain-edge cardinality.
+
+The existing native host fixture has a real parent/child pair with identical
+first-line subject `hello` but different complete messages, so M140 can prove
+subject equality does not imply message equality. Router/worker EXEC identity
+advances to M140; native GITREC remains the M132 worker.
+
+For sealed commit 486ADAA5B02080720F4B329C6F68550B13C6AA87, depth 1, path
+src/GITPBWALK.EXEC, expected M140 is NODES 2, EDGES 1, CHAIN NODES 2,
+CHAIN EDGES 1, OFFCHAIN NODES 0, OFFCHAIN EDGES 0, TRUNCATED 1,
+SAME EDGES 0, CHANGED EDGES 1, HANDOFFS 1, CHANGED HANDOFFS 1.
+Child message BLOBID is 6C1292461038798149F3636EE517BB6E4B35DAA5 with BYTES 37;
+parent message BLOBID is 1A55B22C5ABB8A8609B3F828119988B04BF2BFAC with BYTES 28.
+The edge subject BLOBIDs are the same corresponding child/parent values because
+both sealed messages are single-line. M140 is host-only until real CMS proof.

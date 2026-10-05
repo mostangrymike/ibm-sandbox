@@ -1,4 +1,4 @@
-/* M139: authenticated first-parent subject handoffs. */
+/* M140: authenticated first-parent message-body handoffs. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M139'
+ say 'GITVREF EXEC LEVEL M140'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -23,7 +23,8 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTROLES' & command\='HISTFIRST' &,
    command\='HISTFCHG' & command\='HISTFTRANS' &,
    command\='HISTFCHRON' & command\='HISTFACTORS' &,
-   command\='HISTFSUBJ' then do
+   command\='HISTFSUBJ' &,
+   command\='HISTFBODY' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -40,7 +41,7 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTROLES' | command='HISTFIRST' |,
    command='HISTFCHG' | command='HISTFTRANS' |,
    command='HISTFCHRON' | command='HISTFACTORS' |,
-   command='HISTFSUBJ' then do
+   command='HISTFSUBJ' | command='HISTFBODY' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -56,7 +57,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTSLOTS' | command='HISTROLES' |,
    command='HISTFIRST' | command='HISTFCHG' |,
    command='HISTFTRANS' | command='HISTFCHRON' |,
-   command='HISTFACTORS' | command='HISTFSUBJ' then do
+   command='HISTFACTORS' | command='HISTFSUBJ' |,
+   command='HISTFBODY' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -85,6 +87,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTFCHRON' & depth+0>8 then exit 4
  if command='HISTFACTORS' & depth+0>8 then exit 4
  if command='HISTFSUBJ' & depth+0>8 then exit 4
+ if command='HISTFBODY' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -97,7 +100,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTROLES' | command='HISTFIRST' |,
    command='HISTFCHG' | command='HISTFTRANS' |,
    command='HISTFCHRON' | command='HISTFACTORS' |,
-   command='HISTFSUBJ' then do
+   command='HISTFSUBJ' | command='HISTFBODY' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -135,7 +138,8 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTSLOTS' | command='HISTROLES' |,
    command='HISTFIRST' | command='HISTFCHG' |,
    command='HISTFTRANS' | command='HISTFCHRON' |,
-   command='HISTFACTORS' | command='HISTFSUBJ' then do
+   command='HISTFACTORS' | command='HISTFSUBJ' |,
+   command='HISTFBODY' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -174,7 +178,8 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTSLOTS' | command='HISTROLES' |,
    command='HISTFIRST' | command='HISTFCHG' |,
    command='HISTFTRANS' | command='HISTFCHRON' |,
-   command='HISTFACTORS' | command='HISTFSUBJ' then do
+   command='HISTFACTORS' | command='HISTFSUBJ' |,
+   command='HISTFBODY' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -259,6 +264,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTFSUBJ' then do
   call statefirstsubjects
+  exit result
+ end
+ if command='HISTFBODY' then do
+  call statefirstbodies
   exit result
  end
  call statediff
@@ -2191,6 +2200,90 @@ statefirstsubjects:
       'PREFIXHEX' ssubhex.ep
  end
  say 'HISTORYFIRSTSUBJECTS DATA END'
+ return 0
+
+
+
+statefirstbodies:
+ call buildfirstparent
+ if result\='OK' then return 8
+ drop fbnum. fbchild. fbparent. fbcount. fbstatus.
+ fbhandoffs=0
+ fbtotal=0
+ fbsame=0
+ fbchanged=0
+ fbchangedpairs=0
+ do fi=1 to chainedges
+  ec=fpnode.fi
+  fj=fi+1
+  ep=fpnode.fj
+  cm=smsgid.ec
+  pm=smsgid.ep
+  mk=cm||'.'||pm
+  hi=fbnum.mk
+  if datatype(hi,'W')\=1 then do
+   fbhandoffs=fbhandoffs+1
+   hi=fbhandoffs
+   fbnum.mk=hi
+   fbchild.hi=cm
+   fbparent.hi=pm
+   fbcount.hi=0
+   if cm=pm then fbstatus.hi='SAME'
+   else do
+    fbstatus.hi='CHANGED'
+    fbchangedpairs=fbchangedpairs+1
+   end
+  end
+  fbcount.hi=fbcount.hi+1
+  if fbstatus.hi='SAME' then fbsame=fbsame+1
+  else fbchanged=fbchanged+1
+ end
+ do hi=1 to fbhandoffs
+  fbtotal=fbtotal+fbcount.hi
+ end
+ if fbtotal\=chainedges then return 8
+ if fbsame+fbchanged\=chainedges then return 8
+ if chainedges>0 & fbhandoffs<1 then return 8
+ call emitverified
+ say 'HISTORYFIRSTBODIES FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTBODIES DATA BEGIN'
+ say 'HISTORYFIRSTBODIES NODES' snodes
+ say 'HISTORYFIRSTBODIES EDGES' sedgecount
+ say 'HISTORYFIRSTBODIES CHAIN NODES' fpcount
+ say 'HISTORYFIRSTBODIES CHAIN EDGES' chainedges
+ say 'HISTORYFIRSTBODIES OFFCHAIN NODES' offnodes
+ say 'HISTORYFIRSTBODIES OFFCHAIN EDGES' offedges
+ say 'HISTORYFIRSTBODIES TRUNCATED' truncated
+ say 'HISTORYFIRSTBODIES SAME EDGES' fbsame
+ say 'HISTORYFIRSTBODIES CHANGED EDGES' fbchanged
+ say 'HISTORYFIRSTBODIES HANDOFFS' fbhandoffs
+ say 'HISTORYFIRSTBODIES CHANGED HANDOFFS' fbchangedpairs
+ do hi=1 to fbhandoffs
+  say 'HISTORYFIRSTBODIES HANDOFF' hi,
+      'CHILD BLOBID' fbchild.hi
+  say 'HISTORYFIRSTBODIES HANDOFF' hi,
+      'PARENT BLOBID' fbparent.hi
+  say 'HISTORYFIRSTBODIES HANDOFF' hi,
+      'COUNT' fbcount.hi 'STATUS' fbstatus.hi
+ end
+ do fi=1 to chainedges
+  ec=fpnode.fi
+  fj=fi+1
+  ep=fpnode.fj
+  say 'HISTORYFIRSTBODIES EDGE' fi 'CHILD' ec 'PARENT' ep
+  if smsgid.ec=smsgid.ep then ms='SAME'
+  else ms='CHANGED'
+  say 'HISTORYFIRSTBODIES EDGE' fi 'STATUS' ms
+  say 'HISTORYFIRSTBODIES EDGE' fi 'CHILD BLOBID' smsgid.ec
+  say 'HISTORYFIRSTBODIES EDGE' fi 'PARENT BLOBID' smsgid.ep
+  say 'HISTORYFIRSTBODIES EDGE' fi 'CHILD BYTES' smsgbytes.ec
+  say 'HISTORYFIRSTBODIES EDGE' fi 'PARENT BYTES' smsgbytes.ep
+  say 'HISTORYFIRSTBODIES EDGE' fi,
+      'CHILD SUBJECT BLOBID' ssubid.ec
+  say 'HISTORYFIRSTBODIES EDGE' fi,
+      'PARENT SUBJECT BLOBID' ssubid.ep
+ end
+ say 'HISTORYFIRSTBODIES DATA END'
  return 0
 
 
