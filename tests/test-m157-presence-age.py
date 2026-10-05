@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 
 root = Path(__file__).resolve().parents[1]
 g = (root / "src" / "GIT.EXEC").read_text()
 v = (root / "src" / "GITVREF.EXEC").read_text()
 c = (root / "src" / "M157CHK.EXEC").read_text()
 
-assert "GIT EXEC LEVEL M157" in g
-assert "GITVREF EXEC LEVEL M157" in v
+gm = re.search(r"GIT EXEC LEVEL M(\d+)", g)
+vm = re.search(r"GITVREF EXEC LEVEL M(\d+)", v)
+assert gm and vm
+assert gm.group(1) == vm.group(1)
+assert int(gm.group(1)) >= 157
 assert "HISTORYFIRSTPRESENCEAGE-REF-FULL" in g
 assert "EXEC GITVREF HISTFPAGE" in g
 assert "statefirstpresenceage:" in v
