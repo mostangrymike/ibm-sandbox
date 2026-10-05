@@ -21,8 +21,8 @@ if command = 'LEVEL' then do
    lvl.0 = 0
    'PIPE CMS EXEC GITVREF LEVEL | STEM lvl.'
    if rc \= 0 then exit rc
-   say 'GIT EXEC LEVEL M146'
-   if lvl.0 \= 1 | lvl.1 \= 'GITVREF EXEC LEVEL M146' then do
+   say 'GIT EXEC LEVEL M148'
+   if lvl.0 \= 1 | lvl.1 \= 'GITVREF EXEC LEVEL M148' then do
       say 'GITVREF EXEC LEVEL MISMATCH'
       exit 8
    end
@@ -200,6 +200,14 @@ if command = 'HISTORYFIRSTSTATUS-REF-FULL' then do
 end
 if command = 'HISTORYFIRSTBOUNDS-REF-FULL' then do
    'EXEC GITVREF HISTFBOUND' rest
+   exit rc
+end
+if command = 'HISTORYFIRSTVERSIONS-REF-FULL' then do
+   'EXEC GITVREF HISTFVER' rest
+   exit rc
+end
+if command = 'HISTORYFIRSTLIFETIME-REF-FULL' then do
+   'EXEC GITVREF HISTFLIFE' rest
    exit rc
 end
 if command = 'READ-REF-FULL' then do
