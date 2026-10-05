@@ -1600,3 +1600,38 @@ Expected M152 repeats the M151 base summary, then CURRENT PRESENCE RUN 1 NODES 1
 Real CMS ran GIT/GITVREF M152/M152. HISTORYFIRSTPRESENCE-REF-FULL and HISTORYFIRSTPRESENCEORIGIN-REF-FULL on sealed 486ADAA5... depth 1 path src/GITPBWALK.EXEC both completed RC0 after full-snapshot verification. M151 exactly matched: PATH STATUS MIXED; EXISTENCE STATUS CHANGED; NODES 2, EDGES 1, CHAIN 2/1, OFFCHAIN 0/0, TRUNCATED 1; PRESENT 1, ABSENT 1; EXACT RUNS 2; PRESENCE RUNS 2; PRESENCE TRANSITIONS 1; ADDED 0, DELETED 1, MODIFIED 0, UNCHANGED 0. Run 1 is one-node ABSENT at step/depth 1/0 commit 486ADAA5...; run 2 is one-node PRESENT, VERSIONS 1, at step/depth 2/1 commit 91913EA4...; transition 1 is edge 1 DELETED.
 
 M152 exactly matched: CURRENT PRESENCE RUN 1 NODES 1 EXACTRUNS 1, CURRENT STATE ABSENT, newest=oldest step 1 depth 0 commit 486ADAA5..., zero author and committer spans, BEGIN KNOWN 1 / KIND CHANGE / EDGE 1 DELETED, prior presence run 2 PRESENT. It then emitted EVENTS 1 and the complete authenticated edge-1 DELETED record with the same endpoint, chronology, actor, subject and message metadata target-proven by M150. M151-M152 are NATIVE CMS TARGET-PROVEN. Do not repeat this standalone gate.
+
+
+## M153 authenticated first-parent presence chronology
+
+M152 is native CMS target-proven. M153 adds read-only
+`GIT HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL <commit|ref> <depth> <path>`.
+It reuses the target-proven M151 presence intervals and adds signed author and
+committer spans for every presence run, measured newest observed endpoint minus
+oldest observed endpoint. Positive/zero/negative run counts are tracked
+separately for author and committer chronology, and each sign partition must
+sum exactly to PRESENCE RUNS. The command preserves the M151 base summary so
+bounded/truncated history remains explicit.
+
+For the sealed depth-1 deletion fixture, expected M153 repeats the M151 base
+summary and reports AUTHOR POSITIVE RUNS 0, AUTHOR ZERO RUNS 2, AUTHOR NEGATIVE
+RUNS 0; COMMITTER POSITIVE RUNS 0, COMMITTER ZERO RUNS 2, COMMITTER NEGATIVE
+RUNS 0. RUN 1 is ABSENT, NODES 1, EXACTRUNS 1, step/depth 1/0 commit 486AD...,
+AUTHOR SPAN 0 and COMMITTER SPAN 0. RUN 2 is PRESENT, NODES 1, EXACTRUNS 1,
+step/depth 2/1 commit 91913..., AUTHOR SPAN 0 and COMMITTER SPAN 0.
+
+
+## M154 authenticated first-parent presence events
+
+M154 adds read-only
+`GIT HISTORYFIRSTPRESENCEEVENTS-REF-FULL <commit|ref> <depth> <path>`.
+It emits only authenticated existence boundaries: ADDED and DELETED edges that
+separate M151 presence runs. MODIFIED-only exact-version changes stay inside a
+presence interval and are intentionally excluded. EVENTS must equal PRESENCE
+TRANSITIONS, and each event is emitted with the full M143/M150 authenticated
+endpoint, path, chronology, actor, subject, and message metadata.
+
+For the sealed fixture, expected M154 repeats the M151 base summary, then
+EVENTS 1, EVENT 1 FROM RUN 1 TO RUN 2, followed by the full authenticated
+EDGE 1 STATUS DELETED record already target-proven by M150/M152. M153-M154 are
+wrapper-only; native GITREC remains the M132 target-proven worker.
