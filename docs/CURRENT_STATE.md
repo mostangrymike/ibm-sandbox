@@ -1635,3 +1635,8 @@ For the sealed fixture, expected M154 repeats the M151 base summary, then
 EVENTS 1, EVENT 1 FROM RUN 1 TO RUN 2, followed by the full authenticated
 EDGE 1 STATUS DELETED record already target-proven by M150/M152. M153-M154 are
 wrapper-only; native GITREC remains the M132 target-proven worker.
+
+
+## M153-M154 HOST PASS / CMS GATE
+
+PR #107 passed native-stage run 37378665424, merged as 75e4801110a50a8a7c54522546e32f950dda2bc4, and post-merge main run 37378777693 passed. Independent guard: 574 checks, 0 failures. Handshake is M154/M154; GITREC remains M132. M153-M154 are host-proven, pending real CMS. Next gate uploads GITVREF.EXEC and GIT.EXEC and runs HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL and HISTORYFIRSTPRESENCEEVENTS-REF-FULL on sealed 486ADAA5... depth 1 path src/GITPBWALK.EXEC. Expected M153: two presence runs, both author/committer span 0; author zero runs 2 and committer zero runs 2, positive/negative 0. Expected M154: EVENTS 1, FROM RUN 1 TO RUN 2, full edge 1 DELETED metadata. No CMSCLNK or GITRUN.
