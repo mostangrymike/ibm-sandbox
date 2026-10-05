@@ -1106,3 +1106,21 @@ BLOBID is 1A55B22C5ABB8A8609B3F828119988B04BF2BFAC with BYTES 28. Edge
 subject BLOBIDs must be the same corresponding child/parent values. M140 is
 host-only until its real CMS wrapper gate passes.
 
+
+## 2026-10-05 M140 REAL CMS TARGET PASS
+
+Real z/VM CMS ran the wrapper-only M140 gate with GIT/GITVREF levels M140/M140.
+HISTORYFIRSTBODIES-REF-FULL on sealed commit
+486ADAA5B02080720F4B329C6F68550B13C6AA87 at depth 1 and path
+src/GITPBWALK.EXEC returned RC0 with full-snapshot verification: NODES 2,
+EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN NODES 0, OFFCHAIN EDGES 0,
+TRUNCATED 1, SAME EDGES 0, CHANGED EDGES 1, HANDOFFS 1, CHANGED HANDOFFS 1.
+The sole handoff and edge used child full-message BLOBID
+6C1292461038798149F3636EE517BB6E4B35DAA5 and parent full-message BLOBID
+1A55B22C5ABB8A8609B3F828119988B04BF2BFAC with STATUS CHANGED. Child message
+bytes were 37 and parent message bytes were 28. The exact edge subject BLOBIDs
+matched the corresponding message BLOBIDs on this sealed single-line fixture.
+This confirms authenticated full-message continuity/change classification on
+the real CMS first-parent chain. M140 is NATIVE CMS TARGET-PROVEN. Do not
+repeat this standalone gate.
+
