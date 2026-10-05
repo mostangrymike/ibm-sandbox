@@ -4777,3 +4777,12 @@ M126 is now real native CMS target-proven. M127 adds a collision-resistant, full
 GITVREF requires each identity BLOBID to be present, 40-hex, and ordered after the authenticated identity prefix before accepting node state. Detailed node/edge history output carries the fingerprint. New read-only `GIT HISTORYACTORS-REF-FULL ref-or-commit depth path` groups authors and committers by the full BLOBID, returning count and min/max history depth plus the already authenticated byte count/prefix for each distinct actor. This avoids false grouping when two identities share a 20-byte display prefix. Router/worker identity advances to M127; M124 epoch precision, M125 subject metadata, M126 identity metadata and M123 transition chronology remain intact.
 
 For the sealed M126 identity `mostangrymike <mikewommack86@gmail.com>` (39 bytes), independent canonical Git blob hashing yields BLOBID `78C41780430F464791E67533C261358D0FEB071E`. At depth 1 on the sealed DELETED fixture, the expected actor summary is one author and one committer, each count 2 with min depth 0 and max depth 1. M127 remains host-CI only until the next CMS gate.
+
+
+## 2026-10-04 M127 REAL CMS TARGET PASS
+
+The real z/VM CMS target compiled M127 `GITREC.C` cleanly with `CMSCLNK GITREC PLAIN`: ASSEMBLER (XF) DONE, no statements flagged, MODULE PLAIN built. `GIT LEVEL` returned exactly `GIT EXEC LEVEL M127` and `GITVREF EXEC LEVEL M127`.
+
+For sealed direct commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`, depth 1, path `src/GITPBWALK.EXEC`, HISTORYSTATE returned full-snapshot verified RC0 output with AIDENT and CIDENT BLOBID `78C41780430F464791E67533C261358D0FEB071E` on both nodes. This exactly matches the independent canonical Git blob OID of the full 39-byte raw identity `mostangrymike <mikewommack86@gmail.com>`. Existing M126 byte counts/prefixes, M125 subject metadata and M124 chronology remained unchanged.
+
+New HISTORYACTORS-REF-FULL also returned RC0 and full-snapshot verification: NODES 2, AUTHORS 1, AUTHOR 1 BLOBID `78C41780430F464791E67533C261358D0FEB071E`, BYTES 39 PREFIXBYTES 20, prefix hex `6D6F7374616E6772796D696B65203C6D696B6577`, COUNT 2 MINDEPTH 0 MAXDEPTH 1; COMMITTERS 1 with the same BLOBID/bytes/prefix/count/depth range. Therefore M127 is NATIVE CMS TARGET-PROVEN. Do not repeat this standalone gate.
