@@ -1,4 +1,4 @@
-/* M144: authenticated first-parent diffs and nearest change. */
+/* M146: authenticated first-parent status and change bounds. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M144'
+ say 'GITVREF EXEC LEVEL M146'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -25,7 +25,8 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTFCHRON' & command\='HISTFACTORS' &,
    command\='HISTFSUBJ' & command\='HISTFBODY' &,
    command\='HISTFLOG' & command\='HISTFREPORT' &,
-   command\='HISTFDIF' & command\='HISTFNEAR' then do
+   command\='HISTFDIF' & command\='HISTFNEAR' &,
+   command\='HISTFSTAT' & command\='HISTFBOUND' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -44,7 +45,8 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTFCHRON' | command='HISTFACTORS' |,
    command='HISTFSUBJ' | command='HISTFBODY' |,
    command='HISTFLOG' | command='HISTFREPORT' |,
-   command='HISTFDIF' | command='HISTFNEAR' then do
+   command='HISTFDIF' | command='HISTFNEAR' |,
+   command='HISTFSTAT' | command='HISTFBOUND' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -63,7 +65,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFACTORS' | command='HISTFSUBJ' |,
    command='HISTFBODY' | command='HISTFLOG' |,
    command='HISTFREPORT' | command='HISTFDIF' |,
-   command='HISTFNEAR' then do
+   command='HISTFNEAR' | command='HISTFSTAT' |,
+   command='HISTFBOUND' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -97,6 +100,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTFREPORT' & depth+0>8 then exit 4
  if command='HISTFDIF' & depth+0>8 then exit 4
  if command='HISTFNEAR' & depth+0>8 then exit 4
+ if command='HISTFSTAT' & depth+0>8 then exit 4
+ if command='HISTFBOUND' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -111,7 +116,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFCHRON' | command='HISTFACTORS' |,
    command='HISTFSUBJ' | command='HISTFBODY' |,
    command='HISTFLOG' | command='HISTFREPORT' |,
-   command='HISTFDIF' | command='HISTFNEAR' then do
+   command='HISTFDIF' | command='HISTFNEAR' |,
+   command='HISTFSTAT' | command='HISTFBOUND' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -152,7 +158,8 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFACTORS' | command='HISTFSUBJ' |,
    command='HISTFBODY' | command='HISTFLOG' |,
    command='HISTFREPORT' | command='HISTFDIF' |,
-   command='HISTFNEAR' then do
+   command='HISTFNEAR' | command='HISTFSTAT' |,
+   command='HISTFBOUND' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -194,7 +201,8 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFACTORS' | command='HISTFSUBJ' |,
    command='HISTFBODY' | command='HISTFLOG' |,
    command='HISTFREPORT' | command='HISTFDIF' |,
-   command='HISTFNEAR' then do
+   command='HISTFNEAR' | command='HISTFSTAT' |,
+   command='HISTFBOUND' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -299,6 +307,14 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTFNEAR' then do
   call statefirstnearest
+  exit result
+ end
+ if command='HISTFSTAT' then do
+  call statefirststatus
+  exit result
+ end
+ if command='HISTFBOUND' then do
+  call statefirstbounds
   exit result
  end
  call statediff
@@ -2322,6 +2338,87 @@ statefirstnearest:
   if match\=fdnear then return 8
  end
  say 'HISTORYFIRSTNEAREST DATA END'
+ return 0
+
+
+
+statefirststatus:
+ call preparefirstdiffs
+ if result\='OK' then return 8
+ call emitverified
+ say 'HISTORYFIRSTSTATUS FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTSTATUS DATA BEGIN'
+ say 'HISTORYFIRSTSTATUS STATUS' fdoverall
+ say 'HISTORYFIRSTSTATUS NODES' snodes
+ say 'HISTORYFIRSTSTATUS EDGES' sedgecount
+ say 'HISTORYFIRSTSTATUS CHAIN NODES' fpcount
+ say 'HISTORYFIRSTSTATUS CHAIN EDGES' chainedges
+ say 'HISTORYFIRSTSTATUS OFFCHAIN NODES' offnodes
+ say 'HISTORYFIRSTSTATUS OFFCHAIN EDGES' offedges
+ say 'HISTORYFIRSTSTATUS TRUNCATED' truncated
+ say 'HISTORYFIRSTSTATUS CHANGED EDGES' fdchanged
+ say 'HISTORYFIRSTSTATUS ADDED EDGES' fdadd
+ say 'HISTORYFIRSTSTATUS DELETED EDGES' fddelete
+ say 'HISTORYFIRSTSTATUS MODIFIED EDGES' fdmodify
+ say 'HISTORYFIRSTSTATUS UNCHANGED EDGES' fdunchanged
+ if fdchanged>0 then do
+  say 'HISTORYFIRSTSTATUS NEAREST CHANGE DEPTH' fdmin
+  say 'HISTORYFIRSTSTATUS FARTHEST CHANGE DEPTH' fdmax
+  say 'HISTORYFIRSTSTATUS NEAREST CHANGES' fdnear
+ end
+ say 'HISTORYFIRSTSTATUS DATA END'
+ return 0
+
+
+statefirstbounds:
+ call preparefirstdiffs
+ if result\='OK' then return 8
+ farcount=0
+ boundcount=0
+ if fdchanged>0 then do
+  do fi=1 to chainedges
+   if fdstatus.fi='UNCHANGED' then iterate
+   ec=fpnode.fi
+   if sdepth.ec=fdmax then farcount=farcount+1
+   if sdepth.ec=fdmin | sdepth.ec=fdmax then,
+    boundcount=boundcount+1
+  end
+  if farcount<1 | farcount>fdchanged then return 8
+  if boundcount<1 | boundcount>fdchanged then return 8
+ end
+ call emitverified
+ say 'HISTORYFIRSTBOUNDS FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTBOUNDS DATA BEGIN'
+ say 'HISTORYFIRSTBOUNDS STATUS' fdoverall
+ say 'HISTORYFIRSTBOUNDS NODES' snodes
+ say 'HISTORYFIRSTBOUNDS EDGES' sedgecount
+ say 'HISTORYFIRSTBOUNDS CHAIN NODES' fpcount
+ say 'HISTORYFIRSTBOUNDS CHAIN EDGES' chainedges
+ say 'HISTORYFIRSTBOUNDS OFFCHAIN NODES' offnodes
+ say 'HISTORYFIRSTBOUNDS OFFCHAIN EDGES' offedges
+ say 'HISTORYFIRSTBOUNDS TRUNCATED' truncated
+ say 'HISTORYFIRSTBOUNDS CHANGES' fdchanged
+ if fdchanged>0 then do
+  say 'HISTORYFIRSTBOUNDS NEAREST DEPTH' fdmin
+  say 'HISTORYFIRSTBOUNDS NEAREST MATCHES' fdnear
+  say 'HISTORYFIRSTBOUNDS FARTHEST DEPTH' fdmax
+  say 'HISTORYFIRSTBOUNDS FARTHEST MATCHES' farcount
+  say 'HISTORYFIRSTBOUNDS BOUNDARY CHANGES' boundcount
+  match=0
+  do fi=1 to chainedges
+   if fdstatus.fi='UNCHANGED' then iterate
+   ec=fpnode.fi
+   if sdepth.ec\=fdmin & sdepth.ec\=fdmax then iterate
+   match=match+1
+   if fdmin=fdmax then bound='BOTH'
+   else if sdepth.ec=fdmin then bound='NEAREST'
+   else bound='FARTHEST'
+   say 'HISTORYFIRSTBOUNDS CHANGE' match 'BOUND' bound
+   call emitfirstchange 'HISTORYFIRSTBOUNDS','CHANGE',match,fi
+  end
+  if match\=boundcount then return 8
+ end
+ say 'HISTORYFIRSTBOUNDS DATA END'
  return 0
 
 statefirstlog:
