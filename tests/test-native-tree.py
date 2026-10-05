@@ -73,6 +73,11 @@ ACTOR_CHILD = (
     + b"\nparent " + git_oid("commit", FIRST_COMMIT).lower().encode("ascii")
     + b"\nauthor " + ALT_AUTHOR + b" 130 +0000\n"
     + b"committer " + ALT_COMMITTER + b" 131 +0000\n\nactor change\n")
+SAME_SUBJECT_CHILD = (
+    b"tree " + git_oid("tree", TREE).lower().encode("ascii")
+    + b"\nparent " + git_oid("commit", FIRST_COMMIT).lower().encode("ascii")
+    + b"\nauthor A <a@b> 132 +0000\n"
+    + b"committer A <a@b> 132 +0000\n\nhello\n\nbody differs\n")
 MERGE = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
          + b"\nparent " + git_oid("commit", FIRST_COMMIT).lower().encode("ascii")
          + b"\nparent " + b"1"*40
@@ -318,7 +323,7 @@ MALFORMED_FIRST = MERGE.replace(
 SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
            (2, SUBTREE), (3, BLOB),
            (1, FIRST_COMMIT), (1, IDENT_COMMIT), (1, BAD_IDENT_COMMIT),
-           (1, ACTOR_CHILD),
+           (1, ACTOR_CHILD), (1, SAME_SUBJECT_CHILD),
            (1, MERGE), (1, BAD_PARENT), (1, BAD_COMMIT),
            (1, REAL_COMMIT), (1, BAD_LINK), (1, BAD_TREE_LINK),
            (3, EMPTY), (3, BINARY), (3, BIG),
@@ -554,6 +559,19 @@ def main():
         assert actor_state.count(
             "HISTORYDAGSTATE CIDENT BLOBID " + base_ident) == 1
         assert "HISTORYDAGSTATE EDGES 1" in actor_state
+        same_subject = run(
+            rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",
+            git_oid("commit", SAME_SUBJECT_CHILD), "1",
+            b"README.md".hex().upper(), cwd=d)
+        hello_subject = git_oid("blob", b"hello")
+        child_message = git_oid("blob", b"hello\n\nbody differs\n")
+        parent_message = git_oid("blob", b"hello\n")
+        assert child_message != parent_message
+        assert same_subject.count(
+            "HISTORYDAGSTATE SUBJECT BLOBID " + hello_subject) == 2
+        assert "HISTORYDAGSTATE MESSAGE BLOBID " + child_message in same_subject
+        assert "HISTORYDAGSTATE MESSAGE BLOBID " + parent_message in same_subject
+        assert "HISTORYDAGSTATE EDGES 1" in same_subject
         bad_identity = run(
             rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",
             git_oid("commit", BAD_IDENT_COMMIT), "0",
