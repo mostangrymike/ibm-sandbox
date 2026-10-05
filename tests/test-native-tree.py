@@ -105,6 +105,14 @@ MERGE2_REVERSED = (
     + git_oid("commit", FIRST_COMMIT).lower().encode("ascii")
     + b"\nauthor A <a@b> 123 +0000\n"
     + b"committer A <a@b> 123 +0000\n\nmerge reverse\n")
+DUP_MERGE = (
+    b"tree " + git_oid("tree", TREE).lower().encode("ascii")
+    + b"\nparent "
+    + git_oid("commit", FIRST_COMMIT).lower().encode("ascii")
+    + b"\nparent "
+    + git_oid("commit", FIRST_COMMIT).lower().encode("ascii")
+    + b"\nauthor A <a@b> 123 +0000\n"
+    + b"committer A <a@b> 123 +0000\n\nduplicate parent\n")
 # M32: all parent commits may be valid while their trees are not.
 MISSING_ROOT_COMMIT = FIRST_COMMIT.replace(
     git_oid("tree", TREE).lower().encode("ascii"), b"2"*40, 1)
@@ -309,7 +317,7 @@ SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
            (2, HIST_TREE), (3, HIST_README),
            (1, MISSING_FIRST), (1, BLOB_FIRST), (1, MALFORMED_FIRST),
            (1, GRANDCHILD), (1, SECOND_PARENT), (1, MERGE2),
-           (1, MERGE2_REVERSED),
+           (1, MERGE2_REVERSED), (1, DUP_MERGE),
            (1, MISSING_ROOT_COMMIT), (1, MISSING_ROOT_MERGE),
            (1, BLOB_ROOT_MERGE), (1, MALFORMED_ROOT_MERGE),
            (2, MISSING_ENTRY_TREE), (2, WRONG_ENTRY_TREE),
@@ -501,6 +509,27 @@ def main():
         assert parent_seq != reverse_seq
         assert "HISTORYDAGSTATE FIRSTPARENT " + second_oid in reverse_state
         assert "HISTORYDAGSTATE PARENTSEQ BLOBID " + reverse_seq in reverse_state
+        assert "HISTORYDAGSTATE SLOTS 2" in merge_state
+        assert (
+            "HISTORYDAGSTATE SLOT CHILD 1 ORDINAL 1 PARENT 2"
+            in merge_state)
+        assert (
+            "HISTORYDAGSTATE SLOT CHILD 1 ORDINAL 2 PARENT 3"
+            in merge_state)
+        dup_state = run(
+            rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",
+            git_oid("commit", DUP_MERGE), "1",
+            b"README.md".hex().upper(), cwd=d)
+        assert "HISTORYDAGSTATE PARENTS 2 UNIQUE 1" in dup_state
+        assert "HISTORYDAGSTATE EDGES 1" in dup_state
+        assert "HISTORYDAGSTATE SLOTS 2" in dup_state
+        assert "HISTORYDAGSTATE NODES 2" in dup_state
+        assert (
+            "HISTORYDAGSTATE SLOT CHILD 1 ORDINAL 1 PARENT 2"
+            in dup_state)
+        assert (
+            "HISTORYDAGSTATE SLOT CHILD 1 ORDINAL 2 PARENT 2"
+            in dup_state)
         bad_identity = run(
             rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",
             git_oid("commit", BAD_IDENT_COMMIT), "0",

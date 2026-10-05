@@ -1138,6 +1138,7 @@ static int rec_history_dag_state(const unsigned char *starting,
  unsigned char author_ident_blobid[64][20];
  unsigned char commit_ident_blobid[64][20];
  unsigned char edge[64][64];
+ unsigned char parent_slot_node[64][64];
  unsigned long sizes[64],sz,at,begin,len;
  unsigned long author_when[64],commit_when[64],msgbytes[64];
  unsigned long parent_count[64],unique_parent_count[64];
@@ -1148,11 +1149,12 @@ static int rec_history_dag_state(const unsigned char *starting,
  unsigned int commit_ident_prefix_bytes[64];
  int author_tz[64],commit_tz[64];
  int types[64],present[64];
- unsigned int count=1,head=0,j,k,budget,pidx;
- unsigned int edgecount=0;
+ unsigned int count=1,head=0,j,k,budget,pidx,slotno;
+ unsigned int edgecount=0,slotcount=0;
  int pos,rc,dup;
  if(rec_sidx_read()!=0) return 8;
  memset(edge,0,sizeof(edge));
+ memset(parent_slot_node,0,sizeof(parent_slot_node));
  memcpy(commits[0],starting,20);
  levels[0]=0;
  while(head<count) {
@@ -1198,6 +1200,7 @@ static int rec_history_dag_state(const unsigned char *starting,
   if(!rec_ascii_oid(idx_body+5,trees[head])) return 8;
   if(levels[head]<depth) {
    at=46;
+   slotno=0;
    while(at<sz) {
     begin=at;
     while(at<sz&&idx_body[at]!=0x0a) at++;
@@ -1205,6 +1208,8 @@ static int rec_history_dag_state(const unsigned char *starting,
     len=at-begin;
     if(!rec_ascii_key(idx_body+begin,len,"parent")) break;
     if(!rec_ascii_oid(idx_body+begin+7,parent)) return 8;
+    slotno++;
+    if(slotno>64) return 8;
     dup=0;pidx=count;
     for(k=0;k<count;k++)
      if(memcmp(commits[k],parent,20)==0) {
@@ -1223,8 +1228,11 @@ static int rec_history_dag_state(const unsigned char *starting,
      edge[head][pidx]=1;
      edgecount++;
     }
+    parent_slot_node[head][slotno-1]=(unsigned char)(pidx+1);
+    slotcount++;
     at++;
    }
+   if(slotno!=parent_count[head]) return 8;
   }
   budget=1024;
   rc=rec_root_closure(trees[head],&budget);
@@ -1304,6 +1312,12 @@ static int rec_history_dag_state(const unsigned char *starting,
    if(edge[j][k])
     printf("HISTORYDAGSTATE EDGE CHILD %u PARENT %u\n",
            j+1,k+1);
+ for(j=0;j<count;j++)
+  if(levels[j]<depth)
+   for(k=0;k<parent_count[j];k++)
+    printf("HISTORYDAGSTATE SLOT CHILD %u ORDINAL %u PARENT %u\n",
+           j+1,k+1,(unsigned int)parent_slot_node[j][k]);
+ printf("HISTORYDAGSTATE SLOTS %u\n",slotcount);
  printf("HISTORYDAGSTATE EDGES %u\n",edgecount);
  printf("HISTORYDAGSTATE NODES %u\n",count);
  puts("HISTORYDAGSTATE DATA END");
