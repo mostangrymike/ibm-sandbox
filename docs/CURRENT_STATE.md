@@ -1416,3 +1416,45 @@ Real CMS ran GIT/GITVREF M148/M148. `HISTORYFIRSTVERSIONS-REF-FULL` and `HISTORY
 M147 exactly matched the sealed expectation: STATUS MIXED; NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN NODES 0, OFFCHAIN EDGES 0, TRUNCATED 1; PRESENT 1, ABSENT 1, VERSIONS 1. VERSION 1 is `A0C91615ABA9689C365159205E8CBA26EF6E16F4`, COUNT 1, MINDEPTH 1, MAXDEPTH 1, TYPE 3 SIZE 1869. STEP 1 is node 1 depth 0 VERSION 0 STATE ABSENT; STEP 2 is node 2 depth 1 VERSION 1 STATE PRESENT with the same OID.
 
 M148 exactly matched the sealed expectation: PATH STATUS MIXED; CHANGE STATUS CHANGED; NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN 0/0, TRUNCATED 1; PRESENT 1, ABSENT 1, VERSIONS 1, RUNS 2, TRANSITIONS 1, CHANGES 1. RUN 1 is VERSION 0 / STATE ABSENT / one node at step 1 depth 0 commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`. RUN 2 is VERSION 1 / STATE PRESENT OID `A0C91615ABA9689C365159205E8CBA26EF6E16F4` type 3 size 1869 / one node at step 2 depth 1 commit `91913EA4028B795707AA67EDB1ED17A74D1B896E`. TRANSITION 1 is FROM RUN 1 TO RUN 2, EDGE 1 STATUS DELETED. M147-M148 are NATIVE CMS TARGET-PROVEN. Do not repeat this standalone gate.
+
+
+## M149 authenticated first-parent current exact-state run
+
+M148 is native CMS target-proven. M149 adds read-only
+`GIT HISTORYFIRSTCURRENT-REF-FULL <commit|ref> <depth> <path>`. It reuses the
+target-proven lifetime-run decomposition and reports only the current exact
+path-state run beginning at chain step 1. It reports current version/state,
+optional OID/type/size, current-run node count, newest/oldest observed step,
+depth and commit, signed author/committer spans, and whether the beginning of
+that exact current state is known. BEGIN KIND is CHANGE when an authenticated
+changed edge bounds the run, ROOT only when the chain actually reaches a
+parentless commit, and UNKNOWN when the current run reaches a truncated
+history boundary. A CHANGE beginning must reference a non-UNCHANGED edge and
+the adjacent run versions must match the edge endpoints.
+
+For the sealed fixture, expected M149 has PATH STATUS MIXED, CHANGE STATUS
+CHANGED; chain 2/1, offchain 0/0, TRUNCATED 1; RUNS 2, TRANSITIONS 1, CHANGES
+1. CURRENT RUN 1 VERSION 0 NODES 1, STATE ABSENT, newest=oldest step 1 depth
+0 commit 486ADAA5..., author/committer spans 0. BEGIN KNOWN 1, BEGIN KIND
+CHANGE, BEGIN EDGE 1 STATUS DELETED. PRIOR RUN 2 VERSION 1 is PRESENT OID
+A0C91615ABA9689C365159205E8CBA26EF6E16F4 type 3 size 1869.
+
+
+## M150 authenticated current-state origin event
+
+M150 adds read-only
+`GIT HISTORYFIRSTORIGIN-REF-FULL <commit|ref> <depth> <path>`. It emits the
+same authenticated current-run summary as M149 and then emits the event that
+began the current exact state when that event is known. CHANGE origins emit
+one full authenticated edge record using the already target-proven M143
+endpoint/path/chronology/actor/subject/message metadata. ROOT origins emit the
+authenticated root node metadata. UNKNOWN truncated origins emit zero events
+rather than inventing one.
+
+For the sealed fixture, expected M150 repeats the M149 current-run summary,
+then EVENTS 1, EVENT 1 CURRENT RUN 1 PRIOR RUN 2, and a full EVENT 1 edge
+record for chain EDGE 1 STATUS DELETED: child ABSENT / parent PRESENT
+A0C91615ABA9689C365159205E8CBA26EF6E16F4 type 3 size 1869, actors SAME,
+subject/message CHANGED, +3 second author/committer deltas, zero lags, and the
+already target-proven BLOBIDs. M149-M150 are wrapper-only; native GITREC
+remains the M132 target-proven worker.
