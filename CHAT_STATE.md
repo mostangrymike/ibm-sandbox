@@ -5272,3 +5272,7 @@ Real CMS ran GIT/GITVREF M150/M150 on sealed commit `486ADAA5B02080720F4B329C6F6
 ## M150 CMS origin-call fix
 
 The first real CMS M150 attempt failed after correct snapshot/current-run output because `statefirstorigin` called `emitfirstchange` with the fourth argument on a continued physical line. CMS REXX delivered an empty/non-numeric `fi`, causing `DMSREX476E Error 41` at `fj=fi+1`. The fix keeps the entire call on one record: `call emitfirstchange 'HISTORYFIRSTORIGIN','EVENT',1,fcbeginedge`. A new host guard rejects any `CALL` line ending in a comma, preventing this CMS-specific argument continuation failure class. No command semantics, level handshake, native code, or protected data changed. M149 remains target-proven; M150 remains pending rerun after this fix.
+
+## 2026-10-05 M150 FIX HOST PASS / TARGET RERUN NEXT
+
+PR #105 fixed the CMS REXX argument-continuation defect by changing the `emitfirstchange` origin call to one physical record and adding a regression guard rejecting any CALL line ending in a comma. It squash-merged as `ef3699ea7597191cb500283bee3f388fd2e150c8`; PR head and merge share exact tree `888f2f4353c79977b7f00b51baf101452b9d1142`. Canonical main validation found 540 guard checks with 0 failures and no split CALLs. Post-merge native-stage run `37374878027` completed SUCCESS through all stages. M149 remains NATIVE CMS TARGET-PROVEN. M150 remains pending only the real CMS rerun of `HISTORYFIRSTORIGIN-REF-FULL`. Since GIT.EXEC and the M150/M150 handshake are unchanged, upload only `GITVREF.EXEC`; no CMSCLNK and no GITRUN.
