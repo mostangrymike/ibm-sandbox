@@ -66,6 +66,13 @@ IDENT_COMMIT = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
         + IDENT_BODY)
 BAD_IDENT_COMMIT = IDENT_COMMIT.replace(
     b"author " + LONG_IDENT, b"author ", 1)
+ALT_AUTHOR = b"Other Author <other@example.com>"
+ALT_COMMITTER = b"Other Committer <commit@example.com>"
+ACTOR_CHILD = (
+    b"tree " + git_oid("tree", TREE).lower().encode("ascii")
+    + b"\nparent " + git_oid("commit", FIRST_COMMIT).lower().encode("ascii")
+    + b"\nauthor " + ALT_AUTHOR + b" 130 +0000\n"
+    + b"committer " + ALT_COMMITTER + b" 131 +0000\n\nactor change\n")
 MERGE = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
          + b"\nparent " + git_oid("commit", FIRST_COMMIT).lower().encode("ascii")
          + b"\nparent " + b"1"*40
@@ -311,6 +318,7 @@ MALFORMED_FIRST = MERGE.replace(
 SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
            (2, SUBTREE), (3, BLOB),
            (1, FIRST_COMMIT), (1, IDENT_COMMIT), (1, BAD_IDENT_COMMIT),
+           (1, ACTOR_CHILD),
            (1, MERGE), (1, BAD_PARENT), (1, BAD_COMMIT),
            (1, REAL_COMMIT), (1, BAD_LINK), (1, BAD_TREE_LINK),
            (3, EMPTY), (3, BINARY), (3, BIG),
@@ -530,6 +538,22 @@ def main():
         assert (
             "HISTORYDAGSTATE SLOT CHILD 1 ORDINAL 2 PARENT 2"
             in dup_state)
+        actor_state = run(
+            rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",
+            git_oid("commit", ACTOR_CHILD), "1",
+            b"README.md".hex().upper(), cwd=d)
+        base_ident = git_oid("blob", b"A <a@b>")
+        alt_author = git_oid("blob", ALT_AUTHOR)
+        alt_committer = git_oid("blob", ALT_COMMITTER)
+        assert alt_author != base_ident
+        assert alt_committer != base_ident
+        assert "HISTORYDAGSTATE AIDENT BLOBID " + alt_author in actor_state
+        assert "HISTORYDAGSTATE CIDENT BLOBID " + alt_committer in actor_state
+        assert actor_state.count(
+            "HISTORYDAGSTATE AIDENT BLOBID " + base_ident) == 1
+        assert actor_state.count(
+            "HISTORYDAGSTATE CIDENT BLOBID " + base_ident) == 1
+        assert "HISTORYDAGSTATE EDGES 1" in actor_state
         bad_identity = run(
             rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",
             git_oid("commit", BAD_IDENT_COMMIT), "0",
