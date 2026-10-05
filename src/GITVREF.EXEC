@@ -1,4 +1,4 @@
-/* M150: authenticated first-parent current run and origin. */
+/* M152: authenticated first-parent presence runs and origin. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M150'
+ say 'GITVREF EXEC LEVEL M152'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -28,7 +28,8 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTFDIF' & command\='HISTFNEAR' &,
    command\='HISTFSTAT' & command\='HISTFBOUND' &,
    command\='HISTFVER' & command\='HISTFLIFE' &,
-   command\='HISTFCUR' & command\='HISTFORIG' then do
+   command\='HISTFCUR' & command\='HISTFORIG' &,
+   command\='HISTFPRES' & command\='HISTFPORIG' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -50,7 +51,8 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTFDIF' | command='HISTFNEAR' |,
    command='HISTFSTAT' | command='HISTFBOUND' |,
    command='HISTFVER' | command='HISTFLIFE' |,
-   command='HISTFCUR' | command='HISTFORIG' then do
+   command='HISTFCUR' | command='HISTFORIG' |,
+   command='HISTFPRES' | command='HISTFPORIG' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -72,7 +74,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFNEAR' | command='HISTFSTAT' |,
    command='HISTFBOUND' | command='HISTFVER' |,
    command='HISTFLIFE' | command='HISTFCUR' |,
-   command='HISTFORIG' then do
+   command='HISTFORIG' | command='HISTFPRES' |,
+   command='HISTFPORIG' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -112,6 +115,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTFLIFE' & depth+0>8 then exit 4
  if command='HISTFCUR' & depth+0>8 then exit 4
  if command='HISTFORIG' & depth+0>8 then exit 4
+ if command='HISTFPRES' & depth+0>8 then exit 4
+ if command='HISTFPORIG' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -129,7 +134,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFDIF' | command='HISTFNEAR' |,
    command='HISTFSTAT' | command='HISTFBOUND' |,
    command='HISTFVER' | command='HISTFLIFE' |,
-   command='HISTFCUR' | command='HISTFORIG' then do
+   command='HISTFCUR' | command='HISTFORIG' |,
+   command='HISTFPRES' | command='HISTFPORIG' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -173,7 +179,8 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFNEAR' | command='HISTFSTAT' |,
    command='HISTFBOUND' | command='HISTFVER' |,
    command='HISTFLIFE' | command='HISTFCUR' |,
-   command='HISTFORIG' then do
+   command='HISTFORIG' | command='HISTFPRES' |,
+   command='HISTFPORIG' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -218,7 +225,8 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFNEAR' | command='HISTFSTAT' |,
    command='HISTFBOUND' | command='HISTFVER' |,
    command='HISTFLIFE' | command='HISTFCUR' |,
-   command='HISTFORIG' then do
+   command='HISTFORIG' | command='HISTFPRES' |,
+   command='HISTFPORIG' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -347,6 +355,14 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTFORIG' then do
   call statefirstorigin
+  exit result
+ end
+ if command='HISTFPRES' then do
+  call statefirstpresence
+  exit result
+ end
+ if command='HISTFPORIG' then do
+  call statefirstpresenceorigin
   exit result
  end
  call statediff
@@ -2782,6 +2798,242 @@ statefirstorigin:
   say 'HISTORYFIRSTORIGIN EVENTS 0'
  end
  say 'HISTORYFIRSTORIGIN DATA END'
+ return 0
+
+
+
+preparefirstpresence:
+ call preparefirstruns
+ if result\='OK' then return 'ERROR'
+ drop prstate. prstart. prend. prnodes. prexact. prvers.
+ drop pseen.
+ prruns=0
+ prev=-1
+ do fi=1 to fpcount
+  ni=fpnode.fi
+  ps=spresent.ni
+  if fi=1 | ps\=prev then do
+   prruns=prruns+1
+   prstate.prruns=ps
+   prstart.prruns=fi
+   prend.prruns=fi
+   prnodes.prruns=1
+   prexact.prruns=1
+   prvers.prruns=0
+  end
+  else do
+   prend.prruns=fi
+   prnodes.prruns=prnodes.prruns+1
+   pj=fi-1
+   if fvnodever.fi\=fvnodever.pj then,
+    prexact.prruns=prexact.prruns+1
+  end
+  if ps=1 then do
+   vi=fvnodever.fi
+   if vi<1 | vi>fvversions then return 'ERROR'
+   if pseen.prruns.vi\=1 then do
+    pseen.prruns.vi=1
+    prvers.prruns=prvers.prruns+1
+   end
+  end
+  prev=ps
+ end
+ if prruns<1 | prruns>fpcount then return 'ERROR'
+ total=0
+ exacttotal=0
+ do ri=1 to prruns
+  total=total+prnodes.ri
+  exacttotal=exacttotal+prexact.ri
+  if prstart.ri<1 | prend.ri<prstart.ri then return 'ERROR'
+  if prend.ri>fpcount then return 'ERROR'
+  if prnodes.ri\=prend.ri-prstart.ri+1 then return 'ERROR'
+  if prexact.ri<1 | prexact.ri>prnodes.ri then return 'ERROR'
+  if prstate.ri=0 & prvers.ri\=0 then return 'ERROR'
+  if prstate.ri=1 & prvers.ri<1 then return 'ERROR'
+ end
+ if total\=fpcount then return 'ERROR'
+ if exacttotal\=frruns then return 'ERROR'
+ prtrans=prruns-1
+ prexistchanges=fdadd+fddelete
+ if prtrans\=prexistchanges then return 'ERROR'
+ do ri=1 to prtrans
+  fi=prend.ri
+  if fi<1 | fi>chainedges then return 'ERROR'
+  if fdstatus.fi\='ADDED' & fdstatus.fi\='DELETED' then,
+   return 'ERROR'
+  rj=ri+1
+  if prstart.rj\=fi+1 then return 'ERROR'
+  if prstate.ri=prstate.rj then return 'ERROR'
+ end
+ if prexistchanges>0 then prexiststatus='CHANGED'
+ else prexiststatus='UNCHANGED'
+ return 'OK'
+
+
+emitpresencebase:
+ parse arg kind
+ say kind 'PATH STATUS' fvlifecycle
+ say kind 'EXISTENCE STATUS' prexiststatus
+ say kind 'NODES' snodes
+ say kind 'EDGES' sedgecount
+ say kind 'CHAIN NODES' fpcount
+ say kind 'CHAIN EDGES' chainedges
+ say kind 'OFFCHAIN NODES' offnodes
+ say kind 'OFFCHAIN EDGES' offedges
+ say kind 'TRUNCATED' truncated
+ say kind 'PRESENT' fvpresent
+ say kind 'ABSENT' fvabsent
+ say kind 'EXACT RUNS' frruns
+ say kind 'PRESENCE RUNS' prruns
+ say kind 'PRESENCE TRANSITIONS' prtrans
+ say kind 'ADDED EDGES' fdadd
+ say kind 'DELETED EDGES' fddelete
+ say kind 'MODIFIED EDGES' fdmodify
+ say kind 'UNCHANGED EDGES' fdunchanged
+ return
+
+
+statefirstpresence:
+ call preparefirstpresence
+ if result\='OK' then return 8
+ call emitverified
+ say 'HISTORYFIRSTPRESENCE FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTPRESENCE DATA BEGIN'
+ call emitpresencebase 'HISTORYFIRSTPRESENCE'
+ do ri=1 to prruns
+  fs=prstart.ri
+  fe=prend.ri
+  ns=fpnode.fs
+  ne=fpnode.fe
+  say 'HISTORYFIRSTPRESENCE RUN' ri 'NODES' prnodes.ri,
+      'EXACTRUNS' prexact.ri
+  if prstate.ri=0 then say 'HISTORYFIRSTPRESENCE RUN' ri,
+      'STATE ABSENT'
+  else do
+   say 'HISTORYFIRSTPRESENCE RUN' ri 'STATE PRESENT'
+   say 'HISTORYFIRSTPRESENCE RUN' ri 'VERSIONS' prvers.ri
+  end
+  say 'HISTORYFIRSTPRESENCE RUN' ri 'START STEP' fs,
+      'DEPTH' sdepth.ns
+  say 'HISTORYFIRSTPRESENCE RUN' ri 'START COMMIT' scommit.ns
+  say 'HISTORYFIRSTPRESENCE RUN' ri 'END STEP' fe,
+      'DEPTH' sdepth.ne
+  say 'HISTORYFIRSTPRESENCE RUN' ri 'END COMMIT' scommit.ne
+ end
+ do ri=1 to prtrans
+  fi=prend.ri
+  rj=ri+1
+  say 'HISTORYFIRSTPRESENCE TRANSITION' ri 'FROM RUN' ri,
+      'TO RUN' rj
+  say 'HISTORYFIRSTPRESENCE TRANSITION' ri 'EDGE' fi,
+      'STATUS' fdstatus.fi
+ end
+ say 'HISTORYFIRSTPRESENCE DATA END'
+ return 0
+
+
+preparefirstpresencecurrent:
+ call preparefirstpresence
+ if result\='OK' then return 'ERROR'
+ if prstart.1\=1 then return 'ERROR'
+ pcstate=prstate.1
+ pcnodes=prnodes.1
+ pcexact=prexact.1
+ pcvers=prvers.1
+ pcnewstep=1
+ pcoldstep=prend.1
+ if pcoldstep<1 | pcoldstep>fpcount then return 'ERROR'
+ pcnewnode=fpnode.pcnewstep
+ pcoldnode=fpnode.pcoldstep
+ if pcnodes\=pcoldstep then return 'ERROR'
+ pcauthspan=sauthorwhen.pcnewnode-sauthorwhen.pcoldnode
+ pccommspan=scommitwhen.pcnewnode-scommitwhen.pcoldnode
+ if prruns>1 then do
+  pcbeginknown=1
+  pcbeginkind='CHANGE'
+  pcbeginedge=pcoldstep
+  if pcbeginedge<1 | pcbeginedge>chainedges then,
+   return 'ERROR'
+  if fdstatus.pcbeginedge\='ADDED' &,
+     fdstatus.pcbeginedge\='DELETED' then return 'ERROR'
+  rj=2
+  if prstate.rj=pcstate then return 'ERROR'
+ end
+ else if truncated=0 then do
+  pcbeginknown=1
+  pcbeginkind='ROOT'
+  pcbeginedge=0
+  if pcoldstep\=fpcount then return 'ERROR'
+  if sparents.pcoldnode\=0 then return 'ERROR'
+ end
+ else do
+  pcbeginknown=0
+  pcbeginkind='UNKNOWN'
+  pcbeginedge=0
+  if pcoldstep\=fpcount then return 'ERROR'
+ end
+ return 'OK'
+
+
+emitpresencecurrent:
+ parse arg kind
+ call emitpresencebase kind
+ say kind 'CURRENT PRESENCE RUN 1 NODES' pcnodes,
+     'EXACTRUNS' pcexact
+ if pcstate=0 then say kind 'CURRENT STATE ABSENT'
+ else do
+  say kind 'CURRENT STATE PRESENT'
+  say kind 'CURRENT VERSIONS' pcvers
+ end
+ say kind 'CURRENT NEWEST STEP' pcnewstep,
+     'DEPTH' sdepth.pcnewnode
+ say kind 'CURRENT NEWEST COMMIT' scommit.pcnewnode
+ say kind 'CURRENT OLDEST STEP' pcoldstep,
+     'DEPTH' sdepth.pcoldnode
+ say kind 'CURRENT OLDEST COMMIT' scommit.pcoldnode
+ say kind 'CURRENT AUTHOR SPAN SECONDS' pcauthspan
+ say kind 'CURRENT COMMITTER SPAN SECONDS' pccommspan
+ say kind 'BEGIN KNOWN' pcbeginknown
+ say kind 'BEGIN KIND' pcbeginkind
+ if pcbeginkind='CHANGE' then do
+  say kind 'BEGIN EDGE' pcbeginedge,
+      'STATUS' fdstatus.pcbeginedge
+  say kind 'PRIOR PRESENCE RUN 2 STATE',
+      word('ABSENT PRESENT',prstate.2+1)
+ end
+ else if pcbeginkind='ROOT' then do
+  say kind 'BEGIN ROOT NODE' pcoldnode,
+      'DEPTH' sdepth.pcoldnode
+  say kind 'BEGIN ROOT COMMIT' scommit.pcoldnode
+ end
+ else do
+  say kind 'BEGIN BOUNDARY STEP' pcoldstep,
+      'DEPTH' sdepth.pcoldnode
+  say kind 'BEGIN BOUNDARY COMMIT' scommit.pcoldnode
+ end
+ return
+
+
+statefirstpresenceorigin:
+ call preparefirstpresencecurrent
+ if result\='OK' then return 8
+ call emitverified
+ say 'HISTORYFIRSTPRESENCEORIGIN FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTPRESENCEORIGIN DATA BEGIN'
+ call emitpresencecurrent 'HISTORYFIRSTPRESENCEORIGIN'
+ if pcbeginkind='CHANGE' then do
+  say 'HISTORYFIRSTPRESENCEORIGIN EVENTS 1'
+  say 'HISTORYFIRSTPRESENCEORIGIN EVENT 1 CURRENT RUN 1 PRIOR RUN 2'
+  call emitfirstchange 'HISTORYFIRSTPRESENCEORIGIN','EVENT',1,pcbeginedge
+ end
+ else if pcbeginkind='ROOT' then do
+  say 'HISTORYFIRSTPRESENCEORIGIN EVENTS 1'
+  say 'HISTORYFIRSTPRESENCEORIGIN EVENT 1 KIND ROOT'
+  say 'HISTORYFIRSTPRESENCEORIGIN EVENT 1 NODE' pcoldnode
+  call emitnodechron 'HISTORYFIRSTPRESENCEORIGIN',pcoldnode
+ end
+ else say 'HISTORYFIRSTPRESENCEORIGIN EVENTS 0'
+ say 'HISTORYFIRSTPRESENCEORIGIN DATA END'
  return 0
 
 statefirstlog:
