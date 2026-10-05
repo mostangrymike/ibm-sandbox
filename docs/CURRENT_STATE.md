@@ -835,3 +835,12 @@ The real z/VM CMS target compiled M127 `GITREC.C` cleanly with `CMSCLNK GITREC P
 For sealed direct commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`, depth 1, path `src/GITPBWALK.EXEC`, HISTORYSTATE returned full-snapshot verified RC0 output with AIDENT and CIDENT BLOBID `78C41780430F464791E67533C261358D0FEB071E` on both nodes. This exactly matches the independent canonical Git blob OID of the full 39-byte raw identity `mostangrymike <mikewommack86@gmail.com>`. Existing M126 byte counts/prefixes, M125 subject metadata and M124 chronology remained unchanged.
 
 New HISTORYACTORS-REF-FULL also returned RC0 and full-snapshot verification: NODES 2, AUTHORS 1, AUTHOR 1 BLOBID `78C41780430F464791E67533C261358D0FEB071E`, BYTES 39 PREFIXBYTES 20, prefix hex `6D6F7374616E6772796D696B65203C6D696B6577`, COUNT 2 MINDEPTH 0 MAXDEPTH 1; COMMITTERS 1 with the same BLOBID/bytes/prefix/count/depth range. Therefore M127 is NATIVE CMS TARGET-PROVEN. Do not repeat this standalone gate.
+
+
+## M128 authenticated full-subject history summary
+
+M127 is now real native CMS target-proven. M128 extends the same collision-resistant pattern to commit subjects. Native GITREC computes the canonical Git blob OID of the complete first-line subject bytes, including the empty subject case, and emits `HISTORYDAGSTATE SUBJECT BLOBID` only after the authenticated commit object is parsed. The existing exact subject byte count and bounded 20-byte prefix remain unchanged.
+
+GITVREF now requires every node's subject BLOBID to be present and valid before accepting path state, propagates child/parent subject BLOBIDs into detailed history output, and adds read-only `GIT HISTORYSUBJECTS-REF-FULL ref-or-commit depth path`. The summary groups by the complete subject fingerprint and returns exact bytes/prefix/count/min-depth/max-depth for each distinct subject, avoiding false grouping when long subjects share the same 20-byte prefix. Router/worker identity advances to M128; M127 actors, M126 identities, M125 subject prefixes, M124 exact time arithmetic and M123 chronology remain intact.
+
+Independent canonical Git blob hashes for the sealed DELETED fixture are: child subject `Remove overlength CMS walker filename`, 37 bytes, BLOBID `6C1292461038798149F3636EE517BB6E4B35DAA5`; parent subject `Use CMS-safe M9F walker name`, 28 bytes, BLOBID `1A55B22C5ABB8A8609B3F828119988B04BF2BFAC`. At depth 1, expected HISTORYSUBJECTS is NODES 2 / SUBJECTS 2, each count 1; child min/max depth 0 and parent min/max depth 1. M128 remains host-CI only until the next CMS gate.
