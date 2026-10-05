@@ -459,6 +459,19 @@ def main():
         assert "HISTORYDAGSTATE SUBJECT BYTES 8 PREFIXBYTES 8" in identity
         subject_oid = git_oid("blob", b"identity")
         assert "HISTORYDAGSTATE SUBJECT BLOBID " + subject_oid in identity
+        # M130: exact parent cardinality is authenticated independently
+        # of the bounded history window.  The merge has two unique
+        # parents; both boundary parents are roots.
+        merge_state = run(
+            rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",
+            git_oid("commit", MERGE2), "1",
+            b"README.md".hex().upper(), cwd=d)
+        assert merge_state.count(
+            "HISTORYDAGSTATE PARENTS 2 UNIQUE 2") == 1
+        assert merge_state.count(
+            "HISTORYDAGSTATE PARENTS 0 UNIQUE 0") == 2
+        assert "HISTORYDAGSTATE EDGES 2" in merge_state
+        assert "HISTORYDAGSTATE NODES 3" in merge_state
         bad_identity = run(
             rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",
             git_oid("commit", BAD_IDENT_COMMIT), "0",

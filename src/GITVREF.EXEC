@@ -1,4 +1,4 @@
-/* M129: authenticated full commit-body history summary. */
+/* M130: authenticated commit topology summary. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M129'
+ say 'GITVREF EXEC LEVEL M130'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -18,7 +18,7 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTTRANS' & command\='HISTREPORT' &,
    command\='HISTBOUNDS' & command\='HISTCHRON' &,
    command\='HISTACTORS' & command\='HISTSUBJECTS' &,
-   command\='HISTBODIES' then do
+   command\='HISTBODIES' & command\='HISTTOPO' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -30,7 +30,7 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTTRANS' | command='HISTREPORT' |,
    command='HISTBOUNDS' | command='HISTCHRON' |,
    command='HISTACTORS' | command='HISTSUBJECTS' |,
-   command='HISTBODIES' then do
+   command='HISTBODIES' | command='HISTTOPO' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -41,7 +41,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTNEAR' | command='HISTTRANS' |,
    command='HISTREPORT' | command='HISTBOUNDS' |,
    command='HISTCHRON' | command='HISTACTORS' |,
-   command='HISTSUBJECTS' | command='HISTBODIES' then do
+   command='HISTSUBJECTS' | command='HISTBODIES' |,
+   command='HISTTOPO' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -60,6 +61,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTACTORS' & depth+0>8 then exit 4
  if command='HISTSUBJECTS' & depth+0>8 then exit 4
  if command='HISTBODIES' & depth+0>8 then exit 4
+ if command='HISTTOPO' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -67,7 +69,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
     command='HISTTRANS' | command='HISTREPORT' |,
     command='HISTBOUNDS' | command='HISTCHRON' |,
     command='HISTACTORS' | command='HISTSUBJECTS' |,
-   command='HISTBODIES' then do
+   command='HISTBODIES' | command='HISTTOPO' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -100,7 +102,8 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
         command='HISTNEAR' | command='HISTTRANS' |,
         command='HISTREPORT' | command='HISTBOUNDS' |,
         command='HISTCHRON' | command='HISTACTORS' |,
-   command='HISTSUBJECTS' | command='HISTBODIES' then do
+   command='HISTSUBJECTS' | command='HISTBODIES' |,
+   command='HISTTOPO' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -134,7 +137,8 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTNEAR' | command='HISTTRANS' |,
    command='HISTREPORT' | command='HISTBOUNDS' |,
    command='HISTCHRON' | command='HISTACTORS' |,
-   command='HISTSUBJECTS' | command='HISTBODIES' then do
+   command='HISTSUBJECTS' | command='HISTBODIES' |,
+   command='HISTTOPO' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -179,6 +183,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTBODIES' then do
   call statebodies
+  exit result
+ end
+ if command='HISTTOPO' then do
+  call statetopology
   exit result
  end
  call statediff
@@ -399,6 +407,7 @@ statecheck:
  sedges=-1
  sedgecount=0
  drop spresent. soid. stype. ssize. scommit. stree. sdepth.
+ drop sparents. suniqueparents. soutedges.
  drop sauthorwhen. sauthtz. scommitwhen. scommittz.
  drop smsgbytes. smsgid.
  drop saidentbytes. saidentprefix. saidenthex. saidentid.
@@ -415,6 +424,7 @@ statecheck:
  curpresent=-1
  havecommit=1
  havetree=1
+ haveparents=1
  haveauthor=1
  haveaidentmeta=1
  haveaidenthex=1
@@ -433,7 +443,8 @@ statecheck:
   if words(out.ci)=5 & word(out.ci,1)='HISTORYDAGSTATE' &,
      word(out.ci,2)='NODE' & word(out.ci,4)='DEPTH' then do
    if havestate=0 | havecommit=0 | havetree=0 |,
-      haveauthor=0 | haveaidentmeta=0 | haveaidenthex=0 |,
+      haveparents=0 | haveauthor=0 |,
+      haveaidentmeta=0 | haveaidenthex=0 |,
       haveaidentid=0 | havecommitter=0 |,
       havecidentmeta=0 | havecidenthex=0 | havecidentid=0 |,
       havemsg=0 | havemsgid=0 |,
@@ -455,6 +466,7 @@ statecheck:
    curpresent=-1
    havecommit=0
    havetree=0
+   haveparents=0
    haveauthor=0
    haveaidentmeta=0
    haveaidenthex=0
@@ -490,11 +502,23 @@ statecheck:
    if verify(curtree,'0123456789ABCDEF')\=0 then return 'ERROR'
    havetree=1
   end
+  else if words(out.ci)=5 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='PARENTS' & word(out.ci,4)='UNIQUE' then do
+   if havetree=0 | haveparents=1 then return 'ERROR'
+   pc=word(out.ci,3)
+   pu=word(out.ci,5)
+   if datatype(pc,'W')\=1 | pc<0 then return 'ERROR'
+   if datatype(pu,'W')\=1 | pu<0 | pu>pc then return 'ERROR'
+   sparents.curnode=pc
+   suniqueparents.curnode=pu
+   haveparents=1
+  end
   else if words(out.ci)=6 &,
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='AUTHOR' & word(out.ci,3)='TIME' &,
           word(out.ci,5)='TZMIN' then do
-   if havetree=0 | haveauthor=1 then return 'ERROR'
+   if havetree=0 | haveparents=0 | haveauthor=1 then return 'ERROR'
    aw=word(out.ci,4)
    az=word(out.ci,6)
    if datatype(aw,'W')\=1 | aw<0 then return 'ERROR'
@@ -737,7 +761,8 @@ statecheck:
   end
  end
  if havestate=0 | havecommit=0 | havetree=0 |,
-    haveauthor=0 | haveaidentmeta=0 | haveaidenthex=0 |,
+    haveparents=0 | haveauthor=0 |,
+    haveaidentmeta=0 | haveaidenthex=0 |,
     haveaidentid=0 | havecommitter=0 |,
     havecidentmeta=0 | havecidenthex=0 | havecidentid=0 |,
     havemsg=0 | havemsgid=0 |,
@@ -746,6 +771,11 @@ statecheck:
  if snodes\=parsednodes | sedges\=sedgecount then return 'ERROR'
  if sparentseen.1=1 then return 'ERROR'
  do ni=1 to snodes
+  if datatype(sparents.ni,'W')\=1 | sparents.ni<0 then,
+   return 'ERROR'
+  if datatype(suniqueparents.ni,'W')\=1 then return 'ERROR'
+  if suniqueparents.ni<0 | suniqueparents.ni>sparents.ni then,
+   return 'ERROR'
   if datatype(spresent.ni,'W')\=1 then return 'ERROR'
   if spresent.ni\=0 & spresent.ni\=1 then return 'ERROR'
   if datatype(sauthorwhen.ni,'W')\=1 then return 'ERROR'
@@ -778,6 +808,19 @@ statecheck:
   if length(ssubid.ni)\=40 then return 'ERROR'
   if verify(ssubid.ni,'0123456789ABCDEF')\=0 then return 'ERROR'
   if ni>1 & sparentseen.ni\=1 then return 'ERROR'
+ end
+ do ni=1 to snodes
+  soutedges.ni=0
+ end
+ do ei=1 to sedgecount
+  ec=sedgechild.ei
+  soutedges.ec=soutedges.ec+1
+ end
+ do ni=1 to snodes
+  if sdepth.ni<depth then do
+   if soutedges.ni\=suniqueparents.ni then return 'ERROR'
+  end
+  else if soutedges.ni\=0 then return 'ERROR'
  end
  return 'OK'
 
@@ -839,6 +882,8 @@ stateversions:
 
 emitnodechron:
  parse arg kind,ni
+ say kind 'NODE' ni 'PARENTS' sparents.ni,
+     'UNIQUE' suniqueparents.ni
  say kind 'NODE' ni 'AUTHOR TIME' sauthorwhen.ni,
      'TZMIN' sauthtz.ni
  say kind 'NODE' ni 'AIDENT BYTES' saidentbytes.ni,
@@ -1815,6 +1860,45 @@ emitverified:
  if reskind='COMMIT' then say 'VERIFIED COMMIT' oid
  else say 'VERIFIED REF' spec oid
  return
+
+statetopology:
+ roots=0
+ linear=0
+ merges=0
+ dupparents=0
+ maxparents=0
+ do ni=1 to snodes
+  pc=sparents.ni
+  if pc=0 then roots=roots+1
+  else if pc=1 then linear=linear+1
+  else merges=merges+1
+  if pc\=suniqueparents.ni then dupparents=dupparents+1
+  if pc>maxparents then maxparents=pc
+ end
+ if roots+linear+merges\=snodes then return 8
+ call emitverified
+ say 'HISTORYTOPOLOGY FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYTOPOLOGY DATA BEGIN'
+ say 'HISTORYTOPOLOGY NODES' snodes
+ say 'HISTORYTOPOLOGY EDGES' sedgecount
+ say 'HISTORYTOPOLOGY ROOTS' roots
+ say 'HISTORYTOPOLOGY LINEAR' linear
+ say 'HISTORYTOPOLOGY MERGES' merges
+ say 'HISTORYTOPOLOGY DUPPARENTS' dupparents
+ say 'HISTORYTOPOLOGY MAX PARENTS' maxparents
+ do ni=1 to snodes
+  say 'HISTORYTOPOLOGY NODE' ni 'COMMIT' scommit.ni
+  say 'HISTORYTOPOLOGY NODE' ni 'DEPTH' sdepth.ni,
+      'PARENTS' sparents.ni 'UNIQUE' suniqueparents.ni
+  say 'HISTORYTOPOLOGY NODE' ni 'FOLLOWED' soutedges.ni
+  if sparents.ni=0 then tclass='ROOT'
+  else if sparents.ni=1 then tclass='LINEAR'
+  else tclass='MERGE'
+  say 'HISTORYTOPOLOGY NODE' ni 'CLASS' tclass
+ end
+ say 'HISTORYTOPOLOGY DATA END'
+ return 0
+
 
 statebodies:
  drop bseen. bid. bbytes. bsubid. bsubbytes. bsubhex.
