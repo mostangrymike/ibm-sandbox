@@ -22,7 +22,7 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTPARENTS' & command\='HISTSLOTS' &,
    command\='HISTROLES' & command\='HISTFIRST' &,
    command\='HISTFCHG' & command\='HISTFTRANS' &,
-   command\='HISTFCHRON' then do
+   command\='HISTFCHRON' & command\='HISTFACTORS' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
