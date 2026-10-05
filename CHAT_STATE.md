@@ -5416,3 +5416,23 @@ depth 6, path src/GITPBWALK.EXEC. Expected current state ABSENT, nodes 6,
 exact runs 1, BEGIN KNOWN 1 / KIND CHANGE / EDGE 6 DELETED, author age 268
 seconds, committer age 268 seconds. M157 host validation is the next step,
 followed by one compact combined CMS gate for M155-M157.
+
+
+## 2026-10-05 M157 HOST PASS / COMPACT CMS GATE NEXT
+
+The first M157 host attempts exposed only a regression-test versioning defect:
+the M156 host model incorrectly required the current wrapper level to remain
+exactly M156. That guard now requires synchronized GIT/GITVREF levels at least
+M156, so later milestones preserve M156 regression coverage. No M156 command
+semantics changed.
+
+After that fix, full native-stage run 37383455466 completed SUCCESS on branch
+m157-presence-age. Current handshake is M157/M157. M155-M157 are wrapper/check
+changes only; native GITREC remains the unchanged M132 target-proven worker.
+
+Next real CMS gate is deliberately compact. Upload GITVREF.EXEC, GIT.EXEC,
+M155CHK.EXEC, M156CHK.EXEC, and M157CHK.EXEC. Run M155CHK with the sealed
+M153/M154 depth-1 arguments, then run M156CHK and M157CHK. Successful combined
+output is only nine PASS lines plus the Ready prompts; no verbose history
+command should be pasted unless one compact checker fails. No CMSCLNK. No
+GITRUN.
