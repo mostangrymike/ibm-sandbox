@@ -5156,3 +5156,23 @@ Real CMS ran GIT/GITVREF M144/M144 and `HISTORYFIRSTDIFFS-REF-FULL` on sealed co
 ## 2026-10-05 M144 REAL CMS TARGET PASS
 
 Real CMS ran `HISTORYFIRSTNEAREST-REF-FULL` on sealed commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`, depth 1, path `src/GITPBWALK.EXEC`, under GIT/GITVREF M144/M144. Full-snapshot verification passed. Summary matched exactly: STATUS CHANGED; NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN NODES 0, OFFCHAIN EDGES 0, TRUNCATED 1; CHANGES 1, DEPTH 0, MATCHES 1. The sole nearest change was chain edge 1 STATUS DELETED, child ABSENT / parent PRESENT blob `A0C91615ABA9689C365159205E8CBA26EF6E16F4` type 3 size 1869, AUTHOR SAME, COMMITTER SAME, SUBJECT CHANGED, MESSAGE CHANGED, +3 second author/committer deltas, zero lags, shared actor BLOBID `78C41780430F464791E67533C261358D0FEB071E`, child subject/message BLOBID `6C1292461038798149F3636EE517BB6E4B35DAA5`, and parent subject/message BLOBID `1A55B22C5ABB8A8609B3F828119988B04BF2BFAC`. The pasted transcript interleaved some lines around DATA END, but all required authenticated records were present and consistent. M144 is NATIVE CMS TARGET-PROVEN.
+
+
+## M145-M146 authenticated first-parent status/bounds
+
+M144 is native CMS target-proven. M145 adds
+`HISTORYFIRSTSTATUS-REF-FULL`, a compact authenticated first-parent summary
+with change status, DAG/chain/off-chain/truncation counts, path-change class
+counts, and nearest/farthest change depths. M146 adds
+`HISTORYFIRSTBOUNDS-REF-FULL`, emitting only nearest/farthest changed
+mainline edges, labeled NEAREST/FARTHEST/BOTH, with the exact endpoint,
+chronology, actor, subject, and message metadata already proven by M143-M144.
+
+Both are wrapper-only and reuse M143's classifier. M146 fail-closes unless
+farthest and boundary counts are nonzero/in-range when changes exist and the
+number of emitted boundary records equals the computed boundary cardinality.
+For the sealed depth-1 deletion fixture, M145 should report one DELETED change
+at nearest=farthest depth 0. M146 should report NEAREST 0/MATCHES 1,
+FARTHEST 0/MATCHES 1, BOUNDARY CHANGES 1, and one BOUND BOTH DELETED edge.
+GITREC remains the M132 target-proven worker. M145-M146 are host-only pending
+one combined real CMS gate.
