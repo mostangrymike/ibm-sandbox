@@ -5144,3 +5144,7 @@ DELETED changed edge with nearest=farthest depth 0; M144 should report CHANGES
 GITREC stays the M132 target-proven worker. M143-M144 are host-only pending one
 combined real CMS gate.
 
+
+## M143-M144 HOST PASS / NEXT CMS GATE
+
+PR #101 native-stage run 37355981240 passed. The connector rejected its merge mutation, so the exact reviewed five file blobs were applied directly to main; final code+guard commit 9a8a26a1a62f601444600218221f51fcdb172a10 passed main native-stage run 37356304907. No native C or protected data changed. Current handshake is M144/M144. Next CMS gate uploads only GITVREF.EXEC and GIT.EXEC, then runs HISTORYFIRSTDIFFS-REF-FULL and HISTORYFIRSTNEAREST-REF-FULL on sealed commit 486ADAA5... depth 1 path src/GITPBWALK.EXEC. Expected: one DELETED changed edge at depth 0; nearest matches 1; child ABSENT / parent PRESENT A0C91615...; actor SAME, subject/message CHANGED, +3 second deltas, zero lags. No CMSCLNK or GITRUN.
