@@ -5123,3 +5123,7 @@ is `1A55B22C5ABB8A8609B3F828119988B04BF2BFAC`.
 If both commands pass, mark M141-M142 NATIVE CMS TARGET-PROVEN and continue
 autonomously with M143+ until the next genuine CMS validation boundary.
 
+
+## M141-M142 CMS PASS
+
+Real CMS returned M142/M142. HISTORYFIRSTLOG-REF-FULL and HISTORYFIRSTREPORT-REF-FULL both passed on sealed commit 486ADAA5... at depth 1 for src/GITPBWALK.EXEC. The authenticated mainline remained 2 nodes/1 edge with child ABSENT and parent PRESENT blob A0C91615... type 3 size 1869. The report showed one DELETED edge, author/committer SAME, subject/message CHANGED, +3 second author/committer deltas and zero lags. Exact actor/subject/message BLOBIDs matched prior target proof. M141-M142 are NATIVE CMS TARGET-PROVEN.
