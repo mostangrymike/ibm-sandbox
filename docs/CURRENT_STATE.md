@@ -1261,3 +1261,44 @@ subject/message CHANGED, +3 second author/committer deltas, and zero lags.
 M143-M144 are wrapper-only; native GITREC remains the M132 target-proven
 worker. They remain host-only until the combined real CMS gate passes.
 
+
+## 2026-10-05 M143-M144 HOST/NATIVE-STAGE PASS; REAL CMS GATE NEXT
+
+M143-M144 implementation was reviewed in PR #101. PR workflow run
+`37355981240` completed SUCCESS. The GitHub connector then rejected the PR
+merge/ref mutation despite the PR being green and mergeable, so the exact five
+reviewed file blobs were applied individually to canonical main with normal
+contents-API commits. Final code+guard commit `9a8a26a1a62f601444600218221f51fcdb172a10`
+passed native-stage run `37356304907` SUCCESS. Documentation commits followed;
+current main after state synchronization is `7423a84280e19243cd3bb2b310099aeed00f1490`.
+PR #101 was closed as redundant. No native C or protected data changed.
+
+Current handshake is M144/M144. M143-M144 are wrapper-only; GITREC remains the
+M132 target-proven worker. Next real CMS gate from Mac `ibm-sandbox/src`:
+```sh
+git pull
+CMS_SCRIPT_PORT=3272 ./cms-upload.sh GITVREF.EXEC GIT.EXEC
+```
+Then CMS:
+```text
+GIT LEVEL
+GIT HISTORYFIRSTDIFFS-REF-FULL 486ADAA5B02080720F4B329C6F68550B13C6AA87 1 src/GITPBWALK.EXEC
+GIT HISTORYFIRSTNEAREST-REF-FULL 486ADAA5B02080720F4B329C6F68550B13C6AA87 1 src/GITPBWALK.EXEC
+```
+No CMSCLNK and no GITRUN.
+
+Expected M143 summary: STATUS CHANGED; NODES 2, EDGES 1, CHAIN NODES 2,
+CHAIN EDGES 1, OFFCHAIN NODES 0, OFFCHAIN EDGES 0, TRUNCATED 1; CHANGED
+EDGES 1, ADDED 0, DELETED 1, MODIFIED 0, UNCHANGED 0; NEAREST CHANGE DEPTH
+0, FARTHEST CHANGE DEPTH 0, NEAREST CHANGES 1. The sole CHANGE references
+chain EDGE 1 with STATUS DELETED and the same authenticated endpoint,
+chronology, actor, subject and message metadata already target-proven by M142.
+
+Expected M144 summary: STATUS CHANGED; NODES 2, EDGES 1, CHAIN NODES 2,
+CHAIN EDGES 1, OFFCHAIN 0/0, TRUNCATED 1; CHANGES 1, DEPTH 0, MATCHES 1.
+Its sole nearest CHANGE is chain EDGE 1 STATUS DELETED with child ABSENT /
+parent PRESENT blob A0C91615ABA9689C365159205E8CBA26EF6E16F4, actor statuses
+SAME, subject/message statuses CHANGED, +3 second author/committer deltas and
+zero lags. M143-M144 are HOST/NATIVE-STAGE CI PROVEN but not real CMS
+target-proven until this combined gate passes.
+
