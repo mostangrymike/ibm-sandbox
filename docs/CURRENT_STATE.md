@@ -954,3 +954,102 @@ Real z/VM CMS ran the wrapper-only M138 gate with GIT/GITVREF levels M138/M138. 
 ## M139 authenticated first-parent subject handoffs
 
 M138 is native CMS target-proven. M139 remains wrapper-only and reuses the authenticated first-parent chain plus the M128-proven exact subject BLOBIDs; native GITREC remains unchanged. New read-only GIT HISTORYFIRSTSUBJECTS-REF-FULL reports subject continuity only along the verified mainline: full DAG counts, chain/off-chain counts, truncation, SAME/CHANGED edge counts, grouped exact subject handoff pairs with counts/status, and exact per-chain-edge child/parent subject BLOBIDs plus authenticated subject byte counts and bounded prefixes. It fail-closes unless grouped handoff counts sum exactly to projected chain edges and SAME+CHANGED counts equal projected chain-edge cardinality. Native host regression adds a parent/child commit pair with the same first-line subject `hello` but a different complete message body, proving both nodes emit the same subject BLOBID while their message BLOBIDs differ. Router/worker EXEC identity advances to M139 while GITREC remains the M132 native worker. For the sealed depth-1 CMS gate the expected result is NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN NODES 0, OFFCHAIN EDGES 0, TRUNCATED 1; SAME EDGES 0, CHANGED EDGES 1, HANDOFFS 1, CHANGED HANDOFFS 1. The sole handoff/edge is child subject BLOBID 6C1292461038798149F3636EE517BB6E4B35DAA5 to parent subject BLOBID 1A55B22C5ABB8A8609B3F828119988B04BF2BFAC, STATUS CHANGED. Child subject bytes/prefix are 37 / 52656D6F7665206F7665726C656E67746820434D; parent subject bytes/prefix are 28 / 55736520434D532D73616665204D39462077616C. M139 remains host-only until the next CMS gate.
+
+
+## 2026-10-05 NEW CHAT HANDOFF AFTER M138 TARGET PROOF
+
+Canonical repository is `mostangrymike/ibm-sandbox`, branch `main`.
+State was reconciled against live GitHub before this handoff.
+
+Current canonical main before this handoff state commit:
+`8e86312775fc3cb956fcd41672aa37d360565cf7`.
+
+### Latest target-proven milestone
+
+M138 is NATIVE CMS TARGET-PROVEN. Real CMS returned GIT/GITVREF M138/M138 and
+`HISTORYFIRSTACTORS-REF-FULL` on sealed commit
+`486ADAA5B02080720F4B329C6F68550B13C6AA87`, depth 1, path
+`src/GITPBWALK.EXEC`, with:
+- NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1.
+- OFFCHAIN NODES 0, OFFCHAIN EDGES 0, TRUNCATED 1.
+- AUTHOR SAME EDGES 1, CHANGED EDGES 0.
+- COMMITTER SAME EDGES 1, CHANGED EDGES 0.
+- One author handoff and one committer handoff, both STATUS SAME.
+- Every exact child/parent author/committer identity BLOBID was
+  `78C41780430F464791E67533C261358D0FEB071E`.
+
+Do not rerun M138 standalone.
+
+### Current development milestone: M139
+
+M139 `authenticated first-parent subject handoffs` is MERGED and FULL
+HOST/NATIVE-STAGE CI PROVEN, but NOT YET REAL CMS TARGET-PROVEN.
+PR #98 was squash-merged; merge/main commit before this handoff state commit:
+`8e86312775fc3cb956fcd41672aa37d360565cf7`.
+PR #98 head was `9fef4e945dcae40e6a6e49c23d82a2ceb3d1cf87`.
+Native staging host checks run `37341608325` completed SUCCESS.
+
+Current executable handshake in main is:
+- `GIT EXEC LEVEL M139`
+- `GITVREF EXEC LEVEL M139`
+
+M139 is wrapper-only. Native `GITREC MODULE` remains the M132-proven worker;
+do NOT rebuild GITREC for this gate.
+
+M139 public command:
+`GIT HISTORYFIRSTSUBJECTS-REF-FULL <commit> <depth> <path>`
+
+It uses the authenticated first-parent chain plus M128-proven exact subject
+BLOBIDs. It reports SAME/CHANGED subject edges, grouped exact subject handoffs,
+and exact per-edge child/parent subject BLOBIDs, byte counts, and bounded
+prefixes. Host regression separately proves the SAME-subject/different-message
+case, so subject identity is not being confused with full-message identity.
+
+### NEXT REAL CMS GATE — do this first in the next chat
+
+Mac, from `ibm-sandbox/src`:
+```sh
+git pull
+CMS_SCRIPT_PORT=3272 ./cms-upload.sh GITVREF.EXEC GIT.EXEC
+```
+
+CMS:
+```text
+GIT LEVEL
+GIT HISTORYFIRSTSUBJECTS-REF-FULL 486ADAA5B02080720F4B329C6F68550B13C6AA87 1 src/GITPBWALK.EXEC
+```
+
+No `CMSCLNK`. No `GITRUN`. Do not rerun older history gates unless a new
+M139 diagnostic genuinely requires it.
+
+Expected M139 sealed-fixture proof:
+- GIT/GITVREF M139/M139.
+- VERIFIED COMMIT `486ADAA5B02080720F4B329C6F68550B13C6AA87`.
+- HISTORYFIRSTSUBJECTS FULL SNAPSHOTS VERIFIED.
+- NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1.
+- OFFCHAIN NODES 0, OFFCHAIN EDGES 0, TRUNCATED 1.
+- SAME EDGES 0, CHANGED EDGES 1.
+- HANDOFFS 1, CHANGED HANDOFFS 1.
+- Handoff/edge child subject BLOBID
+  `6C1292461038798149F3636EE517BB6E4B35DAA5`.
+- Handoff/edge parent subject BLOBID
+  `1A55B22C5ABB8A8609B3F828119988B04BF2BFAC`.
+- STATUS CHANGED.
+- Child subject BYTES 37, PREFIXHEX
+  `52656D6F7665206F7665726C656E67746820434D`.
+- Parent subject BYTES 28, PREFIXHEX
+  `55736520434D532D73616665204D39462077616C`.
+
+If that gate matches, immediately declare M139 NATIVE CMS TARGET-PROVEN,
+append the exact proof to both state files, and continue autonomously with
+M140+ until the next genuine CMS validation boundary.
+
+### Preserved project rules
+
+GitHub is canonical. Edit GitHub first, then transfer to CMS for target proof.
+Maximize work per turn; do not pause except for a genuine CMS validation gate.
+Use `CMS_SCRIPT_PORT=3272` for Mac-to-c3270 transfers. Respect fixed CMS
+records: EXEC <=80 columns, C physical source <=72 columns, CMS file names/types
+<=8 characters. Do not overwrite protected GITFIX/M15NEW generations,
+selector PTRs, `GITPBUF PACK`, or read-only `GITREF2 REPO A`. Fail closed
+and never emit trusted partial output before full requested verification.
