@@ -5334,3 +5334,38 @@ runs are 2 and positive/negative counts are 0. M154 expects EVENTS 1, FROM RUN
 ## M153-M154 HOST PASS / NEXT CMS GATE
 
 PR #107 passed native-stage 37378665424, merged as 75e4801110a50a8a7c54522546e32f950dda2bc4, and post-merge main run 37378777693 passed. Independent guard: 574/574. Handshake M154/M154; GITREC still M132. Next CMS gate uploads GITVREF.EXEC and GIT.EXEC, then runs HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL and HISTORYFIRSTPRESENCEEVENTS-REF-FULL on sealed 486ADAA5... depth 1 path src/GITPBWALK.EXEC. Expect two zero-span presence runs and one full DELETED presence event. No CMSCLNK or GITRUN.
+
+
+## NEW CHAT HANDOFF — M154 pending CMS proof
+
+Canonical GitHub is authoritative. M151-M152 are NATIVE CMS TARGET-PROVEN.
+M153-M154 are implemented, merged, and host-proven but still await the real
+CMS gate. Current handshake is GIT/GITVREF M154/M154. Native GITREC remains
+the unchanged M132 target-proven worker.
+
+M153 command:
+HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL
+Expected sealed-fixture result: the two M151 presence runs both have author
+span 0 and committer span 0; AUTHOR ZERO RUNS 2 and COMMITTER ZERO RUNS 2;
+all positive/negative run counts are 0.
+
+M154 command:
+HISTORYFIRSTPRESENCEEVENTS-REF-FULL
+Expected sealed-fixture result: EVENTS 1, FROM RUN 1 TO RUN 2, then the full
+authenticated EDGE 1 STATUS DELETED record already proven by M150/M152.
+
+Host proof: PR #107, PR CI 37378665424 SUCCESS, merge
+75e4801110a50a8a7c54522546e32f950dda2bc4, post-merge main CI 37378777693
+SUCCESS, verified-ref guard 574/574. Wrapper-only; no native/protected changes.
+
+Next CMS gate:
+- Mac: git pull
+- CMS_SCRIPT_PORT=3272 ./cms-upload.sh GITVREF.EXEC GIT.EXEC
+- CMS: GIT LEVEL
+- GIT HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL 486ADAA5B02080720F4B329C6F68550B13C6AA87 1 src/GITPBWALK.EXEC
+- GIT HISTORYFIRSTPRESENCEEVENTS-REF-FULL 486ADAA5B02080720F4B329C6F68550B13C6AA87 1 src/GITPBWALK.EXEC
+No CMSCLNK. No GITRUN.
+
+After a matching CMS pass, immediately update BOTH canonical state files to
+mark M153-M154 NATIVE CMS TARGET-PROVEN, then continue M155+ autonomously until
+the next true CMS validation boundary.
