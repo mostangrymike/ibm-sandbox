@@ -1,0 +1,59 @@
+/* M157: compact sealed-fixture gate for current presence age. */
+address cms
+parse arg extra
+if extra\='' then do
+ say 'Usage: M157CHK'
+ exit 4
+end
+
+lvl.0=0
+'PIPE CMS GIT LEVEL | STEM lvl.'
+lrc=rc
+if lrc\=0 then do
+ say 'M157 LEVEL FAIL RC' lrc
+ exit lrc
+end
+if lvl.0\=2 then exit 8
+if lvl.1\='GIT EXEC LEVEL M157' then exit 8
+if lvl.2\='GITVREF EXEC LEVEL M157' then exit 8
+say 'M157 LEVEL PASS M157/M157'
+
+spec='6EF11911449C184457F3958ABE4CA7A0692CE8C9'
+path='src/GITPBWALK.EXEC'
+cmd='GIT HISTORYFIRSTPRESENCEAGE-REF-FULL' spec 6 path
+drop out.
+out.0=0
+'PIPE CMS' cmd '| STEM out.'
+grc=rc
+if grc\=0 then do
+ say 'M157 AGE FAIL RC' grc
+ exit grc
+end
+mark=0
+state=0
+nodes=0
+known=0
+kind=0
+edge=0
+asec=0
+csec=0
+dend=0
+do i=1 to out.0
+ if out.i='HISTORYFIRSTPRESENCEAGE FULL SNAPSHOTS VERIFIED' then mark=1
+ if out.i='HISTORYFIRSTPRESENCEAGE STATE ABSENT' then state=1
+ if out.i='HISTORYFIRSTPRESENCEAGE NODES 6 EXACTRUNS 1' then nodes=1
+ if out.i='HISTORYFIRSTPRESENCEAGE BEGIN KNOWN 1' then known=1
+ if out.i='HISTORYFIRSTPRESENCEAGE BEGIN KIND CHANGE' then kind=1
+ if out.i='HISTORYFIRSTPRESENCEAGE BEGIN EDGE 6 STATUS DELETED' then edge=1
+ if out.i='HISTORYFIRSTPRESENCEAGE AUTHOR SECONDS 268' then asec=1
+ if out.i='HISTORYFIRSTPRESENCEAGE COMMITTER SECONDS 268' then csec=1
+ if out.i='HISTORYFIRSTPRESENCEAGE DATA END' then dend=1
+end
+sum=mark+state+nodes+known+kind+edge+asec+csec+dend
+if sum\=9 then do
+ say 'M157 AGE FAIL SUMMARY' sum
+ exit 8
+end
+say 'M157 AGE PASS ABSENT EDGE 6 DELETED 268/268'
+say 'M157 COMPACT TARGET GATE PASS'
+exit 0
