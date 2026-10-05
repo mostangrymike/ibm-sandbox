@@ -311,7 +311,11 @@ grep -Fq "if fcnodes\=fcoldstep then return 'ERROR'" "$v"
 grep -Fq "if fdstatus.fcbeginedge='UNCHANGED' then return 'ERROR'" "$v"
 grep -Fq "if sparents.fcoldnode\=0 then return 'ERROR'" "$v"
 grep -Fq "HISTORYFIRSTORIGIN EVENTS 1" "$v"
-grep -Fq "call emitfirstchange 'HISTORYFIRSTORIGIN','EVENT',1," "$v"
+grep -Fq "call emitfirstchange 'HISTORYFIRSTORIGIN','EVENT',1,fcbeginedge" "$v"
+if grep -Eq '^[[:space:]]*call.*,[[:space:]]*$' "$v"; then
+ echo "FAIL: split CALL argument list is unsafe on CMS REXX" >&2
+ exit 1
+fi
 grep -Fq "HISTORYDAGSTATE MESSAGE BYTES %lu" "$rec"
 grep -Fq "HISTORYDAGSTATE SUBJECT BYTES %lu PREFIXBYTES %u" "$rec"
 grep -Fq "HISTORYDAGSTATE SUBJECTHEX" "$rec"

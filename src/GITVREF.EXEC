@@ -2770,8 +2770,7 @@ statefirstorigin:
  if fcbeginkind='CHANGE' then do
   say 'HISTORYFIRSTORIGIN EVENTS 1'
   say 'HISTORYFIRSTORIGIN EVENT 1 CURRENT RUN 1 PRIOR RUN 2'
-  call emitfirstchange 'HISTORYFIRSTORIGIN','EVENT',1,
-       fcbeginedge
+  call emitfirstchange 'HISTORYFIRSTORIGIN','EVENT',1,fcbeginedge
  end
  else if fcbeginkind='ROOT' then do
   say 'HISTORYFIRSTORIGIN EVENTS 1'
