@@ -178,7 +178,8 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTSLOTS' | command='HISTROLES' |,
    command='HISTFIRST' | command='HISTFCHG' |,
    command='HISTFTRANS' | command='HISTFCHRON' |,
-   command='HISTFACTORS' | command='HISTFSUBJ' then do
+   command='HISTFACTORS' | command='HISTFSUBJ' |,
+   command='HISTFBODY' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
