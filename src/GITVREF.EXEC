@@ -1,4 +1,4 @@
-/* M133: authenticated followed edge roles. */
+/* M134: authenticated first-parent projection. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M133'
+ say 'GITVREF EXEC LEVEL M134'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -20,7 +20,7 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTACTORS' & command\='HISTSUBJECTS' &,
    command\='HISTBODIES' & command\='HISTTOPO' &,
    command\='HISTPARENTS' & command\='HISTSLOTS' &,
-   command\='HISTROLES' then do
+   command\='HISTROLES' & command\='HISTFIRST' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -34,7 +34,7 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTACTORS' | command='HISTSUBJECTS' |,
    command='HISTBODIES' | command='HISTTOPO' |,
    command='HISTPARENTS' | command='HISTSLOTS' |,
-   command='HISTROLES' then do
+   command='HISTROLES' | command='HISTFIRST' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -47,7 +47,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTCHRON' | command='HISTACTORS' |,
    command='HISTSUBJECTS' | command='HISTBODIES' |,
    command='HISTTOPO' | command='HISTPARENTS' |,
-   command='HISTSLOTS' | command='HISTROLES' then do
+   command='HISTSLOTS' | command='HISTROLES' |,
+   command='HISTFIRST' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -70,6 +71,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTPARENTS' & depth+0>8 then exit 4
  if command='HISTSLOTS' & depth+0>8 then exit 4
  if command='HISTROLES' & depth+0>8 then exit 4
+ if command='HISTFIRST' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -79,7 +81,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
     command='HISTACTORS' | command='HISTSUBJECTS' |,
    command='HISTBODIES' | command='HISTTOPO' |,
    command='HISTPARENTS' | command='HISTSLOTS' |,
-   command='HISTROLES' then do
+   command='HISTROLES' | command='HISTFIRST' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -114,7 +116,8 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
         command='HISTCHRON' | command='HISTACTORS' |,
    command='HISTSUBJECTS' | command='HISTBODIES' |,
    command='HISTTOPO' | command='HISTPARENTS' |,
-   command='HISTSLOTS' | command='HISTROLES' then do
+   command='HISTSLOTS' | command='HISTROLES' |,
+   command='HISTFIRST' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -150,7 +153,8 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTCHRON' | command='HISTACTORS' |,
    command='HISTSUBJECTS' | command='HISTBODIES' |,
    command='HISTTOPO' | command='HISTPARENTS' |,
-   command='HISTSLOTS' | command='HISTROLES' then do
+   command='HISTSLOTS' | command='HISTROLES' |,
+   command='HISTFIRST' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -211,6 +215,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTROLES' then do
   call stateedgeroles
+  exit result
+ end
+ if command='HISTFIRST' then do
+  call statefirstparent
   exit result
  end
  call statediff
@@ -2006,6 +2014,59 @@ emitverified:
  if reskind='COMMIT' then say 'VERIFIED COMMIT' oid
  else say 'VERIFIED REF' spec oid
  return
+
+statefirstparent:
+ drop fpseen. fpnode.
+ fpcount=1
+ fpnode.1=1
+ fpseen.1=1
+ cur=1
+ truncated=0
+ do forever
+  if sdepth.cur>=depth then do
+   if sparents.cur>0 then truncated=1
+   leave
+  end
+  if sparents.cur=0 then leave
+  next=sfirstnode.cur
+  if datatype(next,'W')\=1 | next<1 | next>snodes then return 8
+  if fpseen.next=1 then return 8
+  edgeok=0
+  do ei=1 to sedgecount
+   if sedgechild.ei=cur & sedgeparent.ei=next then do
+    edgeok=1
+    leave
+   end
+  end
+  if edgeok=0 then return 8
+  fpcount=fpcount+1
+  fpnode.fpcount=next
+  fpseen.next=1
+  cur=next
+ end
+ chainedges=fpcount-1
+ offnodes=snodes-fpcount
+ offedges=sedgecount-chainedges
+ if offnodes<0 | offedges<0 then return 8
+ call emitverified
+ say 'HISTORYFIRSTPARENT FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTPARENT DATA BEGIN'
+ say 'HISTORYFIRSTPARENT NODES' snodes
+ say 'HISTORYFIRSTPARENT EDGES' sedgecount
+ say 'HISTORYFIRSTPARENT CHAIN NODES' fpcount
+ say 'HISTORYFIRSTPARENT CHAIN EDGES' chainedges
+ say 'HISTORYFIRSTPARENT OFFCHAIN NODES' offnodes
+ say 'HISTORYFIRSTPARENT OFFCHAIN EDGES' offedges
+ say 'HISTORYFIRSTPARENT TRUNCATED' truncated
+ do fi=1 to fpcount
+  ni=fpnode.fi
+  say 'HISTORYFIRSTPARENT STEP' fi 'NODE' ni,
+      'DEPTH' sdepth.ni
+  say 'HISTORYFIRSTPARENT STEP' fi 'COMMIT' scommit.ni
+ end
+ say 'HISTORYFIRSTPARENT DATA END'
+ return 0
+
 
 stateedgeroles:
  drop eroleslots. erolemin. erolemax. erolefirst.
