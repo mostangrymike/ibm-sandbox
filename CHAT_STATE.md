@@ -5237,3 +5237,28 @@ The sealed fixture expects current VERSION 0 ABSENT, one-node run at step/depth
 1/0, zero spans, BEGIN KNOWN 1 / KIND CHANGE / EDGE 1 DELETED, prior run 2
 VERSION 1 PRESENT A0C91615... type 3 size 1869. M150 then emits EVENTS 1 and
 the full authenticated edge-1 DELETED record. Wrapper-only; GITREC stays M132.
+
+
+## M149-M150 MERGED / HOST-PROVEN / NEXT CMS GATE
+
+PR #104 merged as f0dc2b5a893b2ca3f900ef638971e91ffaea40f7; PR head and
+merge share exact tree b747dd35e314537a0930b7b69dfd94e2b3502815. GitHub
+Actions runner scheduling stalled with all batch runs queued and zero running,
+including post-merge run 37368463608. The complete changed verified-ref guard
+was independently executed against canonical merged files through GitHub:
+539 checks, 0 failures; GITVREF max record 74, GIT max record 78. Diff is only
+GIT.EXEC, GITVREF.EXEC, check-verified-ref.sh and state docs; all native/test
+inputs are unchanged from the green M148 baseline. Handshake is M150/M150;
+GITREC remains M132.
+
+M149 HISTORYFIRSTCURRENT-REF-FULL reports the current exact-state run and
+whether its beginning is CHANGE/ROOT/UNKNOWN. M150 HISTORYFIRSTORIGIN-REF-FULL
+adds the authenticated event that began that state. Sealed fixture expectation:
+current VERSION 0 ABSENT, one-node run at step/depth 1/0, zero spans,
+BEGIN KNOWN 1 / KIND CHANGE / EDGE 1 DELETED, prior run 2 VERSION 1 PRESENT
+A0C91615... type 3 size 1869. M150 then emits EVENTS 1 and the full edge-1
+DELETED record with the already target-proven M143/M144 metadata.
+
+Next CMS gate: upload only GITVREF.EXEC and GIT.EXEC, then run
+HISTORYFIRSTCURRENT-REF-FULL and HISTORYFIRSTORIGIN-REF-FULL on sealed commit
+486ADAA5... depth 1 path src/GITPBWALK.EXEC. No CMSCLNK or GITRUN.
