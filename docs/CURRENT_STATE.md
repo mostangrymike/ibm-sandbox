@@ -1458,3 +1458,63 @@ A0C91615ABA9689C365159205E8CBA26EF6E16F4 type 3 size 1869, actors SAME,
 subject/message CHANGED, +3 second author/committer deltas, zero lags, and the
 already target-proven BLOBIDs. M149-M150 are wrapper-only; native GITREC
 remains the M132 target-proven worker.
+
+
+## 2026-10-05 M149-M150 MERGED / HOST-PROVEN; REAL CMS GATE NEXT
+
+PR #104 (`M149-M150 current run and origin`) merged as
+`f0dc2b5a893b2ca3f900ef638971e91ffaea40f7`. The PR head
+`28995c3942ddbef0250868db8408231c96365965` and merge commit share exact tree
+`b747dd35e314537a0930b7b69dfd94e2b3502815`. GitHub Actions runner service
+was stalled with all five batch runs queued and zero executing jobs, including
+post-merge run `37368463608`. To avoid treating scheduler unavailability as
+a code failure, the complete changed verified-ref guard was independently
+executed against the exact merged files through GitHub: 539 checks, 0 failures;
+GITVREF max record 74, GIT max record 78, REF2 max record 60. The workflow
+diff contains only CHAT_STATE.md, docs/CURRENT_STATE.md, src/GIT.EXEC,
+src/GITVREF.EXEC, and tests/check-verified-ref.sh. All other native/compiler/
+tree/index/selector sources and test scripts are unchanged from the already
+green M148 baseline. M149-M150 are therefore HOST-PROVEN on the exact merged
+tree, pending real CMS proof. Native GITREC remains the M132 target-proven
+worker. Current handshake is M150/M150.
+
+M149 adds `HISTORYFIRSTCURRENT-REF-FULL`: the exact current first-parent
+path-state run, including current version/state, observed run length,
+newest/oldest step/depth/commit, signed author/committer spans, and whether
+the beginning of the current state is known as CHANGE, ROOT, or UNKNOWN due
+to truncation. M150 adds `HISTORYFIRSTORIGIN-REF-FULL`: the same summary plus
+the authenticated event that began the current state; CHANGE origins emit one
+full M143-style edge record, ROOT origins emit the authenticated root node,
+and UNKNOWN origins emit zero events.
+
+Next real CMS gate from Mac `ibm-sandbox/src`:
+```sh
+git pull
+CMS_SCRIPT_PORT=3272 ./cms-upload.sh GITVREF.EXEC GIT.EXEC
+```
+Then CMS:
+```text
+GIT LEVEL
+GIT HISTORYFIRSTCURRENT-REF-FULL 486ADAA5B02080720F4B329C6F68550B13C6AA87 1 src/GITPBWALK.EXEC
+GIT HISTORYFIRSTORIGIN-REF-FULL 486ADAA5B02080720F4B329C6F68550B13C6AA87 1 src/GITPBWALK.EXEC
+```
+No CMSCLNK and no GITRUN.
+
+Expected M149: PATH STATUS MIXED; CHANGE STATUS CHANGED; NODES 2, EDGES 1,
+CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN NODES 0, OFFCHAIN EDGES 0,
+TRUNCATED 1, RUNS 2, TRANSITIONS 1, CHANGES 1. CURRENT RUN 1 VERSION 0 NODES
+1; CURRENT STATE ABSENT; NEWEST and OLDEST are both STEP 1 DEPTH 0 COMMIT
+486ADAA5B02080720F4B329C6F68550B13C6AA87; AUTHOR SPAN 0 and COMMITTER SPAN
+0; BEGIN KNOWN 1; BEGIN KIND CHANGE; BEGIN EDGE 1 STATUS DELETED; PRIOR RUN 2
+VERSION 1; PRIOR STATE PRESENT; PRIOR OID
+A0C91615ABA9689C365159205E8CBA26EF6E16F4 TYPE 3 SIZE 1869.
+
+Expected M150 repeats that current-run summary, then EVENTS 1 and
+EVENT 1 CURRENT RUN 1 PRIOR RUN 2, followed by a full authenticated EVENT 1
+edge record for EDGE 1 STATUS DELETED: child 1/parent 2, depth 0/1, child
+commit 486AD..., parent commit 91913EA4..., child tree 909B1D31..., parent
+tree AE65405C..., child ABSENT / parent PRESENT OID A0C91615... type 3 size
+1869, AUTHOR SAME, COMMITTER SAME, SUBJECT CHANGED, MESSAGE CHANGED, +3 second
+author/committer deltas, zero lags, shared actor BLOBID 78C41780..., child
+subject/message BLOBID 6C129246..., and parent subject/message BLOBID
+1A55B22C....
