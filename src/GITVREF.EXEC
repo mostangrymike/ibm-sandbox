@@ -1,4 +1,4 @@
-/* M132: authenticated followed parent slot mapping. */
+/* M133: authenticated followed edge roles. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M132'
+ say 'GITVREF EXEC LEVEL M133'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -19,7 +19,8 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTBOUNDS' & command\='HISTCHRON' &,
    command\='HISTACTORS' & command\='HISTSUBJECTS' &,
    command\='HISTBODIES' & command\='HISTTOPO' &,
-   command\='HISTPARENTS' & command\='HISTSLOTS' then do
+   command\='HISTPARENTS' & command\='HISTSLOTS' &,
+   command\='HISTROLES' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -32,7 +33,8 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTBOUNDS' | command='HISTCHRON' |,
    command='HISTACTORS' | command='HISTSUBJECTS' |,
    command='HISTBODIES' | command='HISTTOPO' |,
-   command='HISTPARENTS' | command='HISTSLOTS' then do
+   command='HISTPARENTS' | command='HISTSLOTS' |,
+   command='HISTROLES' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -45,7 +47,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTCHRON' | command='HISTACTORS' |,
    command='HISTSUBJECTS' | command='HISTBODIES' |,
    command='HISTTOPO' | command='HISTPARENTS' |,
-   command='HISTSLOTS' then do
+   command='HISTSLOTS' | command='HISTROLES' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -67,6 +69,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTTOPO' & depth+0>8 then exit 4
  if command='HISTPARENTS' & depth+0>8 then exit 4
  if command='HISTSLOTS' & depth+0>8 then exit 4
+ if command='HISTROLES' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -75,7 +78,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
     command='HISTBOUNDS' | command='HISTCHRON' |,
     command='HISTACTORS' | command='HISTSUBJECTS' |,
    command='HISTBODIES' | command='HISTTOPO' |,
-   command='HISTPARENTS' | command='HISTSLOTS' then do
+   command='HISTPARENTS' | command='HISTSLOTS' |,
+   command='HISTROLES' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -110,7 +114,7 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
         command='HISTCHRON' | command='HISTACTORS' |,
    command='HISTSUBJECTS' | command='HISTBODIES' |,
    command='HISTTOPO' | command='HISTPARENTS' |,
-   command='HISTSLOTS' then do
+   command='HISTSLOTS' | command='HISTROLES' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -146,7 +150,7 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTCHRON' | command='HISTACTORS' |,
    command='HISTSUBJECTS' | command='HISTBODIES' |,
    command='HISTTOPO' | command='HISTPARENTS' |,
-   command='HISTSLOTS' then do
+   command='HISTSLOTS' | command='HISTROLES' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -203,6 +207,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTSLOTS' then do
   call stateparentslots
+  exit result
+ end
+ if command='HISTROLES' then do
+  call stateedgeroles
   exit result
  end
  call statediff
@@ -1998,6 +2006,78 @@ emitverified:
  if reskind='COMMIT' then say 'VERIFIED COMMIT' oid
  else say 'VERIFIED REF' spec oid
  return
+
+stateedgeroles:
+ drop eroleslots. erolemin. erolemax. erolefirst.
+ firstedges=0
+ mergeedges=0
+ multiedges=0
+ duplicate=0
+ expectedfirst=0
+ do ni=1 to snodes
+  if sdepth.ni<depth & sparents.ni>0 then,
+   expectedfirst=expectedfirst+1
+ end
+ do ei=1 to sedgecount
+  eroleslots.ei=0
+  erolemin.ei=65
+  erolemax.ei=0
+  erolefirst.ei=0
+ end
+ do si=1 to sslotcount
+  found=0
+  do ei=1 to sedgecount
+   if sedgechild.ei=sslotchild.si &,
+      sedgeparent.ei=sslotparent.si then do
+    found=ei
+    leave
+   end
+  end
+  if found=0 then return 8
+  ord=sslotord.si
+  eroleslots.found=eroleslots.found+1
+  if ord<erolemin.found then erolemin.found=ord
+  if ord>erolemax.found then erolemax.found=ord
+  if ord=1 then erolefirst.found=1
+ end
+ do ei=1 to sedgecount
+  if eroleslots.ei<1 then return 8
+  duplicate=duplicate+eroleslots.ei-1
+  if eroleslots.ei>1 then multiedges=multiedges+1
+  if erolefirst.ei=1 then do
+   if erolemin.ei\=1 then return 8
+   firstedges=firstedges+1
+  end
+  else do
+   if erolemin.ei<2 then return 8
+   mergeedges=mergeedges+1
+  end
+ end
+ if firstedges\=expectedfirst then return 8
+ if firstedges+mergeedges\=sedgecount then return 8
+ if duplicate\=sslotcount-sedgecount then return 8
+ call emitverified
+ say 'HISTORYEDGEROLES FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYEDGEROLES DATA BEGIN'
+ say 'HISTORYEDGEROLES NODES' snodes
+ say 'HISTORYEDGEROLES EDGES' sedgecount
+ say 'HISTORYEDGEROLES SLOTS' sslotcount
+ say 'HISTORYEDGEROLES FIRST EDGES' firstedges
+ say 'HISTORYEDGEROLES MERGE EDGES' mergeedges
+ say 'HISTORYEDGEROLES MULTISLOT EDGES' multiedges
+ say 'HISTORYEDGEROLES DUPLICATE SLOTS' duplicate
+ do ei=1 to sedgecount
+  say 'HISTORYEDGEROLES EDGE' ei 'CHILD' sedgechild.ei,
+      'PARENT' sedgeparent.ei
+  if erolefirst.ei=1 then role='FIRST'
+  else role='MERGE'
+  say 'HISTORYEDGEROLES EDGE' ei 'ROLE' role
+  say 'HISTORYEDGEROLES EDGE' ei 'SLOTS' eroleslots.ei,
+      'MINORDINAL' erolemin.ei 'MAXORDINAL' erolemax.ei
+ end
+ say 'HISTORYEDGEROLES DATA END'
+ return 0
+
 
 stateparentslots:
  duplicate=sslotcount-sedgecount
