@@ -1677,3 +1677,61 @@ NEXT REAL CMS GATE ONLY:
 No CMSCLNK. No GITRUN. After matching real CMS output, immediately mark
 M153-M154 target-proven in BOTH docs/CURRENT_STATE.md and CHAT_STATE.md, then
 continue autonomously into M155+ until the next genuine CMS boundary.
+
+
+## 2026-10-05 M153-M154 REAL CMS TARGET PASS
+
+Real CMS ran GIT/GITVREF M154/M154. M153
+`HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL` completed RC0 with full snapshots
+verified on sealed commit 486ADAA5... depth 1 path src/GITPBWALK.EXEC. It
+reported two presence runs; AUTHOR ZERO RUNS 2 and COMMITTER ZERO RUNS 2;
+all author/committer positive and negative run counts were zero.
+
+M154 `HISTORYFIRSTPRESENCEEVENTS-REF-FULL` completed RC0 through DATA END
+with full snapshots verified, EVENTS 1, FROM RUN 1 TO RUN 2, EDGE 1 STATUS
+DELETED, and the same authenticated endpoint, chronology, actor, subject and
+message metadata previously target-proven by M150/M152. M153-M154 are NATIVE
+CMS TARGET-PROVEN. Do not repeat their verbose standalone target gate.
+
+Successful future target gates should use compact fail-closed checker EXECs
+and normally return only a few decisive lines plus plain Ready;. Full verbose
+authenticated output is reserved for diagnosis after a compact gate failure.
+
+## M155 compact CMS acceptance gate
+
+M155 adds read-only `M155CHK EXEC`. It captures the already target-proven
+M153/M154 commands internally, requires RC0, full-snapshot markers and the
+sealed-fixture chronology/event invariants, and prints only three PASS lines.
+PR #108 merged as 57c7bc44ad09abba669214a1fd141bfbba118ffe and post-merge
+native-stage run 37382621792 succeeded. M155 is host-proven and awaits only
+its compact real-CMS execution.
+
+## M156 authenticated closed presence duration
+
+M156 adds
+`HISTORYFIRSTPRESENCEDURATION-REF-FULL`. Only presence runs bounded by
+authenticated existence transitions on both ends are treated as fully closed.
+For a PRESENT run the begin boundary must be ADDED and the end boundary must
+be DELETED; the inverse is required for a closed ABSENT run. Signed author and
+committer duration are computed between the two boundary child commits.
+
+The sealed depth-5 486ADAA5... / src/GITPBWALK.EXEC fixture has three
+presence runs. Run 2 is PRESENT, begins at edge 5 ADDED, ends at edge 1
+DELETED, and has author/committer duration 50/50 seconds. M156CHK validates
+the complete result internally and prints three compact PASS lines. PR #109
+merged as 591d57c456ca45e3ef0b0e812158cf67376918fc and post-merge
+native-stage run 37383048532 succeeded. M156 is host-proven pending compact
+real-CMS validation.
+
+## M157 authenticated current presence age
+
+M157 adds `HISTORYFIRSTPRESENCEAGE-REF-FULL`. It reuses the target-proven
+current-presence origin logic. When the current run beginning is authenticated
+as CHANGE or ROOT, the author/committer age is the signed span from that begin
+commit to the newest commit. UNKNOWN truncated beginnings remain explicitly
+observed-only rather than being presented as complete age.
+
+The sealed fixture for M157 starts at commit 6EF11911449C184457F3958ABE4CA7A0692CE8C9
+with depth 6 and path src/GITPBWALK.EXEC. The current state is ABSENT for six
+nodes, BEGIN KNOWN 1 / KIND CHANGE / EDGE 6 DELETED, with author and committer
+age 268 seconds. M157CHK is the compact target gate.
