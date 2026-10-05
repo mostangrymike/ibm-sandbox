@@ -1640,3 +1640,40 @@ wrapper-only; native GITREC remains the M132 target-proven worker.
 ## M153-M154 HOST PASS / CMS GATE
 
 PR #107 passed native-stage run 37378665424, merged as 75e4801110a50a8a7c54522546e32f950dda2bc4, and post-merge main run 37378777693 passed. Independent guard: 574 checks, 0 failures. Handshake is M154/M154; GITREC remains M132. M153-M154 are host-proven, pending real CMS. Next gate uploads GITVREF.EXEC and GIT.EXEC and runs HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL and HISTORYFIRSTPRESENCEEVENTS-REF-FULL on sealed 486ADAA5... depth 1 path src/GITPBWALK.EXEC. Expected M153: two presence runs, both author/committer span 0; author zero runs 2 and committer zero runs 2, positive/negative 0. Expected M154: EVENTS 1, FROM RUN 1 TO RUN 2, full edge 1 DELETED metadata. No CMSCLNK or GITRUN.
+
+
+## NEW CHAT HANDOFF — 2026-10-05 after M152 target proof
+
+Canonical GitHub state is authoritative. M151 and M152 are NATIVE CMS
+TARGET-PROVEN on the sealed depth-1 fixture. The next wrapper-only batch,
+M153-M154, is already implemented, merged, and host/native-stage proven.
+Current wrapper handshake is M154/M154; native GITREC remains the unchanged
+M132 target-proven worker.
+
+M153 is HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL. It adds signed author and
+committer spans for each M151 presence interval and positive/zero/negative run
+partitions. For the sealed fixture there are two presence runs and both spans
+must be zero, so AUTHOR ZERO RUNS 2 and COMMITTER ZERO RUNS 2, with all
+positive/negative counts 0.
+
+M154 is HISTORYFIRSTPRESENCEEVENTS-REF-FULL. It emits only authenticated
+ADDED/DELETED presence boundaries; MODIFIED-only exact-version edges remain
+inside one presence interval. For the sealed fixture it must emit EVENTS 1,
+FROM RUN 1 TO RUN 2, followed by the full authenticated EDGE 1 STATUS DELETED
+record already target-proven by M150/M152.
+
+Host proof for M153-M154: PR #107; PR native-stage run 37378665424 SUCCESS;
+merge commit 75e4801110a50a8a7c54522546e32f950dda2bc4; post-merge main run
+37378777693 SUCCESS; independent verified-ref guard 574/574. No native C,
+selector, generation, or protected artifact changes.
+
+NEXT REAL CMS GATE ONLY:
+1. From Mac ibm-sandbox/src: git pull
+2. Upload GITVREF.EXEC and GIT.EXEC with CMS_SCRIPT_PORT=3272.
+3. On CMS run GIT LEVEL; expect M154/M154.
+4. Run:
+   GIT HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL 486ADAA5B02080720F4B329C6F68550B13C6AA87 1 src/GITPBWALK.EXEC
+   GIT HISTORYFIRSTPRESENCEEVENTS-REF-FULL 486ADAA5B02080720F4B329C6F68550B13C6AA87 1 src/GITPBWALK.EXEC
+No CMSCLNK. No GITRUN. After matching real CMS output, immediately mark
+M153-M154 target-proven in BOTH docs/CURRENT_STATE.md and CHAT_STATE.md, then
+continue autonomously into M155+ until the next genuine CMS boundary.
