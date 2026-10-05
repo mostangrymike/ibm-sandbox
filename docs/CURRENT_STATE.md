@@ -1310,3 +1310,39 @@ Real CMS ran GIT/GITVREF M144/M144 and `HISTORYFIRSTDIFFS-REF-FULL` on sealed co
 ## 2026-10-05 M144 REAL CMS TARGET PASS
 
 Real CMS ran `HISTORYFIRSTNEAREST-REF-FULL` on sealed commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`, depth 1, path `src/GITPBWALK.EXEC`, under GIT/GITVREF M144/M144. Full-snapshot verification passed. Summary matched exactly: STATUS CHANGED; NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN NODES 0, OFFCHAIN EDGES 0, TRUNCATED 1; CHANGES 1, DEPTH 0, MATCHES 1. The sole nearest change was chain edge 1 STATUS DELETED, child ABSENT / parent PRESENT blob `A0C91615ABA9689C365159205E8CBA26EF6E16F4` type 3 size 1869, AUTHOR SAME, COMMITTER SAME, SUBJECT CHANGED, MESSAGE CHANGED, +3 second author/committer deltas, zero lags, shared actor BLOBID `78C41780430F464791E67533C261358D0FEB071E`, child subject/message BLOBID `6C1292461038798149F3636EE517BB6E4B35DAA5`, and parent subject/message BLOBID `1A55B22C5ABB8A8609B3F828119988B04BF2BFAC`. The pasted transcript interleaved some lines around DATA END, but all required authenticated records were present and consistent. M144 is NATIVE CMS TARGET-PROVEN.
+
+
+## M145 authenticated first-parent status
+
+M144 is native CMS target-proven. M145 adds read-only
+`GIT HISTORYFIRSTSTATUS-REF-FULL <commit|ref> <depth> <path>`. It reuses the
+target-proven M143 first-parent classifier and emits only the compact authenticated
+mainline summary: overall CHANGED/UNCHANGED status, full DAG and projected chain
+cardinalities, truncation, ADDED/DELETED/MODIFIED/UNCHANGED edge counts, plus
+nearest/farthest change depth and nearest-change cardinality when changes exist.
+No edge details are emitted. Native GITREC remains the M132 target-proven worker.
+
+For the sealed depth-1 deletion fixture, expected M145 is STATUS CHANGED; NODES 2,
+EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN NODES 0, OFFCHAIN EDGES 0,
+TRUNCATED 1; CHANGED EDGES 1, ADDED 0, DELETED 1, MODIFIED 0, UNCHANGED 0;
+NEAREST CHANGE DEPTH 0, FARTHEST CHANGE DEPTH 0, NEAREST CHANGES 1.
+
+
+## M146 authenticated first-parent change bounds
+
+M146 adds read-only
+`GIT HISTORYFIRSTBOUNDS-REF-FULL <commit|ref> <depth> <path>`. It reuses the
+same fail-closed classifier and emits only changed mainline edges at the nearest
+or farthest authenticated child depth. It independently computes farthest-match
+and unique boundary-change cardinalities, rejects zero/out-of-range counts when
+changes exist, labels each emitted boundary record NEAREST, FARTHEST, or BOTH,
+and requires the emitted record count to equal the precomputed boundary count.
+Each boundary record reuses M143/M144 exact authenticated endpoint, path,
+chronology, actor, subject, and message metadata.
+
+For the sealed fixture nearest=farthest=0, so expected M146 is STATUS CHANGED,
+CHANGES 1, NEAREST DEPTH 0 / MATCHES 1, FARTHEST DEPTH 0 / MATCHES 1,
+BOUNDARY CHANGES 1, and one CHANGE with BOUND BOTH for chain edge 1 STATUS
+DELETED. Endpoint and metadata values must match the already target-proven
+M144 record. M145-M146 are wrapper-only and remain host-only until the combined
+real CMS gate passes.
