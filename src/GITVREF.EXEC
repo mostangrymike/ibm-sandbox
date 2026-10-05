@@ -100,7 +100,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTROLES' | command='HISTFIRST' |,
    command='HISTFCHG' | command='HISTFTRANS' |,
    command='HISTFCHRON' | command='HISTFACTORS' |,
-   command='HISTFSUBJ' then do
+   command='HISTFSUBJ' | command='HISTFBODY' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -138,7 +138,8 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTSLOTS' | command='HISTROLES' |,
    command='HISTFIRST' | command='HISTFCHG' |,
    command='HISTFTRANS' | command='HISTFCHRON' |,
-   command='HISTFACTORS' | command='HISTFSUBJ' then do
+   command='HISTFACTORS' | command='HISTFSUBJ' |,
+   command='HISTFBODY' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
