@@ -5314,3 +5314,18 @@ Expected M152 repeats the M151 base summary, then CURRENT PRESENCE RUN 1 NODES 1
 ## M151-M152 TARGET PASS
 
 Real CMS M152/M152 completed both new presence commands RC0 on the sealed depth-1 fixture. M151 returned two presence runs (ABSENT then PRESENT) separated by edge 1 DELETED. M152 returned the current ABSENT presence run, BEGIN KNOWN CHANGE edge 1 DELETED, prior PRESENT run, and the complete authenticated deletion event. M151-M152 are NATIVE CMS TARGET-PROVEN.
+
+
+## M153-M154 presence chronology/events
+
+M152 is native CMS target-proven. M153 adds
+HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL: signed author/committer spans for each
+M151 presence interval plus positive/zero/negative run counts, with each sign
+partition required to equal PRESENCE RUNS. M154 adds
+HISTORYFIRSTPRESENCEEVENTS-REF-FULL: only ADDED/DELETED presence boundaries,
+with full authenticated M143-style edge metadata; MODIFIED-only edges remain
+inside the presence interval and are excluded.
+
+The sealed fixture expects two zero-span runs, so author and committer zero
+runs are 2 and positive/negative counts are 0. M154 expects EVENTS 1, FROM RUN
+1 TO RUN 2, full edge 1 DELETED. Wrapper-only; GITREC remains M132.
