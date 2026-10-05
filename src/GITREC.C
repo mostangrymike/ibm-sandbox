@@ -268,10 +268,13 @@ static int rec_commit_walk(unsigned long n,int emit) {
 /* M130: count exact and distinct authenticated parent lines. */
 static int rec_parent_counts(unsigned long n,
                              unsigned long *parents,
-                             unsigned long *unique) {
+                             unsigned long *unique,
+                             unsigned char first_parent[20],
+                             unsigned char seq_blobid[20]) {
  unsigned long at=0,begin,len,j;
- unsigned char oid[20],seen[64][20];
+ unsigned char oid[20],seen[64][20],seq[1280];
  *parents=0;*unique=0;
+ memset(first_parent,0,20);
  while(at<n&&idx_body[at]!=0x0a) at++;
  if(at==n) return 0;
  at++;
@@ -283,6 +286,9 @@ static int rec_parent_counts(unsigned long n,
   if(!rec_ascii_key(idx_body+begin,len,"parent")) break;
   if(len!=47||!rec_ascii_oid(idx_body+begin+7,oid))
    return 0;
+  if(*parents>=64UL) return 0;
+  if(*parents==0) memcpy(first_parent,oid,20);
+  memcpy(seq+(*parents)*20UL,oid,20);
   (*parents)++;
   for(j=0;j<*unique;j++)
    if(memcmp(seen[j],oid,20)==0) break;
@@ -293,6 +299,7 @@ static int rec_parent_counts(unsigned long n,
   }
   at++;
  }
+ if(!idx_hash(3,seq,(*parents)*20UL,seq_blobid)) return 0;
  return 1;
 }
 /* M126: extract authenticated raw Git identity and time.
@@ -1124,6 +1131,8 @@ static int rec_history_dag_state(const unsigned char *starting,
  unsigned char subject_prefix[64][20];
  unsigned char subject_blobid[64][20];
  unsigned char message_blobid[64][20];
+ unsigned char first_parent[64][20];
+ unsigned char parent_seq_blobid[64][20];
  unsigned char author_ident_prefix[64][20];
  unsigned char commit_ident_prefix[64][20];
  unsigned char author_ident_blobid[64][20];
@@ -1163,7 +1172,9 @@ static int rec_history_dag_state(const unsigned char *starting,
    puts("HISTORYDAGSTATE COMMIT INVALID");return 8;
   }
   if(!rec_parent_counts(sz,&parent_count[head],
-                        &unique_parent_count[head])) {
+                        &unique_parent_count[head],
+                        first_parent[head],
+                        parent_seq_blobid[head])) {
    puts("HISTORYDAGSTATE PARENT META INVALID");return 8;
   }
   if(!rec_commit_times(sz,
@@ -1235,6 +1246,14 @@ static int rec_history_dag_state(const unsigned char *starting,
   idx_print(stdout,trees[j]);putchar('\n');
   printf("HISTORYDAGSTATE PARENTS %lu UNIQUE %lu\n",
          parent_count[j],unique_parent_count[j]);
+  if(parent_count[j]==0)
+   puts("HISTORYDAGSTATE FIRSTPARENT NONE");
+  else {
+   fputs("HISTORYDAGSTATE FIRSTPARENT ",stdout);
+   idx_print(stdout,first_parent[j]);putchar('\n');
+  }
+  fputs("HISTORYDAGSTATE PARENTSEQ BLOBID ",stdout);
+  idx_print(stdout,parent_seq_blobid[j]);putchar('\n');
   printf("HISTORYDAGSTATE AUTHOR TIME %lu TZMIN %d\n",
          author_when[j],author_tz[j]);
   printf("HISTORYDAGSTATE AIDENT BYTES %lu PREFIXBYTES %u\n",
