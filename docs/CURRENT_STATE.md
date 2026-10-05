@@ -1226,3 +1226,38 @@ autonomously with M143+ until the next genuine CMS validation boundary.
 ## 2026-10-05 M141-M142 REAL CMS TARGET PASS
 
 Real z/VM CMS returned GIT/GITVREF M142/M142. Both HISTORYFIRSTLOG-REF-FULL and HISTORYFIRSTREPORT-REF-FULL on commit 486ADAA5B02080720F4B329C6F68550B13C6AA87, depth 1, path src/GITPBWALK.EXEC passed full-snapshot verification. M141 reported the expected two-node first-parent chain: child tree 909B1D31C377F42158F1591AB3FA130105186FD7 with path ABSENT, parent tree AE65405CF230B9FB0992544773B3CF7197015A47 with PRESENT blob A0C91615ABA9689C365159205E8CBA26EF6E16F4 type 3 size 1869. All parent, chronology, actor, message, and subject metadata matched prior target proof. M142 reported exactly one DELETED edge; AUTHOR SAME 1, COMMITTER SAME 1, SUBJECT CHANGED 1, MESSAGE CHANGED 1; author/committer deltas 3 seconds, lags 0; actor BLOBID 78C41780430F464791E67533C261358D0FEB071E; child subject/message BLOBID 6C1292461038798149F3636EE517BB6E4B35DAA5; parent subject/message BLOBID 1A55B22C5ABB8A8609B3F828119988B04BF2BFAC. M141-M142 are NATIVE CMS TARGET-PROVEN.
+
+## M143 authenticated first-parent changed-edge filter
+
+M142 is native CMS target-proven. M143 adds read-only
+`GIT HISTORYFIRSTDIFFS-REF-FULL <commit|ref> <depth> <path>`. It reuses the
+authenticated first-parent projection and emits only changed mainline edges,
+while preserving aggregate ADDED/DELETED/MODIFIED/UNCHANGED counts and
+nearest/farthest changed child depths. Every emitted changed edge carries
+authenticated child/parent node, depth, commit, tree, path state/object
+metadata, author/committer/subject/message SAME/CHANGED status, and the exact
+pair chronology/identity/message/subject metadata already proven by M142.
+Before trusted output, changed must equal ADDED+DELETED+MODIFIED and
+changed+unchanged must equal the projected chain-edge count.
+
+For the sealed depth-1 deletion fixture, expected M143 is STATUS CHANGED,
+NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN 0/0, TRUNCATED 1,
+CHANGED EDGES 1, ADDED 0, DELETED 1, MODIFIED 0, UNCHANGED 0, nearest and
+farthest change depth 0, nearest changes 1. The sole emitted change is chain
+edge 1, STATUS DELETED, with the already target-proven M142 endpoint metadata.
+
+
+## M144 authenticated nearest first-parent change
+
+M144 adds read-only
+`GIT HISTORYFIRSTNEAREST-REF-FULL <commit|ref> <depth> <path>`. It uses the
+same fail-closed M143 classification but emits only changed mainline edges at
+the minimum authenticated child depth. The emitted match count must equal the
+precomputed nearest cardinality before success. For the sealed fixture,
+expected STATUS is CHANGED, CHANGES 1, DEPTH 0, MATCHES 1, and the sole match
+is chain edge 1 DELETED with child ABSENT / parent PRESENT blob
+A0C91615ABA9689C365159205E8CBA26EF6E16F4, author/committer SAME,
+subject/message CHANGED, +3 second author/committer deltas, and zero lags.
+M143-M144 are wrapper-only; native GITREC remains the M132 target-proven
+worker. They remain host-only until the combined real CMS gate passes.
+
