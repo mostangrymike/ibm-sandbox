@@ -5309,3 +5309,8 @@ Next CMS gate: upload only GITVREF.EXEC and GIT.EXEC, then run `HISTORYFIRSTPRES
 Expected M151: PATH STATUS MIXED; EXISTENCE STATUS CHANGED; NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN NODES 0, OFFCHAIN EDGES 0, TRUNCATED 1; PRESENT 1, ABSENT 1; EXACT RUNS 2; PRESENCE RUNS 2; PRESENCE TRANSITIONS 1; ADDED 0, DELETED 1, MODIFIED 0, UNCHANGED 0. RUN 1 is NODES 1 EXACTRUNS 1 STATE ABSENT, start=end step 1 depth 0 commit 486ADAA5... . RUN 2 is NODES 1 EXACTRUNS 1 STATE PRESENT VERSIONS 1, start=end step 2 depth 1 commit 91913EA4... . TRANSITION 1 is FROM RUN 1 TO RUN 2, EDGE 1 STATUS DELETED.
 
 Expected M152 repeats the M151 base summary, then CURRENT PRESENCE RUN 1 NODES 1 EXACTRUNS 1, CURRENT STATE ABSENT, newest=oldest step 1 depth 0 commit 486ADAA5..., author/committer spans 0, BEGIN KNOWN 1, BEGIN KIND CHANGE, BEGIN EDGE 1 STATUS DELETED, PRIOR PRESENCE RUN 2 STATE PRESENT. Then EVENTS 1 and EVENT 1 CURRENT RUN 1 PRIOR RUN 2 followed by the full authenticated EDGE 1 STATUS DELETED record already target-proven by M150.
+
+
+## M151-M152 TARGET PASS
+
+Real CMS M152/M152 completed both new presence commands RC0 on the sealed depth-1 fixture. M151 returned two presence runs (ABSENT then PRESENT) separated by edge 1 DELETED. M152 returned the current ABSENT presence run, BEGIN KNOWN CHANGE edge 1 DELETED, prior PRESENT run, and the complete authenticated deletion event. M151-M152 are NATIVE CMS TARGET-PROVEN.
