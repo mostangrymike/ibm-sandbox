@@ -1346,3 +1346,9 @@ BOUNDARY CHANGES 1, and one CHANGE with BOUND BOTH for chain edge 1 STATUS
 DELETED. Endpoint and metadata values must match the already target-proven
 M144 record. M145-M146 are wrapper-only and remain host-only until the combined
 real CMS gate passes.
+
+## 2026-10-05 M145-M146 HOST/NATIVE-STAGE PASS; REAL CMS GATE NEXT
+
+PR #102 passed native-stage run `37360502316` and squash-merged as `c12e4b332cd69827cf355e8e346f51445220612a`. Post-merge main run `37360612752` also completed SUCCESS. M145-M146 are HOST/NATIVE-STAGE CI PROVEN but not yet real CMS target-proven. Both are wrapper-only; native `GITREC MODULE` remains the M132 target-proven worker. Current handshake is `GIT EXEC LEVEL M146` / `GITVREF EXEC LEVEL M146`.
+
+Next CMS gate: upload only GITVREF.EXEC and GIT.EXEC, then run `HISTORYFIRSTSTATUS-REF-FULL` and `HISTORYFIRSTBOUNDS-REF-FULL` on sealed commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`, depth 1, path `src/GITPBWALK.EXEC`. M145 should report STATUS CHANGED; 2 nodes/1 edge; chain 2/1; offchain 0/0; truncated 1; changed 1, deleted 1, all other path change counts 0; nearest/farthest depth 0 and nearest changes 1. M146 should report STATUS CHANGED; CHANGES 1; nearest depth 0/matches 1; farthest depth 0/matches 1; boundary changes 1; and one CHANGE with BOUND BOTH for edge 1 STATUS DELETED, carrying the exact M144 endpoint/chronology/actor/subject/message metadata. No CMSCLNK and no GITRUN.
