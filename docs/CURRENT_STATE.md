@@ -1124,3 +1124,49 @@ This confirms authenticated full-message continuity/change classification on
 the real CMS first-parent chain. M140 is NATIVE CMS TARGET-PROVEN. Do not
 repeat this standalone gate.
 
+
+## M141 authenticated first-parent log
+
+M140 is native CMS target-proven. M141 remains wrapper-only and introduces
+`GIT HISTORYFIRSTLOG-REF-FULL <commit|ref> <depth> <path>`. It reuses the
+fully authenticated HISTORYDAGSTATE parser and first-parent chain builder,
+then emits only chain members. Each step maps chain position to authenticated
+node/depth/commit/tree metadata and reuses the strict per-node chronology
+emitter for exact parent cardinality/order digest, author/committer time and
+identity metadata, message digest/bytes, subject digest/prefix, plus path
+PRESENT/ABSENT state and present object type/size/OID. No off-chain node is
+presented as part of the log. Native GITREC remains the M132-proven worker.
+
+For the sealed deletion fixture at depth 1, M141 must report two chain steps:
+node 1 commit 486ADAA5B02080720F4B329C6F68550B13C6AA87 / tree
+909B1D31C377F42158F1591AB3FA130105186FD7 / path ABSENT, then node 2 commit
+91913EA4028B795707AA67EDB1ED17A74D1B896E / tree
+AE65405CF230B9FB0992544773B3CF7197015A47 / path PRESENT as blob
+A0C91615ABA9689C365159205E8CBA26EF6E16F4 type 3 size 1869. Summary remains
+NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN 0/0, TRUNCATED 1.
+
+
+## M142 consolidated authenticated first-parent report
+
+M142 adds `GIT HISTORYFIRSTREPORT-REF-FULL <commit|ref> <depth> <path>`.
+It consolidates the independently proven first-parent path, chronology, actor,
+subject, and full-message relations in one fail-closed edge report. Every
+first-parent edge is classified ADDED/DELETED/MODIFIED/UNCHANGED; author,
+committer, subject, and message continuity are each independently classified
+SAME/CHANGED. Aggregate counts for every classification must sum exactly to
+the projected chain-edge count before any trusted output. Per-edge output
+includes child/parent depth, commit, tree, path state/object metadata, the four
+continuity statuses, and the existing exact authenticated pair chronology,
+identity, message, and subject metadata. Native GITREC remains unchanged.
+
+For the sealed depth-1 deletion fixture, expected M142 summary is one DELETED
+edge and zero ADDED/MODIFIED/UNCHANGED edges; AUTHOR SAME 1 / CHANGED 0;
+COMMITTER SAME 1 / CHANGED 0; SUBJECT SAME 0 / CHANGED 1; MESSAGE SAME 0 /
+CHANGED 1. The edge retains child ABSENT / parent PRESENT blob
+A0C91615ABA9689C365159205E8CBA26EF6E16F4, author and committer deltas +3,
+both author-to-committer lags 0, shared actor BLOBID
+78C41780430F464791E67533C261358D0FEB071E, child subject/message BLOBID
+6C1292461038798149F3636EE517BB6E4B35DAA5 and parent subject/message BLOBID
+1A55B22C5ABB8A8609B3F828119988B04BF2BFAC. M141-M142 are host-only until
+one combined real CMS wrapper gate passes.
+
