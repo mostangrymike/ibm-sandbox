@@ -5049,3 +5049,25 @@ This confirms authenticated full-message continuity/change classification on
 the real CMS first-parent chain. M140 is NATIVE CMS TARGET-PROVEN. Do not
 repeat this standalone gate.
 
+
+## M141-M142 authenticated first-parent log/report
+
+M140 is native CMS target-proven. M141 adds read-only
+`HISTORYFIRSTLOG-REF-FULL`, exposing only authenticated first-parent chain
+nodes with exact commit/tree, parent metadata, chronology, actor identity,
+subject/message identity, and path state/object metadata. M142 adds read-only
+`HISTORYFIRSTREPORT-REF-FULL`, consolidating each authenticated first-parent
+edge's path classification plus author, committer, subject, and message
+SAME/CHANGED status and exact pair metadata. Both are wrapper-only; native
+GITREC remains the M132 target-proven worker.
+
+For sealed commit 486ADAA5B02080720F4B329C6F68550B13C6AA87, depth 1, path
+src/GITPBWALK.EXEC: M141 must show node 1/tree 909B1D31... path ABSENT and
+node 2/tree AE65405C... path PRESENT blob A0C91615... type 3 size 1869.
+M142 must show one DELETED edge; AUTHOR and COMMITTER SAME 1; SUBJECT and
+MESSAGE CHANGED 1; +3 author/committer deltas; zero lags; actor BLOBID
+78C41780430F464791E67533C261358D0FEB071E; child subject/message BLOBID
+6C1292461038798149F3636EE517BB6E4B35DAA5 and parent
+1A55B22C5ABB8A8609B3F828119988B04BF2BFAC. M141-M142 remain host-only until
+one combined real CMS wrapper gate.
+
