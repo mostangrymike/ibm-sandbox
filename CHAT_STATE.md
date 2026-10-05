@@ -5221,3 +5221,19 @@ Real CMS ran GIT/GITVREF M148/M148. `HISTORYFIRSTVERSIONS-REF-FULL` and `HISTORY
 M147 exactly matched the sealed expectation: STATUS MIXED; NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN NODES 0, OFFCHAIN EDGES 0, TRUNCATED 1; PRESENT 1, ABSENT 1, VERSIONS 1. VERSION 1 is `A0C91615ABA9689C365159205E8CBA26EF6E16F4`, COUNT 1, MINDEPTH 1, MAXDEPTH 1, TYPE 3 SIZE 1869. STEP 1 is node 1 depth 0 VERSION 0 STATE ABSENT; STEP 2 is node 2 depth 1 VERSION 1 STATE PRESENT with the same OID.
 
 M148 exactly matched the sealed expectation: PATH STATUS MIXED; CHANGE STATUS CHANGED; NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN 0/0, TRUNCATED 1; PRESENT 1, ABSENT 1, VERSIONS 1, RUNS 2, TRANSITIONS 1, CHANGES 1. RUN 1 is VERSION 0 / STATE ABSENT / one node at step 1 depth 0 commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`. RUN 2 is VERSION 1 / STATE PRESENT OID `A0C91615ABA9689C365159205E8CBA26EF6E16F4` type 3 size 1869 / one node at step 2 depth 1 commit `91913EA4028B795707AA67EDB1ED17A74D1B896E`. TRANSITION 1 is FROM RUN 1 TO RUN 2, EDGE 1 STATUS DELETED. M147-M148 are NATIVE CMS TARGET-PROVEN. Do not repeat this standalone gate.
+
+
+## M149-M150 current run/origin
+
+M148 is native CMS target-proven. M149 adds HISTORYFIRSTCURRENT-REF-FULL:
+authenticated current exact-state run, with state/version, OID metadata when
+present, observed run length, oldest/newest step/depth/commit, signed time
+spans, and BEGIN KNOWN/KIND = CHANGE, ROOT, or UNKNOWN. M150 adds
+HISTORYFIRSTORIGIN-REF-FULL: the same summary plus the authenticated event
+that began the current state. CHANGE origins emit one full M143-style edge;
+ROOT origins emit the root node; UNKNOWN truncated origins emit zero events.
+
+The sealed fixture expects current VERSION 0 ABSENT, one-node run at step/depth
+1/0, zero spans, BEGIN KNOWN 1 / KIND CHANGE / EDGE 1 DELETED, prior run 2
+VERSION 1 PRESENT A0C91615... type 3 size 1869. M150 then emits EVENTS 1 and
+the full authenticated edge-1 DELETED record. Wrapper-only; GITREC stays M132.
