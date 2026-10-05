@@ -5127,3 +5127,20 @@ autonomously with M143+ until the next genuine CMS validation boundary.
 ## M141-M142 CMS PASS
 
 Real CMS returned M142/M142. HISTORYFIRSTLOG-REF-FULL and HISTORYFIRSTREPORT-REF-FULL both passed on sealed commit 486ADAA5... at depth 1 for src/GITPBWALK.EXEC. The authenticated mainline remained 2 nodes/1 edge with child ABSENT and parent PRESENT blob A0C91615... type 3 size 1869. The report showed one DELETED edge, author/committer SAME, subject/message CHANGED, +3 second author/committer deltas and zero lags. Exact actor/subject/message BLOBIDs matched prior target proof. M141-M142 are NATIVE CMS TARGET-PROVEN.
+
+## M143-M144 authenticated first-parent search
+
+M141-M142 are native CMS target-proven. M143 adds
+`HISTORYFIRSTDIFFS-REF-FULL`, emitting only changed authenticated first-parent
+edges with complete M142 endpoint/chronology/actor/subject/message metadata.
+M144 adds `HISTORYFIRSTNEAREST-REF-FULL`, emitting only changed mainline
+edges at the nearest authenticated child depth. M143 fail-closes unless
+changed=ADDED+DELETED+MODIFIED and changed+unchanged=chain edges; M144 also
+requires emitted nearest matches to equal the precomputed nearest count.
+
+On the sealed 486AD... depth-1 deletion fixture, M143 should report one
+DELETED changed edge with nearest=farthest depth 0; M144 should report CHANGES
+1, DEPTH 0, MATCHES 1 and that same DELETED edge. Both remain wrapper-only;
+GITREC stays the M132 target-proven worker. M143-M144 are host-only pending one
+combined real CMS gate.
+
