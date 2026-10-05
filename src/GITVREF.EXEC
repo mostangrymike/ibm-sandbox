@@ -1,4 +1,4 @@
-/* M136: authenticated first-parent state transitions. */
+/* M137: authenticated first-parent chronology. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M136'
+ say 'GITVREF EXEC LEVEL M137'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -21,7 +21,8 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTBODIES' & command\='HISTTOPO' &,
    command\='HISTPARENTS' & command\='HISTSLOTS' &,
    command\='HISTROLES' & command\='HISTFIRST' &,
-   command\='HISTFCHG' & command\='HISTFTRANS' then do
+   command\='HISTFCHG' & command\='HISTFTRANS' &,
+   command\='HISTFCHRON' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -36,7 +37,8 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTBODIES' | command='HISTTOPO' |,
    command='HISTPARENTS' | command='HISTSLOTS' |,
    command='HISTROLES' | command='HISTFIRST' |,
-   command='HISTFCHG' | command='HISTFTRANS' then do
+   command='HISTFCHG' | command='HISTFTRANS' |,
+   command='HISTFCHRON' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -51,7 +53,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTTOPO' | command='HISTPARENTS' |,
    command='HISTSLOTS' | command='HISTROLES' |,
    command='HISTFIRST' | command='HISTFCHG' |,
-   command='HISTFTRANS' then do
+   command='HISTFTRANS' | command='HISTFCHRON' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -77,6 +79,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTFIRST' & depth+0>8 then exit 4
  if command='HISTFCHG' & depth+0>8 then exit 4
  if command='HISTFTRANS' & depth+0>8 then exit 4
+ if command='HISTFCHRON' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -87,7 +90,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTBODIES' | command='HISTTOPO' |,
    command='HISTPARENTS' | command='HISTSLOTS' |,
    command='HISTROLES' | command='HISTFIRST' |,
-   command='HISTFCHG' | command='HISTFTRANS' then do
+   command='HISTFCHG' | command='HISTFTRANS' |,
+   command='HISTFCHRON' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -124,7 +128,7 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTTOPO' | command='HISTPARENTS' |,
    command='HISTSLOTS' | command='HISTROLES' |,
    command='HISTFIRST' | command='HISTFCHG' |,
-   command='HISTFTRANS' then do
+   command='HISTFTRANS' | command='HISTFCHRON' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -162,7 +166,7 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTTOPO' | command='HISTPARENTS' |,
    command='HISTSLOTS' | command='HISTROLES' |,
    command='HISTFIRST' | command='HISTFCHG' |,
-   command='HISTFTRANS' then do
+   command='HISTFTRANS' | command='HISTFCHRON' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -235,6 +239,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTFTRANS' then do
   call statefirsttransitions
+  exit result
+ end
+ if command='HISTFCHRON' then do
+  call statefirstchron
   exit result
  end
  call statediff
@@ -2088,6 +2096,114 @@ statefirstparent:
  end
  say 'HISTORYFIRSTPARENT DATA END'
  return 0
+
+statefirstchron:
+ call buildfirstparent
+ if result\='OK' then return 8
+ fapos=0
+ fazero=0
+ faneg=0
+ fcpos=0
+ fczero=0
+ fcneg=0
+ flpos=0
+ flzero=0
+ flneg=0
+ haveedge=0
+ havenode=0
+ do fi=1 to fpcount
+  ni=fpnode.fi
+  lag=scommitwhen.ni-sauthorwhen.ni
+  if lag>0 then flpos=flpos+1
+  else if lag=0 then flzero=flzero+1
+  else flneg=flneg+1
+  if havenode=0 then do
+   flagmin=lag
+   flagmax=lag
+   havenode=1
+  end
+  else do
+   if lag<flagmin then flagmin=lag
+   if lag>flagmax then flagmax=lag
+  end
+ end
+ do fi=1 to chainedges
+  ec=fpnode.fi
+  fj=fi+1
+  ep=fpnode.fj
+  ad=sauthorwhen.ec-sauthorwhen.ep
+  cd=scommitwhen.ec-scommitwhen.ep
+  if ad>0 then fapos=fapos+1
+  else if ad=0 then fazero=fazero+1
+  else faneg=faneg+1
+  if cd>0 then fcpos=fcpos+1
+  else if cd=0 then fczero=fczero+1
+  else fcneg=fcneg+1
+  if haveedge=0 then do
+   fadmin=ad
+   fadmax=ad
+   fcdmin=cd
+   fcdmax=cd
+   haveedge=1
+  end
+  else do
+   if ad<fadmin then fadmin=ad
+   if ad>fadmax then fadmax=ad
+   if cd<fcdmin then fcdmin=cd
+   if cd>fcdmax then fcdmax=cd
+  end
+ end
+ if fapos+fazero+faneg\=chainedges then return 8
+ if fcpos+fczero+fcneg\=chainedges then return 8
+ if flpos+flzero+flneg\=fpcount then return 8
+ call emitverified
+ say 'HISTORYFIRSTCHRONOLOGY FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTCHRONOLOGY DATA BEGIN'
+ say 'HISTORYFIRSTCHRONOLOGY NODES' snodes
+ say 'HISTORYFIRSTCHRONOLOGY EDGES' sedgecount
+ say 'HISTORYFIRSTCHRONOLOGY CHAIN NODES' fpcount
+ say 'HISTORYFIRSTCHRONOLOGY CHAIN EDGES' chainedges
+ say 'HISTORYFIRSTCHRONOLOGY OFFCHAIN NODES' offnodes
+ say 'HISTORYFIRSTCHRONOLOGY OFFCHAIN EDGES' offedges
+ say 'HISTORYFIRSTCHRONOLOGY TRUNCATED' truncated
+ say 'HISTORYFIRSTCHRONOLOGY AUTHOR POSITIVE EDGES' fapos
+ say 'HISTORYFIRSTCHRONOLOGY AUTHOR ZERO EDGES' fazero
+ say 'HISTORYFIRSTCHRONOLOGY AUTHOR NEGATIVE EDGES' faneg
+ say 'HISTORYFIRSTCHRONOLOGY COMMITTER POSITIVE EDGES' fcpos
+ say 'HISTORYFIRSTCHRONOLOGY COMMITTER ZERO EDGES' fczero
+ say 'HISTORYFIRSTCHRONOLOGY COMMITTER NEGATIVE EDGES' fcneg
+ if haveedge then do
+  say 'HISTORYFIRSTCHRONOLOGY AUTHOR MIN DELTA SECONDS' fadmin
+  say 'HISTORYFIRSTCHRONOLOGY AUTHOR MAX DELTA SECONDS' fadmax
+  say 'HISTORYFIRSTCHRONOLOGY COMMITTER MIN DELTA SECONDS' fcdmin
+  say 'HISTORYFIRSTCHRONOLOGY COMMITTER MAX DELTA SECONDS' fcdmax
+ end
+ say 'HISTORYFIRSTCHRONOLOGY LAG POSITIVE NODES' flpos
+ say 'HISTORYFIRSTCHRONOLOGY LAG ZERO NODES' flzero
+ say 'HISTORYFIRSTCHRONOLOGY LAG NEGATIVE NODES' flneg
+ if havenode then do
+  say 'HISTORYFIRSTCHRONOLOGY LAG MIN SECONDS' flagmin
+  say 'HISTORYFIRSTCHRONOLOGY LAG MAX SECONDS' flagmax
+ end
+ do fi=1 to chainedges
+  ec=fpnode.fi
+  fj=fi+1
+  ep=fpnode.fj
+  ad=sauthorwhen.ec-sauthorwhen.ep
+  cd=scommitwhen.ec-scommitwhen.ep
+  say 'HISTORYFIRSTCHRONOLOGY EDGE' fi 'CHILD' ec 'PARENT' ep
+  say 'HISTORYFIRSTCHRONOLOGY EDGE' fi 'AUTHOR DELTA SECONDS' ad
+  say 'HISTORYFIRSTCHRONOLOGY EDGE' fi,
+      'COMMITTER DELTA SECONDS' cd
+ end
+ do fi=1 to fpcount
+  ni=fpnode.fi
+  lag=scommitwhen.ni-sauthorwhen.ni
+  say 'HISTORYFIRSTCHRONOLOGY NODE' ni 'LAG SECONDS' lag
+ end
+ say 'HISTORYFIRSTCHRONOLOGY DATA END'
+ return 0
+
 
 statefirsttransitions:
  call stateversions
