@@ -1402,3 +1402,9 @@ A0C91615ABA9689C365159205E8CBA26EF6E16F4 type 3 size 1869, one node at
 step 2/depth 1/commit 91913... . TRANSITION 1 is FROM RUN 1 TO RUN 2,
 EDGE 1 STATUS DELETED. M147-M148 are wrapper-only; GITREC remains the M132
 target-proven worker and no protected data changes.
+
+## 2026-10-05 M147-M148 MERGED; CMS GATE NEXT
+
+PR #103 passed native-stage run 37362935282 and squash-merged as `59c513d84bbf51f051aad5df28d2526db2bd1ac5`. PR head `27de21ba8bbe92f97c50afe4242f3f9f02f40a5b` and the merge commit share the exact tree `c6ed9e6912de86dd747892e31b7b00436ffef4dc`, so merged content is the byte-identical tree that passed the full host suite. Post-merge run 37363077634 was scheduler-queued at this checkpoint. M147-M148 are host/CI proven on the exact merged tree, wrapper-only, with native GITREC still M132. Handshake is M148/M148.
+
+Next CMS gate: upload only GITVREF.EXEC and GIT.EXEC, then run `HISTORYFIRSTVERSIONS-REF-FULL` and `HISTORYFIRSTLIFETIME-REF-FULL` on sealed commit 486ADAA5B02080720F4B329C6F68550B13C6AA87, depth 1, path src/GITPBWALK.EXEC. M147 should report MIXED, PRESENT 1, ABSENT 1, VERSIONS 1; version 1 is A0C91615ABA9689C365159205E8CBA26EF6E16F4 count 1 depth 1 type 3 size 1869; step 1 version 0 ABSENT and step 2 version 1 PRESENT. M148 should report PATH STATUS MIXED, CHANGE STATUS CHANGED, RUNS 2, TRANSITIONS 1, CHANGES 1; run 1 is ABSENT at step/depth 1/0, run 2 is PRESENT version 1 at step/depth 2/1, and transition 1 is edge 1 DELETED. No CMSCLNK or GITRUN.
