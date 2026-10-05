@@ -1302,3 +1302,7 @@ SAME, subject/message statuses CHANGED, +3 second author/committer deltas and
 zero lags. M143-M144 are HOST/NATIVE-STAGE CI PROVEN but not real CMS
 target-proven until this combined gate passes.
 
+
+## 2026-10-05 M143 REAL CMS TARGET PASS
+
+Real CMS ran GIT/GITVREF M144/M144 and `HISTORYFIRSTDIFFS-REF-FULL` on sealed commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`, depth 1, path `src/GITPBWALK.EXEC`. It returned RC0 after full-snapshot verification. Summary exactly matched the sealed fixture: STATUS CHANGED; NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN NODES 0, OFFCHAIN EDGES 0, TRUNCATED 1; CHANGED EDGES 1, ADDED 0, DELETED 1, MODIFIED 0, UNCHANGED 0; nearest and farthest change depth 0; nearest changes 1. The sole emitted change was chain edge 1 STATUS DELETED, child ABSENT / parent PRESENT blob `A0C91615ABA9689C365159205E8CBA26EF6E16F4` type 3 size 1869, author and committer SAME, subject and message CHANGED, +3 second author/committer deltas, zero lags, and exact previously target-proven actor/subject/message metadata. The pasted PARENTTREE line visually split before its final two hex digits, but the authenticated command completed through DATA END with RC0 and all surrounding metadata matched. M143 is NATIVE CMS TARGET-PROVEN. M144 nearest-change remains the current real CMS validation boundary.
