@@ -22,6 +22,8 @@ on:
       - 'src/GITREF2.REPO'
       - 'src/GIT.EXEC'
       - 'tests/check-verified-ref.sh'
+      - 'src/M155CHK.EXEC'
+      - 'tests/check-m155-compact.sh'
       - 'tests/check-readonly-gitrchk.sh'
       - 'scripts/backup-offline-dasd.sh'
       - 'scripts/inspect-hercules-config.sh'
@@ -56,6 +58,8 @@ on:
       - 'src/GITREF2.REPO'
       - 'src/GIT.EXEC'
       - 'tests/check-verified-ref.sh'
+      - 'src/M155CHK.EXEC'
+      - 'tests/check-m155-compact.sh'
       - 'tests/check-readonly-gitrchk.sh'
       - 'scripts/backup-offline-dasd.sh'
       - 'scripts/inspect-hercules-config.sh'
@@ -85,6 +89,8 @@ jobs:
         run: sh tests/check-readonly-gitrchk.sh
       - name: Check verified modern REF2 read-only bridge
         run: sh tests/check-verified-ref.sh
+      - name: Check compact CMS target gate source
+        run: sh tests/check-m155-compact.sh
       - name: Check neutral compiler EXEC source and F-disk setup
         run: sh tests/check-cmsclnk-source.sh
       - name: Reject native-text Git object headers in CMS C source
