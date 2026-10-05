@@ -43,4 +43,4 @@ M157 AGE PASS ABSENT EDGE 6 DELETED 268/268
 M157 COMPACT TARGET GATE PASS
 ```
 
-followed by plain `Ready;`.
+followed by plain `Ready;`. The checker accepts any synchronized GIT/GITVREF level M157 or newer.
