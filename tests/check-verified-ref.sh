@@ -509,4 +509,4 @@ awk 'length($0)>80 {print "FAIL: GITVREF record >80 columns:", NR; bad=1}
      END {exit bad}' "$v"
 awk 'length($0)>80 {print "FAIL: GITREF2 record >80 columns:", NR; bad=1}
      END {exit bad}' "$r"
-echo "M144 AUTHENTICATED FIRST LOG/REPORT GUARDS PASSED"
+echo "M144 AUTHENTICATED FIRST DIFF/NEAREST GUARDS PASSED"
