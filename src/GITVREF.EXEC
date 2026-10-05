@@ -1,4 +1,4 @@
-/* M142: authenticated first-parent log and consolidated report. */
+/* M144: authenticated first-parent diffs and nearest change. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M142'
+ say 'GITVREF EXEC LEVEL M144'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -24,7 +24,8 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTFCHG' & command\='HISTFTRANS' &,
    command\='HISTFCHRON' & command\='HISTFACTORS' &,
    command\='HISTFSUBJ' & command\='HISTFBODY' &,
-   command\='HISTFLOG' & command\='HISTFREPORT' then do
+   command\='HISTFLOG' & command\='HISTFREPORT' &,
+   command\='HISTFDIF' & command\='HISTFNEAR' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -42,7 +43,8 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTFCHG' | command='HISTFTRANS' |,
    command='HISTFCHRON' | command='HISTFACTORS' |,
    command='HISTFSUBJ' | command='HISTFBODY' |,
-   command='HISTFLOG' | command='HISTFREPORT' then do
+   command='HISTFLOG' | command='HISTFREPORT' |,
+   command='HISTFDIF' | command='HISTFNEAR' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -60,7 +62,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFTRANS' | command='HISTFCHRON' |,
    command='HISTFACTORS' | command='HISTFSUBJ' |,
    command='HISTFBODY' | command='HISTFLOG' |,
-   command='HISTFREPORT' then do
+   command='HISTFREPORT' | command='HISTFDIF' |,
+   command='HISTFNEAR' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -92,6 +95,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTFBODY' & depth+0>8 then exit 4
  if command='HISTFLOG' & depth+0>8 then exit 4
  if command='HISTFREPORT' & depth+0>8 then exit 4
+ if command='HISTFDIF' & depth+0>8 then exit 4
+ if command='HISTFNEAR' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -105,7 +110,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFCHG' | command='HISTFTRANS' |,
    command='HISTFCHRON' | command='HISTFACTORS' |,
    command='HISTFSUBJ' | command='HISTFBODY' |,
-   command='HISTFLOG' | command='HISTFREPORT' then do
+   command='HISTFLOG' | command='HISTFREPORT' |,
+   command='HISTFDIF' | command='HISTFNEAR' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -145,7 +151,8 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFTRANS' | command='HISTFCHRON' |,
    command='HISTFACTORS' | command='HISTFSUBJ' |,
    command='HISTFBODY' | command='HISTFLOG' |,
-   command='HISTFREPORT' then do
+   command='HISTFREPORT' | command='HISTFDIF' |,
+   command='HISTFNEAR' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -186,7 +193,8 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFTRANS' | command='HISTFCHRON' |,
    command='HISTFACTORS' | command='HISTFSUBJ' |,
    command='HISTFBODY' | command='HISTFLOG' |,
-   command='HISTFREPORT' then do
+   command='HISTFREPORT' | command='HISTFDIF' |,
+   command='HISTFNEAR' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -283,6 +291,14 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTFREPORT' then do
   call statefirstreport
+  exit result
+ end
+ if command='HISTFDIF' then do
+  call statefirstdiffs
+  exit result
+ end
+ if command='HISTFNEAR' then do
+  call statefirstnearest
   exit result
  end
  call statediff
@@ -2138,6 +2154,175 @@ statefirstparent:
  return 0
 
 
+
+
+
+preparefirstdiffs:
+ call buildfirstparent
+ if result\='OK' then return 'ERROR'
+ drop fdstatus.
+ fdadd=0
+ fddelete=0
+ fdmodify=0
+ fdunchanged=0
+ fdchanged=0
+ fdmin=9
+ fdmax=-1
+ fdnear=0
+ do fi=1 to chainedges
+  ec=fpnode.fi
+  fj=fi+1
+  ep=fpnode.fj
+  cp=spresent.ec
+  pp=spresent.ep
+  if cp=1 & pp=1 then do
+   if soid.ec=soid.ep then fdstatus.fi='UNCHANGED'
+   else fdstatus.fi='MODIFIED'
+  end
+  else if cp=1 & pp=0 then fdstatus.fi='ADDED'
+  else if cp=0 & pp=1 then fdstatus.fi='DELETED'
+  else fdstatus.fi='UNCHANGED'
+  if fdstatus.fi='ADDED' then fdadd=fdadd+1
+  else if fdstatus.fi='DELETED' then fddelete=fddelete+1
+  else if fdstatus.fi='MODIFIED' then fdmodify=fdmodify+1
+  else fdunchanged=fdunchanged+1
+  if fdstatus.fi\='UNCHANGED' then do
+   fdchanged=fdchanged+1
+   d=sdepth.ec
+   if d<fdmin then do
+    fdmin=d
+    fdnear=1
+   end
+   else if d=fdmin then fdnear=fdnear+1
+   if d>fdmax then fdmax=d
+  end
+ end
+ if fdadd+fddelete+fdmodify+fdunchanged\=chainedges then,
+  return 'ERROR'
+ if fdchanged\=fdadd+fddelete+fdmodify then return 'ERROR'
+ if fdchanged+fdunchanged\=chainedges then return 'ERROR'
+ if fdchanged=0 then do
+  fdmin=-1
+  fdmax=-1
+  fdnear=0
+  fdoverall='UNCHANGED'
+ end
+ else do
+  if fdmin<0 | fdmin>8 | fdmax<fdmin | fdmax>8 then,
+   return 'ERROR'
+  if fdnear<1 | fdnear>fdchanged then return 'ERROR'
+  fdoverall='CHANGED'
+ end
+ return 'OK'
+
+
+emitfirstchange:
+ parse arg kind,record,num,fi
+ ec=fpnode.fi
+ fj=fi+1
+ ep=fpnode.fj
+ say kind record num 'EDGE' fi 'STATUS' fdstatus.fi
+ say kind record num 'CHILD' ec 'PARENT' ep
+ say kind record num 'CHILDDEPTH' sdepth.ec,
+     'PARENTDEPTH' sdepth.ep
+ say kind record num 'CHILDCOMMIT' scommit.ec
+ say kind record num 'PARENTCOMMIT' scommit.ep
+ say kind record num 'CHILDTREE' stree.ec
+ say kind record num 'PARENTTREE' stree.ep
+ if spresent.ec=1 then cs='PRESENT'
+ else cs='ABSENT'
+ if spresent.ep=1 then ps='PRESENT'
+ else ps='ABSENT'
+ say kind record num 'CHILDSTATE' cs 'PARENTSTATE' ps
+ if spresent.ec=1 then do
+  say kind record num 'CHILDOID' soid.ec
+  say kind record num 'CHILDTYPE' stype.ec 'SIZE' ssize.ec
+ end
+ if spresent.ep=1 then do
+  say kind record num 'PARENTOID' soid.ep
+  say kind record num 'PARENTTYPE' stype.ep 'SIZE' ssize.ep
+ end
+ if saidentid.ec=saidentid.ep then ast='SAME'
+ else ast='CHANGED'
+ if scidentid.ec=scidentid.ep then cst='SAME'
+ else cst='CHANGED'
+ if ssubid.ec=ssubid.ep then sst='SAME'
+ else sst='CHANGED'
+ if smsgid.ec=smsgid.ep then mst='SAME'
+ else mst='CHANGED'
+ say kind record num 'AUTHOR STATUS' ast
+ say kind record num 'COMMITTER STATUS' cst
+ say kind record num 'SUBJECT STATUS' sst
+ say kind record num 'MESSAGE STATUS' mst
+ call emitpairchron kind,record,num,ec,ep
+ return
+
+
+statefirstdiffs:
+ call preparefirstdiffs
+ if result\='OK' then return 8
+ call emitverified
+ say 'HISTORYFIRSTDIFFS FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTDIFFS DATA BEGIN'
+ say 'HISTORYFIRSTDIFFS STATUS' fdoverall
+ say 'HISTORYFIRSTDIFFS NODES' snodes
+ say 'HISTORYFIRSTDIFFS EDGES' sedgecount
+ say 'HISTORYFIRSTDIFFS CHAIN NODES' fpcount
+ say 'HISTORYFIRSTDIFFS CHAIN EDGES' chainedges
+ say 'HISTORYFIRSTDIFFS OFFCHAIN NODES' offnodes
+ say 'HISTORYFIRSTDIFFS OFFCHAIN EDGES' offedges
+ say 'HISTORYFIRSTDIFFS TRUNCATED' truncated
+ say 'HISTORYFIRSTDIFFS CHANGED EDGES' fdchanged
+ say 'HISTORYFIRSTDIFFS ADDED EDGES' fdadd
+ say 'HISTORYFIRSTDIFFS DELETED EDGES' fddelete
+ say 'HISTORYFIRSTDIFFS MODIFIED EDGES' fdmodify
+ say 'HISTORYFIRSTDIFFS UNCHANGED EDGES' fdunchanged
+ if fdchanged>0 then do
+  say 'HISTORYFIRSTDIFFS NEAREST CHANGE DEPTH' fdmin
+  say 'HISTORYFIRSTDIFFS FARTHEST CHANGE DEPTH' fdmax
+  say 'HISTORYFIRSTDIFFS NEAREST CHANGES' fdnear
+ end
+ change=0
+ do fi=1 to chainedges
+  if fdstatus.fi='UNCHANGED' then iterate
+  change=change+1
+  call emitfirstchange 'HISTORYFIRSTDIFFS','CHANGE',change,fi
+ end
+ if change\=fdchanged then return 8
+ say 'HISTORYFIRSTDIFFS DATA END'
+ return 0
+
+
+statefirstnearest:
+ call preparefirstdiffs
+ if result\='OK' then return 8
+ call emitverified
+ say 'HISTORYFIRSTNEAREST FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTNEAREST DATA BEGIN'
+ say 'HISTORYFIRSTNEAREST STATUS' fdoverall
+ say 'HISTORYFIRSTNEAREST NODES' snodes
+ say 'HISTORYFIRSTNEAREST EDGES' sedgecount
+ say 'HISTORYFIRSTNEAREST CHAIN NODES' fpcount
+ say 'HISTORYFIRSTNEAREST CHAIN EDGES' chainedges
+ say 'HISTORYFIRSTNEAREST OFFCHAIN NODES' offnodes
+ say 'HISTORYFIRSTNEAREST OFFCHAIN EDGES' offedges
+ say 'HISTORYFIRSTNEAREST TRUNCATED' truncated
+ say 'HISTORYFIRSTNEAREST CHANGES' fdchanged
+ if fdchanged>0 then do
+  say 'HISTORYFIRSTNEAREST DEPTH' fdmin
+  say 'HISTORYFIRSTNEAREST MATCHES' fdnear
+  match=0
+  do fi=1 to chainedges
+   if fdstatus.fi='UNCHANGED' then iterate
+   ec=fpnode.fi
+   if sdepth.ec\=fdmin then iterate
+   match=match+1
+   call emitfirstchange 'HISTORYFIRSTNEAREST','CHANGE',match,fi
+  end
+  if match\=fdnear then return 8
+ end
+ say 'HISTORYFIRSTNEAREST DATA END'
+ return 0
 
 statefirstlog:
  call buildfirstparent
