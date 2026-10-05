@@ -1,4 +1,4 @@
-/* M131: authenticated ordered parent metadata. */
+/* M132: authenticated followed parent slot mapping. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M131'
+ say 'GITVREF EXEC LEVEL M132'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -19,7 +19,7 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTBOUNDS' & command\='HISTCHRON' &,
    command\='HISTACTORS' & command\='HISTSUBJECTS' &,
    command\='HISTBODIES' & command\='HISTTOPO' &,
-   command\='HISTPARENTS' then do
+   command\='HISTPARENTS' & command\='HISTSLOTS' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -32,7 +32,7 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTBOUNDS' | command='HISTCHRON' |,
    command='HISTACTORS' | command='HISTSUBJECTS' |,
    command='HISTBODIES' | command='HISTTOPO' |,
-   command='HISTPARENTS' then do
+   command='HISTPARENTS' | command='HISTSLOTS' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -44,7 +44,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTREPORT' | command='HISTBOUNDS' |,
    command='HISTCHRON' | command='HISTACTORS' |,
    command='HISTSUBJECTS' | command='HISTBODIES' |,
-   command='HISTTOPO' | command='HISTPARENTS' then do
+   command='HISTTOPO' | command='HISTPARENTS' |,
+   command='HISTSLOTS' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -65,6 +66,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTBODIES' & depth+0>8 then exit 4
  if command='HISTTOPO' & depth+0>8 then exit 4
  if command='HISTPARENTS' & depth+0>8 then exit 4
+ if command='HISTSLOTS' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -73,7 +75,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
     command='HISTBOUNDS' | command='HISTCHRON' |,
     command='HISTACTORS' | command='HISTSUBJECTS' |,
    command='HISTBODIES' | command='HISTTOPO' |,
-   command='HISTPARENTS' then do
+   command='HISTPARENTS' | command='HISTSLOTS' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -107,7 +109,8 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
         command='HISTREPORT' | command='HISTBOUNDS' |,
         command='HISTCHRON' | command='HISTACTORS' |,
    command='HISTSUBJECTS' | command='HISTBODIES' |,
-   command='HISTTOPO' | command='HISTPARENTS' then do
+   command='HISTTOPO' | command='HISTPARENTS' |,
+   command='HISTSLOTS' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -142,7 +145,8 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTREPORT' | command='HISTBOUNDS' |,
    command='HISTCHRON' | command='HISTACTORS' |,
    command='HISTSUBJECTS' | command='HISTBODIES' |,
-   command='HISTTOPO' | command='HISTPARENTS' then do
+   command='HISTTOPO' | command='HISTPARENTS' |,
+   command='HISTSLOTS' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -195,6 +199,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTPARENTS' then do
   call stateparents
+  exit result
+ end
+ if command='HISTSLOTS' then do
+  call stateparentslots
   exit result
  end
  call statediff
@@ -414,6 +422,8 @@ statecheck:
  snodes=-1
  sedges=-1
  sedgecount=0
+ sslots=-1
+ sslotcount=0
  drop spresent. soid. stype. ssize. scommit. stree. sdepth.
  drop sparents. suniqueparents. soutedges.
  drop sfirstparent. sparentseqid. sfirstnode.
@@ -423,6 +433,8 @@ statecheck:
  drop scidentbytes. scidentprefix. scidenthex. scidentid.
  drop ssubbytes. ssubprefix. ssubhex. ssubid.
  drop sedgechild. sedgeparent. sedgekey. sparentseen.
+ drop sslotchild. sslotord. sslotparent. sslotkey.
+ drop sslotnodecount. sslotdistinct. sslotparentseen.
  drop sseencommit.
  curnode=-1
  curdepth=-1
@@ -784,6 +796,36 @@ statecheck:
    sedgeparent.sedgecount=ep
    sparentseen.ep=1
   end
+  else if words(out.ci)=8 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='SLOT' then do
+   if word(out.ci,3)\='CHILD' | word(out.ci,5)\='ORDINAL' |,
+      word(out.ci,7)\='PARENT' then return 'ERROR'
+   sc=word(out.ci,4)
+   so=word(out.ci,6)
+   sp=word(out.ci,8)
+   if datatype(sc,'W')\=1 | datatype(so,'W')\=1 |,
+      datatype(sp,'W')\=1 then return 'ERROR'
+   if sc<1 | sp<1 | sc>parsednodes | sp>parsednodes then,
+    return 'ERROR'
+   if so<1 | so>sparents.sc then return 'ERROR'
+   if sdepth.sc>=depth then return 'ERROR'
+   if sc=sp | sedgekey.sc.sp\=1 then return 'ERROR'
+   if sslotkey.sc.so=1 then return 'ERROR'
+   sslotkey.sc.so=1
+   sslotcount=sslotcount+1
+   sslotchild.sslotcount=sc
+   sslotord.sslotcount=so
+   sslotparent.sslotcount=sp
+  end
+  else if words(out.ci)=3 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='SLOTS' then do
+   if sslots\=-1 then return 'ERROR'
+   sslots=word(out.ci,3)
+   if datatype(sslots,'W')\=1 | sslots<0 then return 'ERROR'
+   if sslots\=sslotcount then return 'ERROR'
+  end
   else if words(out.ci)=3 &,
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='EDGES' then do
@@ -810,6 +852,7 @@ statecheck:
     havesubmeta=0 | havesubhex=0 | havesubid=0 then,
     return 'ERROR'
  if snodes\=parsednodes | sedges\=sedgecount then return 'ERROR'
+ if sslots\=sslotcount then return 'ERROR'
  if sparentseen.1=1 then return 'ERROR'
  do ni=1 to snodes
   if datatype(sparents.ni,'W')\=1 | sparents.ni<0 then,
@@ -871,9 +914,24 @@ statecheck:
   soutedges.ec=soutedges.ec+1
  end
  do ni=1 to snodes
+  sslotnodecount.ni=0
+  sslotdistinct.ni=0
+ end
+ do si=1 to sslotcount
+  sc=sslotchild.si
+  sp=sslotparent.si
+  sslotnodecount.sc=sslotnodecount.sc+1
+  if sslotparentseen.sc.sp\=1 then do
+   sslotparentseen.sc.sp=1
+   sslotdistinct.sc=sslotdistinct.sc+1
+  end
+ end
+ do ni=1 to snodes
   sfirstnode.ni=0
   if sdepth.ni<depth then do
    if soutedges.ni\=suniqueparents.ni then return 'ERROR'
+   if sslotnodecount.ni\=sparents.ni then return 'ERROR'
+   if sslotdistinct.ni\=suniqueparents.ni then return 'ERROR'
    if sparents.ni>0 then do
     firstmatches=0
     do ei=1 to sedgecount
@@ -886,9 +944,19 @@ statecheck:
      end
     end
     if firstmatches\=1 then return 'ERROR'
+    if sslotkey.ni.1\=1 then return 'ERROR'
+    slotone=0
+    do si=1 to sslotcount
+     if sslotchild.si=ni & sslotord.si=1 then,
+      slotone=sslotparent.si
+    end
+    if slotone\=sfirstnode.ni then return 'ERROR'
    end
   end
-  else if soutedges.ni\=0 then return 'ERROR'
+  else do
+   if soutedges.ni\=0 then return 'ERROR'
+   if sslotnodecount.ni\=0 then return 'ERROR'
+  end
  end
  return 'OK'
 
@@ -1930,6 +1998,32 @@ emitverified:
  if reskind='COMMIT' then say 'VERIFIED COMMIT' oid
  else say 'VERIFIED REF' spec oid
  return
+
+stateparentslots:
+ duplicate=sslotcount-sedgecount
+ if duplicate<0 then return 8
+ boundaryomit=0
+ do ni=1 to snodes
+  if sdepth.ni=depth then boundaryomit=boundaryomit+sparents.ni
+ end
+ call emitverified
+ say 'HISTORYPARENTSLOTS FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYPARENTSLOTS DATA BEGIN'
+ say 'HISTORYPARENTSLOTS NODES' snodes
+ say 'HISTORYPARENTSLOTS EDGES' sedgecount
+ say 'HISTORYPARENTSLOTS SLOTS' sslotcount
+ say 'HISTORYPARENTSLOTS DUPLICATE SLOTS' duplicate
+ say 'HISTORYPARENTSLOTS BOUNDARY SLOTS OMITTED' boundaryomit
+ do ni=1 to snodes
+  say 'HISTORYPARENTSLOTS NODE' ni 'COMMIT' scommit.ni
+ end
+ do si=1 to sslotcount
+  say 'HISTORYPARENTSLOTS SLOT' si 'CHILD' sslotchild.si,
+      'ORDINAL' sslotord.si 'PARENT' sslotparent.si
+ end
+ say 'HISTORYPARENTSLOTS DATA END'
+ return 0
+
 
 stateparents:
  roots=0
