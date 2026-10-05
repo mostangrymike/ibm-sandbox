@@ -5282,3 +5282,20 @@ PR #105 fixed the CMS REXX argument-continuation defect by changing the `emitfir
 After the single-record CALL fix, real CMS reran `HISTORYFIRSTORIGIN-REF-FULL` on sealed commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`, depth 1, path `src/GITPBWALK.EXEC`, under GIT/GITVREF M150/M150. Full-snapshot verification passed and the command completed RC0 through DATA END. The current-run summary matched M149 exactly: PATH STATUS MIXED; CHANGE STATUS CHANGED; NODES 2, EDGES 1, CHAIN 2/1, OFFCHAIN 0/0, TRUNCATED 1, RUNS 2, TRANSITIONS 1, CHANGES 1; CURRENT RUN 1 VERSION 0 NODES 1 STATE ABSENT; newest=oldest step 1 depth 0 commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`; author/committer spans 0; BEGIN KNOWN 1 / KIND CHANGE / EDGE 1 STATUS DELETED; PRIOR RUN 2 VERSION 1 STATE PRESENT OID `A0C91615ABA9689C365159205E8CBA26EF6E16F4` TYPE 3 SIZE 1869.
 
 M150 then emitted EVENTS 1 and EVENT 1 CURRENT RUN 1 PRIOR RUN 2, followed by the full authenticated edge record: EDGE 1 STATUS DELETED, child 1/parent 2, depths 0/1, child commit 486AD..., parent commit 91913EA4..., child tree 909B1D31..., parent tree AE65405C..., child ABSENT / parent PRESENT OID A0C91615... type 3 size 1869; AUTHOR SAME, COMMITTER SAME, SUBJECT CHANGED, MESSAGE CHANGED; +3 second author/committer deltas; zero lags; shared actor BLOBID 78C41780...; child subject/message BLOBID 6C129246...; parent subject/message BLOBID 1A55B22C.... M150 is NATIVE CMS TARGET-PROVEN. The previous Error 41 is closed by the merged single-record CALL fix and its regression guard.
+
+
+## M151-M152 presence intervals/current-presence origin
+
+M150 is native CMS target-proven. M151 adds
+HISTORYFIRSTPRESENCE-REF-FULL, grouping the authenticated first-parent chain
+by path existence rather than exact OID. MODIFIED edges stay inside one
+PRESENT presence run; only ADDED/DELETED split presence runs. It fail-closes
+unless presence nodes cover the chain, exact runs reconcile to M148, presence
+boundaries reconcile to ADDED+DELETED, and EXACT RUNS-PRESENCE RUNS equals
+MODIFIED edges.
+
+M152 adds HISTORYFIRSTPRESENCEORIGIN-REF-FULL: current continuous
+presence/absence interval plus its authenticated ADDED/DELETED/ROOT origin.
+The sealed fixture expects two one-node presence runs, ABSENT then PRESENT,
+one DELETED transition, current ABSENT presence run at step/depth 1/0, and
+one full edge-1 DELETED origin event. Wrapper-only; GITREC remains M132.
