@@ -1,4 +1,4 @@
-/* M137: authenticated first-parent chronology. */
+/* M138: authenticated first-parent actor handoffs. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M137'
+ say 'GITVREF EXEC LEVEL M138'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -38,7 +38,7 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTPARENTS' | command='HISTSLOTS' |,
    command='HISTROLES' | command='HISTFIRST' |,
    command='HISTFCHG' | command='HISTFTRANS' |,
-   command='HISTFCHRON' then do
+   command='HISTFCHRON' | command='HISTFACTORS' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -53,7 +53,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTTOPO' | command='HISTPARENTS' |,
    command='HISTSLOTS' | command='HISTROLES' |,
    command='HISTFIRST' | command='HISTFCHG' |,
-   command='HISTFTRANS' | command='HISTFCHRON' then do
+   command='HISTFTRANS' | command='HISTFCHRON' |,
+   command='HISTFACTORS' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -80,6 +81,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTFCHG' & depth+0>8 then exit 4
  if command='HISTFTRANS' & depth+0>8 then exit 4
  if command='HISTFCHRON' & depth+0>8 then exit 4
+ if command='HISTFACTORS' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -91,7 +93,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTPARENTS' | command='HISTSLOTS' |,
    command='HISTROLES' | command='HISTFIRST' |,
    command='HISTFCHG' | command='HISTFTRANS' |,
-   command='HISTFCHRON' then do
+   command='HISTFCHRON' | command='HISTFACTORS' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -128,7 +130,8 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTTOPO' | command='HISTPARENTS' |,
    command='HISTSLOTS' | command='HISTROLES' |,
    command='HISTFIRST' | command='HISTFCHG' |,
-   command='HISTFTRANS' | command='HISTFCHRON' then do
+   command='HISTFTRANS' | command='HISTFCHRON' |,
+   command='HISTFACTORS' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -166,7 +169,8 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTTOPO' | command='HISTPARENTS' |,
    command='HISTSLOTS' | command='HISTROLES' |,
    command='HISTFIRST' | command='HISTFCHG' |,
-   command='HISTFTRANS' | command='HISTFCHRON' then do
+   command='HISTFTRANS' | command='HISTFCHRON' |,
+   command='HISTFACTORS' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -243,6 +247,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTFCHRON' then do
   call statefirstchron
+  exit result
+ end
+ if command='HISTFACTORS' then do
+  call statefirstactors
   exit result
  end
  call statediff
@@ -2096,6 +2104,133 @@ statefirstparent:
  end
  say 'HISTORYFIRSTPARENT DATA END'
  return 0
+
+statefirstactors:
+ call buildfirstparent
+ if result\='OK' then return 8
+ drop fanum. fachild. faparent. facount. fastatus.
+ drop fcnum. fcchild. fcparent. fccount. fcstatus.
+ fahandoffs=0
+ fchandoffs=0
+ fatotal=0
+ fctotal=0
+ fasame=0
+ fachanged=0
+ fcsame=0
+ fcchanged=0
+ fachangedpairs=0
+ fcchangedpairs=0
+ do fi=1 to chainedges
+  ec=fpnode.fi
+  fj=fi+1
+  ep=fpnode.fj
+  ca=saidentid.ec
+  pa=saidentid.ep
+  ck=ca||'.'||pa
+  hi=fanum.ck
+  if datatype(hi,'W')\=1 then do
+   fahandoffs=fahandoffs+1
+   hi=fahandoffs
+   fanum.ck=hi
+   fachild.hi=ca
+   faparent.hi=pa
+   facount.hi=0
+   if ca=pa then fastatus.hi='SAME'
+   else do
+    fastatus.hi='CHANGED'
+    fachangedpairs=fachangedpairs+1
+   end
+  end
+  facount.hi=facount.hi+1
+  if fastatus.hi='SAME' then fasame=fasame+1
+  else fachanged=fachanged+1
+
+  cc=scidentid.ec
+  pc=scidentid.ep
+  ck=cc||'.'||pc
+  hi=fcnum.ck
+  if datatype(hi,'W')\=1 then do
+   fchandoffs=fchandoffs+1
+   hi=fchandoffs
+   fcnum.ck=hi
+   fcchild.hi=cc
+   fcparent.hi=pc
+   fccount.hi=0
+   if cc=pc then fcstatus.hi='SAME'
+   else do
+    fcstatus.hi='CHANGED'
+    fcchangedpairs=fcchangedpairs+1
+   end
+  end
+  fccount.hi=fccount.hi+1
+  if fcstatus.hi='SAME' then fcsame=fcsame+1
+  else fcchanged=fcchanged+1
+ end
+ do hi=1 to fahandoffs
+  fatotal=fatotal+facount.hi
+ end
+ do hi=1 to fchandoffs
+  fctotal=fctotal+fccount.hi
+ end
+ if fatotal\=chainedges | fctotal\=chainedges then return 8
+ if fasame+fachanged\=chainedges then return 8
+ if fcsame+fcchanged\=chainedges then return 8
+ if chainedges>0 & (fahandoffs<1 | fchandoffs<1) then return 8
+ call emitverified
+ say 'HISTORYFIRSTACTORS FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTACTORS DATA BEGIN'
+ say 'HISTORYFIRSTACTORS NODES' snodes
+ say 'HISTORYFIRSTACTORS EDGES' sedgecount
+ say 'HISTORYFIRSTACTORS CHAIN NODES' fpcount
+ say 'HISTORYFIRSTACTORS CHAIN EDGES' chainedges
+ say 'HISTORYFIRSTACTORS OFFCHAIN NODES' offnodes
+ say 'HISTORYFIRSTACTORS OFFCHAIN EDGES' offedges
+ say 'HISTORYFIRSTACTORS TRUNCATED' truncated
+ say 'HISTORYFIRSTACTORS AUTHOR SAME EDGES' fasame
+ say 'HISTORYFIRSTACTORS AUTHOR CHANGED EDGES' fachanged
+ say 'HISTORYFIRSTACTORS COMMITTER SAME EDGES' fcsame
+ say 'HISTORYFIRSTACTORS COMMITTER CHANGED EDGES' fcchanged
+ say 'HISTORYFIRSTACTORS AUTHOR HANDOFFS' fahandoffs
+ say 'HISTORYFIRSTACTORS AUTHOR CHANGED HANDOFFS' fachangedpairs
+ do hi=1 to fahandoffs
+  say 'HISTORYFIRSTACTORS AUTHOR HANDOFF' hi,
+      'CHILD BLOBID' fachild.hi
+  say 'HISTORYFIRSTACTORS AUTHOR HANDOFF' hi,
+      'PARENT BLOBID' faparent.hi
+  say 'HISTORYFIRSTACTORS AUTHOR HANDOFF' hi,
+      'COUNT' facount.hi 'STATUS' fastatus.hi
+ end
+ say 'HISTORYFIRSTACTORS COMMITTER HANDOFFS' fchandoffs
+ say 'HISTORYFIRSTACTORS COMMITTER CHANGED HANDOFFS' fcchangedpairs
+ do hi=1 to fchandoffs
+  say 'HISTORYFIRSTACTORS COMMITTER HANDOFF' hi,
+      'CHILD BLOBID' fcchild.hi
+  say 'HISTORYFIRSTACTORS COMMITTER HANDOFF' hi,
+      'PARENT BLOBID' fcparent.hi
+  say 'HISTORYFIRSTACTORS COMMITTER HANDOFF' hi,
+      'COUNT' fccount.hi 'STATUS' fcstatus.hi
+ end
+ do fi=1 to chainedges
+  ec=fpnode.fi
+  fj=fi+1
+  ep=fpnode.fj
+  say 'HISTORYFIRSTACTORS EDGE' fi 'CHILD' ec 'PARENT' ep
+  if saidentid.ec=saidentid.ep then ast='SAME'
+  else ast='CHANGED'
+  if scidentid.ec=scidentid.ep then cst='SAME'
+  else cst='CHANGED'
+  say 'HISTORYFIRSTACTORS EDGE' fi 'AUTHOR STATUS' ast
+  say 'HISTORYFIRSTACTORS EDGE' fi 'AUTHOR CHILD BLOBID' saidentid.ec
+  say 'HISTORYFIRSTACTORS EDGE' fi 'AUTHOR PARENT BLOBID' saidentid.ep
+  say 'HISTORYFIRSTACTORS EDGE' fi 'COMMITTER STATUS' cst
+  say 'HISTORYFIRSTACTORS EDGE' fi,
+      'COMMITTER CHILD BLOBID' scidentid.ec
+  say 'HISTORYFIRSTACTORS EDGE' fi,
+      'COMMITTER PARENT BLOBID' scidentid.ep
+ end
+ say 'HISTORYFIRSTACTORS DATA END'
+ return 0
+
 
 statefirstchron:
  call buildfirstparent
