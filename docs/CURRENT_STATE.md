@@ -1583,3 +1583,13 @@ BEGIN KIND CHANGE, BEGIN EDGE 1 STATUS DELETED, PRIOR PRESENCE RUN 2 STATE
 PRESENT. It then emits EVENTS 1, EVENT 1 CURRENT RUN 1 PRIOR RUN 2, and the
 full authenticated EDGE 1 STATUS DELETED record already target-proven by
 M150. M151-M152 are wrapper-only; native GITREC remains M132.
+
+## 2026-10-05 M151-M152 HOST/NATIVE-STAGE PASS; REAL CMS GATE NEXT
+
+PR #106 (`M151-M152 first-parent presence history`) passed full native-stage run `37376078777`, squash-merged as `6b3319dd8be59eb7170fe8b239b1ddd39832cba7`, and post-merge main run `37376162041` also completed SUCCESS through every stage. Independent static validation also passed 558 checks with 0 failures; GITVREF max record 74, GIT max record 78, and no split CALL argument lists. M151-M152 are HOST/NATIVE-STAGE CI PROVEN but not yet real CMS target-proven. Both are wrapper-only; native `GITREC MODULE` remains the M132 target-proven worker. Current handshake is `GIT EXEC LEVEL M152` / `GITVREF EXEC LEVEL M152`.
+
+Next CMS gate: upload only GITVREF.EXEC and GIT.EXEC, then run `HISTORYFIRSTPRESENCE-REF-FULL` and `HISTORYFIRSTPRESENCEORIGIN-REF-FULL` on sealed commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`, depth 1, path `src/GITPBWALK.EXEC`. No CMSCLNK and no GITRUN.
+
+Expected M151: PATH STATUS MIXED; EXISTENCE STATUS CHANGED; NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN NODES 0, OFFCHAIN EDGES 0, TRUNCATED 1; PRESENT 1, ABSENT 1; EXACT RUNS 2; PRESENCE RUNS 2; PRESENCE TRANSITIONS 1; ADDED 0, DELETED 1, MODIFIED 0, UNCHANGED 0. RUN 1 is NODES 1 EXACTRUNS 1 STATE ABSENT, start=end step 1 depth 0 commit 486ADAA5... . RUN 2 is NODES 1 EXACTRUNS 1 STATE PRESENT VERSIONS 1, start=end step 2 depth 1 commit 91913EA4... . TRANSITION 1 is FROM RUN 1 TO RUN 2, EDGE 1 STATUS DELETED.
+
+Expected M152 repeats the M151 base summary, then CURRENT PRESENCE RUN 1 NODES 1 EXACTRUNS 1, CURRENT STATE ABSENT, newest=oldest step 1 depth 0 commit 486ADAA5..., author/committer spans 0, BEGIN KNOWN 1, BEGIN KIND CHANGE, BEGIN EDGE 1 STATUS DELETED, PRIOR PRESENCE RUN 2 STATE PRESENT. Then EVENTS 1 and EVENT 1 CURRENT RUN 1 PRIOR RUN 2 followed by the full authenticated EDGE 1 STATUS DELETED record already target-proven by M150.
