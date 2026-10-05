@@ -5186,3 +5186,7 @@ Next CMS gate: upload only GITVREF.EXEC and GIT.EXEC, then run `HISTORYFIRSTSTAT
 ## 2026-10-05 M145 REAL CMS TARGET PASS
 
 Real CMS ran GIT/GITVREF M146/M146 and `HISTORYFIRSTSTATUS-REF-FULL` on sealed commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`, depth 1, path `src/GITPBWALK.EXEC`. Full-snapshot verification passed. Summary exactly matched the sealed fixture: STATUS CHANGED; NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN NODES 0, OFFCHAIN EDGES 0, TRUNCATED 1; CHANGED EDGES 1, ADDED 0, DELETED 1, MODIFIED 0, UNCHANGED 0; NEAREST CHANGE DEPTH 0, FARTHEST CHANGE DEPTH 0, NEAREST CHANGES 1. M145 is NATIVE CMS TARGET-PROVEN. The same pasted transcript contained only the tail of an M146 run through DATA END, without its M146 header/summary or full edge record, so M146 remains the current real CMS validation boundary pending complete output.
+
+## M146 CMS PASS
+
+Real CMS ran HISTORYFIRSTBOUNDS-REF-FULL on sealed commit 486ADAA5... at depth 1 for src/GITPBWALK.EXEC under M146/M146. Full-snapshot verification passed. STATUS CHANGED; chain 2/1, offchain 0/0, truncated 1; changes 1; nearest depth 0/matches 1; farthest depth 0/matches 1; boundary changes 1. The sole record was BOUND BOTH, edge 1 DELETED, child ABSENT / parent PRESENT A0C91615... type 3 size 1869, actor SAME, subject/message CHANGED, +3 second deltas and zero lags, with exact previously proven BLOBIDs. M146 is NATIVE CMS TARGET-PROVEN.
