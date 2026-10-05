@@ -1538,3 +1538,48 @@ PR #105 fixed the CMS REXX argument-continuation defect by changing the `emitfir
 After the single-record CALL fix, real CMS reran `HISTORYFIRSTORIGIN-REF-FULL` on sealed commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`, depth 1, path `src/GITPBWALK.EXEC`, under GIT/GITVREF M150/M150. Full-snapshot verification passed and the command completed RC0 through DATA END. The current-run summary matched M149 exactly: PATH STATUS MIXED; CHANGE STATUS CHANGED; NODES 2, EDGES 1, CHAIN 2/1, OFFCHAIN 0/0, TRUNCATED 1, RUNS 2, TRANSITIONS 1, CHANGES 1; CURRENT RUN 1 VERSION 0 NODES 1 STATE ABSENT; newest=oldest step 1 depth 0 commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`; author/committer spans 0; BEGIN KNOWN 1 / KIND CHANGE / EDGE 1 STATUS DELETED; PRIOR RUN 2 VERSION 1 STATE PRESENT OID `A0C91615ABA9689C365159205E8CBA26EF6E16F4` TYPE 3 SIZE 1869.
 
 M150 then emitted EVENTS 1 and EVENT 1 CURRENT RUN 1 PRIOR RUN 2, followed by the full authenticated edge record: EDGE 1 STATUS DELETED, child 1/parent 2, depths 0/1, child commit 486AD..., parent commit 91913EA4..., child tree 909B1D31..., parent tree AE65405C..., child ABSENT / parent PRESENT OID A0C91615... type 3 size 1869; AUTHOR SAME, COMMITTER SAME, SUBJECT CHANGED, MESSAGE CHANGED; +3 second author/committer deltas; zero lags; shared actor BLOBID 78C41780...; child subject/message BLOBID 6C129246...; parent subject/message BLOBID 1A55B22C.... M150 is NATIVE CMS TARGET-PROVEN. The previous Error 41 is closed by the merged single-record CALL fix and its regression guard.
+
+
+## M151 authenticated first-parent presence intervals
+
+M150 is native CMS target-proven. M151 adds read-only
+`GIT HISTORYFIRSTPRESENCE-REF-FULL <commit|ref> <depth> <path>`. Unlike the
+M148 exact-state lifetime, M151 groups only by path existence. A MODIFIED edge
+does not break a PRESENT interval; only ADDED/DELETED boundaries split
+presence runs. The implementation reuses the target-proven exact-state and
+edge classifiers and fail-closes unless: presence-run nodes sum to chain
+nodes; exact-run counts inside presence runs sum to M148 exact runs;
+PRESENCE RUNS-1 equals ADDED+DELETED; EXACT RUNS-PRESENCE RUNS equals
+MODIFIED edges; and every presence boundary is an authenticated ADDED or
+DELETED edge. Each run reports state, node count, exact-run count, PRESENT
+version cardinality when applicable, and start/end step/depth/commit.
+
+For sealed commit 486AD... depth 1 path src/GITPBWALK.EXEC, expected M151 is
+PATH STATUS MIXED; EXISTENCE STATUS CHANGED; NODES 2, EDGES 1, CHAIN 2/1,
+OFFCHAIN 0/0, TRUNCATED 1; PRESENT 1, ABSENT 1; EXACT RUNS 2; PRESENCE RUNS
+2; PRESENCE TRANSITIONS 1; ADDED 0, DELETED 1, MODIFIED 0, UNCHANGED 0.
+RUN 1 is one-node ABSENT with EXACTRUNS 1 at step/depth 1/0 commit 486AD... .
+RUN 2 is one-node PRESENT with EXACTRUNS 1, VERSIONS 1, at step/depth 2/1
+commit 91913... . TRANSITION 1 is FROM RUN 1 TO RUN 2, EDGE 1 STATUS DELETED.
+
+
+## M152 authenticated current-presence origin
+
+M152 adds read-only
+`GIT HISTORYFIRSTPRESENCEORIGIN-REF-FULL <commit|ref> <depth> <path>`.
+It reports the current continuous presence/absence interval, which can span
+multiple exact OID versions when the path remains PRESENT across MODIFIED
+edges. It reports the interval's node and exact-run counts, PRESENT version
+cardinality when applicable, newest/oldest step/depth/commit, signed
+author/committer spans, and BEGIN KNOWN/KIND. CHANGE origins are restricted
+to ADDED/DELETED edges and emit one full authenticated M143-style edge record;
+ROOT origins emit the authenticated root node; UNKNOWN truncated origins emit
+zero events.
+
+For the sealed fixture, expected M152 repeats the M151 summary, then CURRENT
+PRESENCE RUN 1 NODES 1 EXACTRUNS 1, CURRENT STATE ABSENT, newest=oldest
+step/depth 1/0 commit 486AD..., author/committer spans 0, BEGIN KNOWN 1,
+BEGIN KIND CHANGE, BEGIN EDGE 1 STATUS DELETED, PRIOR PRESENCE RUN 2 STATE
+PRESENT. It then emits EVENTS 1, EVENT 1 CURRENT RUN 1 PRIOR RUN 2, and the
+full authenticated EDGE 1 STATUS DELETED record already target-proven by
+M150. M151-M152 are wrapper-only; native GITREC remains M132.
