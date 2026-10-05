@@ -265,6 +265,36 @@ static int rec_commit_walk(unsigned long n,int emit) {
  }
  return 1;
 }
+/* M130: count exact and distinct authenticated parent lines. */
+static int rec_parent_counts(unsigned long n,
+                             unsigned long *parents,
+                             unsigned long *unique) {
+ unsigned long at=0,begin,len,j;
+ unsigned char oid[20],seen[64][20];
+ *parents=0;*unique=0;
+ while(at<n&&idx_body[at]!=0x0a) at++;
+ if(at==n) return 0;
+ at++;
+ while(at<n) {
+  begin=at;
+  while(at<n&&idx_body[at]!=0x0a) at++;
+  if(at==n) return 0;
+  len=at-begin;
+  if(!rec_ascii_key(idx_body+begin,len,"parent")) break;
+  if(len!=47||!rec_ascii_oid(idx_body+begin+7,oid))
+   return 0;
+  (*parents)++;
+  for(j=0;j<*unique;j++)
+   if(memcmp(seen[j],oid,20)==0) break;
+  if(j==*unique) {
+   if(*unique>=64UL) return 0;
+   memcpy(seen[*unique],oid,20);
+   (*unique)++;
+  }
+  at++;
+ }
+ return 1;
+}
 /* M126: extract authenticated raw Git identity and time.
  * Identity stays raw ASCII bytes; CMS never reinterprets the payload.
  */
@@ -1101,6 +1131,7 @@ static int rec_history_dag_state(const unsigned char *starting,
  unsigned char edge[64][64];
  unsigned long sizes[64],sz,at,begin,len;
  unsigned long author_when[64],commit_when[64],msgbytes[64];
+ unsigned long parent_count[64],unique_parent_count[64];
  unsigned long subject_bytes[64];
  unsigned long author_ident_bytes[64],commit_ident_bytes[64];
  unsigned int subject_prefix_bytes[64];
@@ -1130,6 +1161,10 @@ static int rec_history_dag_state(const unsigned char *starting,
   if(rc!=0) return rc;
   if(!rec_commit_walk(sz,0)) {
    puts("HISTORYDAGSTATE COMMIT INVALID");return 8;
+  }
+  if(!rec_parent_counts(sz,&parent_count[head],
+                        &unique_parent_count[head])) {
+   puts("HISTORYDAGSTATE PARENT META INVALID");return 8;
   }
   if(!rec_commit_times(sz,
                        &author_when[head],&author_tz[head],
@@ -1198,6 +1233,8 @@ static int rec_history_dag_state(const unsigned char *starting,
   idx_print(stdout,commits[j]);putchar('\n');
   fputs("HISTORYDAGSTATE TREE ",stdout);
   idx_print(stdout,trees[j]);putchar('\n');
+  printf("HISTORYDAGSTATE PARENTS %lu UNIQUE %lu\n",
+         parent_count[j],unique_parent_count[j]);
   printf("HISTORYDAGSTATE AUTHOR TIME %lu TZMIN %d\n",
          author_when[j],author_tz[j]);
   printf("HISTORYDAGSTATE AIDENT BYTES %lu PREFIXBYTES %u\n",
