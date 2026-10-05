@@ -1,4 +1,4 @@
-/* M130: authenticated commit topology summary. */
+/* M131: authenticated ordered parent metadata. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M130'
+ say 'GITVREF EXEC LEVEL M131'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -18,7 +18,8 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTTRANS' & command\='HISTREPORT' &,
    command\='HISTBOUNDS' & command\='HISTCHRON' &,
    command\='HISTACTORS' & command\='HISTSUBJECTS' &,
-   command\='HISTBODIES' & command\='HISTTOPO' then do
+   command\='HISTBODIES' & command\='HISTTOPO' &,
+   command\='HISTPARENTS' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -30,7 +31,8 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTTRANS' | command='HISTREPORT' |,
    command='HISTBOUNDS' | command='HISTCHRON' |,
    command='HISTACTORS' | command='HISTSUBJECTS' |,
-   command='HISTBODIES' | command='HISTTOPO' then do
+   command='HISTBODIES' | command='HISTTOPO' |,
+   command='HISTPARENTS' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -42,7 +44,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTREPORT' | command='HISTBOUNDS' |,
    command='HISTCHRON' | command='HISTACTORS' |,
    command='HISTSUBJECTS' | command='HISTBODIES' |,
-   command='HISTTOPO' then do
+   command='HISTTOPO' | command='HISTPARENTS' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -62,6 +64,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTSUBJECTS' & depth+0>8 then exit 4
  if command='HISTBODIES' & depth+0>8 then exit 4
  if command='HISTTOPO' & depth+0>8 then exit 4
+ if command='HISTPARENTS' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -69,7 +72,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
     command='HISTTRANS' | command='HISTREPORT' |,
     command='HISTBOUNDS' | command='HISTCHRON' |,
     command='HISTACTORS' | command='HISTSUBJECTS' |,
-   command='HISTBODIES' | command='HISTTOPO' then do
+   command='HISTBODIES' | command='HISTTOPO' |,
+   command='HISTPARENTS' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -103,7 +107,7 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
         command='HISTREPORT' | command='HISTBOUNDS' |,
         command='HISTCHRON' | command='HISTACTORS' |,
    command='HISTSUBJECTS' | command='HISTBODIES' |,
-   command='HISTTOPO' then do
+   command='HISTTOPO' | command='HISTPARENTS' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -138,7 +142,7 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTREPORT' | command='HISTBOUNDS' |,
    command='HISTCHRON' | command='HISTACTORS' |,
    command='HISTSUBJECTS' | command='HISTBODIES' |,
-   command='HISTTOPO' then do
+   command='HISTTOPO' | command='HISTPARENTS' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -187,6 +191,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTTOPO' then do
   call statetopology
+  exit result
+ end
+ if command='HISTPARENTS' then do
+  call stateparents
   exit result
  end
  call statediff
@@ -408,6 +416,7 @@ statecheck:
  sedgecount=0
  drop spresent. soid. stype. ssize. scommit. stree. sdepth.
  drop sparents. suniqueparents. soutedges.
+ drop sfirstparent. sparentseqid. sfirstnode.
  drop sauthorwhen. sauthtz. scommitwhen. scommittz.
  drop smsgbytes. smsgid.
  drop saidentbytes. saidentprefix. saidenthex. saidentid.
@@ -425,6 +434,8 @@ statecheck:
  havecommit=1
  havetree=1
  haveparents=1
+ havefirstparent=1
+ haveparentseq=1
  haveauthor=1
  haveaidentmeta=1
  haveaidenthex=1
@@ -443,7 +454,8 @@ statecheck:
   if words(out.ci)=5 & word(out.ci,1)='HISTORYDAGSTATE' &,
      word(out.ci,2)='NODE' & word(out.ci,4)='DEPTH' then do
    if havestate=0 | havecommit=0 | havetree=0 |,
-      haveparents=0 | haveauthor=0 |,
+      haveparents=0 | havefirstparent=0 | haveparentseq=0 |,
+      haveauthor=0 |,
       haveaidentmeta=0 | haveaidenthex=0 |,
       haveaidentid=0 | havecommitter=0 |,
       havecidentmeta=0 | havecidenthex=0 | havecidentid=0 |,
@@ -467,6 +479,8 @@ statecheck:
    havecommit=0
    havetree=0
    haveparents=0
+   havefirstparent=0
+   haveparentseq=0
    haveauthor=0
    haveaidentmeta=0
    haveaidenthex=0
@@ -514,11 +528,37 @@ statecheck:
    suniqueparents.curnode=pu
    haveparents=1
   end
+  else if words(out.ci)=3 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='FIRSTPARENT' then do
+   if haveparents=0 | havefirstparent=1 then return 'ERROR'
+   fp=translate(word(out.ci,3))
+   if sparents.curnode=0 then do
+    if fp\='NONE' then return 'ERROR'
+   end
+   else do
+    if length(fp)\=40 then return 'ERROR'
+    if verify(fp,'0123456789ABCDEF')\=0 then return 'ERROR'
+   end
+   sfirstparent.curnode=fp
+   havefirstparent=1
+  end
+  else if words(out.ci)=4 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='PARENTSEQ' & word(out.ci,3)='BLOBID' then do
+   if havefirstparent=0 | haveparentseq=1 then return 'ERROR'
+   ps=translate(word(out.ci,4))
+   if length(ps)\=40 then return 'ERROR'
+   if verify(ps,'0123456789ABCDEF')\=0 then return 'ERROR'
+   sparentseqid.curnode=ps
+   haveparentseq=1
+  end
   else if words(out.ci)=6 &,
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='AUTHOR' & word(out.ci,3)='TIME' &,
           word(out.ci,5)='TZMIN' then do
-   if havetree=0 | haveparents=0 | haveauthor=1 then return 'ERROR'
+   if havetree=0 | haveparents=0 | havefirstparent=0 |,
+      haveparentseq=0 | haveauthor=1 then return 'ERROR'
    aw=word(out.ci,4)
    az=word(out.ci,6)
    if datatype(aw,'W')\=1 | aw<0 then return 'ERROR'
@@ -761,7 +801,8 @@ statecheck:
   end
  end
  if havestate=0 | havecommit=0 | havetree=0 |,
-    haveparents=0 | haveauthor=0 |,
+    haveparents=0 | havefirstparent=0 | haveparentseq=0 |,
+    haveauthor=0 |,
     haveaidentmeta=0 | haveaidenthex=0 |,
     haveaidentid=0 | havecommitter=0 |,
     havecidentmeta=0 | havecidenthex=0 | havecidentid=0 |,
@@ -775,6 +816,19 @@ statecheck:
    return 'ERROR'
   if datatype(suniqueparents.ni,'W')\=1 then return 'ERROR'
   if suniqueparents.ni<0 | suniqueparents.ni>sparents.ni then,
+   return 'ERROR'
+  if sparents.ni=0 & suniqueparents.ni\=0 then return 'ERROR'
+  if sparents.ni>0 & suniqueparents.ni<1 then return 'ERROR'
+  if sparents.ni=0 then do
+   if sfirstparent.ni\='NONE' then return 'ERROR'
+  end
+  else do
+   if length(sfirstparent.ni)\=40 then return 'ERROR'
+   if verify(sfirstparent.ni,'0123456789ABCDEF')\=0 then,
+    return 'ERROR'
+  end
+  if length(sparentseqid.ni)\=40 then return 'ERROR'
+  if verify(sparentseqid.ni,'0123456789ABCDEF')\=0 then,
    return 'ERROR'
   if datatype(spresent.ni,'W')\=1 then return 'ERROR'
   if spresent.ni\=0 & spresent.ni\=1 then return 'ERROR'
@@ -817,8 +871,22 @@ statecheck:
   soutedges.ec=soutedges.ec+1
  end
  do ni=1 to snodes
+  sfirstnode.ni=0
   if sdepth.ni<depth then do
    if soutedges.ni\=suniqueparents.ni then return 'ERROR'
+   if sparents.ni>0 then do
+    firstmatches=0
+    do ei=1 to sedgecount
+     if sedgechild.ei=ni then do
+      ep=sedgeparent.ei
+      if scommit.ep=sfirstparent.ni then do
+       firstmatches=firstmatches+1
+       sfirstnode.ni=ep
+      end
+     end
+    end
+    if firstmatches\=1 then return 'ERROR'
+   end
   end
   else if soutedges.ni\=0 then return 'ERROR'
  end
@@ -884,6 +952,8 @@ emitnodechron:
  parse arg kind,ni
  say kind 'NODE' ni 'PARENTS' sparents.ni,
      'UNIQUE' suniqueparents.ni
+ say kind 'NODE' ni 'FIRSTPARENT' sfirstparent.ni
+ say kind 'NODE' ni 'PARENTSEQ BLOBID' sparentseqid.ni
  say kind 'NODE' ni 'AUTHOR TIME' sauthorwhen.ni,
      'TZMIN' sauthtz.ni
  say kind 'NODE' ni 'AIDENT BYTES' saidentbytes.ni,
@@ -1860,6 +1930,36 @@ emitverified:
  if reskind='COMMIT' then say 'VERIFIED COMMIT' oid
  else say 'VERIFIED REF' spec oid
  return
+
+stateparents:
+ roots=0
+ firstfollowed=0
+ boundaryparents=0
+ do ni=1 to snodes
+  if sparents.ni=0 then roots=roots+1
+  if sfirstnode.ni>0 then firstfollowed=firstfollowed+1
+  if sdepth.ni=depth & sparents.ni>0 then,
+   boundaryparents=boundaryparents+1
+ end
+ call emitverified
+ say 'HISTORYPARENTS FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYPARENTS DATA BEGIN'
+ say 'HISTORYPARENTS NODES' snodes
+ say 'HISTORYPARENTS EDGES' sedgecount
+ say 'HISTORYPARENTS ROOTS' roots
+ say 'HISTORYPARENTS FIRST FOLLOWED' firstfollowed
+ say 'HISTORYPARENTS BOUNDARY WITH PARENTS' boundaryparents
+ do ni=1 to snodes
+  say 'HISTORYPARENTS NODE' ni 'COMMIT' scommit.ni
+  say 'HISTORYPARENTS NODE' ni 'DEPTH' sdepth.ni,
+      'PARENTS' sparents.ni 'UNIQUE' suniqueparents.ni
+  say 'HISTORYPARENTS NODE' ni 'FIRSTPARENT' sfirstparent.ni
+  say 'HISTORYPARENTS NODE' ni 'PARENTSEQ BLOBID' sparentseqid.ni
+  say 'HISTORYPARENTS NODE' ni 'FIRSTFOLLOWED' sfirstnode.ni
+ end
+ say 'HISTORYPARENTS DATA END'
+ return 0
+
 
 statetopology:
  roots=0

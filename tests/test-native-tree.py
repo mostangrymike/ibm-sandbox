@@ -97,6 +97,14 @@ SECOND_PARENT = FIRST_COMMIT.replace(b"hello\n", b"other\n")
 MERGE2 = MERGE.replace(
     b"parent " + b"1"*40,
     b"parent " + git_oid("commit", SECOND_PARENT).lower().encode("ascii"))
+MERGE2_REVERSED = (
+    b"tree " + git_oid("tree", TREE).lower().encode("ascii")
+    + b"\nparent "
+    + git_oid("commit", SECOND_PARENT).lower().encode("ascii")
+    + b"\nparent "
+    + git_oid("commit", FIRST_COMMIT).lower().encode("ascii")
+    + b"\nauthor A <a@b> 123 +0000\n"
+    + b"committer A <a@b> 123 +0000\n\nmerge reverse\n")
 # M32: all parent commits may be valid while their trees are not.
 MISSING_ROOT_COMMIT = FIRST_COMMIT.replace(
     git_oid("tree", TREE).lower().encode("ascii"), b"2"*40, 1)
@@ -301,6 +309,7 @@ SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
            (2, HIST_TREE), (3, HIST_README),
            (1, MISSING_FIRST), (1, BLOB_FIRST), (1, MALFORMED_FIRST),
            (1, GRANDCHILD), (1, SECOND_PARENT), (1, MERGE2),
+           (1, MERGE2_REVERSED),
            (1, MISSING_ROOT_COMMIT), (1, MISSING_ROOT_MERGE),
            (1, BLOB_ROOT_MERGE), (1, MALFORMED_ROOT_MERGE),
            (2, MISSING_ENTRY_TREE), (2, WRONG_ENTRY_TREE),
@@ -472,6 +481,26 @@ def main():
             "HISTORYDAGSTATE PARENTS 0 UNIQUE 0") == 2
         assert "HISTORYDAGSTATE EDGES 2" in merge_state
         assert "HISTORYDAGSTATE NODES 3" in merge_state
+        first_oid = git_oid("commit", FIRST_COMMIT)
+        second_oid = git_oid("commit", SECOND_PARENT)
+        parent_seq = git_oid(
+            "blob", bytes.fromhex(first_oid) + bytes.fromhex(second_oid))
+        assert "HISTORYDAGSTATE FIRSTPARENT " + first_oid in merge_state
+        assert "HISTORYDAGSTATE PARENTSEQ BLOBID " + parent_seq in merge_state
+        empty_seq = git_oid("blob", b"")
+        assert merge_state.count(
+            "HISTORYDAGSTATE FIRSTPARENT NONE") == 2
+        assert merge_state.count(
+            "HISTORYDAGSTATE PARENTSEQ BLOBID " + empty_seq) == 2
+        reverse_state = run(
+            rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",
+            git_oid("commit", MERGE2_REVERSED), "0",
+            b"README.md".hex().upper(), cwd=d)
+        reverse_seq = git_oid(
+            "blob", bytes.fromhex(second_oid) + bytes.fromhex(first_oid))
+        assert parent_seq != reverse_seq
+        assert "HISTORYDAGSTATE FIRSTPARENT " + second_oid in reverse_state
+        assert "HISTORYDAGSTATE PARENTSEQ BLOBID " + reverse_seq in reverse_state
         bad_identity = run(
             rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",
             git_oid("commit", BAD_IDENT_COMMIT), "0",
