@@ -2,5 +2,8 @@
 address cms
 parse arg spec depth path extra
 if spec='' | depth='' | path='' | extra\='' then exit 4
+out.0=0
+'PIPE CMS GIT LEVEL | STEM out.'
+if rc\=0 then exit rc
 say 'M155 CHECK READY'
 exit 0
