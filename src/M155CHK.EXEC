@@ -1,0 +1,65 @@
+/* M155: compact sealed-fixture acceptance gate for M153/M154. */
+address cms
+parse arg spec depth path extra
+if spec='' | depth='' | path='' | extra\='' then do
+ say 'Usage: M155CHK ref depth path'
+ exit 4
+end
+if length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
+if depth+0>8 then exit 4
+
+drop chr.
+chr.0=0
+'PIPE CMS EXEC GITVREF HISTFPCHR' spec depth path '| STEM chr.'
+crc=rc
+if crc\=0 then do
+ say 'M155 CHRONOLOGY FAIL RC' crc
+ exit crc
+end
+cm=0
+runs=0
+az=0
+cz=0
+cend=0
+do i=1 to chr.0
+ if chr.i='HISTORYFIRSTPRESENCECHRONOLOGY FULL SNAPSHOTS VERIFIED' then cm=1
+ if chr.i='HISTORYFIRSTPRESENCECHRONOLOGY PRESENCE RUNS 2' then runs=1
+ if chr.i='HISTORYFIRSTPRESENCECHRONOLOGY AUTHOR ZERO RUNS 2' then az=1
+ if chr.i='HISTORYFIRSTPRESENCECHRONOLOGY COMMITTER ZERO RUNS 2' then cz=1
+ if chr.i='HISTORYFIRSTPRESENCECHRONOLOGY DATA END' then cend=1
+end
+if cm+runs+az+cz+cend\=5 then do
+ say 'M155 CHRONOLOGY FAIL SUMMARY'
+ exit 8
+end
+say 'M155 CHRONOLOGY PASS RUNS 2 ZERO 2/2'
+
+drop evt.
+evt.0=0
+'PIPE CMS EXEC GITVREF HISTFPEVT' spec depth path '| STEM evt.'
+erc=rc
+if erc\=0 then do
+ say 'M155 EVENTS FAIL RC' erc
+ exit erc
+end
+em=0
+events=0
+fromrun=0
+deleted=0
+eend=0
+do i=1 to evt.0
+ if evt.i='HISTORYFIRSTPRESENCEEVENTS FULL SNAPSHOTS VERIFIED' then em=1
+ if evt.i='HISTORYFIRSTPRESENCEEVENTS EVENTS 1' then events=1
+ if evt.i='HISTORYFIRSTPRESENCEEVENTS EVENT 1 FROM RUN 1 TO RUN 2' then,
+  fromrun=1
+ if evt.i='HISTORYFIRSTPRESENCEEVENTS EVENT 1 EDGE 1 STATUS DELETED' then,
+  deleted=1
+ if evt.i='HISTORYFIRSTPRESENCEEVENTS DATA END' then eend=1
+end
+if em+events+fromrun+deleted+eend\=5 then do
+ say 'M155 EVENTS FAIL SUMMARY'
+ exit 8
+end
+say 'M155 EVENTS PASS 1 DELETED'
+say 'M155 COMPACT TARGET GATE PASS'
+exit 0
