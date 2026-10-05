@@ -451,6 +451,8 @@ def main():
         assert "HISTORYDAGSTATE AIDENT BLOBID " + ident_oid in identity
         assert "HISTORYDAGSTATE CIDENT BLOBID " + ident_oid in identity
         assert "HISTORYDAGSTATE SUBJECT BYTES 8 PREFIXBYTES 8" in identity
+        subject_oid = git_oid("blob", b"identity")
+        assert "HISTORYDAGSTATE SUBJECT BLOBID " + subject_oid in identity
         bad_identity = run(
             rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",
             git_oid("commit", BAD_IDENT_COMMIT), "0",
