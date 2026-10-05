@@ -5190,3 +5190,22 @@ Real CMS ran GIT/GITVREF M146/M146 and `HISTORYFIRSTSTATUS-REF-FULL` on sealed c
 ## M146 CMS PASS
 
 Real CMS ran HISTORYFIRSTBOUNDS-REF-FULL on sealed commit 486ADAA5... at depth 1 for src/GITPBWALK.EXEC under M146/M146. Full-snapshot verification passed. STATUS CHANGED; chain 2/1, offchain 0/0, truncated 1; changes 1; nearest depth 0/matches 1; farthest depth 0/matches 1; boundary changes 1. The sole record was BOUND BOTH, edge 1 DELETED, child ABSENT / parent PRESENT A0C91615... type 3 size 1869, actor SAME, subject/message CHANGED, +3 second deltas and zero lags, with exact previously proven BLOBIDs. M146 is NATIVE CMS TARGET-PROVEN.
+
+
+## M147-M148 first-parent versions/lifetime
+
+M146 is native CMS target-proven. M147 adds
+`HISTORYFIRSTVERSIONS-REF-FULL`, grouping exact path-object OIDs only on the
+authenticated first-parent chain and mapping each chain step to version 0
+(ABSENT) or one PRESENT version. M148 adds
+`HISTORYFIRSTLIFETIME-REF-FULL`, converting those exact states into
+contiguous runs and authenticated run-boundary transitions.
+
+M147 fail-closes unless PRESENT+ABSENT equals chain nodes and summed version
+counts equal PRESENT chain nodes. M148 fail-closes unless run-node counts equal
+chain nodes, each run boundary is a changed edge, and RUNS-1 equals the
+authenticated first-parent changed-edge count. The sealed deletion fixture
+expects MIXED state, PRESENT 1 / ABSENT 1 / VERSIONS 1, with version 1
+A0C91615... at depth 1; lifetime RUNS 2, TRANSITIONS 1, CHANGES 1, with
+RUN 1 ABSENT at child depth 0, RUN 2 PRESENT at parent depth 1, and transition
+EDGE 1 STATUS DELETED. Both remain wrapper-only; GITREC stays M132.

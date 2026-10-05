@@ -1360,3 +1360,45 @@ Real CMS ran GIT/GITVREF M146/M146 and `HISTORYFIRSTSTATUS-REF-FULL` on sealed c
 ## 2026-10-05 M146 REAL CMS TARGET PASS
 
 Real CMS ran `HISTORYFIRSTBOUNDS-REF-FULL` on sealed commit `486ADAA5B02080720F4B329C6F68550B13C6AA87`, depth 1, path `src/GITPBWALK.EXEC`, under GIT/GITVREF M146/M146. Full-snapshot verification passed. Summary matched exactly: STATUS CHANGED; NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN NODES 0, OFFCHAIN EDGES 0, TRUNCATED 1; CHANGES 1; NEAREST DEPTH 0 / MATCHES 1; FARTHEST DEPTH 0 / MATCHES 1; BOUNDARY CHANGES 1. The sole boundary record was CHANGE 1 BOUND BOTH for chain EDGE 1 STATUS DELETED, child ABSENT / parent PRESENT blob `A0C91615ABA9689C365159205E8CBA26EF6E16F4` type 3 size 1869, AUTHOR SAME, COMMITTER SAME, SUBJECT CHANGED, MESSAGE CHANGED, +3 second author/committer deltas, zero lags, shared actor BLOBID `78C41780430F464791E67533C261358D0FEB071E`, child subject/message BLOBID `6C1292461038798149F3636EE517BB6E4B35DAA5`, and parent subject/message BLOBID `1A55B22C5ABB8A8609B3F828119988B04BF2BFAC`. The pasted transcript interleaved a repeated fragment around DATA END, but all required authenticated records were present and consistent. M146 is NATIVE CMS TARGET-PROVEN.
+
+
+## M147 authenticated first-parent path versions
+
+M146 is native CMS target-proven. M147 adds read-only
+`GIT HISTORYFIRSTVERSIONS-REF-FULL <commit|ref> <depth> <path>`. It projects
+path-object identity onto the authenticated first-parent chain only. PRESENT
+and ABSENT chain-node counts must sum to chain-node cardinality; every PRESENT
+node maps to exactly one unique OID version; summed version counts must equal
+PRESENT nodes. Each unique version reports OID, count, min/max chain depth,
+type and size, and each chain step reports its version number (0 means ABSENT).
+The output also preserves full DAG/chain/off-chain counts and TRUNCATED.
+
+For sealed commit 486AD... depth 1 path src/GITPBWALK.EXEC, expected M147 is
+STATUS MIXED; NODES 2, EDGES 1, CHAIN NODES 2, CHAIN EDGES 1, OFFCHAIN 0/0,
+TRUNCATED 1; PRESENT 1, ABSENT 1, VERSIONS 1. VERSION 1 is
+A0C91615ABA9689C365159205E8CBA26EF6E16F4, COUNT 1, MINDEPTH 1, MAXDEPTH 1,
+TYPE 3 SIZE 1869. STEP 1 is node 1 depth 0 VERSION 0 STATE ABSENT; STEP 2 is
+node 2 depth 1 VERSION 1 STATE PRESENT with that OID.
+
+
+## M148 authenticated first-parent lifetime runs
+
+M148 adds read-only
+`GIT HISTORYFIRSTLIFETIME-REF-FULL <commit|ref> <depth> <path>`. It combines
+the target-proven first-parent change classifier with M147 version mapping to
+form contiguous runs of exact path state: ABSENT or one exact PRESENT OID.
+Run node counts must sum to chain nodes. Every run boundary must correspond to
+a non-UNCHANGED authenticated first-parent edge, and RUNS-1 must equal the
+authenticated changed-edge count. Each run reports version/state, optional
+OID/type/size, start/end step, depth and commit. Each run boundary reports the
+corresponding chain edge and ADDED/DELETED/MODIFIED status. TRUNCATED remains
+explicit so bounded history cannot be mistaken for a complete lifetime.
+
+For the sealed fixture, expected M148 is PATH STATUS MIXED, CHANGE STATUS
+CHANGED; chain 2/1, offchain 0/0, TRUNCATED 1; PRESENT 1, ABSENT 1,
+VERSIONS 1, RUNS 2, TRANSITIONS 1, CHANGES 1. RUN 1 is VERSION 0 ABSENT,
+one node at step 1/depth 0/commit 486AD... . RUN 2 is VERSION 1 PRESENT
+A0C91615ABA9689C365159205E8CBA26EF6E16F4 type 3 size 1869, one node at
+step 2/depth 1/commit 91913... . TRANSITION 1 is FROM RUN 1 TO RUN 2,
+EDGE 1 STATUS DELETED. M147-M148 are wrapper-only; GITREC remains the M132
+target-proven worker and no protected data changes.

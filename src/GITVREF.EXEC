@@ -1,4 +1,4 @@
-/* M146: authenticated first-parent status and change bounds. */
+/* M148: authenticated first-parent versions and lifetime runs. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M146'
+ say 'GITVREF EXEC LEVEL M148'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -26,7 +26,8 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTFSUBJ' & command\='HISTFBODY' &,
    command\='HISTFLOG' & command\='HISTFREPORT' &,
    command\='HISTFDIF' & command\='HISTFNEAR' &,
-   command\='HISTFSTAT' & command\='HISTFBOUND' then do
+   command\='HISTFSTAT' & command\='HISTFBOUND' &,
+   command\='HISTFVER' & command\='HISTFLIFE' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -46,7 +47,8 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTFSUBJ' | command='HISTFBODY' |,
    command='HISTFLOG' | command='HISTFREPORT' |,
    command='HISTFDIF' | command='HISTFNEAR' |,
-   command='HISTFSTAT' | command='HISTFBOUND' then do
+   command='HISTFSTAT' | command='HISTFBOUND' |,
+   command='HISTFVER' | command='HISTFLIFE' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -66,7 +68,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFBODY' | command='HISTFLOG' |,
    command='HISTFREPORT' | command='HISTFDIF' |,
    command='HISTFNEAR' | command='HISTFSTAT' |,
-   command='HISTFBOUND' then do
+   command='HISTFBOUND' | command='HISTFVER' |,
+   command='HISTFLIFE' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -102,6 +105,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTFNEAR' & depth+0>8 then exit 4
  if command='HISTFSTAT' & depth+0>8 then exit 4
  if command='HISTFBOUND' & depth+0>8 then exit 4
+ if command='HISTFVER' & depth+0>8 then exit 4
+ if command='HISTFLIFE' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -117,7 +122,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFSUBJ' | command='HISTFBODY' |,
    command='HISTFLOG' | command='HISTFREPORT' |,
    command='HISTFDIF' | command='HISTFNEAR' |,
-   command='HISTFSTAT' | command='HISTFBOUND' then do
+   command='HISTFSTAT' | command='HISTFBOUND' |,
+   command='HISTFVER' | command='HISTFLIFE' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -159,7 +165,8 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFBODY' | command='HISTFLOG' |,
    command='HISTFREPORT' | command='HISTFDIF' |,
    command='HISTFNEAR' | command='HISTFSTAT' |,
-   command='HISTFBOUND' then do
+   command='HISTFBOUND' | command='HISTFVER' |,
+   command='HISTFLIFE' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -202,7 +209,8 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFBODY' | command='HISTFLOG' |,
    command='HISTFREPORT' | command='HISTFDIF' |,
    command='HISTFNEAR' | command='HISTFSTAT' |,
-   command='HISTFBOUND' then do
+   command='HISTFBOUND' | command='HISTFVER' |,
+   command='HISTFLIFE' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -315,6 +323,14 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTFBOUND' then do
   call statefirstbounds
+  exit result
+ end
+ if command='HISTFVER' then do
+  call statefirstversions
+  exit result
+ end
+ if command='HISTFLIFE' then do
+  call statefirstlifetime
   exit result
  end
  call statediff
@@ -2419,6 +2435,200 @@ statefirstbounds:
   if match\=boundcount then return 8
  end
  say 'HISTORYFIRSTBOUNDS DATA END'
+ return 0
+
+
+
+preparefirstversions:
+ call buildfirstparent
+ if result\='OK' then return 'ERROR'
+ drop fvseen. fvoid. fvcount. fvmin. fvmax.
+ drop fvtype. fvsize. fvnodever.
+ fvpresent=0
+ fvabsent=0
+ fvversions=0
+ do fi=1 to fpcount
+  ni=fpnode.fi
+  if spresent.ni=0 then do
+   fvabsent=fvabsent+1
+   fvnodever.fi=0
+   iterate
+  end
+  fvpresent=fvpresent+1
+  poid=soid.ni
+  vi=fvseen.poid
+  if datatype(vi,'W')\=1 then do
+   fvversions=fvversions+1
+   vi=fvversions
+   fvseen.poid=vi
+   fvoid.vi=poid
+   fvcount.vi=1
+   fvmin.vi=sdepth.ni
+   fvmax.vi=sdepth.ni
+   fvtype.vi=stype.ni
+   fvsize.vi=ssize.ni
+  end
+  else do
+   if fvtype.vi\=stype.ni | fvsize.vi\=ssize.ni then,
+    return 'ERROR'
+   fvcount.vi=fvcount.vi+1
+   if sdepth.ni<fvmin.vi then fvmin.vi=sdepth.ni
+   if sdepth.ni>fvmax.vi then fvmax.vi=sdepth.ni
+  end
+  fvnodever.fi=vi
+ end
+ if fvpresent+fvabsent\=fpcount then return 'ERROR'
+ total=0
+ do vi=1 to fvversions
+  total=total+fvcount.vi
+ end
+ if total\=fvpresent then return 'ERROR'
+ do fi=1 to fpcount
+  if datatype(fvnodever.fi,'W')\=1 then return 'ERROR'
+  if fvnodever.fi<0 | fvnodever.fi>fvversions then,
+   return 'ERROR'
+ end
+ if fvpresent=fpcount then fvlifecycle='ALLPRESENT'
+ else if fvabsent=fpcount then fvlifecycle='ALLABSENT'
+ else fvlifecycle='MIXED'
+ return 'OK'
+
+
+statefirstversions:
+ call preparefirstversions
+ if result\='OK' then return 8
+ call emitverified
+ say 'HISTORYFIRSTVERSIONS FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTVERSIONS DATA BEGIN'
+ say 'HISTORYFIRSTVERSIONS STATUS' fvlifecycle
+ say 'HISTORYFIRSTVERSIONS NODES' snodes
+ say 'HISTORYFIRSTVERSIONS EDGES' sedgecount
+ say 'HISTORYFIRSTVERSIONS CHAIN NODES' fpcount
+ say 'HISTORYFIRSTVERSIONS CHAIN EDGES' chainedges
+ say 'HISTORYFIRSTVERSIONS OFFCHAIN NODES' offnodes
+ say 'HISTORYFIRSTVERSIONS OFFCHAIN EDGES' offedges
+ say 'HISTORYFIRSTVERSIONS TRUNCATED' truncated
+ say 'HISTORYFIRSTVERSIONS PRESENT' fvpresent
+ say 'HISTORYFIRSTVERSIONS ABSENT' fvabsent
+ say 'HISTORYFIRSTVERSIONS VERSIONS' fvversions
+ do vi=1 to fvversions
+  say 'HISTORYFIRSTVERSIONS VERSION' vi 'OID' fvoid.vi
+  say 'HISTORYFIRSTVERSIONS VERSION' vi 'COUNT' fvcount.vi,
+      'MINDEPTH' fvmin.vi 'MAXDEPTH' fvmax.vi
+  say 'HISTORYFIRSTVERSIONS VERSION' vi 'TYPE' fvtype.vi,
+      'SIZE' fvsize.vi
+ end
+ do fi=1 to fpcount
+  ni=fpnode.fi
+  vi=fvnodever.fi
+  say 'HISTORYFIRSTVERSIONS STEP' fi 'NODE' ni,
+      'DEPTH' sdepth.ni 'VERSION' vi
+  if vi=0 then say 'HISTORYFIRSTVERSIONS STEP' fi 'STATE ABSENT'
+  else do
+   say 'HISTORYFIRSTVERSIONS STEP' fi 'STATE PRESENT'
+   say 'HISTORYFIRSTVERSIONS STEP' fi 'OID' fvoid.vi
+  end
+ end
+ say 'HISTORYFIRSTVERSIONS DATA END'
+ return 0
+
+
+preparefirstruns:
+ call preparefirstdiffs
+ if result\='OK' then return 'ERROR'
+ call preparefirstversions
+ if result\='OK' then return 'ERROR'
+ drop frver. frstart. frend. frnodes.
+ frruns=0
+ prev=-1
+ do fi=1 to fpcount
+  vi=fvnodever.fi
+  if fi=1 | vi\=prev then do
+   frruns=frruns+1
+   frver.frruns=vi
+   frstart.frruns=fi
+   frend.frruns=fi
+   frnodes.frruns=1
+  end
+  else do
+   frend.frruns=fi
+   frnodes.frruns=frnodes.frruns+1
+  end
+  prev=vi
+ end
+ if frruns<1 | frruns>fpcount then return 'ERROR'
+ total=0
+ do ri=1 to frruns
+  total=total+frnodes.ri
+  if frstart.ri<1 | frend.ri<frstart.ri then return 'ERROR'
+  if frend.ri>fpcount then return 'ERROR'
+  if frnodes.ri\=frend.ri-frstart.ri+1 then return 'ERROR'
+ end
+ if total\=fpcount then return 'ERROR'
+ frtrans=frruns-1
+ if frtrans\=fdchanged then return 'ERROR'
+ do ri=1 to frtrans
+  fi=frend.ri
+  if fi<1 | fi>chainedges then return 'ERROR'
+  if fdstatus.fi='UNCHANGED' then return 'ERROR'
+  rj=ri+1
+  if frstart.rj\=fi+1 then return 'ERROR'
+ end
+ return 'OK'
+
+
+statefirstlifetime:
+ call preparefirstruns
+ if result\='OK' then return 8
+ call emitverified
+ say 'HISTORYFIRSTLIFETIME FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTLIFETIME DATA BEGIN'
+ say 'HISTORYFIRSTLIFETIME PATH STATUS' fvlifecycle
+ say 'HISTORYFIRSTLIFETIME CHANGE STATUS' fdoverall
+ say 'HISTORYFIRSTLIFETIME NODES' snodes
+ say 'HISTORYFIRSTLIFETIME EDGES' sedgecount
+ say 'HISTORYFIRSTLIFETIME CHAIN NODES' fpcount
+ say 'HISTORYFIRSTLIFETIME CHAIN EDGES' chainedges
+ say 'HISTORYFIRSTLIFETIME OFFCHAIN NODES' offnodes
+ say 'HISTORYFIRSTLIFETIME OFFCHAIN EDGES' offedges
+ say 'HISTORYFIRSTLIFETIME TRUNCATED' truncated
+ say 'HISTORYFIRSTLIFETIME PRESENT' fvpresent
+ say 'HISTORYFIRSTLIFETIME ABSENT' fvabsent
+ say 'HISTORYFIRSTLIFETIME VERSIONS' fvversions
+ say 'HISTORYFIRSTLIFETIME RUNS' frruns
+ say 'HISTORYFIRSTLIFETIME TRANSITIONS' frtrans
+ say 'HISTORYFIRSTLIFETIME CHANGES' fdchanged
+ do ri=1 to frruns
+  vi=frver.ri
+  fs=frstart.ri
+  fe=frend.ri
+  ns=fpnode.fs
+  ne=fpnode.fe
+  say 'HISTORYFIRSTLIFETIME RUN' ri 'VERSION' vi,
+      'NODES' frnodes.ri
+  if vi=0 then say 'HISTORYFIRSTLIFETIME RUN' ri 'STATE ABSENT'
+  else do
+   say 'HISTORYFIRSTLIFETIME RUN' ri 'STATE PRESENT'
+   say 'HISTORYFIRSTLIFETIME RUN' ri 'OID' fvoid.vi
+   say 'HISTORYFIRSTLIFETIME RUN' ri 'TYPE' fvtype.vi,
+       'SIZE' fvsize.vi
+  end
+  say 'HISTORYFIRSTLIFETIME RUN' ri 'START STEP' fs,
+      'DEPTH' sdepth.ns
+  say 'HISTORYFIRSTLIFETIME RUN' ri 'START COMMIT' scommit.ns
+  say 'HISTORYFIRSTLIFETIME RUN' ri 'END STEP' fe,
+      'DEPTH' sdepth.ne
+  say 'HISTORYFIRSTLIFETIME RUN' ri 'END COMMIT' scommit.ne
+ end
+ do ri=1 to frtrans
+  fi=frend.ri
+  rj=ri+1
+  say 'HISTORYFIRSTLIFETIME TRANSITION' ri 'FROM RUN' ri,
+      'TO RUN' rj
+  say 'HISTORYFIRSTLIFETIME TRANSITION' ri 'EDGE' fi,
+      'STATUS' fdstatus.fi
+ end
+ say 'HISTORYFIRSTLIFETIME DATA END'
  return 0
 
 statefirstlog:
