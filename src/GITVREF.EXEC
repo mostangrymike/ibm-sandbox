@@ -1,4 +1,4 @@
-/* M127: authenticated full-identity history actors. */
+/* M128: authenticated full-subject history summary. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M127'
+ say 'GITVREF EXEC LEVEL M128'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -17,7 +17,7 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTSTATUS' & command\='HISTNEAR' &,
    command\='HISTTRANS' & command\='HISTREPORT' &,
    command\='HISTBOUNDS' & command\='HISTCHRON' &,
-   command\='HISTACTORS' then do
+   command\='HISTACTORS' & command\='HISTSUBJECTS' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -28,7 +28,7 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTSTATUS' | command='HISTNEAR' |,
    command='HISTTRANS' | command='HISTREPORT' |,
    command='HISTBOUNDS' | command='HISTCHRON' |,
-   command='HISTACTORS' then do
+   command='HISTACTORS' | command='HISTSUBJECTS' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -38,7 +38,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTLOG' | command='HISTSTATUS' |,
    command='HISTNEAR' | command='HISTTRANS' |,
    command='HISTREPORT' | command='HISTBOUNDS' |,
-   command='HISTCHRON' | command='HISTACTORS' then do
+   command='HISTCHRON' | command='HISTACTORS' |,
+   command='HISTSUBJECTS' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -55,13 +56,14 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTBOUNDS' & depth+0>8 then exit 4
  if command='HISTCHRON' & depth+0>8 then exit 4
  if command='HISTACTORS' & depth+0>8 then exit 4
+ if command='HISTSUBJECTS' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
     command='HISTSTATUS' | command='HISTNEAR' |,
     command='HISTTRANS' | command='HISTREPORT' |,
     command='HISTBOUNDS' | command='HISTCHRON' |,
-    command='HISTACTORS' then do
+    command='HISTACTORS' | command='HISTSUBJECTS' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -93,7 +95,8 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
         command='HISTLOG' | command='HISTSTATUS' |,
         command='HISTNEAR' | command='HISTTRANS' |,
         command='HISTREPORT' | command='HISTBOUNDS' |,
-        command='HISTCHRON' | command='HISTACTORS' then do
+        command='HISTCHRON' | command='HISTACTORS' |,
+   command='HISTSUBJECTS' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -126,7 +129,8 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTLOG' | command='HISTSTATUS' |,
    command='HISTNEAR' | command='HISTTRANS' |,
    command='HISTREPORT' | command='HISTBOUNDS' |,
-   command='HISTCHRON' | command='HISTACTORS' then do
+   command='HISTCHRON' | command='HISTACTORS' |,
+   command='HISTSUBJECTS' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -163,6 +167,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTACTORS' then do
   call stateactors
+  exit result
+ end
+ if command='HISTSUBJECTS' then do
+  call statesubjects
   exit result
  end
  call statediff
@@ -386,7 +394,7 @@ statecheck:
  drop sauthorwhen. sauthtz. scommitwhen. scommittz. smsgbytes.
  drop saidentbytes. saidentprefix. saidenthex. saidentid.
  drop scidentbytes. scidentprefix. scidenthex. scidentid.
- drop ssubbytes. ssubprefix. ssubhex.
+ drop ssubbytes. ssubprefix. ssubhex. ssubid.
  drop sedgechild. sedgeparent. sedgekey. sparentseen.
  drop sseencommit.
  curnode=-1
@@ -409,6 +417,7 @@ statecheck:
  havemsg=1
  havesubmeta=1
  havesubhex=1
+ havesubid=1
  havestate=1
  do ci=1 to out.0
   if words(out.ci)=5 & word(out.ci,1)='HISTORYDAGSTATE' &,
@@ -417,7 +426,8 @@ statecheck:
       haveauthor=0 | haveaidentmeta=0 | haveaidenthex=0 |,
       haveaidentid=0 | havecommitter=0 |,
       havecidentmeta=0 | havecidenthex=0 | havecidentid=0 |,
-      havemsg=0 | havesubmeta=0 | havesubhex=0 then,
+      havemsg=0 | havesubmeta=0 | havesubhex=0 |,
+      havesubid=0 then,
     return 'ERROR'
    parsednodes=parsednodes+1
    curnode=word(out.ci,3)
@@ -445,6 +455,7 @@ statecheck:
    havemsg=0
    havesubmeta=0
    havesubhex=0
+   havesubid=0
    havestate=0
   end
   else if words(out.ci)=3 &,
@@ -606,6 +617,16 @@ statecheck:
    ssubhex.curnode=sh
    havesubhex=1
   end
+  else if words(out.ci)=4 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='SUBJECT' & word(out.ci,3)='BLOBID' then do
+   if havesubhex=0 | havesubid=1 then return 'ERROR'
+   sid=translate(word(out.ci,4))
+   if length(sid)\=40 then return 'ERROR'
+   if verify(sid,'0123456789ABCDEF')\=0 then return 'ERROR'
+   ssubid.curnode=sid
+   havesubid=1
+  end
   else if words(out.ci)=3 &,
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='PATH' & word(out.ci,3)='ABSENT' then do
@@ -614,7 +635,7 @@ statecheck:
       havecommitter=0 | havecidentmeta=0 | havecidenthex=0 |,
       havecidentid=0 |,
       havemsg=0 | havesubmeta=0 | havesubhex=0 |,
-      havestate=1 then,
+      havesubid=0 | havestate=1 then,
     return 'ERROR'
    spresent.curnode=0
    scommit.curnode=curcommit
@@ -630,7 +651,7 @@ statecheck:
       havecommitter=0 | havecidentmeta=0 | havecidenthex=0 |,
       havecidentid=0 |,
       havemsg=0 | havesubmeta=0 | havesubhex=0 |,
-      havestate=1 then,
+      havesubid=0 | havestate=1 then,
     return 'ERROR'
    if word(out.ci,4)\='TYPE' | word(out.ci,6)\='SIZE' then,
     return 'ERROR'
@@ -695,7 +716,8 @@ statecheck:
     haveauthor=0 | haveaidentmeta=0 | haveaidenthex=0 |,
     haveaidentid=0 | havecommitter=0 |,
     havecidentmeta=0 | havecidenthex=0 | havecidentid=0 |,
-    havemsg=0 | havesubmeta=0 | havesubhex=0 then return 'ERROR'
+    havemsg=0 | havesubmeta=0 | havesubhex=0 |,
+    havesubid=0 then return 'ERROR'
  if snodes\=parsednodes | sedges\=sedgecount then return 'ERROR'
  if sparentseen.1=1 then return 'ERROR'
  do ni=1 to snodes
@@ -726,6 +748,8 @@ statecheck:
   if datatype(ssubprefix.ni,'W')\=1 then return 'ERROR'
   if ssubprefix.ni<0 | ssubprefix.ni>20 then return 'ERROR'
   if ssubprefix.ni>ssubbytes.ni then return 'ERROR'
+  if length(ssubid.ni)\=40 then return 'ERROR'
+  if verify(ssubid.ni,'0123456789ABCDEF')\=0 then return 'ERROR'
   if ni>1 & sparentseen.ni\=1 then return 'ERROR'
  end
  return 'OK'
@@ -805,6 +829,7 @@ emitnodechron:
  say kind 'NODE' ni 'MESSAGE BYTES' smsgbytes.ni
  say kind 'NODE' ni 'SUBJECT BYTES' ssubbytes.ni,
      'PREFIXHEX' ssubhex.ni
+ say kind 'NODE' ni 'SUBJECT BLOBID' ssubid.ni
  return
 
 emitpairchron:
@@ -845,8 +870,10 @@ emitpairchron:
  say kind record num 'PARENTMESSAGE BYTES' smsgbytes.ep
  say kind record num 'CHILDSUBJECT BYTES' ssubbytes.ec,
      'PREFIXHEX' ssubhex.ec
+ say kind record num 'CHILDSUBJECT BLOBID' ssubid.ec
  say kind record num 'PARENTSUBJECT BYTES' ssubbytes.ep,
      'PREFIXHEX' ssubhex.ep
+ say kind record num 'PARENTSUBJECT BLOBID' ssubid.ep
  return
 
 stateemit:
@@ -1758,6 +1785,54 @@ emitverified:
  if reskind='COMMIT' then say 'VERIFIED COMMIT' oid
  else say 'VERIFIED REF' spec oid
  return
+
+statesubjects:
+ drop qseen. qid. qbytes. qprefix. qhex. qcount. qmin. qmax.
+ subjects=0
+ do ni=1 to snodes
+  key=ssubid.ni
+  qi=qseen.key
+  if datatype(qi,'W')\=1 then do
+   subjects=subjects+1
+   qi=subjects
+   qseen.key=qi
+   qid.qi=key
+   qbytes.qi=ssubbytes.ni
+   qprefix.qi=ssubprefix.ni
+   qhex.qi=ssubhex.ni
+   qcount.qi=1
+   qmin.qi=sdepth.ni
+   qmax.qi=sdepth.ni
+  end
+  else do
+   if qbytes.qi\=ssubbytes.ni | qprefix.qi\=ssubprefix.ni |,
+      qhex.qi\=ssubhex.ni then return 8
+   qcount.qi=qcount.qi+1
+   if sdepth.ni<qmin.qi then qmin.qi=sdepth.ni
+   if sdepth.ni>qmax.qi then qmax.qi=sdepth.ni
+  end
+ end
+ qtotal=0
+ do qi=1 to subjects
+  qtotal=qtotal+qcount.qi
+ end
+ if qtotal\=snodes then return 8
+ call emitverified
+ say 'HISTORYSUBJECTS FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYSUBJECTS DATA BEGIN'
+ say 'HISTORYSUBJECTS NODES' snodes
+ say 'HISTORYSUBJECTS SUBJECTS' subjects
+ do qi=1 to subjects
+  say 'HISTORYSUBJECTS SUBJECT' qi 'BLOBID' qid.qi
+  say 'HISTORYSUBJECTS SUBJECT' qi 'BYTES' qbytes.qi,
+      'PREFIXBYTES' qprefix.qi
+  say 'HISTORYSUBJECTS SUBJECT' qi 'PREFIXHEX' qhex.qi
+  say 'HISTORYSUBJECTS SUBJECT' qi 'COUNT' qcount.qi,
+      'MINDEPTH' qmin.qi 'MAXDEPTH' qmax.qi
+ end
+ say 'HISTORYSUBJECTS DATA END'
+ return 0
+
 
 stateactors:
  drop aseen. aaid. aabytes. aaprefix. aahex. aacount. aamin. aamax.

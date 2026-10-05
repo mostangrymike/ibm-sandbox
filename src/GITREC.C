@@ -330,7 +330,8 @@ static int rec_commit_times(unsigned long n,
                             unsigned long *message_bytes,
                             unsigned long *subject_bytes,
                             unsigned char *subject_prefix,
-                            unsigned int *prefix_bytes) {
+                            unsigned int *prefix_bytes,
+                            unsigned char subject_blobid[20]) {
  unsigned long at=0,begin,len,message,subject_end;
  unsigned long copy;
  int author=0,committer=0;
@@ -354,6 +355,8 @@ static int rec_commit_times(unsigned long n,
    *prefix_bytes=(unsigned int)copy;
    if(copy>0)
     memcpy(subject_prefix,idx_body+message,(size_t)copy);
+   if(!idx_hash(3,idx_body+message,*subject_bytes,subject_blobid))
+    return 0;
    return author&&committer;
   }
   if(rec_ascii_key(idx_body+begin,len,"author")) {
@@ -1086,6 +1089,7 @@ static int rec_history_dag_state(const unsigned char *starting,
  unsigned char commits[64][20],trees[64][20],levels[64];
  unsigned char results[64][20],parent[20];
  unsigned char subject_prefix[64][20];
+ unsigned char subject_blobid[64][20];
  unsigned char author_ident_prefix[64][20];
  unsigned char commit_ident_prefix[64][20];
  unsigned char author_ident_blobid[64][20];
@@ -1136,7 +1140,8 @@ static int rec_history_dag_state(const unsigned char *starting,
                        commit_ident_blobid[head],
                        &msgbytes[head],&subject_bytes[head],
                        subject_prefix[head],
-                       &subject_prefix_bytes[head])) {
+                       &subject_prefix_bytes[head],
+                       subject_blobid[head])) {
    puts("HISTORYDAGSTATE COMMIT META INVALID");return 8;
   }
   if(!rec_ascii_oid(idx_body+5,trees[head])) return 8;
@@ -1221,6 +1226,8 @@ static int rec_history_dag_state(const unsigned char *starting,
    for(k=0;k<subject_prefix_bytes[j];k++)
     printf("%02X",(unsigned int)subject_prefix[j][k]);
   putchar('\n');
+  fputs("HISTORYDAGSTATE SUBJECT BLOBID ",stdout);
+  idx_print(stdout,subject_blobid[j]);putchar('\n');
   if(present[j]) {
    printf("HISTORYDAGSTATE PATH PRESENT TYPE %d SIZE %lu\n",
           types[j],sizes[j]);
