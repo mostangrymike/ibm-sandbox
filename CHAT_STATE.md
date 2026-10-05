@@ -5329,3 +5329,8 @@ inside the presence interval and are excluded.
 The sealed fixture expects two zero-span runs, so author and committer zero
 runs are 2 and positive/negative counts are 0. M154 expects EVENTS 1, FROM RUN
 1 TO RUN 2, full edge 1 DELETED. Wrapper-only; GITREC remains M132.
+
+
+## M153-M154 HOST PASS / NEXT CMS GATE
+
+PR #107 passed native-stage 37378665424, merged as 75e4801110a50a8a7c54522546e32f950dda2bc4, and post-merge main run 37378777693 passed. Independent guard: 574/574. Handshake M154/M154; GITREC still M132. Next CMS gate uploads GITVREF.EXEC and GIT.EXEC, then runs HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL and HISTORYFIRSTPRESENCEEVENTS-REF-FULL on sealed 486ADAA5... depth 1 path src/GITPBWALK.EXEC. Expect two zero-span presence runs and one full DELETED presence event. No CMSCLNK or GITRUN.
