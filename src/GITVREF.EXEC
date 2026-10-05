@@ -1,4 +1,4 @@
-/* M128: authenticated full-subject history summary. */
+/* M129: authenticated full commit-body history summary. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M128'
+ say 'GITVREF EXEC LEVEL M129'
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -17,7 +17,8 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTSTATUS' & command\='HISTNEAR' &,
    command\='HISTTRANS' & command\='HISTREPORT' &,
    command\='HISTBOUNDS' & command\='HISTCHRON' &,
-   command\='HISTACTORS' & command\='HISTSUBJECTS' then do
+   command\='HISTACTORS' & command\='HISTSUBJECTS' &,
+   command\='HISTBODIES' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -28,7 +29,8 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTSTATUS' | command='HISTNEAR' |,
    command='HISTTRANS' | command='HISTREPORT' |,
    command='HISTBOUNDS' | command='HISTCHRON' |,
-   command='HISTACTORS' | command='HISTSUBJECTS' then do
+   command='HISTACTORS' | command='HISTSUBJECTS' |,
+   command='HISTBODIES' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -39,7 +41,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTNEAR' | command='HISTTRANS' |,
    command='HISTREPORT' | command='HISTBOUNDS' |,
    command='HISTCHRON' | command='HISTACTORS' |,
-   command='HISTSUBJECTS' then do
+   command='HISTSUBJECTS' | command='HISTBODIES' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -57,13 +59,15 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTCHRON' & depth+0>8 then exit 4
  if command='HISTACTORS' & depth+0>8 then exit 4
  if command='HISTSUBJECTS' & depth+0>8 then exit 4
+ if command='HISTBODIES' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
     command='HISTSTATUS' | command='HISTNEAR' |,
     command='HISTTRANS' | command='HISTREPORT' |,
     command='HISTBOUNDS' | command='HISTCHRON' |,
-    command='HISTACTORS' | command='HISTSUBJECTS' then do
+    command='HISTACTORS' | command='HISTSUBJECTS' |,
+   command='HISTBODIES' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -96,7 +100,7 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
         command='HISTNEAR' | command='HISTTRANS' |,
         command='HISTREPORT' | command='HISTBOUNDS' |,
         command='HISTCHRON' | command='HISTACTORS' |,
-   command='HISTSUBJECTS' then do
+   command='HISTSUBJECTS' | command='HISTBODIES' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -130,7 +134,7 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTNEAR' | command='HISTTRANS' |,
    command='HISTREPORT' | command='HISTBOUNDS' |,
    command='HISTCHRON' | command='HISTACTORS' |,
-   command='HISTSUBJECTS' then do
+   command='HISTSUBJECTS' | command='HISTBODIES' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -171,6 +175,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTSUBJECTS' then do
   call statesubjects
+  exit result
+ end
+ if command='HISTBODIES' then do
+  call statebodies
   exit result
  end
  call statediff
@@ -391,7 +399,8 @@ statecheck:
  sedges=-1
  sedgecount=0
  drop spresent. soid. stype. ssize. scommit. stree. sdepth.
- drop sauthorwhen. sauthtz. scommitwhen. scommittz. smsgbytes.
+ drop sauthorwhen. sauthtz. scommitwhen. scommittz.
+ drop smsgbytes. smsgid.
  drop saidentbytes. saidentprefix. saidenthex. saidentid.
  drop scidentbytes. scidentprefix. scidenthex. scidentid.
  drop ssubbytes. ssubprefix. ssubhex. ssubid.
@@ -415,6 +424,7 @@ statecheck:
  havecidenthex=1
  havecidentid=1
  havemsg=1
+ havemsgid=1
  havesubmeta=1
  havesubhex=1
  havesubid=1
@@ -426,7 +436,8 @@ statecheck:
       haveauthor=0 | haveaidentmeta=0 | haveaidenthex=0 |,
       haveaidentid=0 | havecommitter=0 |,
       havecidentmeta=0 | havecidenthex=0 | havecidentid=0 |,
-      havemsg=0 | havesubmeta=0 | havesubhex=0 |,
+      havemsg=0 | havemsgid=0 |,
+      havesubmeta=0 | havesubhex=0 |,
       havesubid=0 then,
     return 'ERROR'
    parsednodes=parsednodes+1
@@ -453,6 +464,7 @@ statecheck:
    havecidenthex=0
    havecidentid=0
    havemsg=0
+   havemsgid=0
    havesubmeta=0
    havesubhex=0
    havesubid=0
@@ -587,11 +599,21 @@ statecheck:
    smsgbytes.curnode=mb
    havemsg=1
   end
+  else if words(out.ci)=4 &,
+          word(out.ci,1)='HISTORYDAGSTATE' &,
+          word(out.ci,2)='MESSAGE' & word(out.ci,3)='BLOBID' then do
+   if havemsg=0 | havemsgid=1 then return 'ERROR'
+   mid=translate(word(out.ci,4))
+   if length(mid)\=40 then return 'ERROR'
+   if verify(mid,'0123456789ABCDEF')\=0 then return 'ERROR'
+   smsgid.curnode=mid
+   havemsgid=1
+  end
   else if words(out.ci)=6 &,
           word(out.ci,1)='HISTORYDAGSTATE' &,
           word(out.ci,2)='SUBJECT' & word(out.ci,3)='BYTES' &,
           word(out.ci,5)='PREFIXBYTES' then do
-   if havemsg=0 | havesubmeta=1 then return 'ERROR'
+   if havemsg=0 | havemsgid=0 | havesubmeta=1 then return 'ERROR'
    sb=word(out.ci,4)
    sp=word(out.ci,6)
    if datatype(sb,'W')\=1 | sb<0 then return 'ERROR'
@@ -634,8 +656,9 @@ statecheck:
       haveaidentmeta=0 | haveaidenthex=0 | haveaidentid=0 |,
       havecommitter=0 | havecidentmeta=0 | havecidenthex=0 |,
       havecidentid=0 |,
-      havemsg=0 | havesubmeta=0 | havesubhex=0 |,
-      havesubid=0 | havestate=1 then,
+      havemsg=0 | havemsgid=0 |,
+      havesubmeta=0 | havesubhex=0 | havesubid=0 |,
+      havestate=1 then,
     return 'ERROR'
    spresent.curnode=0
    scommit.curnode=curcommit
@@ -650,8 +673,9 @@ statecheck:
       haveaidentmeta=0 | haveaidenthex=0 | haveaidentid=0 |,
       havecommitter=0 | havecidentmeta=0 | havecidenthex=0 |,
       havecidentid=0 |,
-      havemsg=0 | havesubmeta=0 | havesubhex=0 |,
-      havesubid=0 | havestate=1 then,
+      havemsg=0 | havemsgid=0 |,
+      havesubmeta=0 | havesubhex=0 | havesubid=0 |,
+      havestate=1 then,
     return 'ERROR'
    if word(out.ci,4)\='TYPE' | word(out.ci,6)\='SIZE' then,
     return 'ERROR'
@@ -716,8 +740,9 @@ statecheck:
     haveauthor=0 | haveaidentmeta=0 | haveaidenthex=0 |,
     haveaidentid=0 | havecommitter=0 |,
     havecidentmeta=0 | havecidenthex=0 | havecidentid=0 |,
-    havemsg=0 | havesubmeta=0 | havesubhex=0 |,
-    havesubid=0 then return 'ERROR'
+    havemsg=0 | havemsgid=0 |,
+    havesubmeta=0 | havesubhex=0 | havesubid=0 then,
+    return 'ERROR'
  if snodes\=parsednodes | sedges\=sedgecount then return 'ERROR'
  if sparentseen.1=1 then return 'ERROR'
  do ni=1 to snodes
@@ -744,6 +769,8 @@ statecheck:
   if length(scidentid.ni)\=40 then return 'ERROR'
   if verify(scidentid.ni,'0123456789ABCDEF')\=0 then return 'ERROR'
   if datatype(smsgbytes.ni,'W')\=1 then return 'ERROR'
+  if length(smsgid.ni)\=40 then return 'ERROR'
+  if verify(smsgid.ni,'0123456789ABCDEF')\=0 then return 'ERROR'
   if datatype(ssubbytes.ni,'W')\=1 then return 'ERROR'
   if datatype(ssubprefix.ni,'W')\=1 then return 'ERROR'
   if ssubprefix.ni<0 | ssubprefix.ni>20 then return 'ERROR'
@@ -827,6 +854,7 @@ emitnodechron:
  lag=scommitwhen.ni-sauthorwhen.ni
  say kind 'NODE' ni 'AUTHOR TO COMMITTER LAG SECONDS' lag
  say kind 'NODE' ni 'MESSAGE BYTES' smsgbytes.ni
+ say kind 'NODE' ni 'MESSAGE BLOBID' smsgid.ni
  say kind 'NODE' ni 'SUBJECT BYTES' ssubbytes.ni,
      'PREFIXHEX' ssubhex.ni
  say kind 'NODE' ni 'SUBJECT BLOBID' ssubid.ni
@@ -867,7 +895,9 @@ emitpairchron:
  say kind record num 'CHILD AUTHOR TO COMMITTER LAG SECONDS' clag
  say kind record num 'PARENT AUTHOR TO COMMITTER LAG SECONDS' plag
  say kind record num 'CHILDMESSAGE BYTES' smsgbytes.ec
+ say kind record num 'CHILDMESSAGE BLOBID' smsgid.ec
  say kind record num 'PARENTMESSAGE BYTES' smsgbytes.ep
+ say kind record num 'PARENTMESSAGE BLOBID' smsgid.ep
  say kind record num 'CHILDSUBJECT BYTES' ssubbytes.ec,
      'PREFIXHEX' ssubhex.ec
  say kind record num 'CHILDSUBJECT BLOBID' ssubid.ec
@@ -1785,6 +1815,58 @@ emitverified:
  if reskind='COMMIT' then say 'VERIFIED COMMIT' oid
  else say 'VERIFIED REF' spec oid
  return
+
+statebodies:
+ drop bseen. bid. bbytes. bsubid. bsubbytes. bsubhex.
+ drop bcount. bmin. bmax.
+ bodies=0
+ do ni=1 to snodes
+  key=smsgid.ni
+  bi=bseen.key
+  if datatype(bi,'W')\=1 then do
+   bodies=bodies+1
+   bi=bodies
+   bseen.key=bi
+   bid.bi=key
+   bbytes.bi=smsgbytes.ni
+   bsubid.bi=ssubid.ni
+   bsubbytes.bi=ssubbytes.ni
+   bsubhex.bi=ssubhex.ni
+   bcount.bi=1
+   bmin.bi=sdepth.ni
+   bmax.bi=sdepth.ni
+  end
+  else do
+   if bbytes.bi\=smsgbytes.ni | bsubid.bi\=ssubid.ni |,
+      bsubbytes.bi\=ssubbytes.ni | bsubhex.bi\=ssubhex.ni then,
+    return 8
+   bcount.bi=bcount.bi+1
+   if sdepth.ni<bmin.bi then bmin.bi=sdepth.ni
+   if sdepth.ni>bmax.bi then bmax.bi=sdepth.ni
+  end
+ end
+ btotal=0
+ do bi=1 to bodies
+  btotal=btotal+bcount.bi
+ end
+ if btotal\=snodes then return 8
+ call emitverified
+ say 'HISTORYBODIES FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYBODIES DATA BEGIN'
+ say 'HISTORYBODIES NODES' snodes
+ say 'HISTORYBODIES BODIES' bodies
+ do bi=1 to bodies
+  say 'HISTORYBODIES BODY' bi 'BLOBID' bid.bi
+  say 'HISTORYBODIES BODY' bi 'BYTES' bbytes.bi
+  say 'HISTORYBODIES BODY' bi 'SUBJECT BLOBID' bsubid.bi
+  say 'HISTORYBODIES BODY' bi 'SUBJECT BYTES' bsubbytes.bi,
+      'PREFIXHEX' bsubhex.bi
+  say 'HISTORYBODIES BODY' bi 'COUNT' bcount.bi,
+      'MINDEPTH' bmin.bi 'MAXDEPTH' bmax.bi
+ end
+ say 'HISTORYBODIES DATA END'
+ return 0
+
 
 statesubjects:
  drop qseen. qid. qbytes. qprefix. qhex. qcount. qmin. qmax.

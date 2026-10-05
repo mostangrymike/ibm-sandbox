@@ -328,6 +328,7 @@ static int rec_commit_times(unsigned long n,
                             unsigned int *commit_prefix_bytes,
                             unsigned char commit_ident_blobid[20],
                             unsigned long *message_bytes,
+                            unsigned char message_blobid[20],
                             unsigned long *subject_bytes,
                             unsigned char *subject_prefix,
                             unsigned int *prefix_bytes,
@@ -346,6 +347,8 @@ static int rec_commit_times(unsigned long n,
   if(len==0) {
    message=at+1;
    *message_bytes=n-message;
+   if(!idx_hash(3,idx_body+message,*message_bytes,message_blobid))
+    return 0;
    subject_end=message;
    while(subject_end<n&&idx_body[subject_end]!=0x0a)
     subject_end++;
@@ -1090,6 +1093,7 @@ static int rec_history_dag_state(const unsigned char *starting,
  unsigned char results[64][20],parent[20];
  unsigned char subject_prefix[64][20];
  unsigned char subject_blobid[64][20];
+ unsigned char message_blobid[64][20];
  unsigned char author_ident_prefix[64][20];
  unsigned char commit_ident_prefix[64][20];
  unsigned char author_ident_blobid[64][20];
@@ -1138,7 +1142,8 @@ static int rec_history_dag_state(const unsigned char *starting,
                        commit_ident_prefix[head],
                        &commit_ident_prefix_bytes[head],
                        commit_ident_blobid[head],
-                       &msgbytes[head],&subject_bytes[head],
+                       &msgbytes[head],message_blobid[head],
+                       &subject_bytes[head],
                        subject_prefix[head],
                        &subject_prefix_bytes[head],
                        subject_blobid[head])) {
@@ -1218,6 +1223,8 @@ static int rec_history_dag_state(const unsigned char *starting,
   fputs("HISTORYDAGSTATE CIDENT BLOBID ",stdout);
   idx_print(stdout,commit_ident_blobid[j]);putchar('\n');
   printf("HISTORYDAGSTATE MESSAGE BYTES %lu\n",msgbytes[j]);
+  fputs("HISTORYDAGSTATE MESSAGE BLOBID ",stdout);
+  idx_print(stdout,message_blobid[j]);putchar('\n');
   printf("HISTORYDAGSTATE SUBJECT BYTES %lu PREFIXBYTES %u\n",
          subject_bytes[j],subject_prefix_bytes[j]);
   fputs("HISTORYDAGSTATE SUBJECTHEX ",stdout);
