@@ -2856,6 +2856,7 @@ preparefirstpresence:
  prtrans=prruns-1
  prexistchanges=fdadd+fddelete
  if prtrans\=prexistchanges then return 'ERROR'
+ if frruns-prruns\=fdmodify then return 'ERROR'
  do ri=1 to prtrans
   fi=prend.ri
   if fi<1 | fi>chainedges then return 'ERROR'
