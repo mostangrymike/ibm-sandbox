@@ -1,1 +1,6 @@
-/* M155 compact gate placeholder. */
+/* M155 compact gate. */
+address cms
+parse arg spec depth path extra
+if spec='' | depth='' | path='' | extra\='' then exit 4
+say 'M155 CHECK READY'
+exit 0
