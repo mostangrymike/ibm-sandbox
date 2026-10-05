@@ -1755,3 +1755,20 @@ M153/M154 depth-1 arguments, then run M156CHK and M157CHK. Successful combined
 output is only nine PASS lines plus the Ready prompts; no verbose history
 command should be pasted unless one compact checker fails. No CMSCLNK. No
 GITRUN.
+
+
+## M157 ONE-COMMAND COMPACT CMS GATE
+
+M157GATE EXEC now supersedes the earlier three-checker target procedure. It
+runs M155CHK, M156CHK and M157CHK internally, requires each compact gate to
+return RC0 and its final PASS marker, suppresses their successful detail, and
+prints only four lines:
+
+M157GATE M155 PASS
+M157GATE M156 PASS
+M157GATE M157 PASS
+M157GATE COMBINED TARGET GATE PASS
+
+followed by plain Ready;. On failure, rerun only the named compact checker;
+use verbose history output only if that checker also fails. This remains
+read-only and does not rebuild GITREC, generations, indexes, or protected data.
