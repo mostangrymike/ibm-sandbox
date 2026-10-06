@@ -12,7 +12,7 @@ path='src/GITPBWALK.EXEC'
 drop chr.
 chr.0=0
 cmd='EXEC GIT HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL' spec depth path
-'PIPE COMMAND' cmd '| STEM chr.'
+address command 'PIPE COMMAND' cmd '| STEM chr.'
 crc=rc
 if crc\=0 then do
  say 'M155 CHRONOLOGY FAIL RC' crc
@@ -40,7 +40,7 @@ say 'M155 CHRONOLOGY PASS RUNS 2 ZERO 2/2'
 drop evt.
 evt.0=0
 cmd='EXEC GIT HISTORYFIRSTPRESENCEEVENTS-REF-FULL' spec depth path
-'PIPE COMMAND' cmd '| STEM evt.'
+address command 'PIPE COMMAND' cmd '| STEM evt.'
 erc=rc
 if erc\=0 then do
  say 'M155 EVENTS FAIL RC' erc
