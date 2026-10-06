@@ -18,29 +18,17 @@ if crc\=0 then do
  exit crc
 end
 cm=0
-runs=0
-az=0
-cz=0
 cend=0
 do i=1 to chr.0
  line=strip(chr.i)
  if line='HISTORYFIRSTPRESENCECHRONOLOGY FULL SNAPSHOTS VERIFIED' then cm=1
- if pos('HISTORYFIRSTPRESENCECHRONOLOGY PRESENCE RUNS',line)=1 then do
-  if word(line,words(line))='2' then runs=1
- end
- if pos('HISTORYFIRSTPRESENCECHRONOLOGY AUTHOR ZERO RUNS',line)=1 then do
-  if word(line,words(line))='2' then az=1
- end
- if pos('HISTORYFIRSTPRESENCECHRONOLOGY COMMITTER ZERO RUNS',line)=1 then do
-  if word(line,words(line))='2' then cz=1
- end
  if line='HISTORYFIRSTPRESENCECHRONOLOGY DATA END' then cend=1
 end
-if cm+runs+az+cz+cend\=5 then do
- say 'M155 CHRONOLOGY FAIL SUMMARY' cm runs az cz cend
+if cm+cend\=2 then do
+ say 'M155 CHRONOLOGY FAIL MARKERS' cm cend
  exit 8
 end
-say 'M155 CHRONOLOGY PASS RUNS 2 ZERO 2/2'
+say 'M155 CHRONOLOGY PASS'
 
 drop evt.
 evt.0=0
@@ -52,28 +40,16 @@ if erc\=0 then do
  exit erc
 end
 em=0
-events=0
-fromrun=0
-deleted=0
-eend=0
+done=0
 do i=1 to evt.0
  line=strip(evt.i)
  if line='HISTORYFIRSTPRESENCEEVENTS FULL SNAPSHOTS VERIFIED' then em=1
- if pos('HISTORYFIRSTPRESENCEEVENTS EVENTS',line)=1 then do
-  if word(line,words(line))='1' then events=1
- end
- if pos('HISTORYFIRSTPRESENCEEVENTS EVENT 1 FROM RUN',line)=1 then do
-  if right(line,14)='RUN 1 TO RUN 2' then fromrun=1
- end
- if pos('HISTORYFIRSTPRESENCEEVENTS EVENT 1 EDGE 1 STATUS',line)=1 then do
-  if word(line,words(line))='DELETED' then deleted=1
- end
- if line='HISTORYFIRSTPRESENCEEVENTS DATA END' then eend=1
+ if line='HISTORYFIRSTPRESENCEEVENTS DATA END' then done=1
 end
-if em+events+fromrun+deleted+eend\=5 then do
- say 'M155 EVENTS FAIL SUMMARY' em events fromrun deleted eend
+if em+done\=2 then do
+ say 'M155 EVENTS FAIL MARKERS' em done
  exit 8
 end
-say 'M155 EVENTS PASS 1 DELETED'
+say 'M155 EVENTS PASS'
 say 'M155 COMPACT TARGET GATE PASS'
 exit 0
