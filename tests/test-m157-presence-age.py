@@ -28,6 +28,8 @@ assert "M157 AGE FAIL PROOF" in c
 assert "M157 GITVREF STAMP PASS P2" in c
 assert "HFPA P2 S 2 6 1 CHANGE" in c
 assert "HFPA P2 R ABSENT 6 DELETED 268 268" in c
+assert "'PIPE COMMAND' cmd '| STEM out.'" in c
+assert "path='src/GITPBWALK.EXEC'" in c
 
 for path in (root / "src" / "GIT.EXEC",
              root / "src" / "GITVREF.EXEC",

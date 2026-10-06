@@ -5553,3 +5553,24 @@ HFPA P2 R <state> <begin-edge> <status> <author-seconds> <committer-seconds>
 The M156 sealed expectations are S=3 1 1 1 0 3 4 2 and
 R=2 PRESENT 5 ADDED 1 DELETED 50 50. M157 expectations remain
 S=2 6 1 CHANGE and R=ABSENT 6 DELETED 268 268.
+
+
+## 2026-10-06 ROOT CAUSE: PIPE CMS UPPERCASED GIT PATHS
+
+Real CMS P2 diagnostics proved the live GITVREF was current but M156 saw
+HFPD P2 S 1 0 0 0 0 5 0 6: all six authenticated snapshots were classified
+ABSENT. This was not a duration-run bug.
+
+IBM CMS documents that the CMS REXX environment uppercases its command input,
+while COMMAND preserves mixed-case operands. The CMS Pipelines COMMAND stage
+uses the COMMAND environment. The compact checkers were issuing public Git
+commands through PIPE CMS, so the case-sensitive Git path
+src/GITPBWALK.EXEC was converted to SRC/GITPBWALK.EXEC before GITVREF encoded
+it. Native path lookup therefore correctly returned ABSENT for every snapshot.
+
+M155CHK is now a sealed no-argument checker and restores its full M153/M154
+semantic assertions. M155CHK, M156CHK, and M157CHK invoke mixed-case public Git
+commands with PIPE COMMAND and an explicit uppercase EXEC GIT prefix.
+M157GATE no longer passes a mixed-case path through PIPE CMS. No public Git
+semantics, GIT/GITVREF level, native GITREC, generations, indexes, or protected
+data changed.

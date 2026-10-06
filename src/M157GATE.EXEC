@@ -6,12 +6,9 @@ if extra\='' then do
  exit 4
 end
 
-spec='486ADAA5B02080720F4B329C6F68550B13C6AA87'
-path='src/GITPBWALK.EXEC'
-
 drop out.
 out.0=0
-'PIPE CMS EXEC M155CHK' spec 1 path '| STEM out.'
+'PIPE CMS EXEC M155CHK | STEM out.'
 grc=rc
 if grc\=0 then do
  say 'M157GATE M155 FAIL RC' grc
