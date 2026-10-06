@@ -28,6 +28,8 @@ on:
       - 'tests/test-m156-presence-duration.py'
       - 'src/M157CHK.EXEC'
       - 'tests/test-m157-presence-age.py'
+      - 'src/M158CHK.EXEC'
+      - 'tests/test-m158-presence-time.py'
       - 'src/M157GATE.EXEC'
       - 'tests/check-m157-gate.sh'
       - 'tests/check-readonly-gitrchk.sh'
@@ -70,6 +72,8 @@ on:
       - 'tests/test-m156-presence-duration.py'
       - 'src/M157CHK.EXEC'
       - 'tests/test-m157-presence-age.py'
+      - 'src/M158CHK.EXEC'
+      - 'tests/test-m158-presence-time.py'
       - 'src/M157GATE.EXEC'
       - 'tests/check-m157-gate.sh'
       - 'tests/check-readonly-gitrchk.sh'
@@ -107,6 +111,8 @@ jobs:
         run: python3 tests/test-m156-presence-duration.py
       - name: Check M157 authenticated current presence age
         run: python3 tests/test-m157-presence-age.py
+      - name: Check M158 authenticated presence time
+        run: python3 tests/test-m158-presence-time.py
       - name: Check combined compact M157 target gate
         run: sh tests/check-m157-gate.sh
       - name: Check neutral compiler EXEC source and F-disk setup
