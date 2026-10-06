@@ -24,6 +24,12 @@ grep -Fq "line=space(chr.i)" "$x"
 grep -Fq "line=space(evt.i)" "$x"
 grep -Fq "M155 CHRONOLOGY PASS" "$x"
 grep -Fq "M155 EVENTS PASS" "$x"
+grep -Fq "M155 CHECKER STAMP C4" "$x"
+grep -Fq "M155 GIT STAMP PASS C4" "$x"
+grep -Fq "M155 CASE PROBE PASS C4" "$x"
+grep -Fq "M155 OBS P/A/R" "$x"
+grep -Fq "M155 OBS ADD/DEL/ZERO" "$x"
+grep -Fq "GITVREF CASE C4 7372632F474954504257414C4B2E45584543" "$x"
 grep -Fq "M155 COMPACT TARGET GATE PASS" "$x"
 if grep -Ei "(DISKW|ERASE|COPYFILE|GENWRITE|SELOUT|IDXOUT|FIDXOUT|GENOUT)" "$x"; then
  echo "FAIL: M155 compact gate contains persistent write path" >&2
