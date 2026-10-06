@@ -19,10 +19,15 @@ assert "statefirstpresenceduration:" in v
 assert "pdauth.ri=sauthorwhen.en-sauthorwhen.bn" in v
 assert "pdcomm.ri=scommitwhen.en-scommitwhen.bn" in v
 assert "HISTORYFIRSTPRESENCEDURATION PROOF RUN" in v
+assert "GITVREF INTERNAL STAMP P2" in v
+assert "HFPD P2 S" in v
+assert "HFPD P2 R" in v
 assert "M156 COMPACT TARGET GATE PASS" in c
 assert "gn\\=vn | gn<156" in c
-assert "HISTORYFIRSTPRESENCEDURATION PROOF RUN" in c
 assert "M156 DURATION FAIL PROOF" in c
+assert "M156 GITVREF STAMP PASS P2" in c
+assert "HFPD P2 S 3 1 1 1 0 3 4 2" in c
+assert "HFPD P2 R 2 PRESENT 5 ADDED 1 DELETED 50 50" in c
 
 for path in (root / "src" / "GIT.EXEC",
              root / "src" / "GITVREF.EXEC",

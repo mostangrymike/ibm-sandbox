@@ -19,10 +19,15 @@ assert "call preparefirstpresencecurrent" in v
 assert "HISTORYFIRSTPRESENCEAGE AUTHOR SECONDS" in v
 assert "HISTORYFIRSTPRESENCEAGE COMMITTER SECONDS" in v
 assert "HISTORYFIRSTPRESENCEAGE PROOF" in v
+assert "GITVREF INTERNAL STAMP P2" in v
+assert "HFPA P2 S" in v
+assert "HFPA P2 R" in v
 assert "M157 COMPACT TARGET GATE PASS" in c
 assert "gn\\=vn | gn<157" in c
-assert "HISTORYFIRSTPRESENCEAGE PROOF" in c
 assert "M157 AGE FAIL PROOF" in c
+assert "M157 GITVREF STAMP PASS P2" in c
+assert "HFPA P2 S 2 6 1 CHANGE" in c
+assert "HFPA P2 R ABSENT 6 DELETED 268 268" in c
 
 for path in (root / "src" / "GIT.EXEC",
              root / "src" / "GITVREF.EXEC",
