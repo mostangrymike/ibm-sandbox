@@ -5786,3 +5786,36 @@ checker's existing fail-closed return code. Checker internals remain unchanged.
 Host guards require all three direct checker calls and reject any PIPE token in
 M157GATE. Only M157GATE.EXEC needs refreshing on CMS; no GITREC rebuild and no
 GIT/GITVREF refresh are required.
+
+
+## 2026-10-06 COMPACT CHECKER INNER PIPELINE ROOT CAUSE
+
+Refreshing only the direct M157GATE wrapper was not sufficient. Real CMS then
+showed M155CHK itself still produced ABSENT/ABSENT while its HISTORYSTATE command
+was executed through PIPE COMMAND and captured into a STEM. This contrasted
+with the immediately preceding top-level public HISTORYSTATE-REF-FULL run on
+the exact same sealed commit/path, which returned the correct MIXED state with
+node 1 ABSENT and node 2 PRESENT blob
+A0C91615ABA9689C365159205E8CBA26EF6E16F4 type 3 size 1869.
+
+Therefore the remaining defect is specifically execution of HISTORYDAGSTATE
+while the public history command itself is a CMS Pipelines COMMAND stage. The
+production GIT -> GITVREF -> GITREC path is correct when invoked normally.
+
+M155CHK now leaves its already-passing stamp/case/direct-path diagnostics
+unchanged, but runs the M153 chronology and M154 events public commands with
+plain ADDRESS COMMAND and checks only their RC internally. M156CHK and M157CHK
+likewise run their duration/age public commands normally rather than through a
+pipeline capture. Their full authenticated reports are intentionally visible in
+the real CMS gate output so the sealed expected proof values can be inspected
+at this final target-validation boundary before M155-M157 are marked proven.
+
+M157GATE already invokes the three checkers directly. Host guards now enforce:
+- no PIPE token in M157GATE;
+- exactly two direct history calls in M155CHK;
+- exactly one direct history call in M156CHK and M157CHK;
+- no history STEM capture remains in those checker sections;
+- CMS EXEC records remain within 80 columns.
+
+No GIT.EXEC, GITVREF.EXEC, GITREC.C/MODULE, selector, generation, index, seek,
+or protected data changed.
