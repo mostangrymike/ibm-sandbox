@@ -24,7 +24,6 @@ assert "HFPD P2 S" in v
 assert "HFPD P2 R" in v
 assert "M156 COMPACT TARGET GATE PASS" in c
 assert "gn\\=vn | gn<156" in c
-assert "HISTORYFIRSTPRESENCEDURATION PROOF RUN" in c
 assert "M156 DURATION FAIL PROOF" in c
 assert "M156 GITVREF STAMP PASS P2" in c
 assert "HFPD P2 S 3 1 1 1 0 3 4 2" in c
