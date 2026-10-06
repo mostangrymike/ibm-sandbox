@@ -9,6 +9,10 @@ grep -Fq "PIPE CMS EXEC M157CHK" "$x"
 grep -Fq "M155 COMPACT TARGET GATE PASS" "$x"
 grep -Fq "M156 COMPACT TARGET GATE PASS" "$x"
 grep -Fq "M157 COMPACT TARGET GATE PASS" "$x"
+grep -Fq "M157GATE M155 FAIL RC" "$x"
+grep -Fq "M157GATE M156 FAIL RC" "$x"
+grep -Fq "M157GATE M157 FAIL RC" "$x"
+grep -Fq "say out.i" "$x"
 grep -Fq "M157GATE COMBINED TARGET GATE PASS" "$x"
 if grep -Ei "(DISKW|ERASE|COPYFILE|GENWRITE|SELOUT|IDXOUT|FIDXOUT|GENOUT)" "$x"; then
  echo "FAIL: M157 combined gate contains persistent write path" >&2
