@@ -14,6 +14,7 @@ assert gm.group(1) == vm.group(1)
 assert int(gm.group(1)) >= 157
 assert "HISTORYFIRSTPRESENCEAGE-REF-FULL" in g
 assert "EXEC GITVREF HISTFPAGE" in g
+assert "address command 'EXEC GITVREF HISTFPAGE' rest" in g
 assert "statefirstpresenceage:" in v
 assert "call preparefirstpresencecurrent" in v
 assert "HISTORYFIRSTPRESENCEAGE AUTHOR SECONDS" in v
@@ -28,7 +29,7 @@ assert "M157 AGE FAIL PROOF" in c
 assert "M157 GITVREF STAMP PASS P2" in c
 assert "HFPA P2 S 2 6 1 CHANGE" in c
 assert "HFPA P2 R ABSENT 6 DELETED 268 268" in c
-assert "'PIPE COMMAND' cmd '| STEM out.'" in c
+assert "address command 'PIPE COMMAND' cmd '| STEM out.'" in c
 assert "path='src/GITPBWALK.EXEC'" in c
 
 for path in (root / "src" / "GIT.EXEC",
