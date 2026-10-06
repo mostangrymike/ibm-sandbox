@@ -79,6 +79,33 @@ if crc\=4 then do
 end
 say 'M155 CHILD ABSENT PASS RC4'
 
+drop sta.
+sta.0=0
+cmd='EXEC GIT HISTORYSTATE-REF-FULL' spec depth path
+address command 'PIPE COMMAND' cmd '| STEM sta.'
+src=rc
+if src\=0 then do
+ say 'M155 STATE PROBE FAIL RC' src
+ exit 8
+end
+s1=0
+s2=0
+do i=1 to sta.0
+ line=space(sta.i)
+ if line='HISTORYSTATE NODE 1 STATE ABSENT' then s1=1
+ if line='HISTORYSTATE NODE 2 STATE PRESENT' then s2=1
+end
+if s1+s2\=2 then do
+ say 'M155 STATE PROBE FAIL' s1 s2
+ do i=1 to sta.0
+  line=space(sta.i)
+  if pos('HISTORYSTATE NODE ',line)=1 &,
+     pos(' STATE ',line)>0 then say line
+ end
+ exit 8
+end
+say 'M155 STATE PROBE PASS 0/1'
+
 drop chr.
 chr.0=0
 cmd='EXEC GIT HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL' spec depth path
