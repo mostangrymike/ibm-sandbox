@@ -1930,3 +1930,20 @@ On chronology mismatch M155 also emits two short observed-state records with
 PRESENT/ABSENT/PRESENCE-RUN counts and ADD/DELETE/ZERO-run counts. This keeps
 failure diagnosis compact while distinguishing stale EXEC search-path copies,
 case folding, and genuinely unexpected authenticated history semantics.
+
+
+## 2026-10-06 SEALED DIRECT PATH PROBE BEFORE M155 CHRONOLOGY
+
+C4 target output proved the live checker, live GIT wrapper, and exact mixed-case
+path bytes are correct, but chronology still reported PRESENT=0 ABSENT=2.
+
+M155CHK now performs two authenticated direct path probes before chronology
+using the same public READ-REF-FULL route and selected generations:
+- parent 91913EA4028B795707AA67EDB1ED17A74D1B896E must read
+  src/GITPBWALK.EXEC successfully with COMMIT ROOT FULL CLOSURE VERIFIED;
+- child 486ADAA5B02080720F4B329C6F68550B13C6AA87 must return RC4 because the
+  path was removed there.
+
+If both probes pass but chronology still reports both snapshots ABSENT, the
+fault is isolated to native HISTORYDAGSTATE path-state processing rather than
+wrapper case, selected object data, or the ordinary authenticated path walker.
