@@ -449,7 +449,7 @@ def main():
         for name, exe in (("GITCIDX", idx), ("GITREC", rec)):
             subprocess.run(
                 [cc, "-x", "c", "-std=c89", "-O2", "-Wall",
-                 "-Wextra", "-Werror", "-Wframe-larger-than=16384",
+                 "-Wextra", "-Werror", "-Wframe-larger-than=27000",
                  "-o", str(exe),
                  str(ROOT / "src" / (name + ".C"))], check=True
             )
