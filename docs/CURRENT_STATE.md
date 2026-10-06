@@ -2066,3 +2066,107 @@ C5 changes only HISTORYDAGSTATE capture to:
 All non-state native routes retain the existing PIPE CMS capture. The private
 CASE proof is bumped from C4 to C5 so target M155 proves the new GITVREF copy
 is live before state validation. No native C or public history semantics change.
+
+
+## 2026-10-06 NEW-CHAT HANDOFF: M157 STATE-CAPTURE ISOLATION
+
+Current canonical main before the in-progress C5 experiment:
+- main SHA: 62d5f4f931f1c765d0d7504545cff7ac9e053884
+- PR #126 merged: compact public HISTORYSTATE parser discriminator.
+- Post-merge native-stage run 37514076864 completed SUCCESS.
+- GITREC native module on CMS is rebuilt S2 and reports:
+  GITREC STATEPATH S2.
+- Native GITREC is now conclusively exonerated for the two-node fixture.
+
+Real-CMS evidence, in order:
+1. M157GATE with C4/S2 still failed M155:
+   M155 CHECKER STAMP C4
+   M155 GIT STAMP PASS C4
+   M155 GITREC STAMP PASS S2
+   M155 CASE PROBE PASS C4
+   M155 PARENT PATH PASS
+   M155 CHILD ABSENT PASS RC4
+   chronology observed PRESENT 0 ABSENT 2 PRESENCE RUNS 1.
+2. Direct HISTORYPATH-REF-FULL on parent
+   91913EA4028B795707AA67EDB1ED17A74D1B896E depth 0
+   path src/GITPBWALK.EXEC succeeded exactly:
+   TREE AE65405CF230B9FB0992544773B3CF7197015A47
+   TYPE 3 SIZE 1869
+   PATHOID A0C91615ABA9689C365159205E8CBA26EF6E16F4.
+3. Direct native single-node HISTORYDAGSTATE on the same parent/path also
+   succeeded exactly with PATH PRESENT TYPE 3 SIZE 1869 and the same PATHOID.
+4. Direct native two-node HISTORYDAGSTATE from
+   486ADAA5B02080720F4B329C6F68550B13C6AA87 depth 1 with path hex
+   7372632F474954504257414C4B2E45584543 is completely correct:
+   - NODE 1 child 486AD... TREE 909B1D31C377F42158F1591AB3FA130105186FD7
+     PATH ABSENT
+   - NODE 2 parent 91913EA4... TREE AE65405CF230B9FB0992544773B3CF7197015A47
+     PATH PRESENT TYPE 3 SIZE 1869
+     PATHOID A0C91615ABA9689C365159205E8CBA26EF6E16F4
+   - EDGE CHILD 1 PARENT 2
+   - SLOT CHILD 1 ORDINAL 1 PARENT 2
+   - NODES 2 / EDGES 1 / SLOTS 1.
+   This proves native traversal, selector/generation, path encoding, tree lookup,
+   topology, and S2 are correct on real CMS.
+5. Public HISTORYSTATE-REF-FULL on the identical sealed fixture, however,
+   reports:
+   HISTORYSTATE NODE 1 STATE ABSENT
+   HISTORYSTATE NODE 2 STATE ABSENT
+   M155 STATE PROBE FAIL 1 0.
+   Therefore the remaining defect is in the GITVREF native execution/capture
+   path or statecheck input, before public HISTORYSTATE emits node states.
+6. Important historical comparison: current statecheck, stateversions,
+   buildfirstparent, preparefirstversions, preparefirstpresence, and
+   preparepresencechron are byte-for-byte unchanged from the M153/M154
+   target-proven GITVREF version. This strongly points at command execution /
+   capture rather than those parser/aggregation routines themselves.
+
+Discarded hypotheses:
+- mixed-case wrapper path loss: disproven by C4 CASE probe.
+- stale GIT / GITVREF / GITREC copies: disproven by C4 and S2 stamps.
+- selected-generation/path data mismatch: disproven by direct parent read.
+- GITREC stack pressure: S1 static-array hardening did not change target result.
+- duplicated rec_root_path_state walker: S2 reused target-proven path lookup and
+  did not change public result.
+Do not revisit these unless new evidence directly contradicts the above.
+
+CURRENT IN-PROGRESS BRANCH:
+- branch: m157-state-capture-command
+- based on main 62d5f4f931f1c765d0d7504545cff7ac9e053884
+- NOT YET MERGED.
+- two source edits already committed on the branch:
+  * GITVREF CASE stamp bumped C4 -> C5.
+  * For native HISTORYDAGSTATE capture only, GITVREF now executes:
+      address command 'PIPE COMMAND' cmd '| STEM out.'
+    instead of the generic:
+      'PIPE CMS' cmd '| STEM out.'
+    Other native routes continue using PIPE CMS.
+  * M155CHK expects GITVREF CASE C5 and reports
+      M155 CASE PROBE PASS C5.
+- Motivation: every direct native command is correct, while the public path
+  becomes wrong only after GITVREF executes/captures it. The remaining
+  behavioral difference is GITVREF's internal PIPE CMS stage. The C5 experiment
+  changes only HISTORYDAGSTATE capture to PIPE COMMAND.
+
+NEXT WORK, DO NOT PAUSE BEFORE HOST/GITHUB COMPLETION:
+1. Update host guards/tests for C5 and require the HISTORYDAGSTATE-specific
+   PIPE COMMAND capture while preserving PIPE CMS for other routes.
+2. Run branch CI; fix any host regressions.
+3. Update docs/current state with exact C5 rationale.
+4. Open PR, ensure PR workflow green, squash-merge to main, verify post-merge
+   native-stage workflow.
+5. Then real-CMS boundary should require only GITVREF.EXEC + M155CHK.EXEC
+   transfer; NO GITREC rebuild is needed.
+6. Run M157GATE.
+7. If M155 STATE PROBE becomes PASS 0/1 and chronology passes, continue through
+   M156/M157 and mark them target-proven if combined gate passes.
+8. If STATE PROBE still reports node 2 ABSENT, add compact raw-capture proof
+   inside GITVREF showing only HISTORYDAGSTATE PATH/PATHOID records from out.
+   Do not return to native C unless that raw captured stem itself is wrong.
+
+Preserve project rules:
+- maximum work per turn; no unnecessary pauses.
+- GitHub canonical: edit/CI/merge first, then CMS transfer/test.
+- target success output must stay compact.
+- GITREC is now protected again; do not change it for this issue without new
+  direct native evidence.
