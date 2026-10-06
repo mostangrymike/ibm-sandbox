@@ -59,195 +59,195 @@ if command = 'UPDATE-REF' then do
    exit rc
 end
 if command = 'VERIFY-REF' then do
-   'EXEC GITVREF RESOLVE' rest
+   address command 'EXEC GITVREF RESOLVE' rest
    exit rc
 end
 if command = 'SHOW-REF-FULL' then do
-   'EXEC GITVREF SHOW' rest
+   address command 'EXEC GITVREF SHOW' rest
    exit rc
 end
 if command = 'LOG-REF-FULL' then do
-   'EXEC GITVREF LOG' rest
+   address command 'EXEC GITVREF LOG' rest
    exit rc
 end
 if command = 'LOGDAG-REF-FULL' then do
-   'EXEC GITVREF DAG' rest
+   address command 'EXEC GITVREF DAG' rest
    exit rc
 end
 if command = 'HISTORYPATH-REF-FULL' then do
-   'EXEC GITVREF HISTPATH' rest
+   address command 'EXEC GITVREF HISTPATH' rest
    exit rc
 end
 if command = 'HISTORYCHANGES-REF-FULL' then do
-   'EXEC GITVREF HISTCHG' rest
+   address command 'EXEC GITVREF HISTCHG' rest
    exit rc
 end
 if command = 'HISTORYEDGES-REF-FULL' then do
-   'EXEC GITVREF HISTEDGE' rest
+   address command 'EXEC GITVREF HISTEDGE' rest
    exit rc
 end
 if command = 'HISTORYDIFFS-REF-FULL' then do
-   'EXEC GITVREF HISTDIFF' rest
+   address command 'EXEC GITVREF HISTDIFF' rest
    exit rc
 end
 if command = 'HISTORYSTATE-REF-FULL' then do
-   'EXEC GITVREF HISTSTATE' rest
+   address command 'EXEC GITVREF HISTSTATE' rest
    exit rc
 end
 if command = 'HISTORYLOG-REF-FULL' then do
-   'EXEC GITVREF HISTLOG' rest
+   address command 'EXEC GITVREF HISTLOG' rest
    exit rc
 end
 if command = 'HISTORYSTATUS-REF-FULL' then do
-   'EXEC GITVREF HISTSTATUS' rest
+   address command 'EXEC GITVREF HISTSTATUS' rest
    exit rc
 end
 if command = 'HISTORYNEAREST-REF-FULL' then do
-   'EXEC GITVREF HISTNEAR' rest
+   address command 'EXEC GITVREF HISTNEAR' rest
    exit rc
 end
 if command = 'HISTORYTRANSITIONS-REF-FULL' then do
-   'EXEC GITVREF HISTTRANS' rest
+   address command 'EXEC GITVREF HISTTRANS' rest
    exit rc
 end
 if command = 'HISTORYREPORT-REF-FULL' then do
-   'EXEC GITVREF HISTREPORT' rest
+   address command 'EXEC GITVREF HISTREPORT' rest
    exit rc
 end
 if command = 'HISTORYBOUNDS-REF-FULL' then do
-   'EXEC GITVREF HISTBOUNDS' rest
+   address command 'EXEC GITVREF HISTBOUNDS' rest
    exit rc
 end
 if command = 'HISTORYCHRONOLOGY-REF-FULL' then do
-   'EXEC GITVREF HISTCHRON' rest
+   address command 'EXEC GITVREF HISTCHRON' rest
    exit rc
 end
 if command = 'HISTORYACTORS-REF-FULL' then do
-   'EXEC GITVREF HISTACTORS' rest
+   address command 'EXEC GITVREF HISTACTORS' rest
    exit rc
 end
 if command = 'HISTORYSUBJECTS-REF-FULL' then do
-   'EXEC GITVREF HISTSUBJECTS' rest
+   address command 'EXEC GITVREF HISTSUBJECTS' rest
    exit rc
 end
 if command = 'HISTORYBODIES-REF-FULL' then do
-   'EXEC GITVREF HISTBODIES' rest
+   address command 'EXEC GITVREF HISTBODIES' rest
    exit rc
 end
 if command = 'HISTORYTOPOLOGY-REF-FULL' then do
-   'EXEC GITVREF HISTTOPO' rest
+   address command 'EXEC GITVREF HISTTOPO' rest
    exit rc
 end
 if command = 'HISTORYPARENTS-REF-FULL' then do
-   'EXEC GITVREF HISTPARENTS' rest
+   address command 'EXEC GITVREF HISTPARENTS' rest
    exit rc
 end
 if command = 'HISTORYPARENTSLOTS-REF-FULL' then do
-   'EXEC GITVREF HISTSLOTS' rest
+   address command 'EXEC GITVREF HISTSLOTS' rest
    exit rc
 end
 if command = 'HISTORYEDGEROLES-REF-FULL' then do
-   'EXEC GITVREF HISTROLES' rest
+   address command 'EXEC GITVREF HISTROLES' rest
    exit rc
 end
 if command = 'HISTORYFIRSTPARENT-REF-FULL' then do
-   'EXEC GITVREF HISTFIRST' rest
+   address command 'EXEC GITVREF HISTFIRST' rest
    exit rc
 end
 if command = 'HISTORYFIRSTCHANGES-REF-FULL' then do
-   'EXEC GITVREF HISTFCHG' rest
+   address command 'EXEC GITVREF HISTFCHG' rest
    exit rc
 end
 if command = 'HISTORYFIRSTTRANSITIONS-REF-FULL' then do
-   'EXEC GITVREF HISTFTRANS' rest
+   address command 'EXEC GITVREF HISTFTRANS' rest
    exit rc
 end
 if command = 'HISTORYFIRSTCHRONOLOGY-REF-FULL' then do
-   'EXEC GITVREF HISTFCHRON' rest
+   address command 'EXEC GITVREF HISTFCHRON' rest
    exit rc
 end
 if command = 'HISTORYFIRSTACTORS-REF-FULL' then do
-   'EXEC GITVREF HISTFACTORS' rest
+   address command 'EXEC GITVREF HISTFACTORS' rest
    exit rc
 end
 if command = 'HISTORYFIRSTSUBJECTS-REF-FULL' then do
-   'EXEC GITVREF HISTFSUBJ' rest
+   address command 'EXEC GITVREF HISTFSUBJ' rest
    exit rc
 end
 if command = 'HISTORYFIRSTBODIES-REF-FULL' then do
-   'EXEC GITVREF HISTFBODY' rest
+   address command 'EXEC GITVREF HISTFBODY' rest
    exit rc
 end
 if command = 'HISTORYFIRSTLOG-REF-FULL' then do
-   'EXEC GITVREF HISTFLOG' rest
+   address command 'EXEC GITVREF HISTFLOG' rest
    exit rc
 end
 if command = 'HISTORYFIRSTREPORT-REF-FULL' then do
-   'EXEC GITVREF HISTFREPORT' rest
+   address command 'EXEC GITVREF HISTFREPORT' rest
    exit rc
 end
 if command = 'HISTORYFIRSTDIFFS-REF-FULL' then do
-   'EXEC GITVREF HISTFDIF' rest
+   address command 'EXEC GITVREF HISTFDIF' rest
    exit rc
 end
 if command = 'HISTORYFIRSTNEAREST-REF-FULL' then do
-   'EXEC GITVREF HISTFNEAR' rest
+   address command 'EXEC GITVREF HISTFNEAR' rest
    exit rc
 end
 if command = 'HISTORYFIRSTSTATUS-REF-FULL' then do
-   'EXEC GITVREF HISTFSTAT' rest
+   address command 'EXEC GITVREF HISTFSTAT' rest
    exit rc
 end
 if command = 'HISTORYFIRSTBOUNDS-REF-FULL' then do
-   'EXEC GITVREF HISTFBOUND' rest
+   address command 'EXEC GITVREF HISTFBOUND' rest
    exit rc
 end
 if command = 'HISTORYFIRSTVERSIONS-REF-FULL' then do
-   'EXEC GITVREF HISTFVER' rest
+   address command 'EXEC GITVREF HISTFVER' rest
    exit rc
 end
 if command = 'HISTORYFIRSTLIFETIME-REF-FULL' then do
-   'EXEC GITVREF HISTFLIFE' rest
+   address command 'EXEC GITVREF HISTFLIFE' rest
    exit rc
 end
 if command = 'HISTORYFIRSTCURRENT-REF-FULL' then do
-   'EXEC GITVREF HISTFCUR' rest
+   address command 'EXEC GITVREF HISTFCUR' rest
    exit rc
 end
 if command = 'HISTORYFIRSTORIGIN-REF-FULL' then do
-   'EXEC GITVREF HISTFORIG' rest
+   address command 'EXEC GITVREF HISTFORIG' rest
    exit rc
 end
 if command = 'HISTORYFIRSTPRESENCE-REF-FULL' then do
-   'EXEC GITVREF HISTFPRES' rest
+   address command 'EXEC GITVREF HISTFPRES' rest
    exit rc
 end
 if command = 'HISTORYFIRSTPRESENCEORIGIN-REF-FULL' then do
-   'EXEC GITVREF HISTFPORIG' rest
+   address command 'EXEC GITVREF HISTFPORIG' rest
    exit rc
 end
 if command = 'HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL' then do
-   'EXEC GITVREF HISTFPCHR' rest
+   address command 'EXEC GITVREF HISTFPCHR' rest
    exit rc
 end
 if command = 'HISTORYFIRSTPRESENCEEVENTS-REF-FULL' then do
-   'EXEC GITVREF HISTFPEVT' rest
+   address command 'EXEC GITVREF HISTFPEVT' rest
    exit rc
 end
 if command = 'HISTORYFIRSTPRESENCEDURATION-REF-FULL' then do
-   'EXEC GITVREF HISTFPDUR' rest
+   address command 'EXEC GITVREF HISTFPDUR' rest
    exit rc
 end
 if command = 'HISTORYFIRSTPRESENCEAGE-REF-FULL' then do
-   'EXEC GITVREF HISTFPAGE' rest
+   address command 'EXEC GITVREF HISTFPAGE' rest
    exit rc
 end
 if command = 'READ-REF-FULL' then do
-   'EXEC GITVREF READ' rest
+   address command 'EXEC GITVREF READ' rest
    exit rc
 end
 if command = 'DIR-REF-FULL' then do
-   'EXEC GITVREF DIR' rest
+   address command 'EXEC GITVREF DIR' rest
    exit rc
 end
 if command = 'CHECKOUT' | command = 'HEAD' then do
