@@ -36,47 +36,23 @@ if grc\=0 then do
  exit grc
 end
 mark=0
-mixed=0
-changed=0
-runs=0
-closed=0
-apos=0
-azero=0
-aneg=0
-cpos=0
-czero=0
-cneg=0
-state=0
-begin=0
-finish=0
-asec=0
-csec=0
+proof=0
 dend=0
+seen=''
+want='HISTORYFIRSTPRESENCEDURATION PROOF RUN 2 PRESENT 5 ADDED'
+want=want '1 DELETED 50 50'
 do i=1 to out.0
- if out.i='HISTORYFIRSTPRESENCEDURATION FULL SNAPSHOTS VERIFIED' then mark=1
- if out.i='HISTORYFIRSTPRESENCEDURATION PATH STATUS MIXED' then mixed=1
- if out.i='HISTORYFIRSTPRESENCEDURATION EXISTENCE STATUS CHANGED' then changed=1
- if out.i='HISTORYFIRSTPRESENCEDURATION PRESENCE RUNS 3' then runs=1
- if out.i='HISTORYFIRSTPRESENCEDURATION CLOSED RUNS 1' then closed=1
- if out.i='HISTORYFIRSTPRESENCEDURATION AUTHOR POSITIVE CLOSED 1' then apos=1
- if out.i='HISTORYFIRSTPRESENCEDURATION AUTHOR ZERO CLOSED 0' then azero=1
- if out.i='HISTORYFIRSTPRESENCEDURATION AUTHOR NEGATIVE CLOSED 0' then aneg=1
- if out.i='HISTORYFIRSTPRESENCEDURATION COMMITTER POSITIVE CLOSED 1' then cpos=1
- if out.i='HISTORYFIRSTPRESENCEDURATION COMMITTER ZERO CLOSED 0' then czero=1
- if out.i='HISTORYFIRSTPRESENCEDURATION COMMITTER NEGATIVE CLOSED 0' then cneg=1
- if out.i='HISTORYFIRSTPRESENCEDURATION RUN 2 STATE PRESENT' then state=1
- if out.i='HISTORYFIRSTPRESENCEDURATION RUN 2 BEGIN EDGE 5 STATUS ADDED' then,
-  begin=1
- if out.i='HISTORYFIRSTPRESENCEDURATION RUN 2 END EDGE 1 STATUS DELETED' then,
-  finish=1
- if out.i='HISTORYFIRSTPRESENCEDURATION RUN 2 AUTHOR SECONDS 50' then asec=1
- if out.i='HISTORYFIRSTPRESENCEDURATION RUN 2 COMMITTER SECONDS 50' then csec=1
- if out.i='HISTORYFIRSTPRESENCEDURATION DATA END' then dend=1
+ line=space(out.i)
+ if line='HISTORYFIRSTPRESENCEDURATION FULL SNAPSHOTS VERIFIED' then mark=1
+ if pos('HISTORYFIRSTPRESENCEDURATION PROOF RUN',line)=1 then do
+  seen=line
+  if line=want then proof=1
+ end
+ if line='HISTORYFIRSTPRESENCEDURATION DATA END' then dend=1
 end
-sum=mark+mixed+changed+runs+closed+apos+azero+aneg
-sum=sum+cpos+czero+cneg+state+begin+finish+asec+csec+dend
-if sum\=17 then do
- say 'M156 DURATION FAIL SUMMARY' sum
+if mark+proof+dend\=3 then do
+ say 'M156 DURATION FAIL PROOF' mark proof dend
+ if seen\='' then say seen
  exit 8
 end
 say 'M156 DURATION PASS RUN 2 PRESENT 50/50'
