@@ -1,4 +1,4 @@
-/* M158: authenticated first-parent presence time accounting. */
+/* M159: authenticated first-parent presence ratio. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M158'
+ say 'GITVREF EXEC LEVEL M159'
  exit 0
 end
 if command='STAMP' then do
@@ -44,7 +44,7 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTFPRES' & command\='HISTFPORIG' &,
    command\='HISTFPCHR' & command\='HISTFPEVT' &,
    command\='HISTFPDUR' & command\='HISTFPAGE' &,
-   command\='HISTFPTIME' then do
+   command\='HISTFPTIME' & command\='HISTFPRATIO' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -70,7 +70,7 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTFPRES' | command='HISTFPORIG' |,
    command='HISTFPCHR' | command='HISTFPEVT' |,
    command='HISTFPDUR' | command='HISTFPAGE' |,
-   command='HISTFPTIME' then do
+   command='HISTFPTIME' | command='HISTFPRATIO' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -95,7 +95,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFORIG' | command='HISTFPRES' |,
    command='HISTFPORIG' | command='HISTFPCHR' |,
    command='HISTFPEVT' | command='HISTFPDUR' |,
-   command='HISTFPAGE' | command='HISTFPTIME' then do
+   command='HISTFPAGE' | command='HISTFPTIME' |,
+   command='HISTFPRATIO' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -142,6 +143,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTFPDUR' & depth+0>8 then exit 4
  if command='HISTFPAGE' & depth+0>8 then exit 4
  if command='HISTFPTIME' & depth+0>8 then exit 4
+ if command='HISTFPRATIO' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -163,7 +165,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFPRES' | command='HISTFPORIG' |,
    command='HISTFPCHR' | command='HISTFPEVT' |,
    command='HISTFPDUR' | command='HISTFPAGE' |,
-   command='HISTFPTIME' then do
+   command='HISTFPTIME' | command='HISTFPRATIO' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -210,7 +212,8 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFORIG' | command='HISTFPRES' |,
    command='HISTFPORIG' | command='HISTFPCHR' |,
    command='HISTFPEVT' | command='HISTFPDUR' |,
-   command='HISTFPAGE' | command='HISTFPTIME' then do
+   command='HISTFPAGE' | command='HISTFPTIME' |,
+   command='HISTFPRATIO' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -260,7 +263,8 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFORIG' | command='HISTFPRES' |,
    command='HISTFPORIG' | command='HISTFPCHR' |,
    command='HISTFPEVT' | command='HISTFPDUR' |,
-   command='HISTFPAGE' | command='HISTFPTIME' then do
+   command='HISTFPAGE' | command='HISTFPTIME' |,
+   command='HISTFPRATIO' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -417,6 +421,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTFPTIME' then do
   call statefirstpresencetime
+  exit result
+ end
+ if command='HISTFPRATIO' then do
+  call statefirstpresenceratio
   exit result
  end
  call statediff
@@ -3438,6 +3446,68 @@ statefirstpresencetime:
       ptauth.ri ptcomm.ri
  end
  say 'HISTORYFIRSTPRESENCETIME DATA END'
+ return 0
+
+
+preparepresenceratio:
+ call preparepresencetime
+ if result\='OK' then return 'ERROR'
+ prauthtotal=ptpresentauth+ptabsenauth
+ prcommtotal=ptpresentcomm+ptabsencomm
+ prauthok=0
+ prcommok=0
+ prauthpbp=-1
+ prauthabp=-1
+ prcommpbp=-1
+ prcommabp=-1
+ if ptpresentauth>=0 & ptabsenauth>=0 & prauthtotal>0 then do
+  prauthok=1
+  prauthpbp=(ptpresentauth*10000)%prauthtotal
+  prauthabp=10000-prauthpbp
+ end
+ if ptpresentcomm>=0 & ptabsencomm>=0 & prcommtotal>0 then do
+  prcommok=1
+  prcommpbp=(ptpresentcomm*10000)%prcommtotal
+  prcommabp=10000-prcommpbp
+ end
+ return 'OK'
+
+
+statefirstpresenceratio:
+ call preparepresenceratio
+ if result\='OK' then return 8
+ call emitverified
+ say 'HISTORYFIRSTPRESENCERATIO FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTPRESENCERATIO DATA BEGIN'
+ say 'HISTORYFIRSTPRESENCERATIO PATH STATUS' fvlifecycle
+ say 'HISTORYFIRSTPRESENCERATIO EXISTENCE STATUS' prexiststatus
+ say 'HISTORYFIRSTPRESENCERATIO COMPLETE RUNS' ptcompletecount
+ say 'HISTORYFIRSTPRESENCERATIO INCOMPLETE RUNS' ptincomplete
+ say 'HISTORYFIRSTPRESENCERATIO COMPLETE PRESENT RUNS' ptpresentruns
+ say 'HISTORYFIRSTPRESENCERATIO COMPLETE ABSENT RUNS' ptabseruns
+ say 'HISTORYFIRSTPRESENCERATIO AUTHOR AVAILABLE' prauthok
+ say 'HISTORYFIRSTPRESENCERATIO AUTHOR TOTAL SECONDS' prauthtotal
+ say 'HISTORYFIRSTPRESENCERATIO AUTHOR PRESENT SECONDS' ptpresentauth
+ say 'HISTORYFIRSTPRESENCERATIO AUTHOR ABSENT SECONDS' ptabsenauth
+ if prauthok=1 then do
+  say 'HISTORYFIRSTPRESENCERATIO AUTHOR PRESENT BASIS POINTS' prauthpbp
+  say 'HISTORYFIRSTPRESENCERATIO AUTHOR ABSENT BASIS POINTS' prauthabp
+ end
+ say 'HISTORYFIRSTPRESENCERATIO COMMITTER AVAILABLE' prcommok
+ say 'HISTORYFIRSTPRESENCERATIO COMMITTER TOTAL SECONDS' prcommtotal
+ say 'HISTORYFIRSTPRESENCERATIO COMMITTER PRESENT SECONDS' ptpresentcomm
+ say 'HISTORYFIRSTPRESENCERATIO COMMITTER ABSENT SECONDS' ptabsencomm
+ if prcommok=1 then do
+  say 'HISTORYFIRSTPRESENCERATIO COMMITTER PRESENT BASIS POINTS' prcommpbp
+  say 'HISTORYFIRSTPRESENCERATIO COMMITTER ABSENT BASIS POINTS' prcommabp
+ end
+ say 'HFPR P1 S' ptcompletecount ptincomplete,
+     ptpresentruns ptabseruns
+ say 'HFPR P1 A' prauthok prauthtotal ptpresentauth,
+     ptabsenauth prauthpbp prauthabp
+ say 'HFPR P1 C' prcommok prcommtotal ptpresentcomm,
+     ptabsencomm prcommpbp prcommabp
+ say 'HISTORYFIRSTPRESENCERATIO DATA END'
  return 0
 
 
