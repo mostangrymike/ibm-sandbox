@@ -33,6 +33,42 @@ if crc\=0 | cas.0\=1 | cas.1\=want then do
 end
 say 'M155 CASE PROBE PASS C4'
 
+parent='91913EA4028B795707AA67EDB1ED17A74D1B896E'
+
+drop par.
+par.0=0
+cmd='EXEC GIT READ-REF-FULL' parent path
+address command 'PIPE COMMAND' cmd '| STEM par.'
+prc=rc
+if prc\=0 then do
+ say 'M155 PARENT PATH FAIL RC' prc
+ do i=1 to par.0
+  line=space(par.i)
+  if pos('NOT FOUND',line)>0 | pos('INVALID',line)>0 then say line
+ end
+ exit 8
+end
+pok=0
+do i=1 to par.0
+ if pos('COMMIT ROOT FULL CLOSURE VERIFIED',par.i)>0 then pok=1
+end
+if \pok then do
+ say 'M155 PARENT PATH FAIL MARKER'
+ exit 8
+end
+say 'M155 PARENT PATH PASS'
+
+drop chi.
+chi.0=0
+cmd='EXEC GIT READ-REF-FULL' spec path
+address command 'PIPE COMMAND' cmd '| STEM chi.'
+crc=rc
+if crc\=4 then do
+ say 'M155 CHILD ABSENT FAIL RC' crc
+ exit 8
+end
+say 'M155 CHILD ABSENT PASS RC4'
+
 drop chr.
 chr.0=0
 cmd='EXEC GIT HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL' spec depth path
