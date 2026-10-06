@@ -38,6 +38,9 @@ ENTRIES = [
 ]
 TREE = b"".join(mode + b" " + name + b"\x00" + oid
                 for mode, name, oid in ENTRIES)
+NO_SUBDIR_ENTRIES = [row for row in ENTRIES if row[1] != b"subdir"]
+NO_SUBDIR_TREE = b"".join(mode + b" " + name + b"\x00" + oid
+                           for mode, name, oid in NO_SUBDIR_ENTRIES)
 MALFORMED = b"100644 good-name\x00" + BLOB_OID + b"100644 truncated\x00" + b"\x01"
 # Exact historical first-commit root-tree record and README blob.
 # This is a pinned immutable Git object, never the current main branch.
@@ -58,6 +61,11 @@ HIST_TREE = b"".join(m + b" " + n + b"\x00" + oid
 FIRST_COMMIT = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
         + b"\nauthor A <a@b> 123 +0000\n"
         + b"committer A <a@b> 123 +0000\n\nhello\n")
+MIXED_STATE_CHILD = (
+    b"tree " + git_oid("tree", NO_SUBDIR_TREE).lower().encode("ascii")
+    + b"\nparent " + git_oid("commit", FIRST_COMMIT).lower().encode("ascii")
+    + b"\nauthor A <a@b> 124 +0000\n"
+    + b"committer A <a@b> 124 +0000\n\nremove nested path\n")
 LONG_IDENT = b"mostangrymike <mikewommack86@gmail.com>"
 IDENT_BODY = b"identity\n\nbody line\n"
 IDENT_COMMIT = (b"tree " + git_oid("tree", TREE).lower().encode("ascii")
@@ -321,8 +329,9 @@ MALFORMED_FIRST = MERGE.replace(
     b"parent " + git_oid("commit", FIRST_COMMIT).lower().encode("ascii"),
     b"parent " + git_oid("commit", BAD_COMMIT).lower().encode("ascii"), 1)
 SAMPLES = [(2, TREE), (2, b""), (2, MALFORMED),
-           (2, SUBTREE), (3, BLOB),
-           (1, FIRST_COMMIT), (1, IDENT_COMMIT), (1, BAD_IDENT_COMMIT),
+           (2, SUBTREE), (2, NO_SUBDIR_TREE), (3, BLOB),
+           (1, FIRST_COMMIT), (1, MIXED_STATE_CHILD),
+           (1, IDENT_COMMIT), (1, BAD_IDENT_COMMIT),
            (1, ACTOR_CHILD), (1, SAME_SUBJECT_CHILD),
            (1, MERGE), (1, BAD_PARENT), (1, BAD_COMMIT),
            (1, REAL_COMMIT), (1, BAD_LINK), (1, BAD_TREE_LINK),
@@ -440,9 +449,11 @@ def main():
         for name, exe in (("GITCIDX", idx), ("GITREC", rec)):
             subprocess.run(
                 [cc, "-x", "c", "-std=c89", "-O2", "-Wall",
-                 "-Wextra", "-Werror", "-o", str(exe),
+                 "-Wextra", "-Werror", "-Wframe-larger-than=27000",
+                 "-o", str(exe),
                  str(ROOT / "src" / (name + ".C"))], check=True
             )
+        assert run(rec, "STAMP", cwd=d).strip() == "GITREC STACKFIX S1"
         make_stage(d / "dd:STGIN")
         run(idx, "BUILD", cwd=d)
         (d / "dd:IDXOUT").rename(d / "dd:IDXIN")
@@ -467,6 +478,18 @@ def main():
         tree_oid = git_oid("tree", TREE)
         result = run(rec, "TREE", "GENOLD", "GENNEW", tree_oid, cwd=d)
         verify_tree(result, "SELECTED 52 GENNEW", ENTRIES)
+        # Regression: HISTORYDAGSTATE must preserve nested path state
+        # independently for child and first parent.
+        mixed_state = run(
+            rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",
+            git_oid("commit", MIXED_STATE_CHILD), "1",
+            b"subdir/nested.txt".hex().upper(), cwd=d)
+        assert mixed_state.count("HISTORYDAGSTATE PATH ABSENT") == 1
+        assert mixed_state.count(
+            "HISTORYDAGSTATE PATH PRESENT TYPE 3 SIZE 3") == 1
+        assert (
+            "HISTORYDAGSTATE PATHOID " + git_oid("blob", BLOB)
+            in mixed_state)
         # M126: exact raw identity bytes are authenticated and bounded.
         identity = run(
             rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",

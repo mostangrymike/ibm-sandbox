@@ -5628,3 +5628,38 @@ using the same public READ-REF-FULL route and selected generations:
 If both probes pass but chronology still reports both snapshots ABSENT, the
 fault is isolated to native HISTORYDAGSTATE path-state processing rather than
 wrapper case, selected object data, or the ordinary authenticated path walker.
+
+
+## 2026-10-06 M155 NATIVE HISTORYDAGSTATE TARGET ISOLATION / STACK HARDENING
+
+Real CMS C4 diagnostics proved all wrapper and path-case layers correct:
+- M155 CHECKER STAMP C4
+- M155 GIT STAMP PASS C4
+- M155 CASE PROBE PASS C4
+- M155 PARENT PATH PASS for 91913EA4028B795707AA67EDB1ED17A74D1B896E
+- M155 CHILD ABSENT PASS RC4 for 486ADAA5B02080720F4B329C6F68550B13C6AA87
+Yet HISTORYFIRSTPRESENCECHRONOLOGY still reported PRESENT 0, ABSENT 2,
+PRESENCE RUNS 1. This isolates the remaining fault below the wrapper layer.
+
+Host coverage was expanded with a nested mixed-state HISTORYDAGSTATE fixture:
+a child without subdir/nested.txt and a first parent containing that path.
+Current native logic passes that regression on the host, so the failure is
+target-specific rather than a generic path-state algorithm error.
+
+rec_history_dag_state carried roughly 28 KB of fixed per-node work arrays on
+its automatic stack while calling rec_root_closure, whose host frame is about
+25.9 KB and is already target-proven. The nested peak stack was therefore much
+larger than ordinary READ-REF-FULL/path traversal. The bounded
+HISTORYDAGSTATE work arrays are now static process storage; GITREC executes
+one command per process and does not require this routine to be reentrant.
+All bounds, authentication, selector behavior, and output semantics are
+unchanged.
+
+The host native-tree build now uses -Wframe-larger-than=27000: this remains
+above the established rec_root_closure frame while guarding against another
+oversized recovery caller. GITREC also exposes private diagnostic
+STAMP -> GITREC STACKFIX S1. M155CHK requires this stamp before target work,
+so a stale native MODULE will fail immediately.
+
+Host native-stage run 37494270555 completed SUCCESS with all changes.
+Target rebuild and M157GATE validation remain required.
