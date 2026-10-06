@@ -25,9 +25,6 @@ EMPTY = b""
 BINARY = bytes(range(256)) + b"\x00"
 BIG = bytes((n * 17 + 13) % 256 for n in range(65536))
 SUBTREE = b"100644 nested.txt\x00" + BLOB_OID
-NO_SUBDIR_ENTRIES = [row for row in ENTRIES if row[1] != b"subdir"]
-NO_SUBDIR_TREE = b"".join(mode + b" " + name + b"\x00" + oid
-                           for mode, name, oid in NO_SUBDIR_ENTRIES)
 ENTRIES = [
     (b"100644", b"README.md", BLOB_OID),
     (b"100644", b"empty.bin", bytes.fromhex(git_oid("blob", EMPTY))),
@@ -41,6 +38,9 @@ ENTRIES = [
 ]
 TREE = b"".join(mode + b" " + name + b"\x00" + oid
                 for mode, name, oid in ENTRIES)
+NO_SUBDIR_ENTRIES = [row for row in ENTRIES if row[1] != b"subdir"]
+NO_SUBDIR_TREE = b"".join(mode + b" " + name + b"\x00" + oid
+                           for mode, name, oid in NO_SUBDIR_ENTRIES)
 MALFORMED = b"100644 good-name\x00" + BLOB_OID + b"100644 truncated\x00" + b"\x01"
 # Exact historical first-commit root-tree record and README blob.
 # This is a pinned immutable Git object, never the current main branch.
