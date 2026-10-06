@@ -1772,3 +1772,17 @@ M157GATE COMBINED TARGET GATE PASS
 followed by plain Ready;. On failure, rerun only the named compact checker;
 use verbose history output only if that checker also fails. This remains
 read-only and does not rebuild GITREC, generations, indexes, or protected data.
+
+
+## 2026-10-05 M157GATE FIRST CMS ATTEMPT / M155 COMPACT FIX
+
+The first real CMS M157GATE attempt ended after one history scan with
+`M157GATE M155 FAIL RC 8`. Runtime matched one authenticated history command,
+so M156 and M157 were never entered. This isolates the defect to the M155
+compact chronology capture/check path, not to M156/M157 semantics.
+
+M155CHK now invokes the exact public GIT commands already target-proven on CMS
+instead of calling GITVREF internal verbs directly. Its summary failure lines
+now include the five marker bits. M157GATE now re-emits compact checker output
+on failure, so future diagnosis remains a few lines rather than a full history
+report. No GIT/GITVREF level change and no native/protected changes.
