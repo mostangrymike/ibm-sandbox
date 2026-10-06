@@ -1907,3 +1907,26 @@ The complete fix uses ADDRESS COMMAND for the PIPE invocation itself and uses
 ADDRESS COMMAND for every GIT.EXEC -> GITVREF wrapper route. Mixed-case Git
 paths and case-sensitive ref operands now remain unchanged across both EXEC
 boundaries. The M155/M156/M157 gates require this structure in host guards.
+
+
+## 2026-10-06 M155 REPEAT FAILURE / C4 PUBLIC-WRAPPER DIAGNOSTIC
+
+After the two-boundary ADDRESS COMMAND fix was installed on CMS, M157GATE still
+failed at M155 with the identical result:
+M155 CHRONOLOGY FAIL SUMMARY 1 0 0 0 1
+
+Because this can also be produced by an older M155CHK or GIT.EXEC found earlier
+on the CMS search path, the next compact gate now proves the actual live copies
+before starting history work.
+
+GIT.EXEC adds private diagnostic command STAMP -> GIT EXEC STAMP C4.
+M155CHK emits M155 CHECKER STAMP C4, requires the GIT C4 stamp, then sends the
+literal mixed-case fixture path through the same public GIT -> GITVREF route
+using private CASE. GITVREF CASE returns the path after pathasciihex encoding.
+The required exact value is:
+GITVREF CASE C4 7372632F474954504257414C4B2E45584543
+
+On chronology mismatch M155 also emits two short observed-state records with
+PRESENT/ABSENT/PRESENCE-RUN counts and ADD/DELETE/ZERO-run counts. This keeps
+failure diagnosis compact while distinguishing stale EXEC search-path copies,
+case folding, and genuinely unexpected authenticated history semantics.

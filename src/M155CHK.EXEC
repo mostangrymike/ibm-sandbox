@@ -9,6 +9,30 @@ spec='486ADAA5B02080720F4B329C6F68550B13C6AA87'
 depth=1
 path='src/GITPBWALK.EXEC'
 
+say 'M155 CHECKER STAMP C4'
+drop gst.
+gst.0=0
+address command 'PIPE COMMAND EXEC GIT STAMP | STEM gst.'
+grc=rc
+if grc\=0 | gst.0\=1 | gst.1\='GIT EXEC STAMP C4' then do
+ say 'M155 GIT STAMP FAIL'
+ exit 8
+end
+say 'M155 GIT STAMP PASS C4'
+
+drop cas.
+cas.0=0
+cmd='EXEC GIT CASE' path
+address command 'PIPE COMMAND' cmd '| STEM cas.'
+crc=rc
+want='GITVREF CASE C4 7372632F474954504257414C4B2E45584543'
+if crc\=0 | cas.0\=1 | cas.1\=want then do
+ say 'M155 CASE PROBE FAIL'
+ if cas.0>0 then say cas.1
+ exit 8
+end
+say 'M155 CASE PROBE PASS C4'
+
 drop chr.
 chr.0=0
 cmd='EXEC GIT HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL' spec depth path
@@ -23,6 +47,13 @@ runs=0
 az=0
 cz=0
 cend=0
+opresent=-1
+oabsent=-1
+oruns=-1
+oadd=-1
+odel=-1
+oaz=-1
+ocz=-1
 do i=1 to chr.0
  line=space(chr.i)
  if line='HISTORYFIRSTPRESENCECHRONOLOGY FULL SNAPSHOTS VERIFIED' then cm=1
@@ -30,9 +61,25 @@ do i=1 to chr.0
  if line='HISTORYFIRSTPRESENCECHRONOLOGY AUTHOR ZERO RUNS 2' then az=1
  if line='HISTORYFIRSTPRESENCECHRONOLOGY COMMITTER ZERO RUNS 2' then cz=1
  if line='HISTORYFIRSTPRESENCECHRONOLOGY DATA END' then cend=1
+ if pos('HISTORYFIRSTPRESENCECHRONOLOGY PRESENT ',line)=1 then,
+  opresent=word(line,words(line))
+ if pos('HISTORYFIRSTPRESENCECHRONOLOGY ABSENT ',line)=1 then,
+  oabsent=word(line,words(line))
+ if pos('HISTORYFIRSTPRESENCECHRONOLOGY PRESENCE RUNS ',line)=1 then,
+  oruns=word(line,words(line))
+ if pos('HISTORYFIRSTPRESENCECHRONOLOGY ADDED EDGES ',line)=1 then,
+  oadd=word(line,words(line))
+ if pos('HISTORYFIRSTPRESENCECHRONOLOGY DELETED EDGES ',line)=1 then,
+  odel=word(line,words(line))
+ if pos('HISTORYFIRSTPRESENCECHRONOLOGY AUTHOR ZERO RUNS ',line)=1 then,
+  oaz=word(line,words(line))
+ if pos('HISTORYFIRSTPRESENCECHRONOLOGY COMMITTER ZERO RUNS ',line)=1 then,
+  ocz=word(line,words(line))
 end
 if cm+runs+az+cz+cend\=5 then do
  say 'M155 CHRONOLOGY FAIL SUMMARY' cm runs az cz cend
+ say 'M155 OBS P/A/R' opresent oabsent oruns
+ say 'M155 OBS ADD/DEL/ZERO' oadd odel oaz ocz
  exit 8
 end
 say 'M155 CHRONOLOGY PASS RUNS 2 ZERO 2/2'

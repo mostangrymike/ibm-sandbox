@@ -14,6 +14,13 @@ if command='STAMP' then do
  say 'GITVREF INTERNAL STAMP P2'
  exit 0
 end
+if command='CASE' then do
+ if spec='' | depth\='' | extra\='' then exit 4
+ call pathasciihex spec
+ if result='ERROR' then exit 4
+ say 'GITVREF CASE C4' result
+ exit 0
+end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='DAG' & command\='READ' & command\='DIR' &,
    command\='HISTPATH' & command\='HISTCHG' &,
