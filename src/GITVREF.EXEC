@@ -3241,20 +3241,25 @@ statefirstpresenceduration:
  if prruns>2 then do ri=2 to prruns-1
   if prstate.ri=0 then ps='ABSENT'
   else ps='PRESENT'
+  be=pdbegin.ri
+  ee=pdend.ri
+  if be<1 | be>chainedges | ee<1 | ee>chainedges then return 8
+  bs=fdstatus.be
+  es=fdstatus.ee
+  if bs\='ADDED' & bs\='DELETED' then return 8
+  if es\='ADDED' & es\='DELETED' then return 8
   say 'HISTORYFIRSTPRESENCEDURATION RUN' ri 'STATE' ps
-  say 'HISTORYFIRSTPRESENCEDURATION RUN' ri 'BEGIN EDGE' pdbegin.ri,
-      'STATUS' fdstatus.pdbegin.ri
-  say 'HISTORYFIRSTPRESENCEDURATION RUN' ri 'END EDGE' pdend.ri,
-      'STATUS' fdstatus.pdend.ri
+  say 'HISTORYFIRSTPRESENCEDURATION RUN' ri 'BEGIN EDGE' be,
+      'STATUS' bs
+  say 'HISTORYFIRSTPRESENCEDURATION RUN' ri 'END EDGE' ee,
+      'STATUS' es
   say 'HISTORYFIRSTPRESENCEDURATION RUN' ri,
       'AUTHOR SECONDS' pdauth.ri
   say 'HISTORYFIRSTPRESENCEDURATION RUN' ri,
       'COMMITTER SECONDS' pdcomm.ri
   say 'HISTORYFIRSTPRESENCEDURATION PROOF RUN' ri ps,
-      pdbegin.ri fdstatus.pdbegin.ri pdend.ri fdstatus.pdend.ri,
-      pdauth.ri pdcomm.ri
-  say 'HFPD P2 R' ri ps pdbegin.ri fdstatus.pdbegin.ri,
-      pdend.ri fdstatus.pdend.ri pdauth.ri pdcomm.ri
+      be bs ee es pdauth.ri pdcomm.ri
+  say 'HFPD P2 R' ri ps be bs ee es pdauth.ri pdcomm.ri
  end
  say 'HISTORYFIRSTPRESENCEDURATION DATA END'
  return 0
