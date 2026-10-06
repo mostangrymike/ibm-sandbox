@@ -5747,3 +5747,20 @@ C5 changes only HISTORYDAGSTATE capture to:
 All non-state native routes retain the existing PIPE CMS capture. The private
 CASE proof is bumped from C4 to C5 so target M155 proves the new GITVREF copy
 is live before state validation. No native C or public history semantics change.
+
+
+## 2026-10-06 C6: FEED HISTORYDAGSTATE COMMAND THROUGH PIPELINE INPUT
+
+Real CMS C5 validation proved the C5 wrapper copy was live but still reproduced
+the bad ABSENT/ABSENT state pair. The remaining difference from the successful
+direct native proof is that GITREC is still launched as a CMS Pipelines host
+command stage. The HISTORYDAGSTATE command string is 116 bytes for the sealed
+M155 fixture, with the path operand at the tail of that command.
+
+CMS Pipelines COMMAND can read commands from its primary input. C6 therefore
+keeps the command in the REXX variable cmd and captures state with:
+  address command 'PIPE VAR cmd | COMMAND | STEM out.'
+This keeps the full command out of the pipeline stage argument while retaining
+in-memory capture and the read-only target contract. Non-state routes remain
+unchanged. The private CASE proof advances to C6 so M155 proves the refreshed
+GITVREF copy is active before the state probe.
