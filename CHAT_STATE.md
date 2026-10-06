@@ -5574,3 +5574,17 @@ commands with PIPE COMMAND and an explicit uppercase EXEC GIT prefix.
 M157GATE no longer passes a mixed-case path through PIPE CMS. No public Git
 semantics, GIT/GITVREF level, native GITREC, generations, indexes, or protected
 data changed.
+
+
+### 2026-10-06 CASE-PRESERVATION CORRECTION
+
+The first path-case fix changed the pipeline's inner stage from CMS to COMMAND,
+but the checker EXEC itself still had ADDRESS CMS as its active REXX host
+environment. Therefore the complete PIPE command string could be uppercased
+before CMS Pipelines parsed the COMMAND stage. In addition, GIT.EXEC itself
+routed GITVREF calls under ADDRESS CMS, creating a second case-fold boundary.
+
+The complete fix uses ADDRESS COMMAND for the PIPE invocation itself and uses
+ADDRESS COMMAND for every GIT.EXEC -> GITVREF wrapper route. Mixed-case Git
+paths and case-sensitive ref operands now remain unchanged across both EXEC
+boundaries. The M155/M156/M157 gates require this structure in host guards.
