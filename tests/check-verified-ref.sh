@@ -397,6 +397,14 @@ grep -Fq "HISTORYFIRSTPRESENCEDURATION PROOF RUN' ri ps" "$v"
 grep -Fq "GITVREF INTERNAL STAMP P2" "$v"
 grep -Fq "HFPD P2 S' prruns pdclosed" "$v"
 grep -Fq "HFPD P2 R' ri ps" "$v"
+grep -Fq "be=pdbegin.ri" "$v"
+grep -Fq "ee=pdend.ri" "$v"
+grep -Fq "bs=fdstatus.be" "$v"
+grep -Fq "es=fdstatus.ee" "$v"
+if grep -Fq "fdstatus.pdbegin.ri" "$v" || grep -Fq "fdstatus.pdend.ri" "$v"; then
+ echo "FAIL: duration emitter uses non-indirect compound tail" >&2
+ exit 1
+fi
 grep -Fq "HFPA P2 S' prruns pcnodes" "$v"
 grep -Fq "HFPA P2 R' ps pcbeginedge" "$v"
 grep -Fq "HISTORYFIRSTPRESENCEAGE PROOF' ps pcbeginedge" "$v"
