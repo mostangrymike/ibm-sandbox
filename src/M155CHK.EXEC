@@ -38,6 +38,23 @@ do i=1 to chr.0
 end
 if cm+runs+az+cz+cend\=5 then do
  say 'M155 CHRONOLOGY FAIL SUMMARY' cm runs az cz cend
+ say 'M155 CAPTURE RECORDS' chr.0
+ shown=0
+ do i=1 to chr.0
+  line=translate(space(strip(chr.i)))
+  if pos('PRESENCE RUNS',line)>0 |,
+     pos('AUTHOR ZERO RUNS',line)>0 |,
+     pos('COMMITTER ZERO RUNS',line)>0 then do
+   say 'M155 OBS' i left(line,70)
+   shown=shown+1
+   if shown>=6 then leave
+  end
+ end
+ if shown=0 then do
+  do i=1 to min(3,chr.0)
+   say 'M155 HEAD' i left(chr.i,70)
+  end
+ end
  exit 8
 end
 say 'M155 CHRONOLOGY PASS RUNS 2 ZERO 2/2'
