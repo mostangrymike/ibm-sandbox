@@ -28,6 +28,8 @@ assert "M156 DURATION FAIL PROOF" in c
 assert "M156 GITVREF STAMP PASS P2" in c
 assert "HFPD P2 S 3 1 1 1 0 3 4 2" in c
 assert "HFPD P2 R 2 PRESENT 5 ADDED 1 DELETED 50 50" in c
+assert "'PIPE COMMAND' cmd '| STEM out.'" in c
+assert "path='src/GITPBWALK.EXEC'" in c
 
 for path in (root / "src" / "GIT.EXEC",
              root / "src" / "GITVREF.EXEC",
