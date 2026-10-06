@@ -5497,3 +5497,27 @@ records. Those commands already fail closed internally and were independently
 target-proven on real CMS. M155 now requires only RC0 plus FULL SNAPSHOTS
 VERIFIED and DATA END for chronology and events. This removes console/pipeline
 format sensitivity while preserving the authenticated command boundary.
+
+
+## 2026-10-05 M156 TARGET ATTEMPT / COMPACT PROOF RECORDS
+
+Real CMS M157GATE now passes M155. M156 then returned:
+M157 LEVEL PASS M157/M157
+M156 DURATION FAIL SUMMARY 6
+with RC8. This isolates the remaining issue to the compact M156 display-parser;
+the wrapper handshake is correct and the underlying M156 command completed far
+enough to satisfy six of the old exact display assertions.
+
+To remove display-format ambiguity, GITVREF now emits a short machine-readable
+proof record for each closed M156 presence run:
+HISTORYFIRSTPRESENCEDURATION PROOF RUN <n> <state> <begin-edge> <begin-status>
+<end-edge> <end-status> <author-seconds> <committer-seconds>.
+The sealed fixture checker requires exactly run 2 PRESENT, edge 5 ADDED,
+edge 1 DELETED, 50/50 seconds, plus FULL SNAPSHOTS VERIFIED and DATA END.
+
+M157 now emits the analogous compact current-age proof:
+HISTORYFIRSTPRESENCEAGE PROOF <state> <begin-edge> <status>
+<author-seconds> <committer-seconds>.
+Its sealed checker requires ABSENT, edge 6 DELETED, 268/268 seconds, plus
+FULL SNAPSHOTS VERIFIED and DATA END. This proactively avoids a second target
+round for the same exact-display-record problem.
