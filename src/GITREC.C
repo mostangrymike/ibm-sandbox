@@ -1128,8 +1128,8 @@ static int rec_history_dag_state(const unsigned char *starting,
                                 unsigned long pathlen) {
  /* M157 target hardening: this authenticated state walker carries
   * substantially more per-node metadata than the older DAG walkers.
-  * Keep bounded work arrays in static storage instead of the CMS C stack.
-  * GITREC executes one command per process, so no reentrancy is required.
+  * Keep bounded work arrays in static storage, not the CMS C stack.
+  * GITREC runs one command per process; reentrancy is not required.
   */
  static unsigned char commits[64][20],trees[64][20],levels[64];
  static unsigned char results[64][20];
