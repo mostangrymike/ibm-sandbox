@@ -2219,3 +2219,20 @@ models, central guards, M158 host model, and the full native-stage suite.
 
 NEXT REAL CMS GATE: upload GIT.EXEC, GITVREF.EXEC, M158CHK.EXEC; run GIT LEVEL;
 run M158CHK. No GITREC rebuild. No GITRUN.
+
+
+## 2026-10-06 M158 REAL CMS TARGET PASS
+
+Real CMS ran GIT/GITVREF M158/M158 and M158CHK completed RC0 on sealed commit
+486ADAA5B02080720F4B329C6F68550B13C6AA87, depth 5, path
+src/GITPBWALK.EXEC. Exact proof matched host expectations:
+HFPT P1 S 3 2 1 1 1
+HFPT P1 T 50 50 0 0
+HFPT P1 R 1 ABSENT CURRENT 1 0 0
+HFPT P1 R 2 PRESENT CLOSED 1 50 50
+HFPT P1 R 3 ABSENT TRUNCATED 0 0 0
+M158 TIME DIRECT RC0
+M158 COMPACT TARGET GATE PASS
+
+M158 is REAL CMS TARGET-PROVEN. The incomplete truncated run remained excluded
+from complete PRESENT/ABSENT totals exactly as designed.
