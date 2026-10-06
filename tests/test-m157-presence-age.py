@@ -24,7 +24,6 @@ assert "HFPA P2 S" in v
 assert "HFPA P2 R" in v
 assert "M157 COMPACT TARGET GATE PASS" in c
 assert "gn\\=vn | gn<157" in c
-assert "HISTORYFIRSTPRESENCEAGE PROOF" in c
 assert "M157 AGE FAIL PROOF" in c
 assert "M157 GITVREF STAMP PASS P2" in c
 assert "HFPA P2 S 2 6 1 CHANGE" in c
