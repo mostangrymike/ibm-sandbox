@@ -1,0 +1,49 @@
+/* M158: compact sealed-fixture gate for presence time accounting. */
+address cms
+parse arg extra
+if extra\='' then do
+ say 'Usage: M158CHK'
+ exit 4
+end
+
+lvl.0=0
+'PIPE CMS GIT LEVEL | STEM lvl.'
+lrc=rc
+if lrc\=0 then do
+ say 'M158 LEVEL FAIL RC' lrc
+ exit lrc
+end
+if lvl.0\=2 then exit 8
+parse var lvl.1 g1 e1 l1 gv
+parse var lvl.2 g2 e2 l2 vv
+if g1\='GIT' | e1\='EXEC' | l1\='LEVEL' then exit 8
+if g2\='GITVREF' | e2\='EXEC' | l2\='LEVEL' then exit 8
+if left(gv,1)\='M' | left(vv,1)\='M' then exit 8
+gn=substr(gv,2)
+vn=substr(vv,2)
+if datatype(gn,'W')\=1 | datatype(vn,'W')\=1 then exit 8
+if gn\=vn | gn<158 then exit 8
+say 'M158 LEVEL PASS' gv'/'vv
+
+drop sig.
+sig.0=0
+'PIPE CMS EXEC GITVREF STAMP | STEM sig.'
+src=rc
+if src\=0 | sig.0\=1 | sig.1\='GITVREF INTERNAL STAMP P2' then do
+ say 'M158 GITVREF STAMP FAIL'
+ exit 8
+end
+say 'M158 GITVREF STAMP PASS P2'
+
+spec='486ADAA5B02080720F4B329C6F68550B13C6AA87'
+path='src/GITPBWALK.EXEC'
+cmd='EXEC GIT HISTORYFIRSTPRESENCETIME-REF-FULL' spec 5 path
+address command cmd
+grc=rc
+if grc\=0 then do
+ say 'M158 TIME FAIL RC' grc
+ exit grc
+end
+say 'M158 TIME DIRECT RC0'
+say 'M158 COMPACT TARGET GATE PASS'
+exit 0
