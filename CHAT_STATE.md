@@ -5467,3 +5467,20 @@ instead of calling GITVREF internal verbs directly. Its summary failure lines
 now include the five marker bits. M157GATE now re-emits compact checker output
 on failure, so future diagnosis remains a few lines rather than a full history
 report. No GIT/GITVREF level change and no native/protected changes.
+
+
+## 2026-10-05 M157GATE SECOND CMS ATTEMPT / M155 SUMMARY PARSER FIX
+
+Second real CMS M157GATE attempt again isolated to M155 and returned:
+M157GATE M155 FAIL RC 8
+M155 CHRONOLOGY FAIL SUMMARY 1 0 0 0 1
+
+This proves the underlying chronology command completed successfully because
+the compact checker found both FULL SNAPSHOTS VERIFIED and DATA END. Only the
+three exact summary-record comparisons failed. M155CHK now strips each captured
+record and recognizes the presence-run/author-zero/committer-zero summaries by
+stable prefix plus final numeric value instead of exact whole-record equality.
+The events checks are hardened the same way. No authenticated history semantics,
+GIT/GITVREF level, GITREC, generations, indexes, or protected data changed.
+
+Host native-stage run 37404389164 completed SUCCESS with the robust parser.

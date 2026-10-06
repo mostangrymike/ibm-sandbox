@@ -23,11 +23,18 @@ az=0
 cz=0
 cend=0
 do i=1 to chr.0
- if chr.i='HISTORYFIRSTPRESENCECHRONOLOGY FULL SNAPSHOTS VERIFIED' then cm=1
- if chr.i='HISTORYFIRSTPRESENCECHRONOLOGY PRESENCE RUNS 2' then runs=1
- if chr.i='HISTORYFIRSTPRESENCECHRONOLOGY AUTHOR ZERO RUNS 2' then az=1
- if chr.i='HISTORYFIRSTPRESENCECHRONOLOGY COMMITTER ZERO RUNS 2' then cz=1
- if chr.i='HISTORYFIRSTPRESENCECHRONOLOGY DATA END' then cend=1
+ line=strip(chr.i)
+ if line='HISTORYFIRSTPRESENCECHRONOLOGY FULL SNAPSHOTS VERIFIED' then cm=1
+ if pos('HISTORYFIRSTPRESENCECHRONOLOGY PRESENCE RUNS',line)=1 then do
+  if word(line,words(line))='2' then runs=1
+ end
+ if pos('HISTORYFIRSTPRESENCECHRONOLOGY AUTHOR ZERO RUNS',line)=1 then do
+  if word(line,words(line))='2' then az=1
+ end
+ if pos('HISTORYFIRSTPRESENCECHRONOLOGY COMMITTER ZERO RUNS',line)=1 then do
+  if word(line,words(line))='2' then cz=1
+ end
+ if line='HISTORYFIRSTPRESENCECHRONOLOGY DATA END' then cend=1
 end
 if cm+runs+az+cz+cend\=5 then do
  say 'M155 CHRONOLOGY FAIL SUMMARY' cm runs az cz cend
@@ -50,13 +57,18 @@ fromrun=0
 deleted=0
 eend=0
 do i=1 to evt.0
- if evt.i='HISTORYFIRSTPRESENCEEVENTS FULL SNAPSHOTS VERIFIED' then em=1
- if evt.i='HISTORYFIRSTPRESENCEEVENTS EVENTS 1' then events=1
- if evt.i='HISTORYFIRSTPRESENCEEVENTS EVENT 1 FROM RUN 1 TO RUN 2' then,
-  fromrun=1
- if evt.i='HISTORYFIRSTPRESENCEEVENTS EVENT 1 EDGE 1 STATUS DELETED' then,
-  deleted=1
- if evt.i='HISTORYFIRSTPRESENCEEVENTS DATA END' then eend=1
+ line=strip(evt.i)
+ if line='HISTORYFIRSTPRESENCEEVENTS FULL SNAPSHOTS VERIFIED' then em=1
+ if pos('HISTORYFIRSTPRESENCEEVENTS EVENTS',line)=1 then do
+  if word(line,words(line))='1' then events=1
+ end
+ if pos('HISTORYFIRSTPRESENCEEVENTS EVENT 1 FROM RUN',line)=1 then do
+  if right(line,14)='RUN 1 TO RUN 2' then fromrun=1
+ end
+ if pos('HISTORYFIRSTPRESENCEEVENTS EVENT 1 EDGE 1 STATUS',line)=1 then do
+  if word(line,words(line))='DELETED' then deleted=1
+ end
+ if line='HISTORYFIRSTPRESENCEEVENTS DATA END' then eend=1
 end
 if em+events+fromrun+deleted+eend\=5 then do
  say 'M155 EVENTS FAIL SUMMARY' em events fromrun deleted eend
