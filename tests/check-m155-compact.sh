@@ -17,6 +17,9 @@ grep -Fq "line=strip(chr.i)" "$x"
 grep -Fq "line=strip(evt.i)" "$x"
 grep -Fq "M155 CHRONOLOGY FAIL SUMMARY' cm runs az cz cend" "$x"
 grep -Fq "M155 EVENTS FAIL SUMMARY' em events fromrun deleted eend" "$x"
+grep -Fq "M155 CAPTURE RECORDS" "$x"
+grep -Fq "M155 OBS" "$x"
+grep -Fq "shown>=6" "$x"
 grep -Fq "M155 COMPACT TARGET GATE PASS" "$x"
 if grep -Ei "(DISKW|ERASE|COPYFILE|GENWRITE|SELOUT|IDXOUT|FIDXOUT|GENOUT)" "$x"; then
  echo "FAIL: M155 compact gate contains persistent write path" >&2
