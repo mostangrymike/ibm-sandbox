@@ -2083,3 +2083,25 @@ This keeps the full command out of the pipeline stage argument while retaining
 in-memory capture and the read-only target contract. Non-state routes remain
 unchanged. The private CASE proof advances to C6 so M155 proves the refreshed
 GITVREF copy is active before the state probe.
+
+
+## 2026-10-06 M157GATE NESTED PIPELINE ROOT CAUSE / DIRECT CHECKER FIX
+
+Real CMS C6 validation proved production history is correct outside the compact
+gate. A direct top-level HISTORYSTATE-REF-FULL on sealed commit
+486ADAA5B02080720F4B329C6F68550B13C6AA87 at depth 1 and path
+src/GITPBWALK.EXEC returned STATUS MIXED, PRESENT 1 / ABSENT 1, node 1 ABSENT,
+node 2 PRESENT, and parent blob A0C91615ABA9689C365159205E8CBA26EF6E16F4
+type 3 size 1869.
+
+The identical semantic probe returned ABSENT/ABSENT only when reached through
+M157GATE, which wrapped M155CHK in PIPE while M155CHK itself wrapped GIT in
+another PIPE and GITVREF captured native output in a third layer. This proves
+the defect is recursive CMS Pipelines trapping in the compact target harness,
+not GIT, GITVREF state parsing, GITREC, selectors, generations, or path case.
+
+M157GATE now invokes M155CHK, M156CHK, and M157CHK directly and trusts each
+checker's existing fail-closed return code. Checker internals remain unchanged.
+Host guards require all three direct checker calls and reject any PIPE token in
+M157GATE. Only M157GATE.EXEC needs refreshing on CMS; no GITREC rebuild and no
+GIT/GITVREF refresh are required.
