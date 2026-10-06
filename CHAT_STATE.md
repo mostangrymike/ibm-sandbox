@@ -5869,3 +5869,34 @@ M157 is REAL CMS TARGET-PROVEN.
 
 No native GITREC rebuild, generation change, selector change, or protected-data
 change is needed for the M156 rendering fix.
+
+
+## 2026-10-06 M156 REAL CMS TARGET PASS / M158 HOST PASS
+
+M156 wrapper-only revalidation completed RC0 on real CMS after fixing the
+compound-variable status emitter. The sealed 486ADAA5... depth-5
+src/GITPBWALK.EXEC fixture reported HFPD P2 S 3 1 1 1 0 3 4 2 and
+HFPD P2 R 2 PRESENT 5 ADDED 1 DELETED 50 50, followed by
+M156 DURATION DIRECT RC0 and M156 COMPACT TARGET GATE PASS.
+M155, M156 and M157 are now all REAL CMS TARGET-PROVEN.
+
+M158 adds HISTORYFIRSTPRESENCETIME-REF-FULL. It composes authenticated
+presence runs, current-age and closed-duration data into CURRENT/CLOSED/ROOT/
+TRUNCATED run records. Only complete runs contribute to complete PRESENT/ABSENT
+time totals; truncated history remains explicitly observed-only.
+
+Sealed M158 proof is expected to be:
+HFPT P1 S 3 2 1 1 1
+HFPT P1 T 50 50 0 0
+HFPT P1 R 1 ABSENT CURRENT 1 0 0
+HFPT P1 R 2 PRESENT CLOSED 1 50 50
+HFPT P1 R 3 ABSENT TRUNCATED 0 0 0
+
+GIT/GITVREF handshake is M158/M158. M158CHK executes the authenticated history
+command directly, not as a CMS Pipelines stage. Native GITREC is unchanged.
+GitHub Actions native-stage run 37536160410 completed SUCCESS on code head
+139869cad219922b8ecfa7124f03ba29e6ef7dce, including repaired M156/M157 host
+models, central guards, M158 host model, and the full native-stage suite.
+
+NEXT REAL CMS GATE: upload GIT.EXEC, GITVREF.EXEC, M158CHK.EXEC; run GIT LEVEL;
+run M158CHK. No GITREC rebuild. No GITRUN.
