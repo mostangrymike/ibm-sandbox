@@ -20,6 +20,16 @@ if grc\=0 | gst.0\=1 | gst.1\='GIT EXEC STAMP C4' then do
 end
 say 'M155 GIT STAMP PASS C4'
 
+drop nst.
+nst.0=0
+address command 'PIPE COMMAND GITREC STAMP | STEM nst.'
+nrc=rc
+if nrc\=0 | nst.0\=1 | nst.1\='GITREC STACKFIX S1' then do
+ say 'M155 GITREC STAMP FAIL'
+ exit 8
+end
+say 'M155 GITREC STAMP PASS S1'
+
 drop cas.
 cas.0=0
 cmd='EXEC GIT CASE' path
