@@ -38,7 +38,7 @@ path='src/GITPBWALK.EXEC'
 cmd='EXEC GIT HISTORYFIRSTPRESENCEDURATION-REF-FULL' spec 5 path
 drop out.
 out.0=0
-'PIPE COMMAND' cmd '| STEM out.'
+address command 'PIPE COMMAND' cmd '| STEM out.'
 grc=rc
 if grc\=0 then do
  say 'M156 DURATION FAIL RC' grc
