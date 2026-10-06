@@ -12,6 +12,12 @@ if command = 'VERSION' then do
    'GITCORE VERSION'
    exit rc
 end
+if command = 'STAMP' then do
+   parse var rest extra
+   if extra \= '' then exit 4
+   say 'GIT EXEC STAMP C4'
+   exit 0
+end
 if command = 'LEVEL' then do
    parse var rest extra
    if extra \= '' then do
