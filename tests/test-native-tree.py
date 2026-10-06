@@ -453,6 +453,7 @@ def main():
                  "-o", str(exe),
                  str(ROOT / "src" / (name + ".C"))], check=True
             )
+        assert run(rec, "STAMP", cwd=d).strip() == "GITREC STACKFIX S1"
         make_stage(d / "dd:STGIN")
         run(idx, "BUILD", cwd=d)
         (d / "dd:IDXOUT").rename(d / "dd:IDXIN")
