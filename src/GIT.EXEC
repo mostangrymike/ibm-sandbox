@@ -18,6 +18,10 @@ if command = 'STAMP' then do
    say 'GIT EXEC STAMP C4'
    exit 0
 end
+if command = 'CASE' then do
+   address command 'EXEC GITVREF CASE' rest
+   exit rc
+end
 if command = 'LEVEL' then do
    parse var rest extra
    if extra \= '' then do
