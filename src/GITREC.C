@@ -1126,29 +1126,36 @@ static int rec_history_dag_state(const unsigned char *starting,
                                 unsigned int depth,
                                 const unsigned char *path,
                                 unsigned long pathlen) {
- unsigned char commits[64][20],trees[64][20],levels[64];
- unsigned char results[64][20],parent[20];
- unsigned char subject_prefix[64][20];
- unsigned char subject_blobid[64][20];
- unsigned char message_blobid[64][20];
- unsigned char first_parent[64][20];
- unsigned char parent_seq_blobid[64][20];
- unsigned char author_ident_prefix[64][20];
- unsigned char commit_ident_prefix[64][20];
- unsigned char author_ident_blobid[64][20];
- unsigned char commit_ident_blobid[64][20];
- unsigned char edge[64][64];
- unsigned char parent_slot_node[64][64];
- unsigned long sizes[64],sz,at,begin,len;
- unsigned long author_when[64],commit_when[64],msgbytes[64];
- unsigned long parent_count[64],unique_parent_count[64];
- unsigned long subject_bytes[64];
- unsigned long author_ident_bytes[64],commit_ident_bytes[64];
- unsigned int subject_prefix_bytes[64];
- unsigned int author_ident_prefix_bytes[64];
- unsigned int commit_ident_prefix_bytes[64];
- int author_tz[64],commit_tz[64];
- int types[64],present[64];
+ /* M157 target hardening: this authenticated state walker carries
+  * substantially more per-node metadata than the older DAG walkers.
+  * Keep bounded work arrays in static storage instead of the CMS C stack.
+  * GITREC executes one command per process, so no reentrancy is required.
+  */
+ static unsigned char commits[64][20],trees[64][20],levels[64];
+ static unsigned char results[64][20];
+ unsigned char parent[20];
+ static unsigned char subject_prefix[64][20];
+ static unsigned char subject_blobid[64][20];
+ static unsigned char message_blobid[64][20];
+ static unsigned char first_parent[64][20];
+ static unsigned char parent_seq_blobid[64][20];
+ static unsigned char author_ident_prefix[64][20];
+ static unsigned char commit_ident_prefix[64][20];
+ static unsigned char author_ident_blobid[64][20];
+ static unsigned char commit_ident_blobid[64][20];
+ static unsigned char edge[64][64];
+ static unsigned char parent_slot_node[64][64];
+ static unsigned long sizes[64];
+ unsigned long sz,at,begin,len;
+ static unsigned long author_when[64],commit_when[64],msgbytes[64];
+ static unsigned long parent_count[64],unique_parent_count[64];
+ static unsigned long subject_bytes[64];
+ static unsigned long author_ident_bytes[64],commit_ident_bytes[64];
+ static unsigned int subject_prefix_bytes[64];
+ static unsigned int author_ident_prefix_bytes[64];
+ static unsigned int commit_ident_prefix_bytes[64];
+ static int author_tz[64],commit_tz[64];
+ static int types[64],present[64];
  unsigned int count=1,head=0,j,k,budget,pidx,slotno;
  unsigned int edgecount=0,slotcount=0;
  int pos,rc,dup;
