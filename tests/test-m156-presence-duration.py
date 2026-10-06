@@ -14,6 +14,7 @@ assert gm.group(1) == vm.group(1)
 assert int(gm.group(1)) >= 156
 assert "HISTORYFIRSTPRESENCEDURATION-REF-FULL" in g
 assert "EXEC GITVREF HISTFPDUR" in g
+assert "address command 'EXEC GITVREF HISTFPDUR' rest" in g
 assert "preparepresenceduration:" in v
 assert "statefirstpresenceduration:" in v
 assert "pdauth.ri=sauthorwhen.en-sauthorwhen.bn" in v
@@ -28,7 +29,7 @@ assert "M156 DURATION FAIL PROOF" in c
 assert "M156 GITVREF STAMP PASS P2" in c
 assert "HFPD P2 S 3 1 1 1 0 3 4 2" in c
 assert "HFPD P2 R 2 PRESENT 5 ADDED 1 DELETED 50 50" in c
-assert "'PIPE COMMAND' cmd '| STEM out.'" in c
+assert "address command 'PIPE COMMAND' cmd '| STEM out.'" in c
 assert "path='src/GITPBWALK.EXEC'" in c
 
 for path in (root / "src" / "GIT.EXEC",
