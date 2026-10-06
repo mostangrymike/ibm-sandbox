@@ -6,6 +6,10 @@ test -s "$x"
 grep -Fq "PIPE CMS EXEC M155CHK" "$x"
 grep -Fq "PIPE CMS EXEC M156CHK" "$x"
 grep -Fq "PIPE CMS EXEC M157CHK" "$x"
+if grep -Fq "spec 1 path" "$x"; then
+ echo "FAIL: M157GATE must not pass mixed-case Git paths through PIPE CMS" >&2
+ exit 1
+fi
 grep -Fq "M155 COMPACT TARGET GATE PASS" "$x"
 grep -Fq "M156 COMPACT TARGET GATE PASS" "$x"
 grep -Fq "M157 COMPACT TARGET GATE PASS" "$x"
