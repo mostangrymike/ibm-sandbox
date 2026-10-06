@@ -3227,6 +3227,8 @@ statefirstpresenceduration:
  say 'HISTORYFIRSTPRESENCEDURATION COMMITTER NEGATIVE CLOSED' pdcommneg
  say 'HISTORYFIRSTPRESENCEDURATION PROOF SUMMARY' prruns pdclosed,
      fdadd fddelete fdmodify fdunchanged fvpresent fvabsent
+ say 'HFPD P2 S' prruns pdclosed fdadd fddelete,
+     fdmodify fdunchanged fvpresent fvabsent
  if prruns>2 then do ri=2 to prruns-1
   if prstate.ri=0 then ps='ABSENT'
   else ps='PRESENT'
@@ -3242,6 +3244,8 @@ statefirstpresenceduration:
   say 'HISTORYFIRSTPRESENCEDURATION PROOF RUN' ri ps,
       pdbegin.ri fdstatus.pdbegin.ri pdend.ri fdstatus.pdend.ri,
       pdauth.ri pdcomm.ri
+  say 'HFPD P2 R' ri ps pdbegin.ri fdstatus.pdbegin.ri,
+      pdend.ri fdstatus.pdend.ri pdauth.ri pdcomm.ri
  end
  say 'HISTORYFIRSTPRESENCEDURATION DATA END'
  return 0
@@ -3266,6 +3270,7 @@ statefirstpresenceage:
  say 'HISTORYFIRSTPRESENCEAGE BEGIN KIND' pcbeginkind
  say 'HISTORYFIRSTPRESENCEAGE PROOF SUMMARY' prruns pcnodes,
      pcbeginknown pcbeginkind
+ say 'HFPA P2 S' prruns pcnodes pcbeginknown pcbeginkind
  if pcbeginkind='CHANGE' then do
   say 'HISTORYFIRSTPRESENCEAGE BEGIN EDGE' pcbeginedge,
       'STATUS' fdstatus.pcbeginedge
@@ -3276,6 +3281,8 @@ statefirstpresenceage:
   if pcbeginkind='CHANGE' then do
    say 'HISTORYFIRSTPRESENCEAGE PROOF' ps pcbeginedge,
        fdstatus.pcbeginedge pcauthspan pccommspan
+   say 'HFPA P2 R' ps pcbeginedge fdstatus.pcbeginedge,
+       pcauthspan pccommspan
   end
  end
  else do
