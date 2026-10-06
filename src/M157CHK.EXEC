@@ -24,6 +24,15 @@ vn=substr(vv,2)
 if datatype(gn,'W')\=1 | datatype(vn,'W')\=1 then exit 8
 if gn\=vn | gn<157 then exit 8
 say 'M157 LEVEL PASS' gv'/'vv
+drop sig.
+sig.0=0
+'PIPE CMS EXEC GITVREF STAMP | STEM sig.'
+src=rc
+if src\=0 | sig.0\=1 | sig.1\='GITVREF INTERNAL STAMP P2' then do
+ say 'M157 GITVREF STAMP FAIL'
+ exit 8
+end
+say 'M157 GITVREF STAMP PASS P2'
 spec='6EF11911449C184457F3958ABE4CA7A0692CE8C9'
 path='src/GITPBWALK.EXEC'
 cmd='GIT HISTORYFIRSTPRESENCEAGE-REF-FULL' spec 6 path
@@ -36,22 +45,28 @@ if grc\=0 then do
  exit grc
 end
 mark=0
+sumok=0
 proof=0
 dend=0
-seen=''
-want='HISTORYFIRSTPRESENCEAGE PROOF ABSENT 6 DELETED 268 268'
+seenS=''
+seenR=''
 do i=1 to out.0
  line=space(out.i)
  if line='HISTORYFIRSTPRESENCEAGE FULL SNAPSHOTS VERIFIED' then mark=1
- if pos('HISTORYFIRSTPRESENCEAGE PROOF',line)=1 then do
-  seen=line
-  if line=want then proof=1
+ if pos('HFPA P2 S ',line)=1 then do
+  seenS=line
+  if line='HFPA P2 S 2 6 1 CHANGE' then sumok=1
+ end
+ if pos('HFPA P2 R ',line)=1 then do
+  seenR=line
+  if line='HFPA P2 R ABSENT 6 DELETED 268 268' then proof=1
  end
  if line='HISTORYFIRSTPRESENCEAGE DATA END' then dend=1
 end
-if mark+proof+dend\=3 then do
- say 'M157 AGE FAIL PROOF' mark proof dend
- if seen\='' then say seen
+if mark+sumok+proof+dend\=4 then do
+ say 'M157 AGE FAIL PROOF' mark sumok proof dend
+ if seenS\='' then say seenS
+ if seenR\='' then say seenR
  exit 8
 end
 say 'M157 AGE PASS ABSENT EDGE 6 DELETED 268/268'
