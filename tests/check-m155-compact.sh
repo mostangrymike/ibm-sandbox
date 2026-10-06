@@ -20,7 +20,7 @@ grep -Fq "EXEC GIT READ-REF-FULL" "$x"
 grep -Fq "GITVREF CASE C6 7372632F474954504257414C4B2E45584543" "$x"
 grep -Fq "M155 COMPACT TARGET GATE PASS" "$x"
 test "$(grep -c '^address command cmd$' "$x")" -eq 2
-if grep -Fq "| STEM chr." "$x" || grep -Fq "| STEM evt." "$x" ||,
+if grep -Fq "| STEM chr." "$x" || grep -Fq "| STEM evt." "$x" ||
    grep -Fq "| STEM sta." "$x"; then
  echo "FAIL: M155 history command is still pipeline-captured" >&2
  exit 1
