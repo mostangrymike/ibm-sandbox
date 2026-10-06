@@ -1,4 +1,4 @@
-/* M157: authenticated first-parent current presence age. */
+/* M158: authenticated first-parent presence time accounting. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M157'
+ say 'GITVREF EXEC LEVEL M158'
  exit 0
 end
 if command='STAMP' then do
@@ -43,7 +43,8 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTFCUR' & command\='HISTFORIG' &,
    command\='HISTFPRES' & command\='HISTFPORIG' &,
    command\='HISTFPCHR' & command\='HISTFPEVT' &,
-   command\='HISTFPDUR' & command\='HISTFPAGE' then do
+   command\='HISTFPDUR' & command\='HISTFPAGE' &,
+   command\='HISTFPTIME' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -68,7 +69,8 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTFCUR' | command='HISTFORIG' |,
    command='HISTFPRES' | command='HISTFPORIG' |,
    command='HISTFPCHR' | command='HISTFPEVT' |,
-   command='HISTFPDUR' | command='HISTFPAGE' then do
+   command='HISTFPDUR' | command='HISTFPAGE' |,
+   command='HISTFPTIME' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -93,7 +95,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFORIG' | command='HISTFPRES' |,
    command='HISTFPORIG' | command='HISTFPCHR' |,
    command='HISTFPEVT' | command='HISTFPDUR' |,
-   command='HISTFPAGE' then do
+   command='HISTFPAGE' | command='HISTFPTIME' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -139,6 +141,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTFPEVT' & depth+0>8 then exit 4
  if command='HISTFPDUR' & depth+0>8 then exit 4
  if command='HISTFPAGE' & depth+0>8 then exit 4
+ if command='HISTFPTIME' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -159,7 +162,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFCUR' | command='HISTFORIG' |,
    command='HISTFPRES' | command='HISTFPORIG' |,
    command='HISTFPCHR' | command='HISTFPEVT' |,
-   command='HISTFPDUR' | command='HISTFPAGE' then do
+   command='HISTFPDUR' | command='HISTFPAGE' |,
+   command='HISTFPTIME' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -206,7 +210,7 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFORIG' | command='HISTFPRES' |,
    command='HISTFPORIG' | command='HISTFPCHR' |,
    command='HISTFPEVT' | command='HISTFPDUR' |,
-   command='HISTFPAGE' then do
+   command='HISTFPAGE' | command='HISTFPTIME' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -256,7 +260,7 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFORIG' | command='HISTFPRES' |,
    command='HISTFPORIG' | command='HISTFPCHR' |,
    command='HISTFPEVT' | command='HISTFPDUR' |,
-   command='HISTFPAGE' then do
+   command='HISTFPAGE' | command='HISTFPTIME' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -409,6 +413,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTFPAGE' then do
   call statefirstpresenceage
+  exit result
+ end
+ if command='HISTFPTIME' then do
+  call statefirstpresencetime
   exit result
  end
  call statediff
@@ -3305,6 +3313,133 @@ statefirstpresenceage:
  end
  say 'HISTORYFIRSTPRESENCEAGE DATA END'
  return 0
+
+preparepresencetime:
+ call preparefirstpresencecurrent
+ if result\='OK' then return 'ERROR'
+ call preparepresenceduration
+ if result\='OK' then return 'ERROR'
+ drop ptkind. ptcomplete. ptauth. ptcomm. ptaobs. ptcobs.
+ ptcompletecount=0
+ ptincomplete=0
+ ptpresentruns=0
+ ptabseruns=0
+ ptpresentauth=0
+ ptpresentcomm=0
+ ptabsenauth=0
+ ptabsencomm=0
+ do ri=1 to prruns
+  fs=prstart.ri
+  fe=prend.ri
+  ns=fpnode.fs
+  ne=fpnode.fe
+  ptaobs.ri=sauthorwhen.ns-sauthorwhen.ne
+  ptcobs.ri=scommitwhen.ns-scommitwhen.ne
+  ptcomplete.ri=0
+  if ri=1 then do
+   ptkind.ri='CURRENT'
+   if pcbeginknown=1 then do
+    ptcomplete.ri=1
+    ptauth.ri=pcauthspan
+    ptcomm.ri=pccommspan
+   end
+   else do
+    ptauth.ri=ptaobs.ri
+    ptcomm.ri=ptcobs.ri
+   end
+  end
+  else if ri<prruns then do
+   ptkind.ri='CLOSED'
+   ptcomplete.ri=1
+   ptauth.ri=pdauth.ri
+   ptcomm.ri=pdcomm.ri
+  end
+  else if truncated=0 then do
+   ptkind.ri='ROOT'
+   ptcomplete.ri=1
+   if sparents.ne\=0 then return 'ERROR'
+   rj=ri-1
+   ee=prend.rj
+   if ee<1 | ee>chainedges then return 'ERROR'
+   en=fpnode.ee
+   if prstate.ri=1 then do
+    if fdstatus.ee\='DELETED' then return 'ERROR'
+   end
+   else if fdstatus.ee\='ADDED' then return 'ERROR'
+   ptauth.ri=sauthorwhen.en-sauthorwhen.ne
+   ptcomm.ri=scommitwhen.en-scommitwhen.ne
+  end
+  else do
+   ptkind.ri='TRUNCATED'
+   ptauth.ri=ptaobs.ri
+   ptcomm.ri=ptcobs.ri
+  end
+  if ptcomplete.ri=1 then do
+   ptcompletecount=ptcompletecount+1
+   if prstate.ri=1 then do
+    ptpresentruns=ptpresentruns+1
+    ptpresentauth=ptpresentauth+ptauth.ri
+    ptpresentcomm=ptpresentcomm+ptcomm.ri
+   end
+   else do
+    ptabseruns=ptabseruns+1
+    ptabsenauth=ptabsenauth+ptauth.ri
+    ptabsencomm=ptabsencomm+ptcomm.ri
+   end
+  end
+  else ptincomplete=ptincomplete+1
+ end
+ if ptcompletecount+ptincomplete\=prruns then return 'ERROR'
+ if ptcompletecount\=prruns-truncated then return 'ERROR'
+ if ptincomplete\=truncated then return 'ERROR'
+ if ptpresentruns+ptabseruns\=ptcompletecount then return 'ERROR'
+ return 'OK'
+
+
+statefirstpresencetime:
+ call preparepresencetime
+ if result\='OK' then return 8
+ call emitverified
+ say 'HISTORYFIRSTPRESENCETIME FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTPRESENCETIME DATA BEGIN'
+ say 'HISTORYFIRSTPRESENCETIME PATH STATUS' fvlifecycle
+ say 'HISTORYFIRSTPRESENCETIME EXISTENCE STATUS' prexiststatus
+ say 'HISTORYFIRSTPRESENCETIME PRESENCE RUNS' prruns
+ say 'HISTORYFIRSTPRESENCETIME COMPLETE RUNS' ptcompletecount
+ say 'HISTORYFIRSTPRESENCETIME INCOMPLETE RUNS' ptincomplete
+ say 'HISTORYFIRSTPRESENCETIME COMPLETE PRESENT RUNS' ptpresentruns
+ say 'HISTORYFIRSTPRESENCETIME COMPLETE ABSENT RUNS' ptabseruns
+ say 'HISTORYFIRSTPRESENCETIME PRESENT AUTHOR SECONDS' ptpresentauth
+ say 'HISTORYFIRSTPRESENCETIME PRESENT COMMITTER SECONDS' ptpresentcomm
+ say 'HISTORYFIRSTPRESENCETIME ABSENT AUTHOR SECONDS' ptabsenauth
+ say 'HISTORYFIRSTPRESENCETIME ABSENT COMMITTER SECONDS' ptabsencomm
+ say 'HFPT P1 S' prruns ptcompletecount ptincomplete,
+     ptpresentruns ptabseruns
+ say 'HFPT P1 T' ptpresentauth ptpresentcomm,
+     ptabsenauth ptabsencomm
+ do ri=1 to prruns
+  if prstate.ri=0 then ps='ABSENT'
+  else ps='PRESENT'
+  say 'HISTORYFIRSTPRESENCETIME RUN' ri 'STATE' ps,
+      'KIND' ptkind.ri 'COMPLETE' ptcomplete.ri
+  if ptcomplete.ri=1 then do
+   say 'HISTORYFIRSTPRESENCETIME RUN' ri,
+       'AUTHOR SECONDS' ptauth.ri
+   say 'HISTORYFIRSTPRESENCETIME RUN' ri,
+       'COMMITTER SECONDS' ptcomm.ri
+  end
+  else do
+   say 'HISTORYFIRSTPRESENCETIME RUN' ri,
+       'AUTHOR OBSERVED SECONDS' ptauth.ri
+   say 'HISTORYFIRSTPRESENCETIME RUN' ri,
+       'COMMITTER OBSERVED SECONDS' ptcomm.ri
+  end
+  say 'HFPT P1 R' ri ps ptkind.ri ptcomplete.ri,
+      ptauth.ri ptcomm.ri
+ end
+ say 'HISTORYFIRSTPRESENCETIME DATA END'
+ return 0
+
 
 statefirstlog:
  call buildfirstparent
