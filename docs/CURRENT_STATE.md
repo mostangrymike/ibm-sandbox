@@ -2045,3 +2045,24 @@ aggregation. The compact probe requires:
 If this probe fails, the defect is in GITVREF native-output capture/statecheck.
 If it passes while chronology still reports 0 present / 2 absent, the defect is
 strictly in first-parent/presence aggregation after statecheck.
+
+
+## 2026-10-06 C5: HISTORYDAGSTATE CAPTURE VIA PIPE COMMAND
+
+Real CMS evidence now fully exonerates native GITREC:
+- direct depth-0 parent HISTORYDAGSTATE is PRESENT with exact tree/blob;
+- direct depth-1 child/parent HISTORYDAGSTATE is ABSENT/PRESENT with exact
+  edge/slot topology and expected blob A0C91615ABA9689C365159205E8CBA26EF6E16F4;
+- public HISTORYSTATE-REF-FULL over the same fixture reports both nodes ABSENT.
+
+The M153-era and current M157 statecheck/stateversions/buildfirstparent/
+preparefirstversions/preparefirstpresence parser/aggregation blocks are
+byte-for-byte unchanged. The remaining execution difference is native capture:
+GITVREF runs HISTORYDAGSTATE through the CMS Pipelines CMS host-command stage,
+while all direct target proofs execute the native command normally.
+
+C5 changes only HISTORYDAGSTATE capture to:
+  address command 'PIPE COMMAND' cmd '| STEM out.'
+All non-state native routes retain the existing PIPE CMS capture. The private
+CASE proof is bumped from C4 to C5 so target M155 proves the new GITVREF copy
+is live before state validation. No native C or public history semantics change.
