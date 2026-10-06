@@ -5521,3 +5521,35 @@ HISTORYFIRSTPRESENCEAGE PROOF <state> <begin-edge> <status>
 Its sealed checker requires ABSENT, edge 6 DELETED, 268/268 seconds, plus
 FULL SNAPSHOTS VERIFIED and DATA END. This proactively avoids a second target
 round for the same exact-display-record problem.
+
+
+## 2026-10-05 M156 TARGET ATTEMPT / P2 STAMP DIAGNOSTICS
+
+Real CMS M157GATE now passes M155, then M156 reports:
+M156 LEVEL PASS M157/M157
+M156 DURATION FAIL PROOF 1 0 1
+with RC8. FULL SNAPSHOTS VERIFIED and DATA END are present, but no compact
+duration proof record was captured.
+
+The native HISTORYDAGSTATE depth contract was rechecked: depth 5 includes
+levels 0 through 5. GitHub also confirms the sealed first-parent chain is
+linear and the path states are ABSENT, PRESENT, PRESENT, PRESENT, PRESENT,
+ABSENT. The first-presence builder/state parser are unchanged from the
+M153 target-proven implementation.
+
+Because GITVREF remains level M157 across these patch-only changes, a stale
+GITVREF on the CMS EXEC search path cannot be distinguished by GIT LEVEL.
+GITVREF therefore has a private STAMP command returning exactly:
+GITVREF INTERNAL STAMP P2
+
+M156CHK and M157CHK now require that stamp before target work. GITVREF also
+emits short machine records, deliberately well below console record limits:
+HFPD P2 S <runs> <closed> <add> <delete> <modify> <unchanged> <present> <absent>
+HFPD P2 R <run> <state> <begin-edge> <begin-status> <end-edge> <end-status>
+            <author-seconds> <committer-seconds>
+HFPA P2 S <runs> <current-nodes> <begin-known> <begin-kind>
+HFPA P2 R <state> <begin-edge> <status> <author-seconds> <committer-seconds>
+
+The M156 sealed expectations are S=3 1 1 1 0 3 4 2 and
+R=2 PRESENT 5 ADDED 1 DELETED 50 50. M157 expectations remain
+S=2 6 1 CHANGE and R=ABSENT 6 DELETED 268 268.
