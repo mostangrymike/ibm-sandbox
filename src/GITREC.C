@@ -848,6 +848,7 @@ static int rec_logdagfull(const unsigned char *starting,
  * Still re-read and re-hash every tree/object along the path.
  * No output is produced by this helper.
  */
+static int rec_path_reason;
 static int rec_root_path_meta(const unsigned char *root,
                               const unsigned char *path,
                               unsigned long length,
@@ -857,6 +858,7 @@ static int rec_root_path_meta(const unsigned char *root,
  unsigned char next[20];
  unsigned long start=0,end,at,ms,ml,ns,nl,sz;
  int pos,rc,type,islink;
+ rec_path_reason=0;
  memcpy(next,root,20);
  while(start<length) {
   end=start;
@@ -895,10 +897,12 @@ static int rec_root_path_meta(const unsigned char *root,
    at+=20;
   }
   if(pos<0) {
+   rec_path_reason=1;
    puts("HISTORYDAGPATH PATH NOT FOUND");return 4;
   }
   if(end<length) {
    if(type!=2) {
+    rec_path_reason=2;
     puts("HISTORYDAGPATH COMPONENT NOT TREE");return 8;
    }
    memcpy(next,found,20);
@@ -932,8 +936,9 @@ static int rec_root_path_meta(const unsigned char *root,
 }
 
 
-/* M94: authenticated path state.  Missing path components are
- * valid ABSENT state; object/tree corruption still fails closed.
+/* M94: authenticated path state.  Reuse the target-proven
+ * HISTORYDAGPATH lookup.  Only logical path absence is softened;
+ * missing objects, bad types, and malformed trees still fail closed.
  */
 static int rec_root_path_state(const unsigned char *root,
                                const unsigned char *path,
@@ -942,82 +947,16 @@ static int rec_root_path_state(const unsigned char *root,
                                int *found_type,
                                unsigned long *found_size,
                                int *present) {
- unsigned char next[20];
- unsigned long start=0,end,at,ms,ml,ns,nl,sz;
- int pos,rc,type,islink;
+ int rc;
  *present=1;
- memcpy(next,root,20);
- while(start<length) {
-  end=start;
-  while(end<length&&path[end]!=0x2f) end++;
-  pos=sidx_locate(next);
-  if(pos<0) {
-   puts("HISTORYDAGSTATE TREE NOT FOUND");return 4;
-  }
-  if(sidx[pos].type!=2) {
-   puts("HISTORYDAGSTATE COMPONENT NOT TREE");return 8;
-  }
-  sz=sidx[pos].size;
-  sidx_silent=1;
-  rc=sidx_get(next);
-  sidx_silent=0;
-  if(rc!=0) return rc;
-  if(!rec_tree_walk(sz,0)) {
-   puts("HISTORYDAGSTATE TREE INVALID");return 8;
-  }
-  at=0;pos=-1;type=0;islink=0;
-  while(at<sz) {
-   ms=at;
-   while(at<sz&&idx_body[at]!=0x20) at++;
-   ml=at-ms;at++;
-   ns=at;
-   while(at<sz&&idx_body[at]!=0) at++;
-   nl=at-ns;at++;
-   if(nl==end-start&&
-      memcmp(idx_body+ns,path+start,(size_t)nl)==0) {
-    islink=(ml==6&&
-      memcmp(idx_body+ms,"\x31\x36\x30\x30\x30\x30",6)==0);
-    type=(ml==5)?2:(islink?1:3);
-    memcpy(found,idx_body+at,20);
-    pos=1;break;
-   }
-   at+=20;
-  }
-  if(pos<0) {
-   *present=0;return 0;
-  }
-  if(end<length) {
-   if(type!=2) {
-    *present=0;return 0;
-   }
-   memcpy(next,found,20);
-   start=end+1;
-   continue;
-  }
-  if(islink) {
-   *found_type=1;
-   *found_size=0;
-   return 0;
-  }
-  pos=sidx_locate(found);
-  if(pos<0) {
-   puts("HISTORYDAGSTATE OBJECT NOT FOUND");return 4;
-  }
-  if(sidx[pos].type!=type) {
-   puts("HISTORYDAGSTATE OBJECT TYPE MISMATCH");return 8;
-  }
-  *found_type=type;
-  *found_size=sidx[pos].size;
-  sidx_silent=1;
-  rc=sidx_get(found);
-  sidx_silent=0;
-  if(rc!=0) return rc;
-  if(type==2&&!rec_tree_walk(*found_size,0)) {
-   puts("HISTORYDAGSTATE RESULT TREE INVALID");return 8;
-  }
+ rc=rec_root_path_meta(root,path,length,found,
+                       found_type,found_size);
+ if((rc==4&&rec_path_reason==1)||
+    (rc==8&&rec_path_reason==2)) {
+  *present=0;
   return 0;
  }
- return 8;
+ return rc;
 }
 
 /* M59: all-parent history where every snapshot and named path
@@ -2058,7 +1997,7 @@ int main(int argc,char **argv) {
  int nestedlinks_cmd,deeplinks_cmd,depthlinks_cmd;
  int linkbatch_cmd,closure_cmd,treeclosure_cmd,rc;
  if(argc==2&&strcmp(argv[1],"STAMP")==0) {
-  puts("GITREC STACKFIX S1");
+  puts("GITREC STATEPATH S2");
   return 0;
  }
  get=argc==5&&strcmp(argv[1],"GET")==0;

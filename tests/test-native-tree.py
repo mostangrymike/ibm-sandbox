@@ -453,7 +453,7 @@ def main():
                  "-o", str(exe),
                  str(ROOT / "src" / (name + ".C"))], check=True
             )
-        assert run(rec, "STAMP", cwd=d).strip() == "GITREC STACKFIX S1"
+        assert run(rec, "STAMP", cwd=d).strip() == "GITREC STATEPATH S2"
         make_stage(d / "dd:STGIN")
         run(idx, "BUILD", cwd=d)
         (d / "dd:IDXOUT").rename(d / "dd:IDXIN")
@@ -490,6 +490,15 @@ def main():
         assert (
             "HISTORYDAGSTATE PATHOID " + git_oid("blob", BLOB)
             in mixed_state)
+
+        # A matched blob used as an intermediate component is logical
+        # absence in state mode, not repository corruption.
+        non_tree = run(
+            rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",
+            git_oid("commit", FIRST_COMMIT), "0",
+            b"README.md/child".hex().upper(), cwd=d)
+        assert non_tree.count("HISTORYDAGSTATE PATH ABSENT") == 1
+        assert "HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED" in non_tree
         # M126: exact raw identity bytes are authenticated and bounded.
         identity = run(
             rec, "HISTORYDAGSTATE", "GENOLD", "GENNEW",

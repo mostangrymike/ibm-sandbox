@@ -1982,3 +1982,42 @@ so a stale native MODULE will fail immediately.
 
 Host native-stage run 37494270555 completed SUCCESS with all changes.
 Target rebuild and M157GATE validation remain required.
+
+
+## 2026-10-06 S2: TARGET-PROVEN DAGPATH VS BROKEN DAGSTATE
+
+After rebuilding the S1 native module on CMS, M157GATE still failed with:
+- M155 CHECKER STAMP C4
+- M155 GIT STAMP PASS C4
+- M155 GITREC STAMP PASS S1
+- M155 CASE PROBE PASS C4
+- M155 PARENT PATH PASS
+- M155 CHILD ABSENT PASS RC4
+- chronology observed PRESENT 0 ABSENT 2 PRESENCE RUNS 1.
+
+A direct native DAG-path discriminator then proved the older path walker on the
+same target, generation, parent commit, and path:
+GIT HISTORYPATH-REF-FULL
+91913EA4028B795707AA67EDB1ED17A74D1B896E 0 src/GITPBWALK.EXEC
+returned tree AE65405CF230B9FB0992544773B3CF7197015A47 and blob
+A0C91615ABA9689C365159205E8CBA26EF6E16F4, TYPE 3 SIZE 1869.
+
+This isolates the target defect specifically to duplicated
+rec_root_path_state() behavior, not selectors, generations, closure,
+path encoding, the public wrapper, or rec_root_path_meta().
+
+S2 removes the duplicated state tree walker. rec_root_path_state() is now a
+thin wrapper around the target-proven rec_root_path_meta() implementation.
+The shared helper records an internal reason only for the two logical absence
+cases: a missing named component and a matched non-tree intermediate prefix.
+State mode converts only those reasons to authenticated ABSENT. Missing
+referenced objects, type mismatches, malformed trees, and other corruption
+still fail closed. HISTORYDAGPATH keeps its existing RC/output semantics.
+
+Host coverage includes:
+- child missing nested path / parent present nested path;
+- blob used as an intermediate directory -> authenticated ABSENT;
+- existing native tree/recovery suite and 27 KB frame guard.
+Host run 37510050198 completed SUCCESS.
+Private native stamp is now GITREC STATEPATH S2 and M155CHK requires it.
+Real CMS rebuild and M157GATE remain required.
