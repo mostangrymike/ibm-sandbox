@@ -2057,6 +2057,10 @@ int main(int argc,char **argv) {
  int roots_cmd,commitroots_cmd,linkroots_cmd;
  int nestedlinks_cmd,deeplinks_cmd,depthlinks_cmd;
  int linkbatch_cmd,closure_cmd,treeclosure_cmd,rc;
+ if(argc==2&&strcmp(argv[1],"STAMP")==0) {
+  puts("GITREC STACKFIX S1");
+  return 0;
+ }
  get=argc==5&&strcmp(argv[1],"GET")==0;
  full=argc==5&&strcmp(argv[1],"CATHEX")==0;
  tree=argc==5&&strcmp(argv[1],"TREE")==0;
