@@ -18,7 +18,7 @@ if command='CASE' then do
  if spec='' | depth\='' | extra\='' then exit 4
  call pathasciihex spec
  if result='ERROR' then exit 4
- say 'GITVREF CASE C5' result
+ say 'GITVREF CASE C6' result
  exit 0
 end
 if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
@@ -229,7 +229,7 @@ else do
 end
 out.0=0
 if marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED' then,
- address command 'PIPE COMMAND' cmd '| STEM out.'
+ address command 'PIPE VAR cmd | COMMAND | STEM out.'
 else 'PIPE CMS' cmd '| STEM out.'
 if rc\=0 then exit rc
 ok=0
