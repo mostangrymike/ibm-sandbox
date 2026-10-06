@@ -5702,3 +5702,27 @@ Host coverage includes:
 Host run 37510050198 completed SUCCESS.
 Private native stamp is now GITREC STATEPATH S2 and M155CHK requires it.
 Real CMS rebuild and M157GATE remain required.
+
+
+## 2026-10-06 S3 PUBLIC STATE-PARSER DISCRIMINATOR
+
+Direct real-CMS GITREC HISTORYDAGSTATE depth-1 output is correct:
+- node 1 commit 486AD... -> PATH ABSENT;
+- node 2 commit 91913EA4... -> PATH PRESENT TYPE 3 SIZE 1869;
+- node 2 PATHOID A0C91615ABA9689C365159205E8CBA26EF6E16F4;
+- edge/slot CHILD 1 -> PARENT 2;
+- exact expected tree OIDs.
+
+Therefore native traversal, selected generation, path encoding, and S2 shared path
+lookup are all correct. The remaining defect is above native C.
+
+M155CHK now runs the existing public HISTORYSTATE-REF-FULL command on the sealed
+two-node fixture before chronology. That command executes the same native
+HISTORYDAGSTATE and statecheck parser, but stops before first-parent/presence
+aggregation. The compact probe requires:
+- HISTORYSTATE NODE 1 STATE ABSENT
+- HISTORYSTATE NODE 2 STATE PRESENT
+
+If this probe fails, the defect is in GITVREF native-output capture/statecheck.
+If it passes while chronology still reports 0 present / 2 absent, the defect is
+strictly in first-parent/presence aggregation after statecheck.
