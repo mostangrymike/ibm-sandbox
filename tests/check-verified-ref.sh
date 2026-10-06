@@ -6,10 +6,19 @@ v="$root/src/GITVREF.EXEC"
 g="$root/src/GIT.EXEC"
 r="$root/src/GITREF2.REPO"
 rec="$root/src/GITREC.C"
+gate="$root/src/M157GATE.EXEC"
 test -s "$v"
 test -s "$g"
 test -s "$r"
 test -s "$rec"
+test -s "$gate"
+grep -Fq "'M155CHK'" "$gate"
+grep -Fq "'M156CHK'" "$gate"
+grep -Fq "'M157CHK'" "$gate"
+if grep -Fq "PIPE " "$gate"; then
+  echo "FAIL: M157GATE must not nest compact checkers in pipelines" >&2
+  exit 1
+fi
 grep -Fxq "REF2 1" "$r"
 grep -Fxq "HEAD refs/heads/main" "$r"
 grep -Fxq "REF refs/heads/main 00D8D63229305230C8D37F884CE87F9E1A89468C" "$r"
