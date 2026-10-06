@@ -1803,3 +1803,19 @@ The events checks are hardened the same way. No authenticated history semantics,
 GIT/GITVREF level, GITREC, generations, indexes, or protected data changed.
 
 Host native-stage run 37404389164 completed SUCCESS with the robust parser.
+
+
+## 2026-10-05 M155 third CMS failure: diagnostic gate
+
+Third M157GATE real-CMS attempt again returned RC 8 at M155, chronology summary
+bits 1 0 0 0 1. Neither the exact-string nor the prefix-based
+summary scanner recognized the presence-runs/author-zero/committer-zero lines.
+The underlying authenticated chronology continues to return RC0, FULL
+SNAPSHOTS VERIFIED, and DATA END. Do not assume it has failed.
+
+A bounded diagnostic was added to M155CHK: on summary mismatch, print the
+captured record count, up to six raw summary records matching the expected
+suffixes anywhere, or three capture-head records if none matches. M157GATE
+already surfaces inner failure output. This is a diagnostic-only change;
+history semantics and protected native data are unchanged. Following real-CMS
+evidence, fix the specific cause rather than relaxing fail-closed checks.
