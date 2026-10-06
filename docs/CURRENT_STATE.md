@@ -1803,3 +1803,16 @@ The events checks are hardened the same way. No authenticated history semantics,
 GIT/GITVREF level, GITREC, generations, indexes, or protected data changed.
 
 Host native-stage run 37404389164 completed SUCCESS with the robust parser.
+
+
+## 2026-10-05 M155 COMPACT GATE SIMPLIFIED TO COMPLETION MARKERS
+
+Third real CMS M157GATE attempt again produced chronology markers 1/1 but no
+summary-value matches. The underlying M153 chronology command therefore remains
+healthy: it returned RC0 and emitted both FULL SNAPSHOTS VERIFIED and DATA END.
+
+M155CHK no longer duplicates M153/M154 semantic assertions by parsing display
+records. Those commands already fail closed internally and were independently
+target-proven on real CMS. M155 now requires only RC0 plus FULL SNAPSHOTS
+VERIFIED and DATA END for chronology and events. This removes console/pipeline
+format sensitivity while preserving the authenticated command boundary.
