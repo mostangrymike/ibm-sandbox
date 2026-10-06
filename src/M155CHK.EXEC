@@ -10,7 +10,8 @@ if depth+0>8 then exit 4
 
 drop chr.
 chr.0=0
-'PIPE CMS EXEC GITVREF HISTFPCHR' spec depth path '| STEM chr.'
+cmd='GIT HISTORYFIRSTPRESENCECHRONOLOGY-REF-FULL' spec depth path
+'PIPE CMS' cmd '| STEM chr.'
 crc=rc
 if crc\=0 then do
  say 'M155 CHRONOLOGY FAIL RC' crc
@@ -29,14 +30,15 @@ do i=1 to chr.0
  if chr.i='HISTORYFIRSTPRESENCECHRONOLOGY DATA END' then cend=1
 end
 if cm+runs+az+cz+cend\=5 then do
- say 'M155 CHRONOLOGY FAIL SUMMARY'
+ say 'M155 CHRONOLOGY FAIL SUMMARY' cm runs az cz cend
  exit 8
 end
 say 'M155 CHRONOLOGY PASS RUNS 2 ZERO 2/2'
 
 drop evt.
 evt.0=0
-'PIPE CMS EXEC GITVREF HISTFPEVT' spec depth path '| STEM evt.'
+cmd='GIT HISTORYFIRSTPRESENCEEVENTS-REF-FULL' spec depth path
+'PIPE CMS' cmd '| STEM evt.'
 erc=rc
 if erc\=0 then do
  say 'M155 EVENTS FAIL RC' erc
@@ -57,7 +59,7 @@ do i=1 to evt.0
  if evt.i='HISTORYFIRSTPRESENCEEVENTS DATA END' then eend=1
 end
 if em+events+fromrun+deleted+eend\=5 then do
- say 'M155 EVENTS FAIL SUMMARY'
+ say 'M155 EVENTS FAIL SUMMARY' em events fromrun deleted eend
  exit 8
 end
 say 'M155 EVENTS PASS 1 DELETED'
