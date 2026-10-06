@@ -18,8 +18,11 @@ assert "statefirstpresenceage:" in v
 assert "call preparefirstpresencecurrent" in v
 assert "HISTORYFIRSTPRESENCEAGE AUTHOR SECONDS" in v
 assert "HISTORYFIRSTPRESENCEAGE COMMITTER SECONDS" in v
+assert "HISTORYFIRSTPRESENCEAGE PROOF" in v
 assert "M157 COMPACT TARGET GATE PASS" in c
 assert "gn\\=vn | gn<157" in c
+assert "HISTORYFIRSTPRESENCEAGE PROOF" in c
+assert "M157 AGE FAIL PROOF" in c
 
 for path in (root / "src" / "GIT.EXEC",
              root / "src" / "GITVREF.EXEC",

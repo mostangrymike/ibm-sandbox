@@ -3232,6 +3232,9 @@ statefirstpresenceduration:
       'AUTHOR SECONDS' pdauth.ri
   say 'HISTORYFIRSTPRESENCEDURATION RUN' ri,
       'COMMITTER SECONDS' pdcomm.ri
+  say 'HISTORYFIRSTPRESENCEDURATION PROOF RUN' ri ps,
+      pdbegin.ri fdstatus.pdbegin.ri pdend.ri fdstatus.pdend.ri,
+      pdauth.ri pdcomm.ri
  end
  say 'HISTORYFIRSTPRESENCEDURATION DATA END'
  return 0
@@ -3243,8 +3246,14 @@ statefirstpresenceage:
  call emitverified
  say 'HISTORYFIRSTPRESENCEAGE FULL SNAPSHOTS VERIFIED'
  say 'HISTORYFIRSTPRESENCEAGE DATA BEGIN'
- if pcstate=0 then say 'HISTORYFIRSTPRESENCEAGE STATE ABSENT'
- else say 'HISTORYFIRSTPRESENCEAGE STATE PRESENT'
+ if pcstate=0 then do
+  ps='ABSENT'
+  say 'HISTORYFIRSTPRESENCEAGE STATE ABSENT'
+ end
+ else do
+  ps='PRESENT'
+  say 'HISTORYFIRSTPRESENCEAGE STATE PRESENT'
+ end
  say 'HISTORYFIRSTPRESENCEAGE NODES' pcnodes 'EXACTRUNS' pcexact
  say 'HISTORYFIRSTPRESENCEAGE BEGIN KNOWN' pcbeginknown
  say 'HISTORYFIRSTPRESENCEAGE BEGIN KIND' pcbeginkind
@@ -3255,6 +3264,10 @@ statefirstpresenceage:
  if pcbeginknown=1 then do
   say 'HISTORYFIRSTPRESENCEAGE AUTHOR SECONDS' pcauthspan
   say 'HISTORYFIRSTPRESENCEAGE COMMITTER SECONDS' pccommspan
+  if pcbeginkind='CHANGE' then do
+   say 'HISTORYFIRSTPRESENCEAGE PROOF' ps pcbeginedge,
+       fdstatus.pcbeginedge pcauthspan pccommspan
+  end
  end
  else do
   say 'HISTORYFIRSTPRESENCEAGE AUTHOR OBSERVED SECONDS' pcauthspan

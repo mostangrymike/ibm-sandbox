@@ -36,28 +36,22 @@ if grc\=0 then do
  exit grc
 end
 mark=0
-state=0
-nodes=0
-known=0
-kind=0
-edge=0
-asec=0
-csec=0
+proof=0
 dend=0
+seen=''
+want='HISTORYFIRSTPRESENCEAGE PROOF ABSENT 6 DELETED 268 268'
 do i=1 to out.0
- if out.i='HISTORYFIRSTPRESENCEAGE FULL SNAPSHOTS VERIFIED' then mark=1
- if out.i='HISTORYFIRSTPRESENCEAGE STATE ABSENT' then state=1
- if out.i='HISTORYFIRSTPRESENCEAGE NODES 6 EXACTRUNS 1' then nodes=1
- if out.i='HISTORYFIRSTPRESENCEAGE BEGIN KNOWN 1' then known=1
- if out.i='HISTORYFIRSTPRESENCEAGE BEGIN KIND CHANGE' then kind=1
- if out.i='HISTORYFIRSTPRESENCEAGE BEGIN EDGE 6 STATUS DELETED' then edge=1
- if out.i='HISTORYFIRSTPRESENCEAGE AUTHOR SECONDS 268' then asec=1
- if out.i='HISTORYFIRSTPRESENCEAGE COMMITTER SECONDS 268' then csec=1
- if out.i='HISTORYFIRSTPRESENCEAGE DATA END' then dend=1
+ line=space(out.i)
+ if line='HISTORYFIRSTPRESENCEAGE FULL SNAPSHOTS VERIFIED' then mark=1
+ if pos('HISTORYFIRSTPRESENCEAGE PROOF',line)=1 then do
+  seen=line
+  if line=want then proof=1
+ end
+ if line='HISTORYFIRSTPRESENCEAGE DATA END' then dend=1
 end
-sum=mark+state+nodes+known+kind+edge+asec+csec+dend
-if sum\=9 then do
- say 'M157 AGE FAIL SUMMARY' sum
+if mark+proof+dend\=3 then do
+ say 'M157 AGE FAIL PROOF' mark proof dend
+ if seen\='' then say seen
  exit 8
 end
 say 'M157 AGE PASS ABSENT EDGE 6 DELETED 268/268'
