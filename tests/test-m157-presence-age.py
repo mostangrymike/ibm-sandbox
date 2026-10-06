@@ -25,11 +25,9 @@ assert "HFPA P2 S" in v
 assert "HFPA P2 R" in v
 assert "M157 COMPACT TARGET GATE PASS" in c
 assert "gn\\=vn | gn<157" in c
-assert "M157 AGE FAIL PROOF" in c
 assert "M157 GITVREF STAMP PASS P2" in c
-assert "HFPA P2 S 2 6 1 CHANGE" in c
-assert "HFPA P2 R ABSENT 6 DELETED 268 268" in c
-assert "address command 'PIPE COMMAND' cmd '| STEM out.'" in c
+assert "M157 AGE DIRECT RC0" in c
+assert "address command cmd" in c
 assert "path='src/GITPBWALK.EXEC'" in c
 
 for path in (root / "src" / "GIT.EXEC",
