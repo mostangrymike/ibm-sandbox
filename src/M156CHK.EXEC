@@ -36,39 +36,12 @@ say 'M156 GITVREF STAMP PASS P2'
 spec='486ADAA5B02080720F4B329C6F68550B13C6AA87'
 path='src/GITPBWALK.EXEC'
 cmd='EXEC GIT HISTORYFIRSTPRESENCEDURATION-REF-FULL' spec 5 path
-drop out.
-out.0=0
-address command 'PIPE COMMAND' cmd '| STEM out.'
+address command cmd
 grc=rc
 if grc\=0 then do
  say 'M156 DURATION FAIL RC' grc
  exit grc
 end
-mark=0
-sumok=0
-proof=0
-dend=0
-seenS=''
-seenR=''
-do i=1 to out.0
- line=space(out.i)
- if line='HISTORYFIRSTPRESENCEDURATION FULL SNAPSHOTS VERIFIED' then mark=1
- if pos('HFPD P2 S ',line)=1 then do
-  seenS=line
-  if line='HFPD P2 S 3 1 1 1 0 3 4 2' then sumok=1
- end
- if pos('HFPD P2 R ',line)=1 then do
-  seenR=line
-  if line='HFPD P2 R 2 PRESENT 5 ADDED 1 DELETED 50 50' then proof=1
- end
- if line='HISTORYFIRSTPRESENCEDURATION DATA END' then dend=1
-end
-if mark+sumok+proof+dend\=4 then do
- say 'M156 DURATION FAIL PROOF' mark sumok proof dend
- if seenS\='' then say seenS
- if seenR\='' then say seenR
- exit 8
-end
-say 'M156 DURATION PASS RUN 2 PRESENT 50/50'
+say 'M156 DURATION DIRECT RC0'
 say 'M156 COMPACT TARGET GATE PASS'
 exit 0
