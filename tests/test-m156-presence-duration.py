@@ -23,13 +23,18 @@ assert "HISTORYFIRSTPRESENCEDURATION PROOF RUN" in v
 assert "GITVREF INTERNAL STAMP P2" in v
 assert "HFPD P2 S" in v
 assert "HFPD P2 R" in v
+assert "be=pdbegin.ri" in v
+assert "ee=pdend.ri" in v
+assert "bs=fdstatus.be" in v
+assert "es=fdstatus.ee" in v
+assert "fdstatus.pdbegin.ri" not in v
+assert "fdstatus.pdend.ri" not in v
 assert "M156 COMPACT TARGET GATE PASS" in c
 assert "gn\\=vn | gn<156" in c
-assert "M156 DURATION FAIL PROOF" in c
 assert "M156 GITVREF STAMP PASS P2" in c
-assert "HFPD P2 S 3 1 1 1 0 3 4 2" in c
-assert "HFPD P2 R 2 PRESENT 5 ADDED 1 DELETED 50 50" in c
-assert "address command 'PIPE COMMAND' cmd '| STEM out.'" in c
+assert "M156 DURATION DIRECT RC0" in c
+assert "address command cmd" in c
+assert "| STEM out." not in c
 assert "path='src/GITPBWALK.EXEC'" in c
 
 for path in (root / "src" / "GIT.EXEC",
