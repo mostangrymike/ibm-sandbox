@@ -449,7 +449,8 @@ def main():
         for name, exe in (("GITCIDX", idx), ("GITREC", rec)):
             subprocess.run(
                 [cc, "-x", "c", "-std=c89", "-O2", "-Wall",
-                 "-Wextra", "-Werror", "-o", str(exe),
+                 "-Wextra", "-Werror", "-Wframe-larger-than=16384",
+                 "-o", str(exe),
                  str(ROOT / "src" / (name + ".C"))], check=True
             )
         make_stage(d / "dd:STGIN")
