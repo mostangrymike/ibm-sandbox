@@ -5819,3 +5819,53 @@ M157GATE already invokes the three checkers directly. Host guards now enforce:
 
 No GIT.EXEC, GITVREF.EXEC, GITREC.C/MODULE, selector, generation, index, seek,
 or protected data changed.
+
+
+## 2026-10-06 DIRECT M157GATE REAL CMS RESULT / M156 STATUS EMITTER FIX
+
+Real CMS direct-execution M157GATE removed the pipeline artifact completely.
+
+M155 PASS:
+- sealed 486ADAA5... depth 1 path src/GITPBWALK.EXEC;
+- chronology PATH STATUS MIXED / EXISTENCE STATUS CHANGED;
+- NODES 2 / EDGES 1 / CHAIN 2/1 / OFFCHAIN 0/0 / TRUNCATED 1;
+- PRESENT 1 / ABSENT 1 / EXACT RUNS 2 / PRESENCE RUNS 2;
+- one DELETED edge and zero ADDED/MODIFIED/UNCHANGED;
+- both presence runs have zero author/committer spans;
+- events report exactly one transition, child ABSENT -> parent PRESENT,
+  parent blob A0C91615ABA9689C365159205E8CBA26EF6E16F4 type 3 size 1869,
+  author/committer SAME, subject/message CHANGED, +3/+3 seconds.
+M155 COMPACT TARGET GATE PASS and M157GATE M155 PASS were observed.
+M155 is REAL CMS TARGET-PROVEN.
+
+M156 semantic calculation PASS but display bug found:
+- PATH STATUS MIXED / EXISTENCE STATUS CHANGED;
+- PRESENCE RUNS 3 / CLOSED RUNS 1;
+- proof summary 3 1 1 1 0 3 4 2;
+- closed RUN 2 PRESENT, begin edge number 5, end edge number 1;
+- author and committer duration 50 seconds.
+However the rendered status tokens were literal FDSTATUS.PDBEGIN.2 and
+FDSTATUS.PDEND.2. This is CMS REXX compound-variable semantics: a compound
+tail does not indirectly evaluate another compound variable. The calculation
+itself had already validated fdstatus.be / fdstatus.ee correctly.
+
+GITVREF statefirstpresenceduration now materializes:
+  be=pdbegin.ri
+  ee=pdend.ri
+  bs=fdstatus.be
+  es=fdstatus.ee
+and emits be/bs/ee/es, with fail-closed bounds/status checks. Host guards reject
+the former fdstatus.pdbegin.ri / fdstatus.pdend.ri form. M156 requires one
+wrapper-only CMS revalidation of HISTORYFIRSTPRESENCEDURATION-REF-FULL.
+
+M157 PASS:
+- sealed 6EF11911... depth 6;
+- current state ABSENT, nodes 6, exact runs 1;
+- BEGIN KNOWN 1 / KIND CHANGE / EDGE 6 DELETED;
+- author and committer age 268/268 seconds;
+- exact proof HFPA P2 R ABSENT 6 DELETED 268 268.
+M157 COMPACT TARGET GATE PASS and M157GATE M157 PASS were observed.
+M157 is REAL CMS TARGET-PROVEN.
+
+No native GITREC rebuild, generation change, selector change, or protected-data
+change is needed for the M156 rendering fix.
