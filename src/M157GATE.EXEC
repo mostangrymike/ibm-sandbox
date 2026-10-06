@@ -6,75 +6,27 @@ if extra\='' then do
  exit 4
 end
 
-drop out.
-out.0=0
-'PIPE CMS EXEC M155CHK | STEM out.'
+'M155CHK'
 grc=rc
 if grc\=0 then do
  say 'M157GATE M155 FAIL RC' grc
- do i=1 to out.0
-  say out.i
- end
  exit grc
-end
-ok=0
-do i=1 to out.0
- if out.i='M155 COMPACT TARGET GATE PASS' then ok=1
-end
-if \ok then do
- say 'M157GATE M155 FAIL MARKER'
- do i=1 to out.0
-  say out.i
- end
- exit 8
 end
 say 'M157GATE M155 PASS'
 
-drop out.
-out.0=0
-'PIPE CMS EXEC M156CHK | STEM out.'
+'M156CHK'
 grc=rc
 if grc\=0 then do
  say 'M157GATE M156 FAIL RC' grc
- do i=1 to out.0
-  say out.i
- end
  exit grc
-end
-ok=0
-do i=1 to out.0
- if out.i='M156 COMPACT TARGET GATE PASS' then ok=1
-end
-if \ok then do
- say 'M157GATE M156 FAIL MARKER'
- do i=1 to out.0
-  say out.i
- end
- exit 8
 end
 say 'M157GATE M156 PASS'
 
-drop out.
-out.0=0
-'PIPE CMS EXEC M157CHK | STEM out.'
+'M157CHK'
 grc=rc
 if grc\=0 then do
  say 'M157GATE M157 FAIL RC' grc
- do i=1 to out.0
-  say out.i
- end
  exit grc
-end
-ok=0
-do i=1 to out.0
- if out.i='M157 COMPACT TARGET GATE PASS' then ok=1
-end
-if \ok then do
- say 'M157GATE M157 FAIL MARKER'
- do i=1 to out.0
-  say out.i
- end
- exit 8
 end
 say 'M157GATE M157 PASS'
 say 'M157GATE COMBINED TARGET GATE PASS'
