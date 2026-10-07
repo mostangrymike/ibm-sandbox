@@ -5927,3 +5927,8 @@ M158 target pass is complete. M159 presence-ratio code is host-proven by native-
 ## 2026-10-06 M159 REAL CMS TARGET PASS
 
 Real CMS ran GIT/GITVREF M159/M159 and M159CHK RC0 on the sealed depth-5 fixture. Full snapshots verified. Exact proof matched: HFPR P1 S 2 1 1 1; HFPR P1 A 1 50 50 0 10000 0; HFPR P1 C 1 50 50 0 10000 0. Author and committer complete-time ratios are both available, with 50 seconds PRESENT, 0 ABSENT, and 10000/0 basis points. M159 RATIO DIRECT RC0 and M159 COMPACT TARGET GATE PASS followed. M159 is REAL CMS TARGET-PROVEN.
+
+
+## 2026-10-06 M160 HOST PASS / CMS GATE NEXT
+
+M159 is REAL CMS TARGET-PROVEN. M160 adds HISTORYFIRSTPRESENCECOVERAGE-REF-FULL, reporting structural completeness of the bounded first-parent presence history. Sealed proof: HFPC P1 S 3 2 1 6 5 1 and HFPC P1 B 6666 3334 8333 1667. GIT/GITVREF is M160/M160. Native-stage run 37554322009 completed SUCCESS on code head 2300c420613d93757ba44aa422a3b09f9d0acf47. Next target step: upload GIT.EXEC, GITVREF.EXEC, M160CHK.EXEC; run GIT LEVEL; run M160CHK. No GITREC rebuild. No GITRUN.
