@@ -1,0 +1,40 @@
+name: M169 ref probe
+
+on:
+  push:
+    branches:
+      - m169-ref-probe
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe advertised refs
+        run: |
+          set -euo pipefail
+          curl --http1.1 -sS -o /tmp/adv             'https://github.com/mostangrymike/ibm-sandbox.git/info/refs?service=git-upload-pack'
+          python3 - <<'PY'
+          from pathlib import Path
+          data=Path('/tmp/adv').read_bytes()
+          p=0
+          nref=0
+          flush=0
+          while p < len(data):
+              if p+4>len(data): raise SystemExit(('short',p,len(data)-p))
+              n=int(data[p:p+4],16); p+=4
+              if n==0:
+                  flush+=1
+                  print('FLUSH',flush,'AT',p-4)
+                  continue
+              payload=data[p:p+n-4]; p+=n-4
+              if flush==0:
+                  print('SERVICE',payload)
+                  continue
+              nref+=1
+              main,sep,caps=payload.partition(b'\0')
+              print('REF',nref,'LEN',n,'MAIN',main.rstrip(b'\n')[:220])
+              if sep:
+                  print('CAPS',caps.rstrip(b'\n')[:500])
+              if nref>=60:
+                  break
+          PY
