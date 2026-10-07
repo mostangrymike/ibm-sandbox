@@ -5,7 +5,7 @@ on:
     branches:
       - m165-staged-commit
     paths:
-      - 'scripts/m165/gitwt_helpers.txt'
+      - 'docs/M165.md'
 
 permissions:
   contents: write
