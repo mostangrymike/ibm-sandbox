@@ -6238,3 +6238,26 @@ recovery, selector fuzz, staging/OID index, and native REF PACK.
 
 NEXT CMS STEP: upload only GIT.EXEC and rerun M167CHK. M167CHK, GITVREF,
 GITUPD, and GITWT are already current. No manual REF2 cleanup is required.
+
+
+## 2026-10-07 M167 THIRD TARGET RUN / CHECKER LAST-RECORD FIX
+
+Third real CMS M167CHK proved the production M167 path through successful
+integrated commit creation, exact disposable-ref CAS advance, and direct REF2
+post-CAS verification. GIT emitted COMMIT-STAGED-REF CAS PASS and the checker
+received RC0.
+
+The remaining failure was checker-only. M167CHK attempted to read the final
+REF2 record using the compound symbol post.post.0. In REXX that is not the
+same as indexing stem POST. by the numeric value in POST.0. The setup path had
+already used the correct pattern: assign the count to LAST, then reference the
+stem as post.last. M167CHK now uses last=post.0 followed by line=post.last.
+
+Production commit/ref logic did not change. Checker fix is 7cde8c196aafbcf778af3e0919c7dede62eaac69;
+regression guard is c110cee8d377bb4fdf336a57c98a1f06316464ab.
+GitHub Actions run 1255 completed SUCCESS including M167, M166, M165, M164,
+CATHEX/fallback, tree recovery, selector fuzz, staging/OID index, and native
+REF PACK.
+
+NEXT CMS STEP: upload only M167CHK.EXEC and rerun M167CHK. No GIT/GITVREF,
+GITUPD, GITWT, GITIMP, GITREC, or REF2 manual work is required.
