@@ -5962,3 +5962,8 @@ Real CMS ran GIT/GITVREF M162/M162 and M162CHK RC0 on the sealed depth-5 fixture
 ## 2026-10-07 M163 HOST PASS / CMS GATE NEXT
 
 M162 is REAL CMS TARGET-PROVEN. M163 adds HISTORYFIRSTPRESENCEHORIZON-REF-FULL, reporting the structurally complete first-parent prefix from HEAD. Sealed proof: HFPH P1 S 1 5 4 4 4 50 50 and HFPH P1 F 1 6 5 5 ADDED. GIT/GITVREF is M163/M163. Native-stage run 37633302087 completed SUCCESS on code head 817a78d9ba7287e6beeb0fdd2046fa1e8dee9250, including the M163 host model and full native-stage suite. Next target step: upload GIT.EXEC, GITVREF.EXEC, M163CHK.EXEC; run GIT LEVEL; run M163CHK. No GITREC rebuild. No GITRUN.
+
+
+## 2026-10-07 M163 REAL CMS TARGET PASS / PORCELAIN PIVOT
+
+Real CMS ran GIT/GITVREF M163/M163 and M163CHK RC0 on the sealed depth-5 fixture. Exact proof matched HFPH P1 S 1 5 4 4 4 50 50 and HFPH P1 F 1 6 5 5 ADDED. The complete authenticated horizon ends at step/depth 5/4, 50/50 seconds behind HEAD; incomplete history begins at step/depth 6/5 across edge 5 ADDED. M163 HORIZON DIRECT RC0 and M163 COMPACT TARGET GATE PASS followed. M163 is REAL CMS TARGET-PROVEN. History analytics are now closed for the practical roadmap. Next work pivots to write/network porcelain: verified native-to-loose object import, CMS worktree checkout/status/add/commit, then generalized smart-HTTP fetch/clone and receive-pack push.
