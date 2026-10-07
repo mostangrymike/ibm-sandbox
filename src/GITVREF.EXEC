@@ -1,4 +1,4 @@
-/* M159: authenticated first-parent presence ratio. */
+/* M160: authenticated first-parent presence ratio. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M159'
+ say 'GITVREF EXEC LEVEL M160'
  exit 0
 end
 if command='STAMP' then do
@@ -44,7 +44,8 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTFPRES' & command\='HISTFPORIG' &,
    command\='HISTFPCHR' & command\='HISTFPEVT' &,
    command\='HISTFPDUR' & command\='HISTFPAGE' &,
-   command\='HISTFPTIME' & command\='HISTFPRATIO' then do
+   command\='HISTFPTIME' & command\='HISTFPRATIO' &,
+   command\='HISTFPCOV' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -70,7 +71,8 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTFPRES' | command='HISTFPORIG' |,
    command='HISTFPCHR' | command='HISTFPEVT' |,
    command='HISTFPDUR' | command='HISTFPAGE' |,
-   command='HISTFPTIME' | command='HISTFPRATIO' then do
+   command='HISTFPTIME' | command='HISTFPRATIO' |,
+   command='HISTFPCOV' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -96,7 +98,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFPORIG' | command='HISTFPCHR' |,
    command='HISTFPEVT' | command='HISTFPDUR' |,
    command='HISTFPAGE' | command='HISTFPTIME' |,
-   command='HISTFPRATIO' then do
+   command='HISTFPRATIO' | command='HISTFPCOV' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -144,6 +146,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTFPAGE' & depth+0>8 then exit 4
  if command='HISTFPTIME' & depth+0>8 then exit 4
  if command='HISTFPRATIO' & depth+0>8 then exit 4
+ if command='HISTFPCOV' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -165,7 +168,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFPRES' | command='HISTFPORIG' |,
    command='HISTFPCHR' | command='HISTFPEVT' |,
    command='HISTFPDUR' | command='HISTFPAGE' |,
-   command='HISTFPTIME' | command='HISTFPRATIO' then do
+   command='HISTFPTIME' | command='HISTFPRATIO' |,
+   command='HISTFPCOV' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -213,7 +217,7 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFPORIG' | command='HISTFPCHR' |,
    command='HISTFPEVT' | command='HISTFPDUR' |,
    command='HISTFPAGE' | command='HISTFPTIME' |,
-   command='HISTFPRATIO' then do
+   command='HISTFPRATIO' | command='HISTFPCOV' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -264,7 +268,7 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFPORIG' | command='HISTFPCHR' |,
    command='HISTFPEVT' | command='HISTFPDUR' |,
    command='HISTFPAGE' | command='HISTFPTIME' |,
-   command='HISTFPRATIO' then do
+   command='HISTFPRATIO' | command='HISTFPCOV' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -425,6 +429,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTFPRATIO' then do
   call statefirstpresenceratio
+  exit result
+ end
+ if command='HISTFPCOV' then do
+  call statefirstpresencecoverage
   exit result
  end
  call statediff
@@ -3508,6 +3516,56 @@ statefirstpresenceratio:
  say 'HFPR P1 C' prcommok prcommtotal ptpresentcomm,
      ptabsencomm prcommpbp prcommabp
  say 'HISTORYFIRSTPRESENCERATIO DATA END'
+ return 0
+
+
+preparepresencecoverage:
+ call preparepresencetime
+ if result\='OK' then return 'ERROR'
+ pccnodes=0
+ pcinodes=0
+ do ri=1 to prruns
+  if ptcomplete.ri=1 then pccnodes=pccnodes+prnodes.ri
+  else pcinodes=pcinodes+prnodes.ri
+ end
+ if ptcompletecount+ptincomplete\=prruns then return 'ERROR'
+ if pccnodes+pcinodes\=fpcount then return 'ERROR'
+ if prruns<1 | fpcount<1 then return 'ERROR'
+ pcrunbp=(ptcompletecount*10000)%prruns
+ pcrunibp=10000-pcrunbp
+ pcnodebp=(pccnodes*10000)%fpcount
+ pcnodeibp=10000-pcnodebp
+ if pcrunbp<0 | pcrunbp>10000 then return 'ERROR'
+ if pcrunibp<0 | pcrunibp>10000 then return 'ERROR'
+ if pcnodebp<0 | pcnodebp>10000 then return 'ERROR'
+ if pcnodeibp<0 | pcnodeibp>10000 then return 'ERROR'
+ if pcrunbp+pcrunibp\=10000 then return 'ERROR'
+ if pcnodebp+pcnodeibp\=10000 then return 'ERROR'
+ return 'OK'
+
+
+statefirstpresencecoverage:
+ call preparepresencecoverage
+ if result\='OK' then return 8
+ call emitverified
+ say 'HISTORYFIRSTPRESENCECOVERAGE FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTPRESENCECOVERAGE DATA BEGIN'
+ say 'HISTORYFIRSTPRESENCECOVERAGE PATH STATUS' fvlifecycle
+ say 'HISTORYFIRSTPRESENCECOVERAGE EXISTENCE STATUS' prexiststatus
+ say 'HISTORYFIRSTPRESENCECOVERAGE PRESENCE RUNS' prruns
+ say 'HISTORYFIRSTPRESENCECOVERAGE COMPLETE RUNS' ptcompletecount
+ say 'HISTORYFIRSTPRESENCECOVERAGE INCOMPLETE RUNS' ptincomplete
+ say 'HISTORYFIRSTPRESENCECOVERAGE CHAIN NODES' fpcount
+ say 'HISTORYFIRSTPRESENCECOVERAGE COMPLETE NODES' pccnodes
+ say 'HISTORYFIRSTPRESENCECOVERAGE INCOMPLETE NODES' pcinodes
+ say 'HISTORYFIRSTPRESENCECOVERAGE RUN COMPLETE BASIS POINTS' pcrunbp
+ say 'HISTORYFIRSTPRESENCECOVERAGE RUN INCOMPLETE BASIS POINTS' pcrunibp
+ say 'HISTORYFIRSTPRESENCECOVERAGE NODE COMPLETE BASIS POINTS' pcnodebp
+ say 'HISTORYFIRSTPRESENCECOVERAGE NODE INCOMPLETE BASIS POINTS' pcnodeibp
+ say 'HFPC P1 S' prruns ptcompletecount ptincomplete,
+     fpcount pccnodes pcinodes
+ say 'HFPC P1 B' pcrunbp pcrunibp pcnodebp pcnodeibp
+ say 'HISTORYFIRSTPRESENCECOVERAGE DATA END'
  return 0
 
 
