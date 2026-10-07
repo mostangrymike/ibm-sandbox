@@ -50,6 +50,7 @@ assert "GITUPD: REF2 rollback erase failed" in upd
 for needle in (
     "D6FB8432692CF8EFBDC2DDA354425D8DCDC3A008",
     "refs/heads/m166test",
+    "M166 PRIOR DISPOSABLE REF RECOVERED",
     "M166 CREATE CAS PASS",
     "M166 STALE CAS REJECTED RC8",
     "M166 STALE CAS LEFT REF2 UNCHANGED",
@@ -65,6 +66,8 @@ assert "refs/heads/main" not in re.sub(
 )
 assert "EXEC GIT UPDATE-REF' testref" in chk
 assert "DISKW GITREF2 REPO A" in chk
+assert "M166 CLEANUP REF2 ERASE FAIL" in chk
+assert chk.count("'ERASE GITREF2 REPO A'") >= 1
 
 for path in (
     root / "src" / "GIT.EXEC",
