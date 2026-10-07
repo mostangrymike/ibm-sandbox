@@ -1,0 +1,64 @@
+/* M170: live dynamic upload-pack POST gate. */
+address cms
+bridge='192.168.200.1'
+port='8443'
+host='github.com'
+repo='mostangrymike/ibm-sandbox'
+
+drop d.
+d.0=0
+cmd='EXEC GIT FETCH-DISCOVER' bridge port host repo 'main'
+'PIPE CMS' cmd '| STEM d.'
+drc=rc
+if drc\=0 then do
+ say 'M170 DISCOVERY FAIL RC' drc
+ exit 8
+end
+oid=''
+ocount=0
+do i=1 to d.0
+ say d.i
+ if word(d.i,1)='FETCH' & word(d.i,2)='OID' & words(d.i)=3 then do
+  cand=translate(word(d.i,3))
+  if length(cand)=40 &,
+     verify(cand,'0123456789ABCDEF')=0 then do
+   ocount=ocount+1
+   oid=cand
+  end
+ end
+end
+if ocount\=1 then do
+ say 'M170 DISCOVERY OID FRAMING FAIL' ocount
+ exit 8
+end
+say 'M170 LIVE OID' oid
+
+drop p.
+p.0=0
+cmd='EXEC GIT FETCH-POST' bridge port host repo oid
+'PIPE CMS' cmd '| STEM p.'
+prc=rc
+if prc\=0 then do
+ do i=1 to p.0
+  say p.i
+ end
+ say 'M170 POST FAIL RC' prc
+ exit 8
+end
+want=0
+pass=0
+do i=1 to p.0
+ say p.i
+ if word(p.i,1)='FETCH' & word(p.i,2)='POST' &,
+    word(p.i,3)='WANT' & words(p.i)=4 then do
+  if translate(word(p.i,4))=oid then want=want+1
+ end
+ if p.i='M170 FETCH POST PASS' then pass=pass+1
+end
+if want\=1 | pass\=1 then do
+ say 'M170 POST RESULT FRAMING FAIL' want pass
+ exit 8
+end
+say 'M170 DYNAMIC WANT MATCH PASS' oid
+say 'M170 GENERALIZED UPLOAD PACK TARGET GATE PASS'
+exit 0
