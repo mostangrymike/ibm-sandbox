@@ -2,6 +2,8 @@
 address cms
 newoid=''
 newowned=0
+baseowned=0
+basefn=''
 
 call absent 'M164TST','DATA','A'
 if result\=0 then exit 8
@@ -47,6 +49,28 @@ if word(m.3,1)\='BASE' | word(m.4,1)\='STAGE' |,
  exit 8
 end
 say 'M164 INITIAL CLEAN MAP PASS'
+
+basefn=substr(base,1,8)
+call absent basefn,'GITOBJ','A'
+if result\=0 then do
+ call cleanup
+ say 'M164 BASE LOOSE TARGET COLLISION'
+ exit 8
+end
+baseowned=1
+address command 'GIT IMPORT-OBJECT' base
+if rc\=0 then do
+ call cleanup
+ say 'M164 IMPORT FAIL'
+ exit 8
+end
+address command 'GIT VERIFY-OBJECT' base
+if rc\=0 then do
+ call cleanup
+ say 'M164 IMPORT VERIFY FAIL'
+ exit 8
+end
+say 'M164 VERIFIED IMPORT PASS' base
 
 drop t.
 t.1='M164 PORCELAIN MODIFIED'
@@ -161,6 +185,16 @@ cleanup:
    'ERASE' objfn 'GITOBJ A'
    if rc\=0 then crc=8
   end
+  else if rc\=28 then nop
+  else crc=8
+ end
+ if baseowned=1 then do
+  'STATE' basefn 'GITOBJ A'
+  if rc=0 then do
+   'ERASE' basefn 'GITOBJ A'
+   if rc\=0 then crc=8
+  end
+  else if rc\=28 then nop
   else crc=8
  end
  return crc
