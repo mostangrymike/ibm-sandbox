@@ -1,4 +1,248 @@
-/* M168 current-branch target gate. */
+/* M168: current symbolic branch commit plus worktree reconciliation. */
 address cms
-say 'M168 CHECKER PLACEHOLDER'
-exit 8
+testref='refs/heads/m168test'
+dirty=0
+
+call absent 'M168TST','DATA','A'
+if result\=0 then exit 8
+call absent 'GITWORK','REPO','A'
+if result\=0 then exit 8
+call absent 'GITTREE','REPO','A'
+if result\=0 then exit 8
+
+drop rb.
+'EXECIO * DISKR GITREF2 REPO A 1 (STEM RB. FINIS'
+if rc\=0 | rb.0<3 | rb.1\='REF2 1' then do
+ say 'M168 REF2 SNAPSHOT FAIL'
+ exit 8
+end
+orighead=''
+oldoid=''
+hcount=0
+ocount=0
+tcount=0
+do i=2 to rb.0
+ if word(rb.i,1)='HEAD' then do
+  if words(rb.i)\=2 then exit 8
+  hcount=hcount+1
+  orighead=word(rb.i,2)
+ end
+ if word(rb.i,1)='REF' & word(rb.i,2)=testref then tcount=tcount+1
+end
+if hcount\=1 | left(orighead,11)\='refs/heads/' | tcount\=0 then do
+ say 'M168 REF2 PREFLIGHT FAIL'
+ exit 8
+end
+do i=2 to rb.0
+ if word(rb.i,1)='REF' & word(rb.i,2)=orighead then do
+  if words(rb.i)\=3 then exit 8
+  ocount=ocount+1
+  oldoid=translate(word(rb.i,3))
+ end
+end
+if ocount\=1 | length(oldoid)\=40 |,
+   verify(oldoid,'0123456789ABCDEF')\=0 then do
+ say 'M168 CURRENT HEAD RESOLUTION FAIL'
+ exit 8
+end
+say 'M168 BASELINE HEAD' orighead oldoid
+
+drop setup.
+setup.0=rb.0+1
+do i=1 to rb.0
+ if word(rb.i,1)='HEAD' then setup.i='HEAD' testref
+ else setup.i=rb.i
+end
+last=setup.0
+setup.last='REF' testref oldoid
+dirty=1
+'ERASE GITREF2 REPO A'
+if rc\=0 then do
+ call cleanup
+ say 'M168 TEMP HEAD ERASE FAIL'
+ exit 8
+end
+'EXECIO' setup.0 'DISKW GITREF2 REPO A 1 (STEM SETUP. FINIS'
+if rc\=0 then do
+ call cleanup
+ say 'M168 TEMP HEAD WRITE FAIL'
+ exit 8
+end
+say 'M168 TEMP CURRENT BRANCH READY' testref
+
+address command 'EXEC GIT VERIFY-REF HEAD'
+if rc\=0 then do
+ call cleanup
+ say 'M168 TEMP HEAD VERIFY FAIL'
+ exit 8
+end
+
+cmd='EXEC GIT CHECKOUT-FILE HEAD src/GIT.EXEC M168TST DATA A'
+address command cmd
+if rc\=0 then do
+ call cleanup
+ say 'M168 CHECKOUT FAIL'
+ exit 8
+end
+
+drop t.
+t.1='M168 COMMIT CURRENT'
+t.0=1
+'EXECIO 1 DISKW M168TST DATA A 1 (STEM T. FINIS'
+if rc\=0 then do
+ call cleanup
+ say 'M168 MODIFY FAIL'
+ exit 8
+end
+
+address command 'EXEC GIT ADD src/GIT.EXEC'
+if rc\=0 then do
+ call cleanup
+ say 'M168 ADD FAIL'
+ exit 8
+end
+say 'M168 STAGED CHANGE PASS'
+
+cmd='EXEC GIT COMMIT-CURRENT -T 4 -Z +0000 -M M168_target'
+address command cmd
+commitrc=rc
+if commitrc\=0 then do
+ call cleanup
+ say 'M168 COMMIT CURRENT FAIL RC' commitrc
+ exit 8
+end
+say 'M168 COMMIT CURRENT RC0'
+
+drop post.
+'EXECIO * DISKR GITREF2 REPO A 1 (STEM POST. FINIS'
+if rc\=0 | post.0\=setup.0 then do
+ call cleanup
+ say 'M168 POST REF2 READ FAIL'
+ exit 8
+end
+do i=1 to setup.0-1
+ if post.i\=setup.i then do
+  call cleanup
+  say 'M168 PROTECTED REF2 CHANGED' i
+  exit 8
+ end
+end
+last=post.0
+line=post.last
+if word(line,1)\='REF' | word(line,2)\=testref |,
+   words(line)\=3 then do
+ call cleanup
+ say 'M168 CURRENT REF LOST'
+ exit 8
+end
+newcommit=translate(word(line,3))
+if length(newcommit)\=40 |,
+   verify(newcommit,'0123456789ABCDEF')\=0 | newcommit=oldoid then do
+ call cleanup
+ say 'M168 CURRENT REF ADVANCE FAIL'
+ exit 8
+end
+say 'M168 CURRENT REF ADVANCED' newcommit
+
+address command 'EXEC GIT VERIFY-OBJECT' newcommit
+if rc\=0 then do
+ call cleanup
+ say 'M168 NEW COMMIT VERIFY FAIL'
+ exit 8
+end
+say 'M168 NEW COMMIT VERIFIED'
+
+drop st.
+st.0=0
+'PIPE CMS GIT STATUS | STEM st.'
+if rc\=0 then do
+ call cleanup
+ say 'M168 STATUS FAIL'
+ exit 8
+end
+clean=0
+do si=1 to st.0
+ say st.si
+ if st.si='STATUS SUMMARY TRACKED 1 CHANGED 0 STAGED 0' then clean=clean+1
+end
+if clean\=1 then do
+ call cleanup
+ say 'M168 WORKTREE NOT CLEAN'
+ exit 8
+end
+say 'M168 WORKTREE RECONCILED CLEAN'
+
+call restore
+if result\=0 then do
+ call cleanup
+ say 'M168 REF2 RESTORE FAIL'
+ exit 8
+end
+dirty=0
+say 'M168 REF2 BYTE RESTORE PASS'
+
+call cleanup
+if result\=0 then do
+ say 'M168 CLEANUP FAIL'
+ exit 8
+end
+address command 'EXEC GIT VERIFY-OBJECT' newcommit
+if rc\=0 then do
+ say 'M168 RETAINED COMMIT LOST'
+ exit 8
+end
+say 'M168 RETAINED CURRENT COMMIT' newcommit
+say 'M168 CURRENT BRANCH COMMIT TARGET GATE PASS'
+exit 0
+
+absent:
+ parse arg afn,aft,afm
+ 'STATE' afn aft afm
+ if rc=28 then return 0
+ say 'M168: expected absent' afn aft afm 'RC' rc
+ return 8
+
+restore:
+ 'STATE GITREF2 REPO A'
+ src=rc
+ if src=0 then do
+  'ERASE GITREF2 REPO A'
+  if rc\=0 then return 8
+ end
+ else if src\=28 then return 8
+ 'EXECIO' rb.0 'DISKW GITREF2 REPO A 1 (STEM RB. FINIS'
+ if rc\=0 then return 8
+ drop rf.
+ 'EXECIO * DISKR GITREF2 REPO A 1 (STEM RF. FINIS'
+ if rc\=0 | rf.0\=rb.0 then return 8
+ do ri=1 to rb.0
+  if rf.ri\=rb.ri then return 8
+ end
+ return 0
+
+cleanup:
+ crc=0
+ if dirty then do
+  call restore
+  if result\=0 then crc=8
+  else dirty=0
+ end
+ 'STATE M168TST DATA A'
+ if rc=0 then do
+  'ERASE M168TST DATA A'
+  if rc\=0 then crc=8
+ end
+ else if rc\=28 then crc=8
+ 'STATE GITWORK REPO A'
+ if rc=0 then do
+  'ERASE GITWORK REPO A'
+  if rc\=0 then crc=8
+ end
+ else if rc\=28 then crc=8
+ 'STATE GITTREE REPO A'
+ if rc=0 then do
+  'ERASE GITTREE REPO A'
+  if rc\=0 then crc=8
+ end
+ else if rc\=28 then crc=8
+ return crc
