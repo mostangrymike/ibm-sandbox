@@ -27,7 +27,6 @@ for needle in (
     "word(cr.cri,2)='COMMIT'",
     "parent\\=expected",
     "EXEC GIT UPDATE-REF",
-    "EXEC GIT VERIFY-REF",
     "post-CAS ref verification failed; rolling back",
     "post-CAS rollback restored expected old",
     "COMMIT-STAGED-REF CAS PASS",
@@ -35,6 +34,12 @@ for needle in (
     assert needle in bridge
 
 assert bridge.count("EXEC GIT UPDATE-REF") >= 2
+assert "EXECIO * DISKR GITREF2 REPO A 1 (STEM VR. FINIS" in bridge
+assert "vr.1='REF2 1'" in bridge
+assert "headseen\\=1" in bridge
+assert "word(vr.vri,2)=cref" in bridge
+assert "translate(word(vr.vri,3))=newcommit" in bridge
+assert "PIPE CMS EXEC GIT VERIFY-REF" not in bridge
 assert "COMMIT-STAGED-REF REF" in bridge
 assert "COMMIT-STAGED-REF OLD" in bridge
 assert "COMMIT-STAGED-REF NEW" in bridge
