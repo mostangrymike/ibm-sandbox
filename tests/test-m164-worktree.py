@@ -41,6 +41,11 @@ for needle in (
 ):
     assert needle in imp
 
+assert "PIPE CMS GIT VERIFY-OBJECT" not in imp
+assert "address command 'EXEC GIT VERIFY-OBJECT' oid" in imp
+assert "GITIMP: malformed CATHEX metadata" in imp
+assert "GITIMP: malformed CATHEX data record" in imp
+
 for protected in ("GITFIX STAGE", "GITFIX INDEX", "GITFIX SEEK",
                   "GITFIX GEN", "M15NEW STAGE", "M15NEW INDEX",
                   "M15NEW SEEK", "M15NEW GEN"):
