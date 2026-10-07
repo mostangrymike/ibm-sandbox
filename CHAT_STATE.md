@@ -5997,3 +5997,23 @@ Fourth real CMS M164CHK attempt resolved the sealed path and entered GITWT body 
 ## 2026-10-07 M164 FOURTH CMS ATTEMPT / ASCII CONVERSION FIX PENDING HOST REVALIDATION
 
 Fourth real CMS M164CHK attempt passed absence preflight, resolved the corrected sealed checkout fixture, and entered production PATHFULLCAT/body conversion. Native authenticated read progressed into GITWT bodyrecords, then VM REXX failed in asciitocms at line 533 with DMSREX475E Error 40 (Incorrect call to routine) on the long-input defensive expression using VERIFY(TRANSLATE(ah), '0123456789ABCDEF'). The checkout target and GITWORK map remained absent, so no worktree/map/loose-object write occurred. Root cause is isolated to the long hex-record validation inside asciitocms; all other M164 VERIFY uses are bounded OIDs/short fields. Production patch commit fc92f51814ec0c9d34dec502759479231cb61f9e replaces the long VERIFY call with explicit per-character POS-based hex validation, preserving <=80-column CMS source. IMPORTANT: this latest GITWT.EXEC fix has NOT YET been run through the full host native-stage suite. NEXT NEW-CHAT STEP: run/inspect native-stage for fc92f51814ec0c9d34dec502759479231cb61f9e or a follow-up test-guard commit; add a regression proving asciitocms no longer uses long VERIFY; only after exact corrected head is green, upload GITWT.EXEC (and M164CHK.EXEC only if checker changed) and rerun M164CHK. Do not re-upload GIT/GITVREF/GITIMP unless changed. No GITREC rebuild and no GITRUN. Current sealed checkout fixture remains HEAD 00D8D63229305230C8D37F884CE87F9E1A89468C, path src/GIT.EXEC, expected blob 0FCE3C85DD9335CA7A4868E806F09B890D115F80, final-LF flag 0. Earlier M164 checker fixes remain in force: RC28 absence accepts rc=28, ADDRESS COMMAND always uses EXEC GIT, command RCs are captured before cleanup. M163 remains fully REAL CMS TARGET-PROVEN.
+
+
+## 2026-10-07 M164 REAL CMS TARGET PASS
+
+Real CMS M164CHK completed RC0 end-to-end on sealed HEAD
+00D8D63229305230C8D37F884CE87F9E1A89468C and path src/GIT.EXEC.
+CHECKOUT-FILE produced the exact base blob
+0FCE3C85DD9335CA7A4868E806F09B890D115F80 with FINAL-LF 0. IMPORT-OBJECT
+verified the native object and loose representation. After modifying the
+disposable CMS workfile, STATUS reported MODIFIED with work OID
+F30D9549BF626986E21A6C9382CD636E0F3F95B5. ADD staged that exact OID,
+STATUS reported STAGED with CHANGED 0 / STAGED 1, VERIFY-OBJECT passed,
+disposable worktree/map cleanup passed, and the final line was
+M164 PRACTICAL PORCELAIN TARGET GATE PASS.
+
+The target run also proved safe reuse of a verified loose object left by an
+earlier failed ADD. M164 is REAL CMS TARGET-PROVEN. Next roadmap work is the
+commit boundary: rebuild staged-path ancestor trees from the authenticated
+native snapshot, create a loose child commit, and keep ref movement isolated
+behind a later compare-and-swap milestone.
