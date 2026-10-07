@@ -1,0 +1,140 @@
+/* M166: modern REF2 compare-and-swap target gate. */
+address cms
+candidate='D6FB8432692CF8EFBDC2DDA354425D8DCDC3A008'
+zeros='0000000000000000000000000000000000000000'
+wrong='1111111111111111111111111111111111111111'
+testref='refs/heads/m166test'
+dirty=0
+
+address command 'EXEC GIT VERIFY-OBJECT' candidate
+if rc\=0 then do
+ say 'M166 RETAINED COMMIT VERIFY FAIL'
+ exit 8
+end
+say 'M166 RETAINED COMMIT PASS' candidate
+
+drop rb.
+'EXECIO * DISKR GITREF2 REPO A 1 (STEM RB. FINIS'
+if rc\=0 | rb.0<3 then do
+ say 'M166 REF2 SNAPSHOT FAIL'
+ exit 8
+end
+do i=1 to rb.0
+ if word(rb.i,1)='REF' & word(rb.i,2)=testref then do
+  say 'M166 DISPOSABLE REF COLLISION'
+  exit 8
+ end
+end
+say 'M166 DISPOSABLE REF ABSENT'
+
+dirty=1
+cmd='EXEC GIT UPDATE-REF' testref candidate zeros
+address command cmd
+crc=rc
+if crc\=0 then do
+ call cleanup
+ say 'M166 CREATE CAS FAIL RC' crc
+ exit 8
+end
+say 'M166 CREATE CAS PASS'
+
+drop mid.
+'EXECIO * DISKR GITREF2 REPO A 1 (STEM MID. FINIS'
+if rc\=0 | mid.0\=rb.0+1 then do
+ call cleanup
+ say 'M166 CREATE SNAPSHOT FAIL'
+ exit 8
+end
+do i=1 to rb.0
+ if mid.i\=rb.i then do
+  call cleanup
+  say 'M166 CREATE CHANGED PROTECTED REF RECORD' i
+  exit 8
+ end
+end
+last=mid.0
+if mid.last\='REF' testref candidate then do
+ call cleanup
+ say 'M166 CREATE REF RECORD FAIL'
+ exit 8
+end
+say 'M166 PROTECTED REFS UNCHANGED AFTER CREATE'
+
+cmd='EXEC GIT UPDATE-REF' testref candidate wrong
+address command cmd
+src=rc
+if src\=8 then do
+ call cleanup
+ say 'M166 STALE CAS WRONG RC' src
+ exit 8
+end
+say 'M166 STALE CAS REJECTED RC8'
+
+drop after.
+'EXECIO * DISKR GITREF2 REPO A 1 (STEM AFTER. FINIS'
+if rc\=0 | after.0\=mid.0 then do
+ call cleanup
+ say 'M166 STALE SNAPSHOT FAIL'
+ exit 8
+end
+do i=1 to mid.0
+ if after.i\=mid.i then do
+  call cleanup
+  say 'M166 STALE CAS MUTATED REF2'
+  exit 8
+ end
+end
+say 'M166 STALE CAS LEFT REF2 UNCHANGED'
+
+cmd='EXEC GIT UPDATE-REF' testref zeros candidate
+address command cmd
+drc=rc
+if drc\=0 then do
+ call cleanup
+ say 'M166 DELETE CAS FAIL RC' drc
+ exit 8
+end
+say 'M166 DELETE CAS PASS'
+
+drop rf.
+'EXECIO * DISKR GITREF2 REPO A 1 (STEM RF. FINIS'
+if rc\=0 | rf.0\=rb.0 then do
+ call cleanup
+ say 'M166 RESTORE SNAPSHOT FAIL'
+ exit 8
+end
+do i=1 to rb.0
+ if rf.i\=rb.i then do
+  call cleanup
+  say 'M166 REF2 NOT RESTORED'
+  exit 8
+ end
+end
+dirty=0
+say 'M166 REF2 BYTE RESTORE PASS'
+
+address command 'EXEC GIT VERIFY-OBJECT' candidate
+if rc\=0 then do
+ say 'M166 RETAINED COMMIT LOST'
+ exit 8
+end
+say 'M166 RETAINED COMMIT STILL PRESENT'
+say 'M166 REF CAS TARGET GATE PASS'
+exit 0
+
+cleanup:
+ if \dirty then return 0
+ 'EXECIO' rb.0 'DISKW GITREF2 REPO A 1 (STEM RB. FINIS'
+ if rc\=0 then do
+  say 'M166 CLEANUP REF2 RESTORE FAIL'
+  return 8
+ end
+ drop cx.
+ 'EXECIO * DISKR GITREF2 REPO A 1 (STEM CX. FINIS'
+ if rc\=0 | cx.0\=rb.0 then return 8
+ do ci=1 to rb.0
+  if cx.ci\=rb.ci then return 8
+ end
+ dirty=0
+ say 'M166 CLEANUP RESTORED REF2'
+ return 0
