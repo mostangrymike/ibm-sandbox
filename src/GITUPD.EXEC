@@ -1,134 +1,223 @@
-/* M5B safe CMS-native branch ref update prototype. */
+/* M166: safe modern REF2 compare-and-swap updater. */
+address cms
 parse arg ref newoid oldoid extra
 
-if ref = '' | newoid = '' | extra \= '' then do
-   say 'Usage: GITUPD refs/heads/name new-commit-oid [expected-old-oid]'
-   exit 4
+zeros='0000000000000000000000000000000000000000'
+if ref='' | newoid='' | oldoid='' | extra\='' then do
+ say 'Usage: GITUPD refs/heads/name new-oid expected-old-oid'
+ exit 4
 end
-if left(ref,11) \= 'refs/heads/' then do
-   say 'GITUPD: ref must name refs/heads/<branch>'
-   exit 4
+if left(ref,11)\='refs/heads/' then do
+ say 'GITUPD: ref must name refs/heads/<branch>'
+ exit 4
 end
-name = substr(ref,12)
-call validbranch name
-if result \= 'OK' then exit 4
+call validref ref
+if result\='OK' then exit 4
 
-newoid = translate(newoid)
-oldoid = translate(oldoid)
-if length(newoid) \= 40 | verify(newoid,'0123456789ABCDEF') \= 0 then do
-   say 'GITUPD: invalid new object-id' newoid
-   exit 4
+newoid=translate(newoid)
+oldoid=translate(oldoid)
+if length(newoid)\=40 |,
+   verify(newoid,'0123456789ABCDEF')\=0 then do
+ say 'GITUPD: invalid new object-id' newoid
+ exit 4
 end
-if oldoid \= '' then do
-   if length(oldoid) \= 40 | verify(oldoid,'0123456789ABCDEF') \= 0 then do
-      say 'GITUPD: invalid expected old object-id' oldoid
-      exit 4
-   end
+if length(oldoid)\=40 |,
+   verify(oldoid,'0123456789ABCDEF')\=0 then do
+ say 'GITUPD: invalid expected old object-id' oldoid
+ exit 4
+end
+if newoid=zeros & oldoid=zeros then do
+ say 'GITUPD: zero-to-zero update is invalid'
+ exit 4
 end
 
-/* A branch may only be advanced/moved to a locally present COMMIT object. */
-call requirecommit newoid
-if result \= 'OK' then exit 8
+if newoid\=zeros then do
+ call requirecommit newoid
+ if result\='OK' then exit 8
+end
 
-/* Read and validate the physical refs records directly. */
 call readrefs
-if result \= 'OK' then exit 8
-found = 0
-slot = 0
-current = ''
-do i = 1 to rr.0
-   rline = rr.i
-   rname = word(rline,2)
-   if rname = name then do
-      found = found + 1
-      slot = i
-      current = word(rline,3)
-   end
+if result\='OK' then exit 8
+found=0
+slot=0
+current=''
+do i=1 to refcount
+ if refname.i=ref then do
+  found=found+1
+  slot=i
+  current=refoid.i
+ end
 end
-if found = 0 then do
-   say 'GITUPD: branch not found' name
-   exit 8
-end
-if found > 1 then do
-   say 'GITUPD: duplicate branch records' name
-   exit 8
+if found>1 then do
+ say 'GITUPD: duplicate ref records' ref
+ exit 8
 end
 
-/* Optional expected-old OID gives compare-and-swap semantics.  The refs file
- * is not written at all if the expected value does not match. */
-if oldoid \= '' & current \= oldoid then do
-   say 'GITUPD: stale ref' ref
-   say 'EXPECTED' oldoid
-   say 'ACTUAL' current
+if oldoid=zeros then do
+ if found\=0 then do
+  say 'GITUPD: stale ref' ref
+  say 'EXPECTED' zeros
+  say 'ACTUAL' current
+  exit 8
+ end
+ if newoid=zeros then exit 4
+ refcount=refcount+1
+ slot=refcount
+ refname.slot=ref
+ refoid.slot=newoid
+end
+else do
+ if found\=1 | current\=oldoid then do
+  say 'GITUPD: stale ref' ref
+  say 'EXPECTED' oldoid
+  if found=1 then say 'ACTUAL' current
+  else say 'ACTUAL' zeros
+  exit 8
+ end
+ if newoid=zeros then do
+  if ref=headref then do
+   say 'GITUPD: refusing to delete symbolic HEAD target'
    exit 8
+  end
+  do i=slot to refcount-1
+   refname.i=refname.i+1
+   refoid.i=refoid.i+1
+  end
+  drop refname.refcount refoid.refcount
+  refcount=refcount-1
+ end
+ else refoid.slot=newoid
 end
 
-rr.slot = 'BRANCH' name newoid
 call writerefs
-if result \= 'OK' then exit 8
-say newoid ref
+if result\='OK' then exit 8
+call readrefs
+if result\='OK' then exit 8
+found=0
+current=''
+do i=1 to refcount
+ if refname.i=ref then do
+  found=found+1
+  current=refoid.i
+ end
+end
+if newoid=zeros then do
+ if found\=0 then do
+  say 'GITUPD: delete verification failed' ref
+  exit 8
+ end
+ say 'DELETED' ref oldoid
+end
+else do
+ if found\=1 | current\=newoid then do
+  say 'GITUPD: update verification failed' ref
+  exit 8
+ end
+ say newoid ref
+end
 exit 0
 
-validbranch: procedure
-   parse arg name
-   if name = '' | name = '.' | name = '..' | pos('/',name) > 0 |,
-      pos(' ',name) > 0 | pos('..',name) > 0 | pos('~',name) > 0 |,
-      pos('^',name) > 0 | pos(':',name) > 0 | pos('?',name) > 0 |,
-      pos('*',name) > 0 | pos('[',name) > 0 | right(name,1) = '.' then do
-      say 'GITUPD: invalid branch name' name
-      return 'ERROR'
-   end
-   return 'OK'
+validref:
+ parse arg vr
+ if left(vr,11)\='refs/heads/' then return 'ERROR'
+ name=substr(vr,12)
+ if name='' | name='.' | name='..' | pos(' ',name)>0 |,
+    pos('..',name)>0 | pos('~',name)>0 | pos('^',name)>0 |,
+    pos(':',name)>0 | pos('?',name)>0 | pos('*',name)>0 |,
+    pos('[',name)>0 | right(name,1)='.' then do
+  say 'GITUPD: invalid branch name' name
+  return 'ERROR'
+ end
+ return 'OK'
 
-requirecommit: procedure
-   parse upper arg oid
-   fn = substr(oid,1,8)
-   drop obj.
-   'EXECIO * DISKR' fn 'GITOBJ A 1 (STEM OBJ. FINIS'
-   if rc \= 0 then do
-      say 'GITUPD: object not found' oid
-      return 'ERROR'
-   end
-   if obj.0 < 2 | word(obj.1,1) \= 'OID' | word(obj.1,2) \= oid |,
-      word(obj.2,1) \= 'TYPE' then do
-      say 'GITUPD: invalid object record' oid
-      return 'ERROR'
-   end
-   if word(obj.2,2) \= 'COMMIT' then do
-      say 'GITUPD: branch target is not a COMMIT object' oid
-      return 'ERROR'
-   end
-   return 'OK'
+requirecommit:
+ parse arg oid
+ address command 'EXEC GIT VERIFY-OBJECT' oid
+ if rc\=0 then do
+  say 'GITUPD: target object failed verification' oid
+  return 'ERROR'
+ end
+ fn=substr(oid,1,8)
+ drop obj.
+ 'EXECIO * DISKR' fn 'GITOBJ A 1 (STEM OBJ. FINIS'
+ if rc\=0 then return 'ERROR'
+ if obj.0<2 | word(obj.1,1)\='OID' | word(obj.1,2)\=oid |,
+    word(obj.2,1)\='TYPE' then return 'ERROR'
+ if word(obj.2,2)\='COMMIT' then do
+  say 'GITUPD: branch target is not a COMMIT object' oid
+  return 'ERROR'
+ end
+ return 'OK'
 
-readrefs: procedure expose rr.
-   'STATE GITREFS REPO A'
-   if rc \= 0 then do
-      say 'GITUPD: refs database not found'
-      return 'ERROR'
+readrefs:
+ drop refname. refoid. rr.
+ refcount=0
+ headref=''
+ headcount=0
+ 'STATE GITREF2 REPO A'
+ if rc\=0 then do
+  say 'GITUPD: REF2 database not found'
+  return 'ERROR'
+ end
+ 'EXECIO * DISKR GITREF2 REPO A 1 (STEM RR. FINIS'
+ if rc\=0 | rr.0<2 | rr.1\='REF2 1' then do
+  say 'GITUPD: invalid REF2 header'
+  return 'ERROR'
+ end
+ do ri=2 to rr.0
+  line=rr.ri
+  tag=word(line,1)
+  if tag='HEAD' then do
+   if words(line)\=2 | headcount\=0 then return 'ERROR'
+   headref=word(line,2)
+   call validref headref
+   if result\='OK' then return 'ERROR'
+   headcount=1
+  end
+  else if tag='REF' then do
+   if words(line)\=3 then return 'ERROR'
+   rname=word(line,2)
+   roid=translate(word(line,3))
+   call validref rname
+   if result\='OK' then return 'ERROR'
+   if length(roid)\=40 |,
+      verify(roid,'0123456789ABCDEF')\=0 then return 'ERROR'
+   do rj=1 to refcount
+    if refname.rj=rname then do
+     say 'GITUPD: duplicate ref records' rname
+     return 'ERROR'
+    end
    end
-   drop rr.
-   'EXECIO * DISKR GITREFS REPO A 1 (STEM RR. FINIS'
-   if rc \= 0 then return 'ERROR'
-   do i = 1 to rr.0
-      if words(rr.i) \= 3 then do
-         say 'GITUPD: corrupt refs record' i
-         return 'ERROR'
-      end
-      tag = word(rr.i,1)
-      rname = word(rr.i,2)
-      oid = word(rr.i,3)
-      if tag \= 'BRANCH' | rname = '' |,
-         length(oid) \= 40 | verify(oid,'0123456789ABCDEF') \= 0 then do
-         say 'GITUPD: corrupt refs record' i
-         return 'ERROR'
-      end
-   end
-   return 'OK'
+   refcount=refcount+1
+   refname.refcount=rname
+   refoid.refcount=roid
+  end
+  else return 'ERROR'
+ end
+ if headcount\=1 then return 'ERROR'
+ foundhead=0
+ do ri=1 to refcount
+  if refname.ri=headref then foundhead=foundhead+1
+ end
+ if foundhead\=1 then do
+  say 'GITUPD: symbolic HEAD target is missing'
+  return 'ERROR'
+ end
+ return 'OK'
 
-writerefs: procedure expose rr.
-   'EXECIO' rr.0 'DISKW GITREFS REPO A 1 (STEM RR. FINIS'
-   if rc \= 0 then do
-      say 'GITUPD: cannot write refs database'
-      return 'ERROR'
-   end
-   return 'OK'
+writerefs:
+ drop wr.
+ wr.1='REF2 1'
+ wr.2='HEAD' headref
+ wn=2
+ do wi=1 to refcount
+  wn=wn+1
+  wr.wn='REF' refname.wi refoid.wi
+ end
+ wr.0=wn
+ 'EXECIO' wr.0 'DISKW GITREF2 REPO A 1 (STEM WR. FINIS'
+ if rc\=0 then do
+  say 'GITUPD: cannot write REF2 database'
+  return 'ERROR'
+ end
+ return 'OK'
