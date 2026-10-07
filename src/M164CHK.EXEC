@@ -80,6 +80,7 @@ if result\=0 then do
  say 'M164 LOOSE TARGET COLLISION'
  exit 8
 end
+newowned=1
 say 'M164 MODIFIED HASH PASS' newoid
 
 address command 'GIT STATUS'
@@ -95,8 +96,6 @@ if rc\=0 then do
  say 'M164 ADD FAIL'
  exit 8
 end
-newowned=1
-
 drop m.
 'EXECIO * DISKR GITWORK REPO A 1 (STEM M. FINIS'
 if rc\=0 | m.0\=7 then do
