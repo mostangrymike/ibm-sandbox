@@ -24,6 +24,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin main
           git checkout -b m165-clean origin/main
-          git cherry-pick e31ba10aa5cc6d187e877dbbb578ff0c613c0bb2
+          git cherry-pick e31ba10aa5cc6d187e877dbbb578ff0c613c0bb2 || true
+          git add tests/test-m165-staged-commit.py
+          git -c core.editor=true cherry-pick --continue
           git cherry-pick bf4aa9fe5dae03b93c9866a611d06dd213ca04c8
           git push origin m165-clean
