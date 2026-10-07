@@ -1,0 +1,13 @@
+/* M169: live generalized GitHub smart-HTTP discovery gate. */
+address cms
+cmd='EXEC GIT FETCH-DISCOVER 192.168.200.1 8443',
+    'github.com mostangrymike/ibm-sandbox main'
+address command cmd
+drc=rc
+if drc\=0 then do
+ say 'M169 LIVE DISCOVERY FAIL RC' drc
+ exit 8
+end
+say 'M169 LIVE DISCOVERY DIRECT RC0'
+say 'M169 GENERALIZED SMART HTTP DISCOVERY TARGET GATE PASS'
+exit 0
