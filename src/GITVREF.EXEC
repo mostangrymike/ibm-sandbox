@@ -1,4 +1,4 @@
-/* M164: practical CMS worktree porcelain bridge. */
+/* M165: staged commit porcelain bridge. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M164'
+ say 'GITVREF EXEC LEVEL M165'
  exit 0
 end
 if command='STAMP' then do
