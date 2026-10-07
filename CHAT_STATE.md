@@ -6499,3 +6499,21 @@ SUCCESS including M169, complete tree recovery, and native PACK/index staging.
 
 NEXT CMS STEP: upload only GITFETCH.EXEC and rerun M169CHK with the restored
 192.168.200.1:8443 stunnel listener active.
+
+
+## 2026-10-07 M169 REAL CMS TARGET PASS
+
+Real CMS M169CHK completed RC0 through the restored EC2 stunnel bridge.
+Generalized FETCH-DISCOVER returned current refs/heads/main OID
+2BDE8D43F9472BD234D2AC50215A8AA1A5524348, parsed 252 advertised refs,
+required side-band-64k and ofs-delta, consumed 19018 HTTP wire bytes, and
+finished with M169 GENERALIZED SMART HTTP DISCOVERY TARGET GATE PASS.
+
+The final transport/parser fix isolated REXX scratch variables between nested
+chunkfeed and pktfeed routines. M169 is REAL CMS TARGET-PROVEN.
+
+M170 NEXT: compose live generalized discovery with a dynamic upload-pack POST.
+The POST must use the OID returned by the immediately preceding discovery, not
+a historical constant; generate pkt-line/content length dynamically; consume
+and validate the complete upload-pack response without overwriting preserved
+M11/M12/GITPBUF fixtures.
