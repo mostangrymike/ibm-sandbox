@@ -199,13 +199,13 @@ checkhdr:
  return 'OK'
 
 chunkfeed:
- parse arg work
- work=translate(work)
- do while work\=''
+ parse arg cwork
+ cwork=translate(cwork)
+ do while cwork\=''
   if cstate='SIZE' then do
-   b=left(work,2)
-   work=substr(work,3)
-   cline=cline||b
+   cb=left(cwork,2)
+   cwork=substr(cwork,3)
+   cline=cline||cb
    if length(cline)>128 then return 'ERROR'
    if right(cline,4)='0D0A' then do
     ch=left(cline,length(cline)-4)
@@ -227,51 +227,51 @@ chunkfeed:
     if cneed=0 then do
      cstate='DONE'
      chunkdone=1
-     work=''
+     cwork=''
     end
     else cstate='DATA'
    end
   end
   else if cstate='DATA' then do
-   avail=length(work)%2
-   take=cneed
-   if take>avail then take=avail
-   if take=0 then return 'OK'
-   piece=left(work,take*2)
-   work=substr(work,take*2+1)
-   call pktfeed piece
+   cavail=length(cwork)%2
+   ctake=cneed
+   if ctake>cavail then ctake=cavail
+   if ctake=0 then return 'OK'
+   cpiece=left(cwork,ctake*2)
+   cwork=substr(cwork,ctake*2+1)
+   call pktfeed cpiece
    if result\='OK' then return 'ERROR'
-   cneed=cneed-take
+   cneed=cneed-ctake
    if cneed=0 then do
     cstate='CRLF'
     ccrlf=''
    end
   end
   else if cstate='CRLF' then do
-   take=4-length(ccrlf)
-   if take>length(work) then take=length(work)
-   ccrlf=ccrlf||left(work,take)
-   work=substr(work,take+1)
+   ctake=4-length(ccrlf)
+   if ctake>length(cwork) then ctake=length(cwork)
+   ccrlf=ccrlf||left(cwork,ctake)
+   cwork=substr(cwork,ctake+1)
    if length(ccrlf)=4 then do
     if ccrlf\='0D0A' then return 'ERROR'
     ccrlf=''
     cstate='SIZE'
    end
   end
-  else if cstate='DONE' then work=''
+  else if cstate='DONE' then cwork=''
   else return 'ERROR'
  end
  return 'OK'
 
 pktfeed:
- parse arg work
- work=translate(work)
- do while work\=''
+ parse arg pwork
+ pwork=translate(pwork)
+ do while pwork\=''
   if pstate='HDR' then do
-   take=8-length(phdr)
-   if take>length(work) then take=length(work)
-   phdr=phdr||left(work,take)
-   work=substr(work,take+1)
+   ptake=8-length(phdr)
+   if ptake>length(pwork) then ptake=length(pwork)
+   phdr=phdr||left(pwork,ptake)
+   pwork=substr(pwork,ptake+1)
    if length(phdr)<8 then iterate
    call pktlen phdr
    pn=result
@@ -279,25 +279,26 @@ pktfeed:
     say 'GITFETCH: bad pkt hdr' phdr 'REFS' refs 'CNEED' cneed
     return 'ERROR'
    end
-   if pn=1 | pn=2 | pn<4 then do
-    say 'GITFETCH: bad pkt len' pn phdr 'REFS' refs 'CNEED' cneed
-    return 'ERROR'
-   end
-   phdr=''
    if pn=0 then do
+    phdr=''
     if pstage='EXPECT' then pstage='REFS'
     else if pstage='REFS' then do
      pstage='DONE'
      pktdone=1
-     if work\='' then do
-      say 'GITFETCH: post-flush bytes' length(work)%2,
-          left(work,64)
+     if pwork\='' then do
+      say 'GITFETCH: post-flush bytes' length(pwork)%2,
+          left(pwork,64)
       return 'ERROR'
      end
     end
     else return 'ERROR'
     iterate
    end
+   if pn=1 | pn=2 | pn<4 then do
+    say 'GITFETCH: bad pkt len' pn phdr 'REFS' refs 'CNEED' cneed
+    return 'ERROR'
+   end
+   phdr=''
    pneed=pn-4
    if pneed<1 | pneed>4096 then do
     say 'GITFETCH: pkt payload bound' pneed 'REFS' refs 'CNEED' cneed
@@ -307,14 +308,14 @@ pktfeed:
    pstate='PAY'
   end
   else if pstate='PAY' then do
-   avail=length(work)%2
-   take=pneed
-   if take>avail then take=avail
-   if take=0 then return 'OK'
-   ppay=ppay||left(work,take*2)
+   pavail=length(pwork)%2
+   ptake=pneed
+   if ptake>pavail then ptake=pavail
+   if ptake=0 then return 'OK'
+   ppay=ppay||left(pwork,ptake*2)
    if length(ppay)>8192 then return 'ERROR'
-   work=substr(work,take*2+1)
-   pneed=pneed-take
+   pwork=substr(pwork,ptake*2+1)
+   pneed=pneed-ptake
    if pneed=0 then do
     call processpkt
     if result\='OK' then return 'ERROR'
