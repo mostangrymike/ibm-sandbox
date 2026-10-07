@@ -11,19 +11,21 @@ call absent 'GITWORK','REPO','A'
 if result\=0 then exit 8
 say 'M164 DISPOSABLE TARGETS ABSENT'
 
-cmd='GIT CHECKOUT-FILE HEAD src/GITVREF.EXEC M164TST DATA A'
+cmd='EXEC GIT CHECKOUT-FILE HEAD src/GITVREF.EXEC M164TST DATA A'
 address command cmd
-if rc\=0 then do
+grc=rc
+if grc\=0 then do
  call cleanup
- say 'M164 CHECKOUT FAIL RC' rc
+ say 'M164 CHECKOUT FAIL RC' grc
  exit 8
 end
 say 'M164 CHECKOUT DIRECT RC0'
 
-address command 'GIT STATUS'
-if rc\=0 then do
+address command 'EXEC GIT STATUS'
+src=rc
+if src\=0 then do
  call cleanup
- say 'M164 INITIAL STATUS FAIL'
+ say 'M164 INITIAL STATUS FAIL RC' src
  exit 8
 end
 
@@ -58,16 +60,20 @@ if result\=0 then do
  exit 8
 end
 baseowned=1
-address command 'GIT IMPORT-OBJECT' base
-if rc\=0 then do
+cmd='EXEC GIT IMPORT-OBJECT' base
+address command cmd
+irc=rc
+if irc\=0 then do
  call cleanup
- say 'M164 IMPORT FAIL'
+ say 'M164 IMPORT FAIL RC' irc
  exit 8
 end
-address command 'GIT VERIFY-OBJECT' base
-if rc\=0 then do
+cmd='EXEC GIT VERIFY-OBJECT' base
+address command cmd
+vrc=rc
+if vrc\=0 then do
  call cleanup
- say 'M164 IMPORT VERIFY FAIL'
+ say 'M164 IMPORT VERIFY FAIL RC' vrc
  exit 8
 end
 say 'M164 VERIFIED IMPORT PASS' base
@@ -107,17 +113,19 @@ end
 newowned=1
 say 'M164 MODIFIED HASH PASS' newoid
 
-address command 'GIT STATUS'
-if rc\=0 then do
+address command 'EXEC GIT STATUS'
+src=rc
+if src\=0 then do
  call cleanup
- say 'M164 MODIFIED STATUS FAIL'
+ say 'M164 MODIFIED STATUS FAIL RC' src
  exit 8
 end
 
-address command 'GIT ADD src/GITVREF.EXEC'
-if rc\=0 then do
+address command 'EXEC GIT ADD src/GITVREF.EXEC'
+arc=rc
+if arc\=0 then do
  call cleanup
- say 'M164 ADD FAIL'
+ say 'M164 ADD FAIL RC' arc
  exit 8
 end
 drop m.
@@ -135,16 +143,19 @@ if stage\=newoid | stage=base then do
 end
 say 'M164 STAGED MAP PASS'
 
-address command 'GIT STATUS'
-if rc\=0 then do
+address command 'EXEC GIT STATUS'
+src=rc
+if src\=0 then do
  call cleanup
- say 'M164 STAGED STATUS FAIL'
+ say 'M164 STAGED STATUS FAIL RC' src
  exit 8
 end
-address command 'GIT VERIFY-OBJECT' newoid
-if rc\=0 then do
+cmd='EXEC GIT VERIFY-OBJECT' newoid
+address command cmd
+vrc=rc
+if vrc\=0 then do
  call cleanup
- say 'M164 LOOSE VERIFY FAIL'
+ say 'M164 LOOSE VERIFY FAIL RC' vrc
  exit 8
 end
 say 'M164 LOOSE OBJECT PASS'
