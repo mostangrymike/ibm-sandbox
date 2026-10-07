@@ -66,7 +66,9 @@ assert "cmd='EXEC GIT CHECKOUT-FILE HEAD" in chk
 assert "grc=rc" in chk
 assert "M164 CHECKOUT FAIL RC' grc" in chk
 assert "address command 'EXEC GIT STATUS'" in chk
-assert "address command 'EXEC GIT ADD src/GITVREF.EXEC'" in chk
+assert "address command 'EXEC GIT ADD src/GIT.EXEC'" in chk
+assert "expected='0FCE3C85DD9335CA7A4868E806F09B890D115F80'" in chk
+assert "word(m.2,6)\\='0'" in chk
 assert "cmd='EXEC GIT IMPORT-OBJECT' base" in chk
 assert "cmd='EXEC GIT VERIFY-OBJECT' base" in chk
 assert "address command 'GIT " not in chk
