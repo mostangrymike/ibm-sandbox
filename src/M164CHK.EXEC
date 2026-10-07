@@ -11,7 +11,7 @@ call absent 'GITWORK','REPO','A'
 if result\=0 then exit 8
 say 'M164 DISPOSABLE TARGETS ABSENT'
 
-cmd='EXEC GIT CHECKOUT-FILE HEAD src/GITVREF.EXEC M164TST DATA A'
+cmd='EXEC GIT CHECKOUT-FILE HEAD src/GIT.EXEC M164TST DATA A'
 address command cmd
 grc=rc
 if grc\=0 then do
@@ -44,8 +44,9 @@ if m.1\='WORK1 1' | word(m.2,1)\='ENTRY' |,
 end
 base=translate(word(m.3,3))
 stage=translate(word(m.4,3))
+expected='0FCE3C85DD9335CA7A4868E806F09B890D115F80'
 if word(m.3,1)\='BASE' | word(m.4,1)\='STAGE' |,
-   base\=stage then do
+   base\=stage | base\=expected | word(m.2,6)\='0' then do
  call cleanup
  say 'M164 INITIAL MAP STATE FAIL'
  exit 8
@@ -121,7 +122,7 @@ if src\=0 then do
  exit 8
 end
 
-address command 'EXEC GIT ADD src/GITVREF.EXEC'
+address command 'EXEC GIT ADD src/GIT.EXEC'
 arc=rc
 if arc\=0 then do
  call cleanup
