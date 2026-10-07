@@ -1,4 +1,458 @@
-/* M170 generalized upload-pack POST. */
+/* M170: generalized bounded smart-HTTP upload-pack POST. */
 address cms
-say 'GITPOST PLACEHOLDER'
-exit 8
+parse arg cmd bridge port authority repo oid extra
+cmd=translate(cmd)
+oid=translate(oid)
+if cmd\='POST' | bridge='' | port='' | authority='' | repo='' |,
+   oid='' | extra\='' then do
+ say 'Usage: GITPOST POST bridge port host repo oid'
+ exit 4
+end
+if datatype(port,'W')\=1 | port<1 | port>65535 then exit 4
+call safehost authority
+if result\='OK' then exit 4
+call safepath repo
+if result\='OK' then exit 4
+if left(repo,1)='/' | right(repo,1)='/' | pos('..',repo)>0 then exit 4
+if length(oid)\=40 | verify(oid,'0123456789ABCDEF')\=0 then exit 4
+
+want='want '||oid||' side-band-64k ofs-delta'
+plen=4+length(want)+1
+ph=right(d2x(plen),4,'0')
+call toasciihex ph
+body=result
+call toasciihex want
+body=body||result||'0A'
+call toasciihex '0000'
+body=body||result
+call toasciihex '0009done'
+body=body||result||'0A'
+clen=length(body)%2
+
+path='/'||repo||'.git/git-upload-pack'
+if length(path)>512 then exit 4
+call toasciihex 'POST '||path||' HTTP/1.1'
+wire=result||'0D0A'
+call toasciihex 'Host: '||authority
+wire=wire||result||'0D0A'
+call toasciihex 'Content-Type: application/x-git-upload-pack-request'
+wire=wire||result||'0D0A'
+call toasciihex 'Accept: application/x-git-upload-pack-result'
+wire=wire||result||'0D0A'
+call toasciihex 'Content-Length: '||clen
+wire=wire||result||'0D0A'
+call toasciihex 'Connection: close'
+wire=wire||result||'0D0A0D0A'||body
+raw=x2c(wire)
+
+s=''
+r=Socket('Initialize','GITPOST')
+parse var r src rest
+if src\=0 then do
+ say 'GITPOST: socket initialize failed RC' src
+ exit 8
+end
+if verify(bridge,'0123456789.')=0 then ip=bridge
+else do
+ r=Socket('GetHostByName',bridge)
+ parse var r src addrs
+ if src\=0 then do
+  fail='RESOLVE-RC'
+  call bad
+ end
+ ip=word(addrs,1)
+ if ip='' then do
+  fail='RESOLVE-EMPTY'
+  call bad
+ end
+end
+r=Socket('Socket')
+parse var r src s
+if src\=0 then do
+ fail='SOCKET-CREATE'
+ call bad
+end
+r=Socket('GetSockOpt',s,'SOL_SOCKET','SO_ASCII')
+parse var r src opt
+if src\=0 | translate(opt)\='OFF' then do
+ fail='SO-ASCII'
+ call bad
+end
+r=Socket('Connect',s,'AF_INET' port ip)
+parse var r src rest
+if src\=0 then do
+ say 'GITPOST: connect target' ip port
+ say 'GITPOST: connect RC' src rest
+ fail='CONNECT'
+ call bad
+end
+r=Socket('Send',s,raw)
+parse var r src sent
+if src\=0 | sent\=length(raw) then do
+ fail='SEND'
+ call bad
+end
+
+hstate='HEAD'
+header=''
+cstate='SIZE'
+cline=''
+cneed=0
+ccrlf=''
+chunkdone=0
+pstate='HDR'
+phdr=''
+pneed=0
+ppay=''
+pband=''
+nak=0
+pktcount=0
+flushes=0
+packets=0
+progress=0
+packbytes=0
+packhead=''
+total=0
+
+do forever
+ r=Socket('Recv',s,256)
+ parse var r src got data
+ if src\=0 then do
+  fail='RECV'
+  call bad
+ end
+ if got=0 then leave
+ if got>256 | length(data)\=got then do
+  fail='RECV-LENGTH'
+  call bad
+ end
+ total=total+got
+ if total>16777216 then do
+  fail='RESPONSE-LIMIT'
+  call bad
+ end
+ call httpfeed c2x(data)
+ if result\='OK' then do
+  fail='HTTP-PARSE'
+  call bad
+ end
+end
+r=Socket('Close',s)
+s=''
+if hstate\='BODY' | chunkdone\=1 | cstate\='DONE' then do
+ fail='FINAL-HTTP'
+ call bad
+end
+if pstate\='HDR' | phdr\='' | pneed\=0 then do
+ fail='FINAL-PKT'
+ call bad
+end
+if nak\=1 | packbytes<12 | length(packhead)\=24 then do
+ fail='FINAL-UPLOAD-PACK'
+ call bad
+end
+if left(packhead,8)\='5041434B' then do
+ fail='PACK-SIGNATURE'
+ call bad
+end
+pver=x2d(substr(packhead,9,8))
+pobjects=x2d(substr(packhead,17,8))
+if (pver\=2 & pver\=3) | pobjects<1 then do
+ fail='PACK-HEADER'
+ call bad
+end
+r=Socket('Terminate')
+say 'FETCH POST WANT' oid
+say 'FETCH POST PACK VERSION' pver 'OBJECTS' pobjects
+say 'FETCH POST PACK BYTES' packbytes
+say 'FETCH POST PROGRESS BYTES' progress
+say 'FETCH POST HTTP BYTES' total
+say 'M170 FETCH POST PASS'
+exit 0
+
+bad:
+ say 'GITPOST: failed at' fail
+ if symbol('hstate')='VAR' then,
+  say 'GITPOST: HTTP' hstate cstate cneed total
+ if symbol('pstate')='VAR' then,
+  say 'GITPOST: PKT' pstate nak pktcount packbytes
+ if s\='' then r=Socket('Close',s)
+ r=Socket('Terminate')
+ exit 8
+
+httpfeed:
+ parse arg hx
+ hx=translate(hx)
+ if hstate='HEAD' then do
+  header=header||hx
+  if length(header)>32768 then return 'ERROR'
+  hp=pos('0D0A0D0A',header)
+  if hp=0 then return 'OK'
+  bodypart=substr(header,hp+8)
+  hpart=left(header,hp+7)
+  call checkhdr hpart
+  if result\='OK' then return 'ERROR'
+  hstate='BODY'
+  header=''
+  if bodypart\='' then do
+   call chunkfeed bodypart
+   if result\='OK' then return 'ERROR'
+  end
+  return 'OK'
+ end
+ if hstate\='BODY' then return 'ERROR'
+ call chunkfeed hx
+ return result
+
+checkhdr:
+ parse arg hh
+ if left(hh,24)\='485454502F312E3120323030' &,
+    left(hh,24)\='485454502F312E3020323030' then return 'ERROR'
+ call asciitocms hh
+ ht=result
+ if ht='ERROR' then return 'ERROR'
+ hu=translate(ht)
+ if pos('CONTENT-TYPE:',hu)=0 then return 'ERROR'
+ if pos('APPLICATION/X-GIT-UPLOAD-PACK-RESULT',hu)=0 then,
+  return 'ERROR'
+ if pos('TRANSFER-ENCODING:',hu)=0 | pos('CHUNKED',hu)=0 then,
+  return 'ERROR'
+ return 'OK'
+
+chunkfeed:
+ parse arg cwork
+ cwork=translate(cwork)
+ do while cwork\=''
+  if cstate='SIZE' then do
+   cb=left(cwork,2)
+   cwork=substr(cwork,3)
+   cline=cline||cb
+   if length(cline)>128 then return 'ERROR'
+   if right(cline,4)='0D0A' then do
+    ch=left(cline,length(cline)-4)
+    cline=''
+    ep=bytepos('3B',ch)
+    if ep>0 then ch=left(ch,ep-1)
+    if ch='' | length(ch)//2\=0 | length(ch)>16 then,
+       return 'ERROR'
+    cneed=0
+    do cj=1 to length(ch) by 2
+     cv=x2d(substr(ch,cj,2))
+     if cv>=48 & cv<=57 then cn=cv-48
+     else if cv>=65 & cv<=70 then cn=cv-55
+     else if cv>=97 & cv<=102 then cn=cv-87
+     else return 'ERROR'
+     cneed=cneed*16+cn
+    end
+    if cneed>1048576 then return 'ERROR'
+    if cneed=0 then do
+     cstate='DONE'
+     chunkdone=1
+     cwork=''
+    end
+    else cstate='DATA'
+   end
+  end
+  else if cstate='DATA' then do
+   cavail=length(cwork)%2
+   ctake=cneed
+   if ctake>cavail then ctake=cavail
+   if ctake=0 then return 'OK'
+   cpiece=left(cwork,ctake*2)
+   cwork=substr(cwork,ctake*2+1)
+   call pktfeed cpiece
+   if result\='OK' then return 'ERROR'
+   cneed=cneed-ctake
+   if cneed=0 then do
+    cstate='CRLF'
+    ccrlf=''
+   end
+  end
+  else if cstate='CRLF' then do
+   ctake=4-length(ccrlf)
+   if ctake>length(cwork) then ctake=length(cwork)
+   ccrlf=ccrlf||left(cwork,ctake)
+   cwork=substr(cwork,ctake+1)
+   if length(ccrlf)=4 then do
+    if ccrlf\='0D0A' then return 'ERROR'
+    ccrlf=''
+    cstate='SIZE'
+   end
+  end
+  else if cstate='DONE' then cwork=''
+  else return 'ERROR'
+ end
+ return 'OK'
+
+pktfeed:
+ parse arg pwork
+ pwork=translate(pwork)
+ do while pwork\=''
+  if pstate='HDR' then do
+   ptake=8-length(phdr)
+   if ptake>length(pwork) then ptake=length(pwork)
+   phdr=phdr||left(pwork,ptake)
+   pwork=substr(pwork,ptake+1)
+   if length(phdr)<8 then iterate
+   call pktlen phdr
+   pn=result
+   if pn='ERROR' then return 'ERROR'
+   phdr=''
+   if pn=0 | pn=1 | pn=2 then do
+    flushes=flushes+1
+    iterate
+   end
+   if pn<4 then return 'ERROR'
+   pneed=pn-4
+   if pneed<1 | pneed>65516 then return 'ERROR'
+   pktcount=pktcount+1
+   if nak=0 then do
+    if pneed>16 then return 'ERROR'
+    ppay=''
+    pstate='PRE'
+   end
+   else do
+    pband=''
+    pstate='BAND'
+   end
+  end
+  else if pstate='PRE' then do
+   pavail=length(pwork)%2
+   ptake=pneed
+   if ptake>pavail then ptake=pavail
+   if ptake=0 then return 'OK'
+   ppay=ppay||left(pwork,ptake*2)
+   pwork=substr(pwork,ptake*2+1)
+   pneed=pneed-ptake
+   if pneed=0 then do
+    if ppay\='4E414B0A' then return 'ERROR'
+    nak=nak+1
+    if nak\=1 then return 'ERROR'
+    ppay=''
+    pstate='HDR'
+   end
+  end
+  else if pstate='BAND' then do
+   if length(pwork)<2 then return 'OK'
+   pband=left(pwork,2)
+   pwork=substr(pwork,3)
+   pneed=pneed-1
+   if pband\='01' & pband\='02' & pband\='03' then,
+    return 'ERROR'
+   if pband='03' then return 'ERROR'
+   if pband='01' then packets=packets+1
+   if pneed=0 then pstate='HDR'
+   else pstate='PAY'
+  end
+  else if pstate='PAY' then do
+   pavail=length(pwork)%2
+   ptake=pneed
+   if ptake>pavail then ptake=pavail
+   if ptake=0 then return 'OK'
+   ppiece=left(pwork,ptake*2)
+   pwork=substr(pwork,ptake*2+1)
+   if pband='01' then do
+    packbytes=packbytes+ptake
+    if length(packhead)<24 then do
+     htake=24-length(packhead)
+     if htake>length(ppiece) then htake=length(ppiece)
+     packhead=packhead||left(ppiece,htake)
+    end
+   end
+   else if pband='02' then progress=progress+ptake
+   pneed=pneed-ptake
+   if pneed=0 then do
+    pband=''
+    pstate='HDR'
+   end
+  end
+  else return 'ERROR'
+ end
+ return 'OK'
+
+pktlen: procedure
+ parse arg h
+ if length(h)\=8 then return 'ERROR'
+ n=0
+ do i=1 to 4
+  b=x2d(substr(h,i*2-1,2))
+  if b>=48 & b<=57 then v=b-48
+  else if b>=65 & b<=70 then v=b-55
+  else if b>=97 & b<=102 then v=b-87
+  else return 'ERROR'
+  n=n*16+v
+ end
+ return n
+
+bytepos: procedure
+ parse arg needle,hex
+ do bp=1 to length(hex)-1 by 2
+  if substr(hex,bp,2)=needle then return bp
+ end
+ return 0
+
+safehost: procedure
+ parse arg text
+ allowed='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-'
+ if text='' | length(text)>255 | verify(text,allowed)\=0 then,
+  return 'ERROR'
+ return 'OK'
+
+safepath: procedure
+ parse arg text
+ allowed='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-/'
+ if text='' | length(text)>255 | verify(text,allowed)\=0 then,
+  return 'ERROR'
+ return 'OK'
+
+toasciihex: procedure
+ parse arg text
+ e2a='000102031A091A7F1A1A1A0B0C0D0E0F'
+ e2a=e2a||'101112131A1A081A18191A1A1C1D1E1F'
+ e2a=e2a||'1A1A1C1A1A0A171B1A1A1A1A1A050607'
+ e2a=e2a||'1A1A161A1A1E1A041A1A1A1A14151A1A'
+ e2a=e2a||'20A6E180EB909FE2AB8B9B2E3C282B7C'
+ e2a=e2a||'26A9AA9CDBA599E3A89E21242A293B5E'
+ e2a=e2a||'2D2FDFDC9ADDDE989DACBA2C255F3E3F'
+ e2a=e2a||'D78894B0B1B2FCD6FB603A2340273D22'
+ e2a=e2a||'F861626364656667686996A4F3AFAEC5'
+ e2a=e2a||'8C6A6B6C6D6E6F7071729787CE93F1FE'
+ e2a=e2a||'C87E737475767778797AEFC0DA5BF2F9'
+ e2a=e2a||'B5B6FDB7B8B9E6BBBCBD8DD9BF5DD8C4'
+ e2a=e2a||'7B414243444546474849CBCABEE8ECED'
+ e2a=e2a||'7D4A4B4C4D4E4F505152A1ADF5F4A38F'
+ e2a=e2a||'5CE7535455565758595AA0858EE9E4D1'
+ e2a=e2a||'30313233343536373839B3F7F0FAA7FF'
+ tab=x2c(e2a)
+ bytes=xrange('00'x,'FF'x)
+ return c2x(translate(text,tab,bytes))
+
+asciitocms: procedure
+ parse arg ah
+ if ah='' then return ''
+ if length(ah)//2\=0 then return 'ERROR'
+ ah=translate(ah)
+ do ai=1 to length(ah)
+  if pos(substr(ah,ai,1),'0123456789ABCDEF')=0 then return 'ERROR'
+ end
+ ascii=x2c(ah)
+ e2a='000102031A091A7F1A1A1A0B0C0D0E0F'
+ e2a=e2a||'101112131A1A081A18191A1A1C1D1E1F'
+ e2a=e2a||'1A1A1C1A1A0A171B1A1A1A1A1A050607'
+ e2a=e2a||'1A1A161A1A1E1A041A1A1A1A14151A1A'
+ e2a=e2a||'20A6E180EB909FE2AB8B9B2E3C282B7C'
+ e2a=e2a||'26A9AA9CDBA599E3A89E21242A293B5E'
+ e2a=e2a||'2D2FDFDC9ADDDE989DACBA2C255F3E3F'
+ e2a=e2a||'D78894B0B1B2FCD6FB603A2340273D22'
+ e2a=e2a||'F861626364656667686996A4F3AFAEC5'
+ e2a=e2a||'8C6A6B6C6D6E6F7071729787CE93F1FE'
+ e2a=e2a||'C87E737475767778797AEFC0DA5BF2F9'
+ e2a=e2a||'B5B6FDB7B8B9E6BBBCBD8DD9BF5DD8C4'
+ e2a=e2a||'7B414243444546474849CBCABEE8ECED'
+ e2a=e2a||'7D4A4B4C4D4E4F505152A1ADF5F4A38F'
+ e2a=e2a||'5CE7535455565758595AA0858EE9E4D1'
+ e2a=e2a||'30313233343536373839B3F7F0FAA7FF'
+ if length(e2a)\=512 then return 'ERROR'
+ tab=x2c(e2a)
+ bytes=xrange('00'x,'FF'x)
+ return translate(ascii,bytes,tab)
