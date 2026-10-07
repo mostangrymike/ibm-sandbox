@@ -5957,3 +5957,8 @@ M161 is REAL CMS TARGET-PROVEN. M162 adds HISTORYFIRSTPRESENCEFRONTIERDISTANCE-R
 ## 2026-10-07 M162 REAL CMS TARGET PASS
 
 Real CMS ran GIT/GITVREF M162/M162 and M162CHK RC0 on the sealed depth-5 fixture. Full snapshots verified. Exact proof matched: HFPG P1 S 1 5 5 105 105 and HFPG P1 E 5 ADDED 55 55. The first incomplete node is five first-parent steps/depths behind HEAD, 105/105 author/committer seconds behind HEAD; frontier edge 5 is ADDED with 55/55 seconds across it. M162 DISTANCE DIRECT RC0 and M162 COMPACT TARGET GATE PASS followed. M162 is REAL CMS TARGET-PROVEN.
+
+
+## 2026-10-07 M163 HOST PASS / CMS GATE NEXT
+
+M162 is REAL CMS TARGET-PROVEN. M163 adds HISTORYFIRSTPRESENCEHORIZON-REF-FULL, reporting the structurally complete first-parent prefix from HEAD. Sealed proof: HFPH P1 S 1 5 4 4 4 50 50 and HFPH P1 F 1 6 5 5 ADDED. GIT/GITVREF is M163/M163. Native-stage run 37633302087 completed SUCCESS on code head 817a78d9ba7287e6beeb0fdd2046fa1e8dee9250, including the M163 host model and full native-stage suite. Next target step: upload GIT.EXEC, GITVREF.EXEC, M163CHK.EXEC; run GIT LEVEL; run M163CHK. No GITREC rebuild. No GITRUN.
