@@ -5922,3 +5922,8 @@ from complete PRESENT/ABSENT totals exactly as designed.
 ## M159 host proof
 
 M158 target pass is complete. M159 presence-ratio code is host-proven by native-stage run 37538396463. Next target step: upload GIT.EXEC, GITVREF.EXEC, and M159CHK.EXEC; then run GIT LEVEL and M159CHK. No native rebuild.
+
+
+## 2026-10-06 M159 REAL CMS TARGET PASS
+
+Real CMS ran GIT/GITVREF M159/M159 and M159CHK RC0 on the sealed depth-5 fixture. Full snapshots verified. Exact proof matched: HFPR P1 S 2 1 1 1; HFPR P1 A 1 50 50 0 10000 0; HFPR P1 C 1 50 50 0 10000 0. Author and committer complete-time ratios are both available, with 50 seconds PRESENT, 0 ABSENT, and 10000/0 basis points. M159 RATIO DIRECT RC0 and M159 COMPACT TARGET GATE PASS followed. M159 is REAL CMS TARGET-PROVEN.
