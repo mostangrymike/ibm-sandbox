@@ -69,6 +69,9 @@ for needle in (
     assert needle in chk
 
 assert "EXEC GIT COMMIT-STAGED-REF" in chk
+assert "last=post.0" in chk
+assert "line=post.last" in chk
+assert "line=post.post.0" not in chk
 assert "EXEC GIT UPDATE-REF' testref head zeros" in chk
 assert "EXEC GIT UPDATE-REF' testref zeros newcommit" in chk
 
