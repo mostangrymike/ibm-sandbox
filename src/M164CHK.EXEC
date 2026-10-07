@@ -55,13 +55,15 @@ end
 say 'M164 INITIAL CLEAN MAP PASS'
 
 basefn=substr(base,1,8)
-call absent basefn,'GITOBJ','A'
-if result\=0 then do
+call looseok base,basefn
+lrc=result
+if lrc=8 then do
  call cleanup
  say 'M164 BASE LOOSE TARGET COLLISION'
  exit 8
 end
-baseowned=1
+if lrc=28 then baseowned=1
+else say 'M164 BASE LOOSE OBJECT REUSED' base
 cmd='EXEC GIT IMPORT-OBJECT' base
 address command cmd
 irc=rc
@@ -107,13 +109,15 @@ if length(newoid)\=40 |,
  exit 8
 end
 objfn=substr(newoid,1,8)
-call absent objfn,'GITOBJ','A'
-if result\=0 then do
+call looseok newoid,objfn
+lrc=result
+if lrc=8 then do
  call cleanup
  say 'M164 LOOSE TARGET COLLISION'
  exit 8
 end
-newowned=1
+if lrc=28 then newowned=1
+else say 'M164 MODIFIED LOOSE OBJECT REUSED' newoid
 say 'M164 MODIFIED HASH PASS' newoid
 
 address command 'EXEC GIT STATUS'
@@ -178,6 +182,17 @@ absent:
  if rc=28 then return 0
  say 'M164: expected absent' afn aft afm 'RC' rc
  return 8
+
+looseok:
+ parse arg loid,lfn
+ 'STATE' lfn 'GITOBJ A'
+ lrc=rc
+ if lrc=28 then return 28
+ if lrc\=0 then return 8
+ cmd='EXEC GIT VERIFY-OBJECT' loid
+ address command cmd
+ if rc\=0 then return 8
+ return 0
 
 cleanup:
  crc=0
