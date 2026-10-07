@@ -49,6 +49,9 @@ on:
       - 'src/GITUPD.EXEC'
       - 'src/M166CHK.EXEC'
       - 'tests/test-m166-ref-cas.py'
+      - 'src/M167CHK.EXEC'
+      - 'tests/test-m167-commit-ref.py'
+      - 'docs/M167.md'
       - 'docs/M166.md'
       - 'docs/M165.md'
       - 'src/M157GATE.EXEC'
@@ -114,6 +117,9 @@ on:
       - 'src/GITUPD.EXEC'
       - 'src/M166CHK.EXEC'
       - 'tests/test-m166-ref-cas.py'
+      - 'src/M167CHK.EXEC'
+      - 'tests/test-m167-commit-ref.py'
+      - 'docs/M167.md'
       - 'docs/M166.md'
       - 'docs/M165.md'
       - 'src/M157GATE.EXEC'
@@ -171,6 +177,8 @@ jobs:
         run: python3 tests/test-m165-staged-commit.py
       - name: Check M166 modern REF2 compare-and-swap
         run: python3 tests/test-m166-ref-cas.py
+      - name: Check M167 integrated commit to ref
+        run: python3 tests/test-m167-commit-ref.py
       - name: Check combined compact M157 target gate
         run: sh tests/check-m157-gate.sh
       - name: Check neutral compiler EXEC source and F-disk setup
