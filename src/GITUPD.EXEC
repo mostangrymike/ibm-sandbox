@@ -38,6 +38,11 @@ end
 
 call readrefs
 if result\='OK' then exit 8
+drop bak.
+bak.0=rr.0
+do bi=1 to rr.0
+ bak.bi=rr.bi
+end
 found=0
 slot=0
 current=''
@@ -91,9 +96,15 @@ else do
 end
 
 call writerefs
-if result\='OK' then exit 8
+if result\='OK' then do
+ call restore
+ exit 8
+end
 call readrefs
-if result\='OK' then exit 8
+if result\='OK' then do
+ call restore
+ exit 8
+end
 found=0
 current=''
 do i=1 to refcount
@@ -105,6 +116,7 @@ end
 if newoid=zeros then do
  if found\=0 then do
   say 'GITUPD: delete verification failed' ref
+  call restore
   exit 8
  end
  say 'DELETED' ref oldoid
@@ -112,6 +124,7 @@ end
 else do
  if found\=1 | current\=newoid then do
   say 'GITUPD: update verification failed' ref
+  call restore
   exit 8
  end
  say newoid ref
@@ -204,6 +217,16 @@ readrefs:
   say 'GITUPD: symbolic HEAD target is missing'
   return 'ERROR'
  end
+ return 'OK'
+
+restore:
+ if bak.0<2 then return 'ERROR'
+ 'EXECIO' bak.0 'DISKW GITREF2 REPO A 1 (STEM BAK. FINIS'
+ if rc\=0 then do
+  say 'GITUPD: REF2 rollback failed'
+  return 'ERROR'
+ end
+ say 'GITUPD: REF2 rollback restored prior snapshot'
  return 'OK'
 
 writerefs:
