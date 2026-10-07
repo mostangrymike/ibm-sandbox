@@ -38,6 +38,8 @@ on:
       - 'tests/test-m161-presence-frontier.py'
       - 'src/M162CHK.EXEC'
       - 'tests/test-m162-presence-frontier-distance.py'
+      - 'src/M163CHK.EXEC'
+      - 'tests/test-m163-presence-horizon.py'
       - 'src/M157GATE.EXEC'
       - 'tests/check-m157-gate.sh'
       - 'tests/check-readonly-gitrchk.sh'
@@ -90,6 +92,8 @@ on:
       - 'tests/test-m161-presence-frontier.py'
       - 'src/M162CHK.EXEC'
       - 'tests/test-m162-presence-frontier-distance.py'
+      - 'src/M163CHK.EXEC'
+      - 'tests/test-m163-presence-horizon.py'
       - 'src/M157GATE.EXEC'
       - 'tests/check-m157-gate.sh'
       - 'tests/check-readonly-gitrchk.sh'
@@ -137,6 +141,8 @@ jobs:
         run: python3 tests/test-m161-presence-frontier.py
       - name: Check M162 authenticated frontier distance
         run: python3 tests/test-m162-presence-frontier-distance.py
+      - name: Check M163 authenticated complete presence horizon
+        run: python3 tests/test-m163-presence-horizon.py
       - name: Check combined compact M157 target gate
         run: sh tests/check-m157-gate.sh
       - name: Check neutral compiler EXEC source and F-disk setup
