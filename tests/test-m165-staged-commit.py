@@ -47,7 +47,7 @@ for needle in (
     "SHOW FULL ROOT CLOSURE VERIFIED",
     "GITREC TREE GITFIX M15NEW",
     "TREE DATA BEGIN",
-    "TREE NAMEHEX",
+    "word(line,2)=\'NAMEHEX\'",
     "TREE DATA END",
     "WRITE-TREE-HEXFILE GITTREE REPO A",
 ):
