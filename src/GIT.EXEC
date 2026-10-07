@@ -358,18 +358,27 @@ if command = 'COMMIT-STAGED-REF' then do
       say 'COMMIT-STAGED-REF CAS FAIL RC' urc
       exit urc
    end
-   vref=substr(cref,12)
    drop vr.
-   vr.0=0
-   'PIPE CMS EXEC GIT VERIFY-REF' vref '| STEM vr.'
-   vrc=rc
    verified=0
-   do vri=1 to vr.0
-      if word(vr.vri,1)='VERIFIED' & word(vr.vri,2)='REF' &,
-         word(vr.vri,3)=vref &,
-         translate(word(vr.vri,4))=newcommit then verified=verified+1
+   headseen=0
+   'EXECIO * DISKR GITREF2 REPO A 1 (STEM VR. FINIS'
+   vrc=rc
+   if vrc=0 & vr.0>=3 & vr.1='REF2 1' then do
+      do vri=2 to vr.0
+         if word(vr.vri,1)='HEAD' then do
+            if words(vr.vri)=2 then headseen=headseen+1
+            else verified=-99
+         end
+         else if word(vr.vri,1)='REF' then do
+            if words(vr.vri)\=3 then verified=-99
+            else if word(vr.vri,2)=cref &,
+               translate(word(vr.vri,3))=newcommit then,
+               verified=verified+1
+         end
+         else verified=-99
+      end
    end
-   if vrc\=0 | verified\=1 then do
+   if vrc\=0 | headseen\=1 | verified\=1 then do
       say 'GIT: post-CAS ref verification failed; rolling back'
       address command 'EXEC GIT UPDATE-REF' cref expected newcommit
       if rc\=0 then say 'GIT: post-CAS rollback failed'
