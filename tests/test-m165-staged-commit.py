@@ -68,6 +68,10 @@ for needle in (
 ):
     assert needle in chk
 
+cleanup = chk[chk.index("cleanup:"):]
+assert "else if rc\\=28 then crc=8" in cleanup
+assert "else if rc\\=28 then nop" not in cleanup
+
 for path in (root / "src" / "GIT.EXEC",
              root / "src" / "GITVREF.EXEC",
              root / "src" / "GITWT.EXEC",
