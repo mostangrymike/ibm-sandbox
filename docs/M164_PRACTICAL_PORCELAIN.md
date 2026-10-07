@@ -89,10 +89,10 @@ throughout.
 
 ## Host proof
 
-GitHub Actions native-stage run `37637796564` completed successfully on
-M164 code head `bf969cb9bd8c16bfa57269c3a39035463f656509`.
+GitHub Actions native-stage run `37638057399` completed successfully on
+M164 code head `c3bcd5fb577a2ab317b5ed31b73cb2bc7c8200b3`.
 The run included all earlier M156-M163 checks, the M164 independent worktree
 model, native selector tests, full CATHEX/tree recovery, and native
 PACK/index tests.
 
-The remaining acceptance boundary is real CMS execution of `M164CHK`.
+The disposable gate also verifies native-to-loose IMPORT-OBJECT and removes\nthat imported loose object during cleanup.\n\nThe remaining acceptance boundary is real CMS execution of `M164CHK`.
