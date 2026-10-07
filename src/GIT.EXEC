@@ -304,6 +304,83 @@ if command = 'COMMIT-STAGED' then do
    'EXEC GITWT COMMIT' rest
    exit rc
 end
+if command = 'COMMIT-STAGED-REF' then do
+   parse var rest cref expected copts
+   cref=strip(cref)
+   expected=translate(strip(expected))
+   copts=strip(copts)
+   if cref='' | expected='' | copts='' then do
+      say 'Usage: GIT COMMIT-STAGED-REF ref expected-old options'
+      exit 4
+   end
+   if length(expected)\=40 |,
+      verify(expected,'0123456789ABCDEF')\=0 then do
+      say 'GIT: invalid expected old object-id' expected
+      exit 4
+   end
+   drop cr.
+   cr.0=0
+   'PIPE CMS EXEC GITWT COMMIT' copts '| STEM cr.'
+   crc=rc
+   do cri=1 to cr.0
+      say cr.cri
+   end
+   if crc\=0 then exit crc
+   parents=0
+   commits=0
+   parent=''
+   newcommit=''
+   do cri=1 to cr.0
+      if word(cr.cri,1)='COMMIT-STAGED' &,
+         word(cr.cri,2)='PARENT' & words(cr.cri)=3 then do
+         parents=parents+1
+         parent=translate(word(cr.cri,3))
+      end
+      if word(cr.cri,1)='COMMIT-STAGED' &,
+         word(cr.cri,2)='COMMIT' & words(cr.cri)=3 then do
+         commits=commits+1
+         newcommit=translate(word(cr.cri,3))
+      end
+   end
+   if parents\=1 | commits\=1 then do
+      say 'GIT: staged commit output framing failed'
+      exit 8
+   end
+   if parent\=expected then do
+      say 'GIT: staged commit parent differs from expected old'
+      say 'EXPECTED' expected
+      say 'PARENT' parent
+      exit 8
+   end
+   address command 'EXEC GIT UPDATE-REF' cref newcommit expected
+   urc=rc
+   if urc\=0 then do
+      say 'COMMIT-STAGED-REF CAS FAIL RC' urc
+      exit urc
+   end
+   drop vr.
+   vr.0=0
+   'PIPE CMS EXEC GIT VERIFY-REF' cref '| STEM vr.'
+   vrc=rc
+   verified=0
+   do vri=1 to vr.0
+      if word(vr.vri,1)='VERIFIED' & word(vr.vri,2)='REF' &,
+         word(vr.vri,3)=cref &,
+         translate(word(vr.vri,4))=newcommit then verified=verified+1
+   end
+   if vrc\=0 | verified\=1 then do
+      say 'GIT: post-CAS ref verification failed; rolling back'
+      address command 'EXEC GIT UPDATE-REF' cref expected newcommit
+      if rc\=0 then say 'GIT: post-CAS rollback failed'
+      else say 'GIT: post-CAS rollback restored expected old'
+      exit 8
+   end
+   say 'COMMIT-STAGED-REF REF' cref
+   say 'COMMIT-STAGED-REF OLD' expected
+   say 'COMMIT-STAGED-REF NEW' newcommit
+   say 'COMMIT-STAGED-REF CAS PASS'
+   exit 0
+end
 if command = 'CHECKOUT' | command = 'HEAD' then do
    'EXEC GITHEAD' command rest
    exit rc
