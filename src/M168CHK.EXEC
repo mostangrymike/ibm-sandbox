@@ -1,0 +1,4 @@
+/* M168 current-branch target gate. */
+address cms
+say 'M168 CHECKER PLACEHOLDER'
+exit 8
