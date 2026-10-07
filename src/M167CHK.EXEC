@@ -102,10 +102,10 @@ say 'M167 STAGED CHANGE PASS'
 cmd='EXEC GIT COMMIT-STAGED-REF' testref head,
     '-T 3 -Z +0000 -M M167_target'
 address command cmd
-crc=rc
-if crc\=0 then do
+commitrc=rc
+if commitrc\=0 then do
  call cleanup
- say 'M167 INTEGRATED COMMIT FAIL RC' crc
+ say 'M167 INTEGRATED COMMIT FAIL RC' commitrc
  exit 8
 end
 say 'M167 INTEGRATED COMMIT RC0'
