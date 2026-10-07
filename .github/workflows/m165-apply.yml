@@ -5,7 +5,7 @@ on:
     branches:
       - m165-staged-commit
     paths:
-      - 'docs/M165.md'
+      - 'README.md'
 
 permissions:
   contents: write
