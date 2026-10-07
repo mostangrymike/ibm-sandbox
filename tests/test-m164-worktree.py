@@ -8,6 +8,7 @@ g = (root / "src" / "GIT.EXEC").read_text()
 v = (root / "src" / "GITVREF.EXEC").read_text()
 imp = (root / "src" / "GITIMP.EXEC").read_text()
 wt = (root / "src" / "GITWT.EXEC").read_text()
+chk = (root / "src" / "M164CHK.EXEC").read_text()
 
 gm = re.search(r"GIT EXEC LEVEL M(\d+)", g)
 vm = re.search(r"GITVREF EXEC LEVEL M(\d+)", v)
@@ -47,6 +48,20 @@ for protected in ("GITFIX STAGE", "GITFIX INDEX", "GITFIX SEEK",
     assert f"ERASE {protected}" not in imp
 
 for needle in (
+    "M164 CHECKOUT DIRECT RC0",
+    "M164 INITIAL CLEAN MAP PASS",
+    "M164 MODIFIED HASH PASS",
+    "M164 STAGED MAP PASS",
+    "M164 LOOSE OBJECT PASS",
+    "M164 DISPOSABLE CLEANUP PASS",
+    "M164 PRACTICAL PORCELAIN TARGET GATE PASS",
+):
+    assert needle in chk
+assert "ERASE M164TST DATA A" in chk
+assert "ERASE GITWORK REPO A" in chk
+assert "address command 'GIT ADD src/GITVREF.EXEC'" in chk
+
+for needle in (
     "GITREC PATHFULLCAT GITFIX M15NEW",
     "checkout target exists; M164 refuses overwrite",
     "WORKTREE OID",
@@ -62,7 +77,8 @@ for needle in (
 for path in (root / "src" / "GIT.EXEC",
              root / "src" / "GITVREF.EXEC",
              root / "src" / "GITIMP.EXEC",
-             root / "src" / "GITWT.EXEC"):
+             root / "src" / "GITWT.EXEC",
+             root / "src" / "M164CHK.EXEC"):
     for number, line in enumerate(path.read_text().splitlines(), 1):
         assert len(line) <= 80, (path.name, number, len(line))
 
