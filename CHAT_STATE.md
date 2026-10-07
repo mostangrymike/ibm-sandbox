@@ -6066,3 +6066,23 @@ already absent (STATE RC28), but the checker branch had the condition reversed
 and treated RC28 as failure. Commit 682b33a fixes the cleanup condition and
 0051ff1 adds a regression guard. Actions run 1231 passes the complete suite.
 Only M165CHK.EXEC needs target re-upload before rerunning M165CHK.
+
+
+## 2026-10-07 M165 REAL CMS TARGET PASS
+
+Real CMS ran GIT/GITVREF M165/M165 and M165CHK completed RC0. The checker
+staged blob FCC4C824FF444B2C060DA631A10E05C79C81EA25, rebuilt the src tree as
+650C8B3962A7EBBC004EEED8D217C1E2B0ED7EF8 and root tree as
+AB3C1C8DAF034C6BF7BDD23E38CD204B4DF5A1C5, reused/imported parent
+00D8D63229305230C8D37F884CE87F9E1A89468C, and created verified child commit
+D6FB8432692CF8EFBDC2DDA354425D8DCDC3A008.
+
+COMMIT-STAGED REFS UNCHANGED was emitted; GITREF2 was verified byte-for-byte
+unchanged. STATUS remained STAGED after commit-object creation, disposable
+M165TST/GITWORK/GITTREE files were cleaned, and the final lines were
+M165 LOOSE COMMIT CANDIDATE RETAINED FOR REF CAS and
+M165 STAGED COMMIT TARGET GATE PASS. M165 is REAL CMS TARGET-PROVEN.
+
+Next milestone M166 isolates modern REF2 compare-and-swap using a disposable
+branch ref. HEAD and refs/heads/main must remain unchanged. The retained M165
+commit D6FB8432692CF8EFBDC2DDA354425D8DCDC3A008 is the target candidate.
