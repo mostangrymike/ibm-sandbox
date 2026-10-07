@@ -1,0 +1,4 @@
+/* M169 generalized smart-HTTP discovery. */
+address cms
+say 'GITFETCH PLACEHOLDER'
+exit 8
