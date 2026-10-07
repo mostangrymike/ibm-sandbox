@@ -1,0 +1,167 @@
+/* M164: disposable real-CMS checkout/status/add gate. */
+address cms
+newoid=''
+newowned=0
+
+call absent 'M164TST','DATA','A'
+if result\=0 then exit 8
+call absent 'GITWORK','REPO','A'
+if result\=0 then exit 8
+say 'M164 DISPOSABLE TARGETS ABSENT'
+
+cmd='GIT CHECKOUT-FILE HEAD src/GITVREF.EXEC M164TST DATA A'
+address command cmd
+if rc\=0 then do
+ call cleanup
+ say 'M164 CHECKOUT FAIL RC' rc
+ exit 8
+end
+say 'M164 CHECKOUT DIRECT RC0'
+
+address command 'GIT STATUS'
+if rc\=0 then do
+ call cleanup
+ say 'M164 INITIAL STATUS FAIL'
+ exit 8
+end
+
+drop m.
+'EXECIO * DISKR GITWORK REPO A 1 (STEM M. FINIS'
+if rc\=0 | m.0\=7 then do
+ call cleanup
+ say 'M164 MAP READ FAIL'
+ exit 8
+end
+if m.1\='WORK1 1' | word(m.2,1)\='ENTRY' |,
+   word(m.2,2)\='1' then do
+ call cleanup
+ say 'M164 MAP HEADER FAIL'
+ exit 8
+end
+base=translate(word(m.3,3))
+stage=translate(word(m.4,3))
+if word(m.3,1)\='BASE' | word(m.4,1)\='STAGE' |,
+   base\=stage then do
+ call cleanup
+ say 'M164 INITIAL MAP STATE FAIL'
+ exit 8
+end
+say 'M164 INITIAL CLEAN MAP PASS'
+
+drop t.
+t.1='M164 PORCELAIN MODIFIED'
+t.0=1
+'EXECIO 1 DISKW M164TST DATA A 1 (STEM T. FINIS'
+if rc\=0 then do
+ call cleanup
+ say 'M164 MODIFY FAIL'
+ exit 8
+end
+
+drop h.
+h.0=0
+'PIPE CMS GIT HASH-WORKFILE M164TST DATA A 1 | STEM h.'
+if rc\=0 | h.0\=1 then do
+ call cleanup
+ say 'M164 MODIFIED HASH FAIL'
+ exit 8
+end
+newoid=translate(strip(h.1))
+if length(newoid)\=40 |,
+   verify(newoid,'0123456789ABCDEF')\=0 | newoid=base then do
+ call cleanup
+ say 'M164 MODIFIED OID FAIL'
+ exit 8
+end
+objfn=substr(newoid,1,8)
+call absent objfn,'GITOBJ','A'
+if result\=0 then do
+ call cleanup
+ say 'M164 LOOSE TARGET COLLISION'
+ exit 8
+end
+say 'M164 MODIFIED HASH PASS' newoid
+
+address command 'GIT STATUS'
+if rc\=0 then do
+ call cleanup
+ say 'M164 MODIFIED STATUS FAIL'
+ exit 8
+end
+
+address command 'GIT ADD src/GITVREF.EXEC'
+if rc\=0 then do
+ call cleanup
+ say 'M164 ADD FAIL'
+ exit 8
+end
+newowned=1
+
+drop m.
+'EXECIO * DISKR GITWORK REPO A 1 (STEM M. FINIS'
+if rc\=0 | m.0\=7 then do
+ call cleanup
+ say 'M164 STAGED MAP READ FAIL'
+ exit 8
+end
+stage=translate(word(m.4,3))
+if stage\=newoid | stage=base then do
+ call cleanup
+ say 'M164 STAGE OID FAIL'
+ exit 8
+end
+say 'M164 STAGED MAP PASS'
+
+address command 'GIT STATUS'
+if rc\=0 then do
+ call cleanup
+ say 'M164 STAGED STATUS FAIL'
+ exit 8
+end
+address command 'GIT VERIFY-OBJECT' newoid
+if rc\=0 then do
+ call cleanup
+ say 'M164 LOOSE VERIFY FAIL'
+ exit 8
+end
+say 'M164 LOOSE OBJECT PASS'
+
+call cleanup
+if result\=0 then do
+ say 'M164 CLEANUP FAIL'
+ exit 8
+end
+say 'M164 DISPOSABLE CLEANUP PASS'
+say 'M164 PRACTICAL PORCELAIN TARGET GATE PASS'
+exit 0
+
+absent:
+ parse arg afn,aft,afm
+ 'STATE' afn aft afm
+ if rc\=28 then return 0
+ say 'M164: expected absent' afn aft afm 'RC' rc
+ return 8
+
+cleanup:
+ crc=0
+ 'STATE M164TST DATA A'
+ if rc=0 then do
+  'ERASE M164TST DATA A'
+  if rc\=0 then crc=8
+ end
+ else if rc\=28 then crc=8
+ 'STATE GITWORK REPO A'
+ if rc=0 then do
+  'ERASE GITWORK REPO A'
+  if rc\=0 then crc=8
+ end
+ else if rc\=28 then crc=8
+ if newowned=1 then do
+  'STATE' objfn 'GITOBJ A'
+  if rc=0 then do
+   'ERASE' objfn 'GITOBJ A'
+   if rc\=0 then crc=8
+  end
+  else crc=8
+ end
+ return crc
