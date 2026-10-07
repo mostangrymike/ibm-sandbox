@@ -141,3 +141,49 @@ rebuilt = bytes.fromhex(cathex[2].split()[1])
 assert git_blob_oid(rebuilt) == oid
 
 print("M164 PRACTICAL WORKTREE HOST MODEL PASSED")
+
+
+# Model the exact GITWT EBCDIC<->ASCII table on the sealed checkout fixture.
+e2a_hex = (
+    "000102031A091A7F1A1A1A0B0C0D0E0F"
+    "101112131A1A081A18191A1A1C1D1E1F"
+    "1A1A1C1A1A0A171B1A1A1A1A1A050607"
+    "1A1A161A1A1E1A041A1A1A1A14151A1A"
+    "20A6E180EB909FE2AB8B9B2E3C282B7C"
+    "26A9AA9CDBA599E3A89E21242A293B5E"
+    "2D2FDFDC9ADDDE989DACBA2C255F3E3F"
+    "D78894B0B1B2FCD6FB603A2340273D22"
+    "F861626364656667686996A4F3AFAEC5"
+    "8C6A6B6C6D6E6F7071729787CE93F1FE"
+    "C87E737475767778797AEFC0DA5BF2F9"
+    "B5B6FDB7B8B9E6BBBCBD8DD9BF5DD8C4"
+    "7B414243444546474849CBCABEE8ECED"
+    "7D4A4B4C4D4E4F505152A1ADF5F4A38F"
+    "5CE7535455565758595AA0858EE9E4D1"
+    "30313233343536373839B3F7F0FAA7FF"
+)
+e2a = bytes.fromhex(e2a_hex)
+assert len(e2a) == 256
+
+def ascii_to_ebcdic(data: bytes) -> bytes:
+    out = bytearray()
+    for b in data:
+        hits = [i for i, x in enumerate(e2a) if x == b]
+        assert hits, hex(b)
+        out.append(hits[0])
+    return bytes(out)
+
+def ebcdic_to_ascii(data: bytes) -> bytes:
+    return bytes(e2a[b] for b in data)
+
+fixture = (root / "src" / "GIT.EXEC").read_bytes()
+# Current file is a superset of the sealed text repertoire; validate all
+# non-LF bytes used by the real source.
+for line in fixture.splitlines():
+    cms = ascii_to_ebcdic(line)
+    assert ebcdic_to_ascii(cms) == line
+
+assert "verify(translate(ah)" not in wt
+assert "do ai=1 to length(ah)" in wt
+assert "pos(substr(ah,ai,1),'0123456789ABCDEF')" in wt
+print("M164 EBCDIC TABLE ROUND TRIP PASSED")
