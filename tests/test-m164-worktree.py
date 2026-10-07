@@ -76,6 +76,9 @@ assert "expected='0FCE3C85DD9335CA7A4868E806F09B890D115F80'" in chk
 assert "word(m.2,6)\\='0'" in chk
 assert "cmd='EXEC GIT IMPORT-OBJECT' base" in chk
 assert "cmd='EXEC GIT VERIFY-OBJECT' base" in chk
+assert "final=word(m.2,6)" in chk
+assert "cmd='GIT HASH-WORKFILE M164TST DATA A' final" in chk
+assert "HASH-WORKFILE M164TST DATA A 1 | STEM h." not in chk
 assert "address command 'GIT " not in chk
 assert "cmd='GIT " not in chk
 
@@ -195,6 +198,9 @@ assert "FILEDEF WTOUT" not in wt
 assert "'EXECIO 0 DISKW' wfn wft wfm '1 F 80 (FINIS'" in wt
 assert "'EXECIO' rec.0 'DISKW' wfn wft wfm" in wt
 assert "'1 F 80 (STEM REC. FINIS'" in wt
+assert "do wi=1 to wh.0" in wt
+assert "candidate=translate(strip(wh.wi))" in wt
+assert "if found\\=1 then return 'ERROR'" in wt
 print("M164 EBCDIC TABLE ROUND TRIP PASSED")
 
 # CMS PIPE/STEM truncates the long CATHEX metadata summary record.
@@ -225,3 +231,20 @@ assert "size=length(body)%2" in imp
 assert "mline=space(mline,0)" not in imp
 assert "GITIMP: malformed CATHEX prefix" not in imp
 print("M164 TRUNCATED CATHEX METADATA MODEL PASSED")
+
+# WRITE-WORKFILE may emit a normal CMS STATE diagnostic before its OID.
+# GITWT accepts exactly one standalone 40-hex OID and ignores diagnostics.
+diagnostic_output = [
+    "DMSSTT002E File F30D9549 GITOBJ A not found",
+    "F30D9549BF626986E21A6C9382CD636E0F3F95B5",
+]
+oid_lines = [
+    line.strip().upper() for line in diagnostic_output
+    if re.fullmatch(r"[0-9A-F]{40}", line.strip().upper())
+]
+assert oid_lines == ["F30D9549BF626986E21A6C9382CD636E0F3F95B5"]
+assert not [
+    line for line in diagnostic_output
+    if re.fullmatch(r"[0-9A-F]{40}", line.strip().upper())
+][1:]
+print("M164 CMS DIAGNOSTIC OID FILTER MODEL PASSED")
