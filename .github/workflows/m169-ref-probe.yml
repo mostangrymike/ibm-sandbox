@@ -1,4 +1,4 @@
-name: M169 exact request probe
+name: M170 exact POST probe
 
 on:
   push:
@@ -9,60 +9,107 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Send exact M169 HTTP request
+      - name: Discover and POST exact M170 request
         run: |
           python3 - <<'PY'
           import socket, ssl
-          host='github.com'
-          req=(
-              b'GET /mostangrymike/ibm-sandbox.git/info/refs?service=git-upload-pack HTTP/1.1\r\n'
+
+          def request(req):
+              raw=socket.create_connection(('github.com',443),timeout=15)
+              s=ssl.create_default_context().wrap_socket(
+                  raw,server_hostname='github.com')
+              s.sendall(req)
+              parts=[]
+              while True:
+                  b=s.recv(65536)
+                  if not b: break
+                  parts.append(b)
+              return b''.join(parts)
+
+          get=(
+              b'GET /mostangrymike/ibm-sandbox.git/info/refs'
+              b'?service=git-upload-pack HTTP/1.1\r\n'
               b'Host: github.com\r\n'
               b'Accept: application/x-git-upload-pack-advertisement\r\n'
               b'Connection: close\r\n\r\n'
           )
-          ctx=ssl.create_default_context()
-          raw=socket.create_connection((host,443),timeout=10)
-          s=ctx.wrap_socket(raw,server_hostname=host)
-          s.sendall(req)
-          chunks=[]
-          while True:
-              b=s.recv(4096)
-              if not b: break
-              chunks.append(b)
-          wire=b''.join(chunks)
+          wire=request(get)
           head,body=wire.split(b'\r\n\r\n',1)
-          print('HTTP_TOTAL',len(wire),'HEADER',len(head)+4,'BODY_RAW',len(body))
-          print(head.decode('latin1'))
-          p=0; entity=bytearray(); cs=[]
-          while True:
-              j=body.index(b'\r\n',p)
-              line=body[p:j]
-              size=int(line.split(b';',1)[0],16)
-              p=j+2
-              print('CHUNK',len(cs)+1,'LINE',line,'SIZE',size,'DATA_AT',p)
-              if size==0:
-                  print('AFTER_ZERO',body[p:].hex().upper())
-                  break
-              cs.append(size)
-              entity += body[p:p+size]
-              p += size
-              print('CHUNK_END_CRLF',body[p:p+2].hex().upper(),'RAW_POS',p)
-              p += 2
-          print('ENTITY',len(entity),'CHUNKS',cs)
-          # Ref offsets.
-          q=0; flush=0; ref=0
-          while q < len(entity):
-              n=int(entity[q:q+4],16)
-              start=q
-              q += 4
+          assert b'200 OK' in head and b'Transfer-Encoding: chunked' in head
+
+          def dechunk(body):
+              out=bytearray(); p=0
+              while True:
+                  j=body.index(b'\r\n',p)
+                  n=int(body[p:j].split(b';',1)[0],16)
+                  p=j+2
+                  if n==0: return bytes(out)
+                  out += body[p:p+n]
+                  p += n
+                  assert body[p:p+2] == b'\r\n'
+                  p += 2
+
+          adv=dechunk(body)
+          p=0; flush=0; main=None
+          while p < len(adv):
+              n=int(adv[p:p+4],16); p+=4
               if n==0:
                   flush += 1
-                  print('FLUSH',flush,'ENTITY_OFF',start)
                   continue
-              payload=bytes(entity[q:q+n-4]); q += n-4
-              if flush==0: continue
-              ref += 1
-              if 43 <= ref <= 52:
-                  print('REF',ref,'ENTITY_OFF',start,'LEN',n,
-                        payload.partition(b'\0')[0].rstrip(b'\n'))
+              payload=adv[p:p+n-4]; p += n-4
+              if flush == 0: continue
+              rec=payload.partition(b'\0')[0].rstrip(b'\n')
+              oid,ref=rec.split(b' ',1)
+              if ref == b'refs/heads/main':
+                  main=oid.decode().upper()
+          assert main and len(main)==40
+          low=main.lower()
+          want=f'want {low} side-band-64k ofs-delta\n'.encode()
+          wantpkt=f'{len(want)+4:04x}'.encode()+want
+          reqbody=wantpkt+b'0000'+b'0009done\n'
+          assert wantpkt[:4] == b'004a'
+          assert len(reqbody) == 87
+
+          post=(
+              b'POST /mostangrymike/ibm-sandbox.git/git-upload-pack HTTP/1.1\r\n'
+              b'Host: github.com\r\n'
+              b'Content-Type: application/x-git-upload-pack-request\r\n'
+              b'Accept: application/x-git-upload-pack-result\r\n'
+              + f'Content-Length: {len(reqbody)}\r\n'.encode()
+              + b'Connection: close\r\n\r\n' + reqbody
+          )
+          wire=request(post)
+          head,body=wire.split(b'\r\n\r\n',1)
+          print('OID',main)
+          print('POST_HTTP_BYTES',len(wire))
+          print(head.decode('latin1'))
+          assert b'200 OK' in head
+          assert b'application/x-git-upload-pack-result' in head.lower()
+          assert b'Transfer-Encoding: chunked' in head
+          entity=dechunk(body)
+          print('ENTITY_BYTES',len(entity))
+
+          p=0; nak=0; pack=bytearray(); prog=0; pkt=0
+          while p < len(entity):
+              n=int(entity[p:p+4],16); p+=4
+              if n in (0,1,2):
+                  continue
+              payload=entity[p:p+n-4]; p += n-4
+              pkt += 1
+              if not nak:
+                  assert payload == b'NAK\n'
+                  nak=1
+                  continue
+              band=payload[0]
+              if band==1: pack += payload[1:]
+              elif band==2: prog += len(payload)-1
+              elif band==3: raise SystemExit(('fatal',payload[1:]))
+              else: raise SystemExit(('band',band))
+          assert nak==1
+          assert pack[:4] == b'PACK'
+          ver=int.from_bytes(pack[4:8],'big')
+          objs=int.from_bytes(pack[8:12],'big')
+          print('PKTS',pkt,'PACK_BYTES',len(pack),'PROGRESS',prog)
+          print('PACK_VERSION',ver,'OBJECTS',objs)
+          assert ver in (2,3) and objs > 0
           PY
