@@ -197,35 +197,31 @@ assert "'EXECIO' rec.0 'DISKW' wfn wft wfm" in wt
 assert "'1 F 80 (STEM REC. FINIS'" in wt
 print("M164 EBCDIC TABLE ROUND TRIP PASSED")
 
-# CMS PIPE/STEM may split the long CATHEX metadata record.  Model the
-# GITIMP strategy: concatenate the bounded fragments, remove whitespace,
-# then parse the fixed labels.  Include widths that split inside the OID.
+# CMS PIPE/STEM truncates the long CATHEX metadata summary record.
+# GITIMP only relies on the prefix that fits before column 80, then derives
+# SIZE from the independently verified full HEX body.
 meta_oid = git_blob_oid(fixture)
-meta_prefix = fixture[:16].hex().upper()
 meta_line = (
     "SEEK OBJECT OID " + meta_oid +
     " OBJ 1808 TYPE 3 SIZE " + str(len(fixture)) +
-    " PREFIX " + meta_prefix
+    " PREFIX " + fixture[:16].hex().upper()
 )
-meta_pattern = re.compile(
-    r"^SEEKOBJECTOID([0-9A-F]{40})OBJ([0-9]+)"
-    r"TYPE([1-4])SIZE([0-9]+)PREFIX([0-9A-F]{2,32}|-)$"
-)
-for width in (36, 48, 60, 72, 80):
-    parts = [meta_line[pos:pos + width]
-             for pos in range(0, len(meta_line), width)]
-    compact = "".join(parts).replace(" ", "")
-    match = meta_pattern.fullmatch(compact)
-    assert match, (width, parts)
-    assert match.group(1) == meta_oid
-    assert int(match.group(2)) == 1808
-    assert int(match.group(3)) == 3
-    assert int(match.group(4)) == len(fixture)
-    assert match.group(5) == meta_prefix
+for width in (72, 73, 76, 80):
+    truncated = meta_line[:width]
+    fields = truncated.split()
+    assert fields[:3] == ["SEEK", "OBJECT", "OID"], (width, truncated)
+    assert len(fields) >= 8, (width, truncated)
+    assert fields[3] == meta_oid
+    assert fields[4] == "OBJ"
+    assert int(fields[5]) == 1808
+    assert fields[6] == "TYPE"
+    assert int(fields[7]) == 3
 
-assert "mline=mline||out.mi" in imp
-assert "mline=space(mline,0)" in imp
-assert "parse var mline 'SEEKOBJECTOID' moid 'OBJ' mobj," in imp
-assert "GITIMP: malformed CATHEX prefix" in imp
-assert "if words(line)<12 then do" not in imp
-print("M164 WRAPPED CATHEX METADATA MODEL PASSED")
+assert "if words(line)<8 | word(line,4)\\=oid |," in imp
+assert "word(line,5)\\='OBJ' | word(line,7)\\='TYPE'" in imp
+assert "mobj=word(line,6)" in imp
+assert "typ=word(line,8)" in imp
+assert "size=length(body)%2" in imp
+assert "mline=space(mline,0)" not in imp
+assert "GITIMP: malformed CATHEX prefix" not in imp
+print("M164 TRUNCATED CATHEX METADATA MODEL PASSED")
