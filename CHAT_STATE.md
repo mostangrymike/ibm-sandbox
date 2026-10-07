@@ -6424,3 +6424,22 @@ If absent, restart the target-proven bridge with
 sudo stunnel /etc/stunnel/github.conf, verify the listener, then rerun M169CHK.
 Also upload latest GITFETCH.EXEC before rerun so any remaining CONNECT failure
 prints its exact socket return code.
+
+
+## 2026-10-07 M169 NETWORK ROOT CAUSE CONFIRMED
+
+EC2 inspection confirmed tap0 still existed and was UP but had lost its IPv4
+address. It had only link-local IPv6; 192.168.200.1/24 was absent. stunnel
+therefore failed to bind github service 192.168.200.1:8443 with errno 99
+Cannot assign requested address.
+
+Restoring the target-proven address with
+sudo ip addr add 192.168.200.1/24 dev tap0
+allowed sudo stunnel /etc/stunnel/github.conf to bind immediately. ss then
+showed stunnel LISTEN on 192.168.200.1:8443. No Git protocol/source change was
+required for this failure. Open issue #5 now records that persistence must
+restore both tap0 IPv4 addressing and the stunnel process across reboot.
+
+NEXT TARGET STEP: rerun M169CHK with the listener active. If the latest
+diagnostic GITFETCH.EXEC is already uploaded, no additional CMS transfer is
+needed.
