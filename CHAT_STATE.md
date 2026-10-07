@@ -6116,3 +6116,35 @@ native REF PACK.
 NEXT REAL CMS GATE: upload GIT.EXEC, GITVREF.EXEC, GITUPD.EXEC, and
 M166CHK.EXEC; run GIT LEVEL; run M166CHK. No GITWT/GITIMP/GITREC rebuild or
 GITRUN is required. Do not erase the retained M165 loose commit candidate.
+
+
+## 2026-10-07 M166 FIRST REAL CMS RUN / EXACT-LENGTH REF2 FIX
+
+First real CMS M166CHK proved retained commit verification, disposable REF2
+create-CAS, protected record preservation, and stale-CAS RC8/non-mutation.
+Delete-CAS failed after writing because CMS EXECIO DISKW from record 1 does
+not truncate a longer existing file. The prior four-record REF2 file therefore
+retained the old fourth m166test record when the logical delete wrote only
+three records. GITUPD post-write verification caught that and restored its
+pre-delete snapshot exactly as designed.
+
+GITUPD now erases/recreates GITREF2 REPO A for every forward CAS rewrite, and
+its rollback path also erases/recreates the physical file so snapshot restore
+cannot retain stale trailing records. M166CHK emergency cleanup uses the same
+exact-length pattern. Because the failed checker may have left the disposable
+m166test record physically present, the checker preflight now safely recognizes
+that exact residue only when it points at retained M165 commit
+D6FB8432692CF8EFBDC2DDA354425D8DCDC3A008 and removes it through the fixed
+exact CAS path before taking the baseline snapshot. Any other collision fails
+closed.
+
+Production fixes: 2fb96ce9b60f96e0ca844f544888d0b15b3d9209 and
+bb4e890bb83e96e9ba148e98d5c3853a202db126. Checker recovery:
+3e5e74564a2a13cff9adcf38a318d71d1986fa98. Final regression head:
+9fc5aa708ef25d1efda5c91a11f491f265c0b294. GitHub Actions run 1244 completed
+SUCCESS including M166, M165, M164, CATHEX, tree recovery, selector fuzz,
+staging/OID index, and native REF PACK.
+
+NEXT CMS STEP: upload only GITUPD.EXEC and M166CHK.EXEC, then rerun M166CHK.
+GIT/GITVREF already remain correct at M166/M166. No manual REF2 edit, GITWT,
+GITIMP, GITREC rebuild, or GITRUN is required.
