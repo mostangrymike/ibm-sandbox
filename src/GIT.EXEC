@@ -288,6 +288,10 @@ if command = 'IMPORT-OBJECT' then do
    'EXEC GITIMP' rest
    exit rc
 end
+if command = 'FETCH-DISCOVER' then do
+   'EXEC GITFETCH DISCOVER' rest
+   exit rc
+end
 if command = 'CHECKOUT-FILE' then do
    'EXEC GITWT CHECKOUT' rest
    exit rc
