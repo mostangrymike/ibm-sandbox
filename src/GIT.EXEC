@@ -31,8 +31,8 @@ if command = 'LEVEL' then do
    lvl.0 = 0
    'PIPE CMS EXEC GITVREF LEVEL | STEM lvl.'
    if rc \= 0 then exit rc
-   say 'GIT EXEC LEVEL M163'
-   if lvl.0 \= 1 | lvl.1 \= 'GITVREF EXEC LEVEL M163' then do
+   say 'GIT EXEC LEVEL M164'
+   if lvl.0 \= 1 | lvl.1 \= 'GITVREF EXEC LEVEL M164' then do
       say 'GITVREF EXEC LEVEL MISMATCH'
       exit 8
    end
@@ -284,6 +284,22 @@ if command = 'DIR-REF-FULL' then do
    address command 'EXEC GITVREF DIR' rest
    exit rc
 end
+if command = 'IMPORT-OBJECT' then do
+   'EXEC GITIMP' rest
+   exit rc
+end
+if command = 'CHECKOUT-FILE' then do
+   'EXEC GITWT CHECKOUT' rest
+   exit rc
+end
+if command = 'STATUS' then do
+   'EXEC GITWT STATUS' rest
+   exit rc
+end
+if command = 'ADD' then do
+   'EXEC GITWT ADD' rest
+   exit rc
+end
 if command = 'CHECKOUT' | command = 'HEAD' then do
    'EXEC GITHEAD' command rest
    exit rc
@@ -520,6 +536,48 @@ if command = 'HASH-OBJECT' | command = 'WRITE-OBJECT' then do
    oid = result
    if oid = 'HASHERROR' then exit 8
    if command = 'HASH-OBJECT' then do
+      say oid
+      exit 0
+   end
+   call storeobject oid, 'BLOB', hex
+   if result \= 'OK' then exit 8
+   say oid
+   exit 0
+end
+
+if command = 'HASH-WORKFILE' |,
+   command = 'WRITE-WORKFILE' then do
+   parse var rest fn ft fm final extra
+   if fn = '' | ft = '' | extra \= '' then do
+      say 'Usage: GIT' command 'fn ft fm final-lf'
+      exit 4
+   end
+   fn = translate(fn)
+   ft = translate(ft)
+   fm = translate(fm)
+   if fm = '' then fm = 'A'
+   if final \= '0' & final \= '1' then do
+      say 'GIT: final-lf must be 0 or 1'
+      exit 4
+   end
+   drop wline.
+   'EXECIO * DISKR' fn ft fm '1 (STEM WLINE. FINIS'
+   if rc \= 0 then do
+      say 'GIT: cannot read workfile' fn ft fm
+      exit rc
+   end
+   hex = ''
+   do i = 1 to wline.0
+      text = strip(wline.i,'T')
+      call toasciihex text
+      if i > 1 then hex = hex || '0A'
+      hex = hex || result
+   end
+   if final = '1' then hex = hex || '0A'
+   call hashstored 'BLOB', hex
+   oid = result
+   if oid = 'HASHERROR' then exit 8
+   if command = 'HASH-WORKFILE' then do
       say oid
       exit 0
    end
