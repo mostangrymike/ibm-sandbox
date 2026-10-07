@@ -310,10 +310,18 @@ workoid:
  wh.0=0
  'PIPE CMS GIT' verb wfn wft wfm wlf '| STEM wh.'
  wrc=rc
- if wrc\=0 | wh.0\=1 then return 'ERROR'
- x=translate(strip(wh.1))
- if length(x)\=40 | verify(x,'0123456789ABCDEF')\=0 then,
-  return 'ERROR'
+ if wrc\=0 then return 'ERROR'
+ found=0
+ x=''
+ do wi=1 to wh.0
+  candidate=translate(strip(wh.wi))
+  if length(candidate)=40 &,
+     verify(candidate,'0123456789ABCDEF')=0 then do
+   found=found+1
+   x=candidate
+  end
+ end
+ if found\=1 then return 'ERROR'
  return x
 
 loadmap:
