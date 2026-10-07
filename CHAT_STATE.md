@@ -6334,3 +6334,44 @@ target-proved the EC2 stunnel bridge, live GitHub upload-pack discovery/POST,
 chunked HTTP decoding, side-band parsing, and the exact 340027-byte/1808-object
 PACK. The remaining fetch work is generalization/integration, not re-proving
 the old hard-coded transport fixture.
+
+
+## 2026-10-07 M169 HOST PASS / LIVE GENERALIZED DISCOVERY NEXT
+
+M168 is REAL CMS TARGET-PROVEN. The practical roadmap now resumes the
+generalized smart-HTTP fetch/clone phase recorded after M163.
+
+Old M12 already target-proved the EC2 stunnel bridge, live GitHub upload-pack
+discovery and POST, HTTP/1.1 chunk decoding, side-band parsing, and the exact
+340027-byte / 1808-object PACK later promoted into the native sealed
+generations. M12GDISC/M12JPOST were intentionally diagnostic and hard-coded
+the ibm-sandbox repository path plus one historical wanted OID.
+
+M169 adds public GIT FETCH-DISCOVER and new GITFETCH.EXEC. DISCOVER accepts
+bridge host/port, HTTP authority, repository path, and branch. It constructs
+the GET dynamically, requires raw REXX/SOCKETS with SO_ASCII OFF, bounds each
+receive to 256 bytes and total response to 4 MiB, validates HTTP 200 and the
+Git upload-pack advertisement content type, incrementally decodes chunked
+transfer coding, and incrementally parses v0/v1 pkt-lines. It requires the
+service announcement/flush sequence, validates every advertised OID/ref,
+limits pkt payloads to 4096 bytes and advertisement refs to 10000, requires
+exactly one requested refs/heads branch, and requires side-band-64k plus
+ofs-delta capabilities for the next upload-pack request milestone.
+
+The production path is fully in-memory and does not read/write the preserved
+M11BODY DATA A, M12BODY DATA A, or GITPBUF PACK A captures. M169 host tests
+model fragmented HTTP headers, irregular chunk boundaries, fragmented pkt-line
+headers/payloads, capability-bearing HEAD plus separate main ref, complete
+ASCII/EBCDIC conversion tables, and source bounds.
+
+GIT/GITVREF are M169/M169. GitHub Actions run 1266 completed SUCCESS on head
+de60f2b780cebd8572ef13f6214932b1c18d652e, including M169, M168, M167,
+M166, M165, M164, CATHEX/fallback, tree recovery, selector fuzz, staging/OID
+index, and native REF PACK.
+
+NEXT REAL CMS GATE: upload GIT.EXEC, GITVREF.EXEC, GITFETCH.EXEC, and
+M169CHK.EXEC; run GIT LEVEL; run M169CHK. M169CHK performs exactly one live
+GitHub advertisement GET through 192.168.200.1:8443 and does not POST or
+download a PACK. Existing GITUPD/GITWT/GITIMP/GITREC do not change and no
+native rebuild or GITRUN is required. M170 will use the live advertised OID
+to generalize upload-pack POST.
