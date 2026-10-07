@@ -6471,3 +6471,31 @@ completed SUCCESS including M169 and the full native tree/PACK suite.
 NEXT CMS STEP: upload only GITFETCH.EXEC and rerun M169CHK. The stunnel
 listener must remain active on 192.168.200.1:8443. No GIT/GITVREF/M169CHK or
 native-module refresh is required.
+
+
+## 2026-10-07 M169 SHARED REXX STREAM STATE ROOT CAUSE
+
+After the raw chunk-size parser fix, real CMS M169CHK connected and parsed the
+live GitHub advertisement through service 1, capability record 1, and 47 refs,
+then failed at HTTP-PARSE with state BODY DATA HDR REFS.
+
+A live exact-request probe showed GitHub returned one 18465-byte HTTP chunk,
+and ref 48 was an ordinary pkt-line at entity offset 4139:
+3ed766744532f54a464e91d1c7a5d2a2fe08ff06 refs/heads/m155-marker-only-gate.
+No protocol-special record occurs there.
+
+The actual bug was REXX variable sharing. Internal routines chunkfeed and
+pktfeed did not use PROCEDURE and both used generic variables WORK, TAKE, and
+AVAIL. Calling pktfeed from chunkfeed therefore overwrote chunkfeed's remaining
+HTTP buffer and TAKE count. On return, chunkfeed subtracted pktfeed's last TAKE
+value from CNEED instead of the HTTP byte count, eventually feeding HTTP chunk
+framing into the pkt-line parser.
+
+GITFETCH now uses disjoint cwork/ctake/cavail/cpiece variables in chunkfeed and
+pwork/ptake/pavail in pktfeed. Production fix
+0898a36f2d7c088710ff72397b0c4e9924917628; exact-line regression guard
+f3a5cfabf73fd87f609c7a8df507ce6e7e4ef89b. Actions run 1278 completed
+SUCCESS including M169, complete tree recovery, and native PACK/index staging.
+
+NEXT CMS STEP: upload only GITFETCH.EXEC and rerun M169CHK with the restored
+192.168.200.1:8443 stunnel listener active.
