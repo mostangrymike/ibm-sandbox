@@ -6200,3 +6200,19 @@ native REF PACK.
 NEXT REAL CMS GATE: upload GIT.EXEC, GITVREF.EXEC, and M167CHK.EXEC; run
 GIT LEVEL; run M167CHK. Existing M166 GITUPD.EXEC remains current. No GITWT,
 GITIMP, GITREC rebuild, manual REF2 edit, or GITRUN is required.
+
+
+## 2026-10-07 M167 FIRST TARGET RUN / VERIFIER WIDTH FIX
+
+M167 first target run reached child commit and CAS successfully. Disposable
+m167test advanced to child commit 93E05DA32194B9C61E26418F1A8E2417564C18AE,
+then post-CAS verification failed because the full ref proof exceeded the real
+CMS PIPE/STEM safe record width. The safety path CAS-rolled m167test back to
+its expected old commit before failure, and checker cleanup restored baseline
+REF2/worktree scratch state.
+
+GIT now performs the same verified lookup using short branch spelling so the
+captured proof remains within the target record width. M167CHK now preserves
+the command RC across cleanup. Fixes are 897fde0 and 35dad5b. Actions run 1251
+completed SUCCESS. Next CMS step: upload only GIT.EXEC and M167CHK.EXEC and
+rerun M167CHK. No manual REF2 cleanup is required.
