@@ -5,7 +5,7 @@ on:
     branches:
       - m165-staged-commit
     paths:
-      - 'scripts/apply-m165.py'
+      - 'scripts/m165/**'
 
 permissions:
   contents: write
