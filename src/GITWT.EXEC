@@ -291,13 +291,11 @@ bodyrecords:
 
 writework:
  parse arg wfn,wft,wfm
- 'FILEDEF WTOUT CLEAR'
- 'FILEDEF WTOUT DISK' wfn wft wfm '(RECFM F LRECL 80'
- if rc\=0 then return 'ERROR'
- if rec.0=0 then 'EXECIO 0 DISKW WTOUT 1 (FINIS'
- else 'EXECIO' rec.0 'DISKW WTOUT 1 (STEM REC. FINIS'
+ if rec.0=0 then,
+  'EXECIO 0 DISKW' wfn wft wfm '1 F 80 (FINIS'
+ else,
+  'EXECIO' rec.0 'DISKW' wfn wft wfm '1 F 80 (STEM REC. FINIS'
  wrc=rc
- 'FILEDEF WTOUT CLEAR'
  if wrc\=0 then do
   say 'GITWT: cannot write CMS workfile'
   return 'ERROR'
