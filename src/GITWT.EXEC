@@ -1,0 +1,557 @@
+/* M164: exact single-file CMS worktree checkout/status/add. */
+address cms
+parse arg command rest
+command=translate(command)
+
+if command='CHECKOUT' then do
+ wc=words(rest)
+ if wc<4 | wc>5 then do
+  say 'Usage: GITWT CHECKOUT ref path fn ft [fm]'
+  exit 4
+ end
+ spec=word(rest,1)
+ path=word(rest,2)
+ fn=translate(word(rest,3))
+ ft=translate(word(rest,4))
+ if wc=5 then fm=translate(word(rest,5))
+ else fm='A'
+ call validid fn
+ if result\='OK' then exit 4
+ call validid ft
+ if result\='OK' then exit 4
+ call validmode fm
+ if result\='OK' then exit 4
+ call toasciihex path
+ pathhex=result
+ if pathhex='ERROR' | length(pathhex)>60 then do
+  say 'GITWT: M164 path must be 1-30 ASCII bytes'
+  exit 4
+ end
+ call loadmap
+ if result\='OK' then exit 8
+ call findpath pathhex
+ pi=result
+ if pi>0 then do
+  if mapfn.pi\=fn | mapft.pi\=ft | mapfm.pi\=fm then do
+   say 'GITWT: path already mapped to another CMS file'
+   exit 8
+  end
+ end
+ call findfile fn,ft,fm
+ fi=result
+ if fi>0 & fi\=pi then do
+  say 'GITWT: CMS file already mapped to another Git path'
+  exit 8
+ end
+ 'STATE' fn ft fm
+ if rc=0 then do
+  say 'GITWT: checkout target exists; M164 refuses overwrite'
+  exit 8
+ end
+ if rc\=28 then do
+  say 'GITWT: cannot inspect checkout target RC' rc
+  exit 8
+ end
+ call readrefs
+ if result\='OK' then exit 8
+ call resolve spec
+ oid=result
+ if oid='ERROR' then exit 8
+ call bindnative
+ if result\='OK' then exit 8
+ drop out.
+ out.0=0
+ cmd='GITREC PATHFULLCAT GITFIX M15NEW' oid pathhex
+ 'PIPE CMS' cmd '| STEM out.'
+ grc=rc
+ if grc\=0 then do
+  say 'GITWT: authenticated checkout read failed RC' grc
+  exit grc
+ end
+ call parsepathout
+ if result\='OK' then exit 8
+ call bodyrecords body
+ if result\='OK' then exit 8
+ call writework fn,ft,fm
+ if result\='OK' then exit 8
+ call workoid fn,ft,fm,final,0
+ wo=result
+ if wo\=pathoid then do
+  'ERASE' fn ft fm
+  say 'GITWT: workfile round-trip OID mismatch'
+  exit 8
+ end
+ if pi=0 then do
+  if mapcount>=50 then do
+   'ERASE' fn ft fm
+   say 'GITWT: worktree map limit reached'
+   exit 8
+  end
+  mapcount=mapcount+1
+  pi=mapcount
+ end
+ mapfn.pi=fn
+ mapft.pi=ft
+ mapfm.pi=fm
+ maplf.pi=final
+ mapbase.pi=pathoid
+ mapstage.pi=pathoid
+ mappath.pi=pathhex
+ call savemap
+ if result\='OK' then do
+  'ERASE' fn ft fm
+  exit 8
+ end
+ say 'CHECKED OUT' path 'AS' fn ft fm
+ say 'WORKTREE OID' pathoid 'FINAL-LF' final
+ exit 0
+end
+
+if command='STATUS' then do
+ if strip(rest)\='' then do
+  say 'Usage: GIT STATUS'
+  exit 4
+ end
+ call loadmap
+ if result\='OK' then exit 8
+ if mapcount=0 then do
+  say 'STATUS NO TRACKED FILES'
+  exit 0
+ end
+ changed=0
+ staged=0
+ do i=1 to mapcount
+  call asciitocms mappath.i
+  p=result
+  if p='ERROR' then exit 8
+  'STATE' mapfn.i mapft.i mapfm.i
+  if rc=28 then do
+   state='DELETED'
+   work='-'
+   changed=changed+1
+  end
+  else if rc\=0 then exit 8
+  else do
+   call workoid mapfn.i,mapft.i,mapfm.i,maplf.i,0
+   work=result
+   if work='ERROR' then exit 8
+   if work=mapstage.i then do
+    if mapstage.i=mapbase.i then state='CLEAN'
+    else do
+     state='STAGED'
+     staged=staged+1
+    end
+   end
+   else do
+    changed=changed+1
+    if mapstage.i=mapbase.i then state='MODIFIED'
+    else do
+     state='STAGED+MODIFIED'
+     staged=staged+1
+    end
+   end
+  end
+  say 'STATUS' p state
+  say 'BASE' mapbase.i
+  say 'STAGE' mapstage.i
+  say 'WORK' work
+ end
+ say 'STATUS SUMMARY TRACKED' mapcount,
+     'CHANGED' changed 'STAGED' staged
+ exit 0
+end
+
+if command='ADD' then do
+ parse var rest path extra
+ if path='' | extra\='' then do
+  say 'Usage: GIT ADD path'
+  exit 4
+ end
+ call toasciihex path
+ pathhex=result
+ if pathhex='ERROR' | length(pathhex)>60 then exit 4
+ call loadmap
+ if result\='OK' then exit 8
+ call findpath pathhex
+ pi=result
+ if pi=0 then do
+  say 'GITWT: path is not checked out' path
+  exit 4
+ end
+ 'STATE' mapfn.pi mapft.pi mapfm.pi
+ if rc\=0 then do
+  say 'GITWT: mapped CMS file is absent' path
+  exit 8
+ end
+ call workoid mapfn.pi,mapft.pi,mapfm.pi,maplf.pi,1
+ wo=result
+ if wo='ERROR' then exit 8
+ oldstage=mapstage.pi
+ mapstage.pi=wo
+ call savemap
+ if result\='OK' then do
+  mapstage.pi=oldstage
+  exit 8
+ end
+ say 'ADDED' path wo
+ if wo=mapbase.pi then say 'STAGE MATCHES BASE'
+ else say 'STAGE DIFFERS FROM BASE'
+ exit 0
+end
+
+say 'GITWT: unknown command' command
+exit 4
+
+parsepathout:
+ closure=0
+ meta=0
+ begins=0
+ ends=0
+ indata=0
+ body=''
+ do oi=1 to out.0
+  line=out.oi
+  if line='COMMIT ROOT FULL CLOSURE VERIFIED' then closure=closure+1
+  else if word(line,1)='PATH' & word(line,2)='OBJECT' &,
+     word(line,3)='TYPE' then do
+   if meta | words(line)\=8 then return 'ERROR'
+   if word(line,4)\='3' | word(line,5)\='SIZE' |,
+      word(line,7)\='OID' then return 'ERROR'
+   pathsize=word(line,6)
+   pathoid=translate(word(line,8))
+   if datatype(pathsize,'W')\=1 | pathsize<0 | pathsize>65536 then,
+    return 'ERROR'
+   if length(pathoid)\=40 |,
+      verify(pathoid,'0123456789ABCDEF')\=0 then return 'ERROR'
+   meta=1
+  end
+  else if line='PATH DATA BEGIN' then do
+   if begins | indata then return 'ERROR'
+   begins=1
+   indata=1
+  end
+  else if line='PATH DATA END' then do
+   if \indata | ends then return 'ERROR'
+   ends=1
+   indata=0
+  end
+  else if indata then do
+   if word(line,1)\='PATH' | word(line,2)\='HEX' |,
+      words(line)\=3 then return 'ERROR'
+   h=translate(word(line,3))
+   if h='' | length(h)>64 | length(h)//2\=0 |,
+      verify(h,'0123456789ABCDEF')\=0 then return 'ERROR'
+   body=body||h
+  end
+ end
+ if closure\=1 | meta\=1 | begins\=1 | ends\=1 | indata then,
+  return 'ERROR'
+ if length(body)%2\=pathsize then return 'ERROR'
+ return 'OK'
+
+bodyrecords:
+ parse arg h
+ drop rec.
+ rec.0=0
+ final=0
+ if h\='' & right(h,2)='0A' then do
+  final=1
+  h=left(h,length(h)-2)
+ end
+ if h='' then return 'OK'
+ do forever
+  call bytepos '0A',h
+  bp=result
+  if bp=0 then do
+   part=h
+   h=''
+  end
+  else do
+   part=left(h,bp-1)
+   h=substr(h,bp+2)
+  end
+  call validtext part
+  if result\='OK' then do
+   say 'GITWT: checkout currently supports CMS text files only'
+   return 'ERROR'
+  end
+  if length(part)%2>80 then do
+   say 'GITWT: Git line exceeds CMS LRECL 80'
+   return 'ERROR'
+  end
+  call asciitocms part
+  txt=result
+  if txt='ERROR' then return 'ERROR'
+  rec.0=rec.0+1
+  n=rec.0
+  rec.n=txt
+  if bp=0 then leave
+ end
+ return 'OK'
+
+writework:
+ parse arg wfn,wft,wfm
+ 'FILEDEF WTOUT CLEAR'
+ 'FILEDEF WTOUT DISK' wfn wft wfm '(RECFM F LRECL 80'
+ if rc\=0 then return 'ERROR'
+ if rec.0=0 then 'EXECIO 0 DISKW WTOUT 1 (FINIS'
+ else 'EXECIO' rec.0 'DISKW WTOUT 1 (STEM REC. FINIS'
+ wrc=rc
+ 'FILEDEF WTOUT CLEAR'
+ if wrc\=0 then do
+  say 'GITWT: cannot write CMS workfile'
+  return 'ERROR'
+ end
+ return 'OK'
+
+workoid:
+ parse arg wfn,wft,wfm,wlf,write
+ if write then verb='WRITE-WORKFILE'
+ else verb='HASH-WORKFILE'
+ drop wh.
+ wh.0=0
+ 'PIPE CMS GIT' verb wfn wft wfm wlf '| STEM wh.'
+ wrc=rc
+ if wrc\=0 | wh.0\=1 then return 'ERROR'
+ x=translate(strip(wh.1))
+ if length(x)\=40 | verify(x,'0123456789ABCDEF')\=0 then,
+  return 'ERROR'
+ return x
+
+loadmap:
+ drop mapfn. mapft. mapfm. maplf.
+ drop mapbase. mapstage. mappath.
+ mapcount=0
+ 'STATE GITWORK REPO A'
+ mrc=rc
+ if mrc=28 then return 'OK'
+ if mrc\=0 then return 'ERROR'
+ drop wm.
+ 'EXECIO * DISKR GITWORK REPO A 1 (STEM WM. FINIS'
+ if rc\=0 | wm.0<2 then return 'ERROR'
+ if word(wm.1,1)\='WORK1' | words(wm.1)\=2 then return 'ERROR'
+ mapcount=word(wm.1,2)
+ if datatype(mapcount,'W')\=1 | mapcount<0 | mapcount>50 then,
+  return 'ERROR'
+ if wm.0\=2+mapcount*5 then return 'ERROR'
+ at=2
+ do mi=1 to mapcount
+  line=wm.at
+  if word(line,1)\='ENTRY' | word(line,2)\=mi |,
+     words(line)\=6 then return 'ERROR'
+  mapfn.mi=word(line,3)
+  mapft.mi=word(line,4)
+  mapfm.mi=word(line,5)
+  maplf.mi=word(line,6)
+  call validid mapfn.mi
+  if result\='OK' then return 'ERROR'
+  call validid mapft.mi
+  if result\='OK' then return 'ERROR'
+  call validmode mapfm.mi
+  if result\='OK' then return 'ERROR'
+  if maplf.mi\='0' & maplf.mi\='1' then return 'ERROR'
+  at=at+1
+  line=wm.at
+  if word(line,1)\='BASE' | word(line,2)\=mi |,
+     words(line)\=3 then return 'ERROR'
+  mapbase.mi=translate(word(line,3))
+  if length(mapbase.mi)\=40 |,
+     verify(mapbase.mi,'0123456789ABCDEF')\=0 then return 'ERROR'
+  at=at+1
+  line=wm.at
+  if word(line,1)\='STAGE' | word(line,2)\=mi |,
+     words(line)\=3 then return 'ERROR'
+  mapstage.mi=translate(word(line,3))
+  if length(mapstage.mi)\=40 |,
+     verify(mapstage.mi,'0123456789ABCDEF')\=0 then return 'ERROR'
+  at=at+1
+  line=wm.at
+  if word(line,1)\='PATH' | word(line,2)\=mi |,
+     words(line)\=3 then return 'ERROR'
+  mappath.mi=translate(word(line,3))
+  if mappath.mi='' | length(mappath.mi)>60 |,
+     length(mappath.mi)//2\=0 then return 'ERROR'
+  if verify(mappath.mi,'0123456789ABCDEF')\=0 then return 'ERROR'
+  at=at+1
+  if wm.at\='END' mi then return 'ERROR'
+  at=at+1
+ end
+ if wm.at\='WORKEND' mapcount then return 'ERROR'
+ return 'OK'
+
+savemap:
+ drop sw.
+ sw.1='WORK1' mapcount
+ at=2
+ do si=1 to mapcount
+  sw.at='ENTRY' si mapfn.si mapft.si mapfm.si maplf.si
+  at=at+1
+  sw.at='BASE' si mapbase.si
+  at=at+1
+  sw.at='STAGE' si mapstage.si
+  at=at+1
+  sw.at='PATH' si mappath.si
+  at=at+1
+  sw.at='END' si
+  at=at+1
+ end
+ sw.at='WORKEND' mapcount
+ sw.0=at
+ 'EXECIO' sw.0 'DISKW GITWORK REPO A 1 (STEM SW. FINIS'
+ if rc\=0 then do
+  say 'GITWT: cannot write worktree map'
+  return 'ERROR'
+ end
+ return 'OK'
+
+findpath:
+ parse arg wanted
+ do fi=1 to mapcount
+  if mappath.fi=wanted then return fi
+ end
+ return 0
+
+findfile:
+ parse arg wfn,wft,wfm
+ do fi=1 to mapcount
+  if mapfn.fi=wfn & mapft.fi=wft & mapfm.fi=wfm then return fi
+ end
+ return 0
+
+readrefs:
+ drop rr. refname. refoid.
+ headref=''
+ refcount=0
+ 'EXECIO * DISKR GITREF2 REPO A 1 (STEM RR. FINIS'
+ if rc\=0 | rr.0<3 | rr.1\='REF2 1' then return 'ERROR'
+ do ri=2 to rr.0
+  if word(rr.ri,1)='HEAD' then do
+   if words(rr.ri)\=2 | headref\='' then return 'ERROR'
+   headref=word(rr.ri,2)
+  end
+  else if word(rr.ri,1)='REF' then do
+   if words(rr.ri)\=3 then return 'ERROR'
+   name=word(rr.ri,2)
+   roid=translate(word(rr.ri,3))
+   if left(name,11)\='refs/heads/' then return 'ERROR'
+   if length(roid)\=40 |,
+      verify(roid,'0123456789ABCDEF')\=0 then return 'ERROR'
+   refcount=refcount+1
+   refname.refcount=name
+   refoid.refcount=roid
+  end
+  else return 'ERROR'
+ end
+ if left(headref,11)\='refs/heads/' then return 'ERROR'
+ return 'OK'
+
+resolve:
+ parse arg wanted
+ direct=translate(wanted)
+ if length(direct)=40 &,
+    verify(direct,'0123456789ABCDEF')=0 then return direct
+ if translate(wanted)='HEAD' then wanted=headref
+ else if left(wanted,11)\='refs/heads/' then,
+  wanted='refs/heads/'||wanted
+ do ri=1 to refcount
+  if refname.ri=wanted then return refoid.ri
+ end
+ say 'GITWT: ref not found' wanted
+ return 'ERROR'
+
+bindnative:
+ 'FILEDEF SEL0 DISK M15SL0 PTR A'
+ if rc\=0 then return 'ERROR'
+ 'FILEDEF SEL1 DISK M15SL1 PTR A'
+ if rc\=0 then return 'ERROR'
+ do bi=1 to 4
+  typ=word('STAGE INDEX SEEK GEN',bi)
+  dd=word('C0STG C0IDX C0SEEK C0GEN',bi)
+  'FILEDEF' dd 'DISK GITFIX' typ 'A'
+  if rc\=0 then return 'ERROR'
+  dd=word('C1STG C1IDX C1SEEK C1GEN',bi)
+  'FILEDEF' dd 'DISK M15NEW' typ 'A'
+  if rc\=0 then return 'ERROR'
+ end
+ return 'OK'
+
+validid:
+ parse upper arg id
+ if id='' | length(id)>8 then return 'ERROR'
+ if verify(id,'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')\=0 then,
+  return 'ERROR'
+ return 'OK'
+
+validmode:
+ parse upper arg mode
+ if length(mode)\=1 then return 'ERROR'
+ if verify(mode,'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')\=0 then,
+  return 'ERROR'
+ return 'OK'
+
+validtext:
+ parse arg vh
+ if length(vh)//2\=0 then return 'ERROR'
+ do vi=1 to length(vh) by 2
+  vb=x2d(substr(vh,vi,2))
+  if vb\=9 & (vb<32 | vb>126) then return 'ERROR'
+ end
+ return 'OK'
+
+bytepos:
+ parse arg needle,hex
+ needle=translate(needle)
+ do bp=1 to length(hex)-1 by 2
+  if translate(substr(hex,bp,2))=needle then return bp
+ end
+ return 0
+
+toasciihex:
+ parse arg text
+ e2a='000102031A091A7F1A1A1A0B0C0D0E0F'
+ e2a=e2a||'101112131A1A081A18191A1A1C1D1E1F'
+ e2a=e2a||'1A1A1C1A1A0A171B1A1A1A1A1A050607'
+ e2a=e2a||'1A1A161A1A1E1A041A1A1A1A14151A1A'
+ e2a=e2a||'20A6E180EB909FE2AB8B9B2E3C282B7C'
+ e2a=e2a||'26A9AA9CDBA599E3A89E21242A293B5E'
+ e2a=e2a||'2D2FDFDC9ADDDE989DACBA2C255F3E3F'
+ e2a=e2a||'D78894B0B1B2FCD6FB603A2340273D22'
+ e2a=e2a||'F861626364656667686996A4F3AFAEC5'
+ e2a=e2a||'8C6A6B6C6D6E6F7071729787CE93F1FE'
+ e2a=e2a||'C87E737475767778797AEFC0DA5BF2F9'
+ e2a=e2a||'B5B6FDB7B8B9E6BBBCBD8DD9BF5DD8C4'
+ e2a=e2a||'7B414243444546474849CBCABEE8ECED'
+ e2a=e2a||'7D4A4B4C4D4E4F505152A1ADF5F4A38F'
+ e2a=e2a||'5CE7535455565758595AA0858EE9E4D1'
+ e2a=e2a||'30313233343536373839B3F7F0FAA7FF'
+ tab=x2c(e2a)
+ bytes=xrange('00'x,'FF'x)
+ return c2x(translate(text,tab,bytes))
+
+asciitocms:
+ parse arg ah
+ if length(ah)//2\=0 | verify(translate(ah),
+    '0123456789ABCDEF')\=0 then return 'ERROR'
+ ascii=x2c(ah)
+ e2a='000102031A091A7F1A1A1A0B0C0D0E0F'
+ e2a=e2a||'101112131A1A081A18191A1A1C1D1E1F'
+ e2a=e2a||'1A1A1C1A1A0A171B1A1A1A1A1A050607'
+ e2a=e2a||'1A1A161A1A1E1A041A1A1A1A14151A1A'
+ e2a=e2a||'20A6E180EB909FE2AB8B9B2E3C282B7C'
+ e2a=e2a||'26A9AA9CDBA599E3A89E21242A293B5E'
+ e2a=e2a||'2D2FDFDC9ADDDE989DACBA2C255F3E3F'
+ e2a=e2a||'D78894B0B1B2FCD6FB603A2340273D22'
+ e2a=e2a||'F861626364656667686996A4F3AFAEC5'
+ e2a=e2a||'8C6A6B6C6D6E6F7071729787CE93F1FE'
+ e2a=e2a||'C87E737475767778797AEFC0DA5BF2F9'
+ e2a=e2a||'B5B6FDB7B8B9E6BBBCBD8DD9BF5DD8C4'
+ e2a=e2a||'7B414243444546474849CBCABEE8ECED'
+ e2a=e2a||'7D4A4B4C4D4E4F505152A1ADF5F4A38F'
+ e2a=e2a||'5CE7535455565758595AA0858EE9E4D1'
+ e2a=e2a||'30313233343536373839B3F7F0FAA7FF'
+ tab=x2c(e2a)
+ bytes=xrange('00'x,'FF'x)
+ cms=translate(ascii,bytes,tab)
+ call toasciihex cms
+ if translate(result)\=translate(ah) then return 'ERROR'
+ return cms
