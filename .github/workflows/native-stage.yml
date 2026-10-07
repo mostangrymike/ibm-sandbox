@@ -56,6 +56,10 @@ on:
       - 'src/GITFETCH.EXEC'
       - 'src/M169CHK.EXEC'
       - 'tests/test-m169-fetch-discovery.py'
+      - 'src/GITPOST.EXEC'
+      - 'src/M170CHK.EXEC'
+      - 'tests/test-m170-fetch-post.py'
+      - 'docs/M170.md'
       - 'docs/M169.md'
       - 'docs/M168.md'
       - 'docs/M167.md'
@@ -131,6 +135,10 @@ on:
       - 'src/GITFETCH.EXEC'
       - 'src/M169CHK.EXEC'
       - 'tests/test-m169-fetch-discovery.py'
+      - 'src/GITPOST.EXEC'
+      - 'src/M170CHK.EXEC'
+      - 'tests/test-m170-fetch-post.py'
+      - 'docs/M170.md'
       - 'docs/M169.md'
       - 'docs/M168.md'
       - 'docs/M167.md'
@@ -197,6 +205,8 @@ jobs:
         run: python3 tests/test-m168-current-commit.py
       - name: Check M169 generalized fetch discovery
         run: python3 tests/test-m169-fetch-discovery.py
+      - name: Check M170 dynamic upload pack POST
+        run: python3 tests/test-m170-fetch-post.py
       - name: Check combined compact M157 target gate
         run: sh tests/check-m157-gate.sh
       - name: Check neutral compiler EXEC source and F-disk setup
