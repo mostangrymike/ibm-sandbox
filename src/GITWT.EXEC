@@ -298,9 +298,17 @@ if command='COMMIT' then do
      '-T' stamp '-Z' zone '-M' message
  'PIPE CMS' cmd '| STEM co.'
  if rc\=0 then exit 8
- call stemoid 'co.'
- commit=result
- if commit='ERROR' then exit 8
+ found=0
+ commit=''
+ do coi=1 to co.0
+  candidate=translate(strip(co.coi))
+  if length(candidate)=40 &,
+     verify(candidate,'0123456789ABCDEF')=0 then do
+   found=found+1
+   commit=candidate
+  end
+ end
+ if found\=1 then exit 8
  address command 'EXEC GIT VERIFY-OBJECT' commit
  if rc\=0 then exit 8
  say 'COMMIT-STAGED PARENT' parent
