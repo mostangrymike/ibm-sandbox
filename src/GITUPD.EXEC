@@ -221,6 +221,19 @@ readrefs:
 
 restore:
  if bak.0<2 then return 'ERROR'
+ 'STATE GITREF2 REPO A'
+ rrc=rc
+ if rrc=0 then do
+  'ERASE GITREF2 REPO A'
+  if rc\=0 then do
+   say 'GITUPD: REF2 rollback erase failed'
+   return 'ERROR'
+  end
+ end
+ else if rrc\=28 then do
+  say 'GITUPD: REF2 rollback state failed' rrc
+  return 'ERROR'
+ end
  'EXECIO' bak.0 'DISKW GITREF2 REPO A 1 (STEM BAK. FINIS'
  if rc\=0 then do
   say 'GITUPD: REF2 rollback failed'
