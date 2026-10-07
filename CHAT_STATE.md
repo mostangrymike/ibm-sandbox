@@ -6086,3 +6086,33 @@ M165 STAGED COMMIT TARGET GATE PASS. M165 is REAL CMS TARGET-PROVEN.
 Next milestone M166 isolates modern REF2 compare-and-swap using a disposable
 branch ref. HEAD and refs/heads/main must remain unchanged. The retained M165
 commit D6FB8432692CF8EFBDC2DDA354425D8DCDC3A008 is the target candidate.
+
+
+## 2026-10-07 M166 HOST PASS / CMS REF2 CAS GATE NEXT
+
+M165 is REAL CMS TARGET-PROVEN. M166 isolates modern REF2 compare-and-swap.
+GIT/GITVREF are M166/M166. GIT UPDATE-REF now writes the active
+GITREF2 REPO A database instead of the obsolete GITREFS REPO A prototype.
+
+M166 requires an explicit expected-old OID. Git-style zero-OID semantics are
+used: old=000...000 creates only if absent; new=000...000 deletes only when
+the exact expected old OID matches. Stale comparisons return RC8 without a
+write. Nonzero targets must be locally present COMMIT objects and must pass
+GIT VERIFY-OBJECT. The symbolic HEAD target cannot be deleted.
+
+GITUPD snapshots the physical REF2 file before mutation and restores that exact
+snapshot if write/readback/post-write verification fails. M166CHK uses only
+refs/heads/m166test and retained M165 commit
+D6FB8432692CF8EFBDC2DDA354425D8DCDC3A008. It requires create-CAS success,
+protected original REF2 records unchanged, stale CAS RC8 with byte-identical
+REF2, exact delete-CAS success, and final REF2 byte-for-byte equality with the
+initial snapshot. HEAD and refs/heads/main are never targeted.
+
+GitHub Actions run 1239 completed SUCCESS on head
+ee2ecc622011656d20688469790e07be4551104b, including M166, M165, M164,
+64-KiB CATHEX/fallback, tree recovery, selector fuzz, staging/OID index, and
+native REF PACK.
+
+NEXT REAL CMS GATE: upload GIT.EXEC, GITVREF.EXEC, GITUPD.EXEC, and
+M166CHK.EXEC; run GIT LEVEL; run M166CHK. No GITWT/GITIMP/GITREC rebuild or
+GITRUN is required. Do not erase the retained M165 loose commit candidate.
