@@ -69,6 +69,8 @@ end
 r=Socket('Connect',s,'AF_INET' port ip)
 parse var r src rest
 if src\=0 then do
+ say 'GITFETCH: connect target' ip port
+ say 'GITFETCH: connect RC' src rest
  fail='CONNECT'
  call bad
 end
@@ -149,8 +151,10 @@ exit 0
 
 bad:
  say 'GITFETCH: discovery failed at' fail
- say 'GITFETCH: states' hstate cstate pstate pstage
- say 'GITFETCH: counts' service targetcount capseen refs total
+ if symbol('hstate')='VAR' then,
+  say 'GITFETCH: states' hstate cstate pstate pstage
+ if symbol('service')='VAR' then,
+  say 'GITFETCH: counts' service targetcount capseen refs total
  if s\='' then r=Socket('Close',s)
  r=Socket('Terminate')
  exit 8
