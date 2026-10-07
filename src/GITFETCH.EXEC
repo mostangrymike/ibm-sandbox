@@ -141,6 +141,7 @@ if capsb\=1 | capofs\=1 then do
  call bad
 end
 r=Socket('Terminate')
+say 'FETCH OID' targetoid
 say 'FETCH DISCOVERED' targetoid target
 say 'FETCH CAPABILITY SIDE-BAND-64K'
 say 'FETCH CAPABILITY OFS-DELTA'
