@@ -50,6 +50,7 @@ for protected in ("GITFIX STAGE", "GITFIX INDEX", "GITFIX SEEK",
 for needle in (
     "M164 CHECKOUT DIRECT RC0",
     "M164 INITIAL CLEAN MAP PASS",
+    "M164 VERIFIED IMPORT PASS",
     "M164 MODIFIED HASH PASS",
     "M164 STAGED MAP PASS",
     "M164 LOOSE OBJECT PASS",
@@ -59,6 +60,7 @@ for needle in (
     assert needle in chk
 assert "ERASE M164TST DATA A" in chk
 assert "ERASE GITWORK REPO A" in chk
+assert "address command 'GIT IMPORT-OBJECT' base" in chk
 assert "address command 'GIT ADD src/GITVREF.EXEC'" in chk
 
 for needle in (
