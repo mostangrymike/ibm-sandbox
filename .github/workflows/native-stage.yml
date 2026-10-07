@@ -44,6 +44,9 @@ on:
       - 'src/GITWT.EXEC'
       - 'src/M164CHK.EXEC'
       - 'tests/test-m164-worktree.py'
+      - 'src/M165CHK.EXEC'
+      - 'tests/test-m165-staged-commit.py'
+      - 'docs/M165.md'
       - 'src/M157GATE.EXEC'
       - 'tests/check-m157-gate.sh'
       - 'tests/check-readonly-gitrchk.sh'
@@ -102,6 +105,9 @@ on:
       - 'src/GITWT.EXEC'
       - 'src/M164CHK.EXEC'
       - 'tests/test-m164-worktree.py'
+      - 'src/M165CHK.EXEC'
+      - 'tests/test-m165-staged-commit.py'
+      - 'docs/M165.md'
       - 'src/M157GATE.EXEC'
       - 'tests/check-m157-gate.sh'
       - 'tests/check-readonly-gitrchk.sh'
@@ -153,6 +159,8 @@ jobs:
         run: python3 tests/test-m163-presence-horizon.py
       - name: Check M164 practical CMS worktree porcelain
         run: python3 tests/test-m164-worktree.py
+      - name: Check M165 staged commit object
+        run: python3 tests/test-m165-staged-commit.py
       - name: Check combined compact M157 target gate
         run: sh tests/check-m157-gate.sh
       - name: Check neutral compiler EXEC source and F-disk setup
