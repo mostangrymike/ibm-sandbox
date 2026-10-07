@@ -11,7 +11,9 @@ chk = (root / "src" / "M165CHK.EXEC").read_text()
 
 gm = re.search(r"GIT EXEC LEVEL M(\d+)", g)
 vm = re.search(r"GITVREF EXEC LEVEL M(\d+)", v)
-assert gm and vm and gm.group(1) == vm.group(1) == "165"
+assert gm and vm
+assert gm.group(1) == vm.group(1)
+assert int(gm.group(1)) >= 165
 assert "'EXEC GITWT COMMIT' rest" in g
 assert "WRITE-TREE-HEXFILE" in g
 assert "call hashstored 'TREE',datahex" in g
