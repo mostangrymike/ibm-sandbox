@@ -6375,3 +6375,26 @@ GitHub advertisement GET through 192.168.200.1:8443 and does not POST or
 download a PACK. Existing GITUPD/GITWT/GITIMP/GITREC do not change and no
 native rebuild or GITRUN is required. M170 will use the live advertised OID
 to generalize upload-pack POST.
+
+
+## 2026-10-07 M169 FIRST TARGET ATTEMPT / DIAGNOSTIC BUILD
+
+Real CMS ran GIT/GITVREF M169/M169 and M169CHK returned RC8 immediately with
+only M169 LIVE DISCOVERY FAIL RC 8. CPU/elapsed was approximately 0.03/0.03,
+so this was not a long socket timeout or completed GitHub advertisement read.
+The first GITFETCH implementation had a common fail-closed BAD path without a
+stage diagnostic, so the exact boundary could not be distinguished from the
+target log.
+
+GITFETCH now prints a bounded failure stage plus parser state/count summary for
+resolve, socket create, SO_ASCII, connect, send, receive, response limit,
+HTTP/parser failure, final framing, final advertisement, or final capability
+failure. No response body, credentials, or unbounded data are printed. Host
+guard commit c5c931bc4b9072c6522a3877fdae7e06f4fe684d and production diagnostic
+commit bf5b6576a6346d17fe8753232c080ca33c72611f are on main. Native-stage
+Actions run 1268 completed SUCCESS, including M169 and the full tree/PACK suite.
+
+NEXT CMS STEP: upload only GITFETCH.EXEC and rerun M169CHK. Do not refresh
+GIT/GITVREF/M169CHK or any native module. The new target output should include
+GITFETCH: discovery failed at <stage>, GITFETCH: states ..., and
+GITFETCH: counts ... if it still fails.
