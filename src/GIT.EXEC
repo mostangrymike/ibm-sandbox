@@ -391,6 +391,90 @@ if command = 'COMMIT-STAGED-REF' then do
    say 'COMMIT-STAGED-REF CAS PASS'
    exit 0
 end
+if command = 'COMMIT-CURRENT' then do
+   copts=strip(rest)
+   if copts='' then do
+      say 'Usage: GIT COMMIT-CURRENT -T seconds -Z zone -M message'
+      exit 4
+   end
+   drop hr.
+   'EXECIO * DISKR GITREF2 REPO A 1 (STEM HR. FINIS'
+   if rc\=0 | hr.0<3 | hr.1\='REF2 1' then do
+      say 'GIT: cannot read current REF2 state'
+      exit 8
+   end
+   headref=''
+   headcount=0
+   oldoid=''
+   oldcount=0
+   do hi=2 to hr.0
+      if word(hr.hi,1)='HEAD' then do
+         if words(hr.hi)\=2 then do
+            say 'GIT: invalid HEAD record'
+            exit 8
+         end
+         headcount=headcount+1
+         headref=word(hr.hi,2)
+      end
+   end
+   if headcount\=1 | left(headref,11)\='refs/heads/' then do
+      say 'GIT: invalid symbolic HEAD'
+      exit 8
+   end
+   do hi=2 to hr.0
+      if word(hr.hi,1)='REF' & word(hr.hi,2)=headref then do
+         if words(hr.hi)\=3 then do
+            say 'GIT: invalid current branch record'
+            exit 8
+         end
+         oldcount=oldcount+1
+         oldoid=translate(word(hr.hi,3))
+      end
+   end
+   if oldcount\=1 | length(oldoid)\=40 |,
+      verify(oldoid,'0123456789ABCDEF')\=0 then do
+      say 'GIT: current branch is unresolved'
+      exit 8
+   end
+   drop cc.
+   cc.0=0
+   cmd='EXEC GIT COMMIT-STAGED-REF' headref oldoid copts
+   'PIPE CMS' cmd '| STEM cc.'
+   ccrc=rc
+   do cci=1 to cc.0
+      say cc.cci
+   end
+   if ccrc\=0 then exit ccrc
+   newcount=0
+   newcommit=''
+   do cci=1 to cc.0
+      if word(cc.cci,1)='COMMIT-STAGED-REF' &,
+         word(cc.cci,2)='NEW' & words(cc.cci)=3 then do
+         newcount=newcount+1
+         newcommit=translate(word(cc.cci,3))
+      end
+   end
+   if newcount\=1 | length(newcommit)\=40 |,
+      verify(newcommit,'0123456789ABCDEF')\=0 then do
+      say 'GIT: integrated commit result framing failed'
+      exit 8
+   end
+   address command 'EXEC GITWT ACCEPT'
+   arc=rc
+   if arc\=0 then do
+      say 'GIT: worktree accept failed; rolling back current branch'
+      address command 'EXEC GIT UPDATE-REF' headref oldoid newcommit
+      if rc\=0 then say 'GIT: current branch rollback failed'
+      else say 'GIT: current branch rollback restored old commit'
+      exit 8
+   end
+   say 'COMMIT-CURRENT REF' headref
+   say 'COMMIT-CURRENT OLD' oldoid
+   say 'COMMIT-CURRENT NEW' newcommit
+   say 'COMMIT-CURRENT WORKTREE CLEAN'
+   exit 0
+end
+
 if command = 'CHECKOUT' | command = 'HEAD' then do
    'EXEC GITHEAD' command rest
    exit rc
