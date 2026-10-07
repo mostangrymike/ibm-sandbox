@@ -358,14 +358,15 @@ if command = 'COMMIT-STAGED-REF' then do
       say 'COMMIT-STAGED-REF CAS FAIL RC' urc
       exit urc
    end
+   vref=substr(cref,12)
    drop vr.
    vr.0=0
-   'PIPE CMS EXEC GIT VERIFY-REF' cref '| STEM vr.'
+   'PIPE CMS EXEC GIT VERIFY-REF' vref '| STEM vr.'
    vrc=rc
    verified=0
    do vri=1 to vr.0
       if word(vr.vri,1)='VERIFIED' & word(vr.vri,2)='REF' &,
-         word(vr.vri,3)=cref &,
+         word(vr.vri,3)=vref &,
          translate(word(vr.vri,4))=newcommit then verified=verified+1
    end
    if vrc\=0 | verified\=1 then do
