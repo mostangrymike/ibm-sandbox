@@ -31,6 +31,9 @@ for needle in (
     "OFS-DELTA",
     "targetcount\\=1",
     "M169 FETCH DISCOVERY PASS",
+    "GITFETCH: discovery failed at",
+    "GITFETCH: states",
+    "GITFETCH: counts",
 ):
     assert needle in src
 
