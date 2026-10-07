@@ -76,6 +76,13 @@ assert "expected='0FCE3C85DD9335CA7A4868E806F09B890D115F80'" in chk
 assert "word(m.2,6)\\='0'" in chk
 assert "cmd='EXEC GIT IMPORT-OBJECT' base" in chk
 assert "cmd='EXEC GIT VERIFY-OBJECT' base" in chk
+assert "call looseok base,basefn" in chk
+assert "call looseok newoid,objfn" in chk
+assert "M164 BASE LOOSE OBJECT REUSED" in chk
+assert "M164 MODIFIED LOOSE OBJECT REUSED" in chk
+assert "looseok:" in chk
+assert "if lrc=28 then return 28" in chk
+assert "if lrc\\=0 then return 8" in chk
 assert "final=word(m.2,6)" in chk
 assert "cmd='GIT HASH-WORKFILE M164TST DATA A' final" in chk
 assert "HASH-WORKFILE M164TST DATA A 1 | STEM h." not in chk
@@ -249,3 +256,21 @@ assert not [
     if re.fullmatch(r"[0-9A-F]{40}", line.strip().upper())
 ][1:]
 print("M164 CMS DIAGNOSTIC OID FILTER MODEL PASSED")
+
+# A valid content-addressed loose object may already exist from an earlier
+# failed run.  The checker reuses verified objects without claiming ownership,
+# while a missing object is owned by this run and cleaned up later.
+def loose_disposition(state_rc, verify_rc=None):
+    if state_rc == 28:
+        return "owned"
+    if state_rc != 0:
+        return "collision"
+    if verify_rc != 0:
+        return "collision"
+    return "reused"
+
+assert loose_disposition(28) == "owned"
+assert loose_disposition(0, 0) == "reused"
+assert loose_disposition(0, 8) == "collision"
+assert loose_disposition(12) == "collision"
+print("M164 VERIFIED LOOSE REUSE MODEL PASSED")
