@@ -60,7 +60,6 @@ for needle in (
     assert needle in chk
 assert "ERASE M164TST DATA A" in chk
 assert "ERASE GITWORK REPO A" in chk
-assert "address command 'GIT IMPORT-OBJECT' base" in chk
 assert "if rc=28 then return 0" in chk
 assert "if rc\\=28 then return 0" not in chk
 assert "cmd='EXEC GIT CHECKOUT-FILE HEAD" in chk
@@ -72,7 +71,6 @@ assert "cmd='EXEC GIT IMPORT-OBJECT' base" in chk
 assert "cmd='EXEC GIT VERIFY-OBJECT' base" in chk
 assert "address command 'GIT " not in chk
 assert "cmd='GIT " not in chk
-assert "address command 'GIT ADD src/GITVREF.EXEC'" in chk
 
 for needle in (
     "GITREC PATHFULLCAT GITFIX M15NEW",
