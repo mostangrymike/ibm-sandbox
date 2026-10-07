@@ -239,6 +239,11 @@ writerefs:
   wr.wn='REF' refname.wi refoid.wi
  end
  wr.0=wn
+ 'ERASE GITREF2 REPO A'
+ if rc\=0 then do
+  say 'GITUPD: cannot replace REF2 database'
+  return 'ERROR'
+ end
  'EXECIO' wr.0 'DISKW GITREF2 REPO A 1 (STEM WR. FINIS'
  if rc\=0 then do
   say 'GITUPD: cannot write REF2 database'
