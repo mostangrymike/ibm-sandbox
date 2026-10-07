@@ -6017,3 +6017,34 @@ earlier failed ADD. M164 is REAL CMS TARGET-PROVEN. Next roadmap work is the
 commit boundary: rebuild staged-path ancestor trees from the authenticated
 native snapshot, create a loose child commit, and keep ref movement isolated
 behind a later compare-and-swap milestone.
+
+
+## 2026-10-07 M165 HOST-READY STAGED COMMIT
+
+M165 staged commit object creation is now on main and host-green. Public
+GIT/GITVREF levels are M165. GIT COMMIT-STAGED routes to GITWT COMMIT.
+
+M165 intentionally supports exactly one staged tracked path first. It requires
+the CMS workfile to match the staged blob, resolves current HEAD through the
+verified REF2 bridge, authenticates the HEAD root closure with GITREC SHOWFULL,
+walks the staged path with authenticated GITREC TREE output, and rejects a
+stale checkout if the HEAD leaf no longer equals the worktree BASE OID.
+
+The staged blob is verified. Only the staged path's ancestor trees are rebuilt,
+bottom-up, preserving original entry order and all unchanged mode/name/OID
+tuples. GIT WRITE-TREE-HEXFILE hashes/stores those reconstructed raw trees.
+The current HEAD commit is imported as a loose parent, GIT COMMIT-TREE creates
+the child with explicit timestamp/timezone/message, and the child commit is
+verified before success.
+
+M165 does not move any ref. It emits COMMIT-STAGED REFS UNCHANGED. M165CHK
+snapshots GITREF2 before the operation and requires it to remain byte-for-byte
+unchanged afterward. The verified loose commit candidate is intentionally
+retained for the following ref compare-and-swap milestone.
+
+GitHub Actions run 1229 completed successfully on main, including M165, M164,
+64-KiB CATHEX/fallback, tree recovery, selector fuzz, staging/OID index, and
+native REF PACK. Real CMS target validation is the only remaining M165 gate.
+
+Required CMS runtime uploads for M165: GIT.EXEC, GITVREF.EXEC, GITWT.EXEC,
+and M165CHK.EXEC. Then run M165CHK.
