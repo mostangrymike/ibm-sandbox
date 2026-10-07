@@ -1,4 +1,4 @@
-/* M162: authenticated first-parent presence frontier distance. */
+/* M163: authenticated first-parent complete presence horizon. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M162'
+ say 'GITVREF EXEC LEVEL M163'
  exit 0
 end
 if command='STAMP' then do
@@ -46,7 +46,7 @@ if command\='RESOLVE' & command\='SHOW' & command\='LOG' &,
    command\='HISTFPDUR' & command\='HISTFPAGE' &,
    command\='HISTFPTIME' & command\='HISTFPRATIO' &,
    command\='HISTFPCOV' & command\='HISTFPFRONT' &,
-   command\='HISTFPFDIST' then do
+   command\='HISTFPFDIST' & command\='HISTFPHORIZ' then do
  say 'Usage: GITVREF command ref [depth] [path]'
  exit 4
 end
@@ -74,7 +74,7 @@ if command='HISTPATH' | command='HISTCHG' |,
    command='HISTFPDUR' | command='HISTFPAGE' |,
    command='HISTFPTIME' | command='HISTFPRATIO' |,
    command='HISTFPCOV' | command='HISTFPFRONT' |,
-   command='HISTFPFDIST' then do
+   command='HISTFPFDIST' | command='HISTFPHORIZ' then do
  if depth='' | extra='' then exit 4
 end
 else if extra\='' then exit 4
@@ -101,7 +101,8 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFPEVT' | command='HISTFPDUR' |,
    command='HISTFPAGE' | command='HISTFPTIME' |,
    command='HISTFPRATIO' | command='HISTFPCOV' |,
-   command='HISTFPFRONT' | command='HISTFPFDIST' then do
+   command='HISTFPFRONT' | command='HISTFPFDIST' |,
+   command='HISTFPHORIZ' then do
  if depth='' | length(depth)>2 | verify(depth,'0123456789')\=0 then exit 4
  if command='LOG' & depth+0>16 then exit 4
  if command='DAG' & depth+0>8 then exit 4
@@ -152,6 +153,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
  if command='HISTFPCOV' & depth+0>8 then exit 4
  if command='HISTFPFRONT' & depth+0>8 then exit 4
  if command='HISTFPFDIST' & depth+0>8 then exit 4
+ if command='HISTFPHORIZ' & depth+0>8 then exit 4
  if command='HISTPATH' | command='HISTCHG' |,
     command='HISTEDGE' | command='HISTDIFF' |,
     command='HISTSTATE' | command='HISTLOG' |,
@@ -175,7 +177,7 @@ if command='LOG' | command='DAG' | command='HISTPATH' |,
    command='HISTFPDUR' | command='HISTFPAGE' |,
    command='HISTFPTIME' | command='HISTFPRATIO' |,
    command='HISTFPCOV' | command='HISTFPFRONT' |,
-   command='HISTFPFDIST' then do
+   command='HISTFPFDIST' | command='HISTFPHORIZ' then do
   call pathasciihex extra
   if result='ERROR' then exit 4
   pathhex=result
@@ -224,7 +226,8 @@ else if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFPEVT' | command='HISTFPDUR' |,
    command='HISTFPAGE' | command='HISTFPTIME' |,
    command='HISTFPRATIO' | command='HISTFPCOV' |,
-   command='HISTFPFRONT' | command='HISTFPFDIST' then do
+   command='HISTFPFRONT' | command='HISTFPFDIST' |,
+   command='HISTFPHORIZ' then do
  cmd='GITREC HISTORYDAGSTATE GITFIX M15NEW' oid depth pathhex
  marker='HISTORYDAGSTATE FULL SNAPSHOTS VERIFIED'
 end
@@ -276,7 +279,8 @@ if command='HISTDIFF' | command='HISTSTATE' |,
    command='HISTFPEVT' | command='HISTFPDUR' |,
    command='HISTFPAGE' | command='HISTFPTIME' |,
    command='HISTFPRATIO' | command='HISTFPCOV' |,
-   command='HISTFPFRONT' | command='HISTFPFDIST' then do
+   command='HISTFPFRONT' | command='HISTFPFDIST' |,
+   command='HISTFPHORIZ' then do
  call statecheck
  if result\='OK' then exit 8
  if command='HISTSTATE' then do
@@ -449,6 +453,10 @@ if command='HISTDIFF' | command='HISTSTATE' |,
  end
  if command='HISTFPFDIST' then do
   call statefirstpresencefrontierdistance
+  exit result
+ end
+ if command='HISTFPHORIZ' then do
+  call statefirstpresencehorizon
   exit result
  end
  call statediff
@@ -3752,6 +3760,84 @@ statefirstpresencefrontierdistance:
   say 'HFPG P1 E' 0 NONE 0 0
  end
  say 'HISTORYFIRSTPRESENCEFRONTIERDISTANCE DATA END'
+ return 0
+
+
+preparepresencehorizon:
+ call preparepresencefrontierdistance
+ if result\='OK' then return 'ERROR'
+ phknown=0
+ phstep=0
+ phdepth=-1
+ phstepdist=0
+ phdepthdist=0
+ phauthspan=0
+ phcommspan=0
+ phhasnext=0
+ phnextstep=0
+ phnextdepth=-1
+ phedge=0
+ phstatus='NONE'
+ if pccnodes<1 then return 'OK'
+ if pftruncated=1 then do
+  if pfhasfrontier\=1 then return 'ERROR'
+  phstep=pfcompletestep
+ end
+ else phstep=fpcount
+ if phstep<1 | phstep>fpcount then return 'ERROR'
+ if pccnodes\=phstep then return 'ERROR'
+ hn=fpnode.1
+ cn=fpnode.phstep
+ phdepth=sdepth.cn
+ phstepdist=phstep-1
+ phdepthdist=phdepth-sdepth.hn
+ phauthspan=sauthorwhen.hn-sauthorwhen.cn
+ phcommspan=scommitwhen.hn-scommitwhen.cn
+ if phstepdist<0 | phdepthdist<0 then return 'ERROR'
+ phknown=1
+ if pftruncated=1 then do
+  phhasnext=1
+  phnextstep=pfstart
+  phnextdepth=pfstartdepth
+  phedge=pffrontieredge
+  phstatus=pffrontierstatus
+  if phnextstep\=phstep+1 then return 'ERROR'
+  if phedge\=phstep then return 'ERROR'
+ end
+ return 'OK'
+
+
+statefirstpresencehorizon:
+ call preparepresencehorizon
+ if result\='OK' then return 8
+ call emitverified
+ say 'HISTORYFIRSTPRESENCEHORIZON FULL SNAPSHOTS VERIFIED'
+ say 'HISTORYFIRSTPRESENCEHORIZON DATA BEGIN'
+ say 'HISTORYFIRSTPRESENCEHORIZON AVAILABLE' phknown
+ say 'HISTORYFIRSTPRESENCEHORIZON COMPLETE NODES' pccnodes
+ if phknown=1 then do
+  say 'HISTORYFIRSTPRESENCEHORIZON COMPLETE THROUGH STEP' phstep,
+      'DEPTH' phdepth
+  say 'HISTORYFIRSTPRESENCEHORIZON STEP DISTANCE' phstepdist
+  say 'HISTORYFIRSTPRESENCEHORIZON DEPTH DISTANCE' phdepthdist
+  say 'HISTORYFIRSTPRESENCEHORIZON AUTHOR SECONDS' phauthspan
+  say 'HISTORYFIRSTPRESENCEHORIZON COMMITTER SECONDS' phcommspan
+  say 'HISTORYFIRSTPRESENCEHORIZON HAS NEXT INCOMPLETE' phhasnext
+  if phhasnext=1 then do
+   say 'HISTORYFIRSTPRESENCEHORIZON NEXT INCOMPLETE STEP' phnextstep,
+       'DEPTH' phnextdepth
+   say 'HISTORYFIRSTPRESENCEHORIZON FRONTIER EDGE' phedge,
+       'STATUS' phstatus
+  end
+  say 'HFPH P1 S' phknown phstep phdepth phstepdist,
+      phdepthdist phauthspan phcommspan
+  say 'HFPH P1 F' phhasnext phnextstep phnextdepth phedge phstatus
+ end
+ else do
+  say 'HFPH P1 S' 0 0 -1 0 0 0 0
+  say 'HFPH P1 F' 0 0 -1 0 NONE
+ end
+ say 'HISTORYFIRSTPRESENCEHORIZON DATA END'
  return 0
 
 
