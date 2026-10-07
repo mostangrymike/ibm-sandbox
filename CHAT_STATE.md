@@ -6168,3 +6168,35 @@ M166 is REAL CMS TARGET-PROVEN.
 Next milestone M167 integrates the two proven write boundaries: create a staged
 child commit and CAS a disposable branch from its expected parent to that new
 commit in one porcelain operation. HEAD and refs/heads/main remain protected.
+
+
+## 2026-10-07 M167 HOST PASS / CMS INTEGRATED COMMIT-REF GATE NEXT
+
+M166 is REAL CMS TARGET-PROVEN. M167 composes the proven M165 staged commit
+object path with the proven M166 REF2 CAS updater into one command:
+GIT COMMIT-STAGED-REF ref expected-old -T seconds -Z zone -M message.
+
+The command captures the M165 commit output, requires exactly one staged parent
+and one staged commit OID, and requires the staged parent to equal the caller's
+expected-old OID before attempting any ref write. It then delegates the move to
+GIT UPDATE-REF using that exact expected old value, verifies the moved ref
+through GIT VERIFY-REF / GITVREF, and attempts an exact CAS rollback to the
+expected old OID if post-CAS verification fails.
+
+M167CHK uses only refs/heads/m167test. It snapshots GITREF2, initializes the
+disposable branch at current HEAD, checks out/stages a deterministic
+src/GIT.EXEC change, runs the integrated command, requires every original REF2
+record to remain unchanged while only m167test advances to a new verified
+commit, then deletes the disposable ref and requires GITREF2 byte-for-byte to
+match its initial snapshot. HEAD and refs/heads/main are never moved. Because
+HEAD remains main, STATUS is intentionally still STAGED after the disposable
+branch advances. The integrated loose commit is retained for later milestones.
+
+GIT/GITVREF are M167/M167. GitHub Actions run 1249 completed SUCCESS on head
+edab2e4be8f801abbeffb4626b5e3a5b88bed78f, including M167, M166, M165,
+M164, CATHEX/fallback, tree recovery, selector fuzz, staging/OID index, and
+native REF PACK.
+
+NEXT REAL CMS GATE: upload GIT.EXEC, GITVREF.EXEC, and M167CHK.EXEC; run
+GIT LEVEL; run M167CHK. Existing M166 GITUPD.EXEC remains current. No GITWT,
+GITIMP, GITREC rebuild, manual REF2 edit, or GITRUN is required.
