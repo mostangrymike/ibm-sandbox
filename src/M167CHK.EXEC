@@ -124,7 +124,8 @@ do i=1 to rb.0
   exit 8
  end
 end
-line=post.post.0
+last=post.0
+line=post.last
 if word(line,1)\='REF' | word(line,2)\=testref then do
  call cleanup
  say 'M167 DISPOSABLE REF LOST'
