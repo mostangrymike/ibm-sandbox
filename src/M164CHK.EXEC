@@ -161,7 +161,7 @@ exit 0
 absent:
  parse arg afn,aft,afm
  'STATE' afn aft afm
- if rc\=28 then return 0
+ if rc=28 then return 0
  say 'M164: expected absent' afn aft afm 'RC' rc
  return 8
 
