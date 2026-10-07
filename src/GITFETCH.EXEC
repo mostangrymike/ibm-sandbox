@@ -275,8 +275,15 @@ pktfeed:
    if length(phdr)<8 then iterate
    call pktlen phdr
    pn=result
+   if pn='ERROR' then do
+    say 'GITFETCH: bad pkt hdr' phdr 'REFS' refs 'CNEED' cneed
+    return 'ERROR'
+   end
+   if pn=1 | pn=2 | pn<4 then do
+    say 'GITFETCH: bad pkt len' pn phdr 'REFS' refs 'CNEED' cneed
+    return 'ERROR'
+   end
    phdr=''
-   if pn='ERROR' then return 'ERROR'
    if pn=0 then do
     if pstage='EXPECT' then pstage='REFS'
     else if pstage='REFS' then do
@@ -291,9 +298,11 @@ pktfeed:
     else return 'ERROR'
     iterate
    end
-   if pn=1 | pn=2 | pn<4 then return 'ERROR'
    pneed=pn-4
-   if pneed<1 | pneed>4096 then return 'ERROR'
+   if pneed<1 | pneed>4096 then do
+    say 'GITFETCH: pkt payload bound' pneed 'REFS' refs 'CNEED' cneed
+    return 'ERROR'
+   end
    ppay=''
    pstate='PAY'
   end
