@@ -1,0 +1,75 @@
+name: M169 live wire probe
+
+on:
+  push:
+    branches:
+      - m169-wire-probe
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch raw GitHub advertisement
+        run: |
+          set -euo pipefail
+          curl --http1.1 --raw -sS -D /tmp/hdr -o /tmp/body.raw             'https://github.com/mostangrymike/ibm-sandbox.git/info/refs?service=git-upload-pack'
+          python3 - <<'PY'
+          from pathlib import Path
+          raw=Path('/tmp/body.raw').read_bytes()
+          print('RAW_BYTES', len(raw))
+          print('RAW_TAIL', raw[-96:].hex().upper())
+          out=bytearray()
+          i=0
+          chunks=[]
+          while True:
+              j=raw.find(b'\r\n', i)
+              if j < 0:
+                  raise SystemExit('NO_SIZE_CRLF')
+              line=raw[i:j]
+              size=int(line.split(b';',1)[0],16)
+              i=j+2
+              if size == 0:
+                  print('ZERO_CHUNK_AT', i)
+                  print('AFTER_ZERO', raw[i:].hex().upper())
+                  break
+              if i+size+2 > len(raw):
+                  raise SystemExit('SHORT_CHUNK')
+              chunks.append(size)
+              out += raw[i:i+size]
+              i += size
+              if raw[i:i+2] != b'\r\n':
+                  raise SystemExit('BAD_CHUNK_CRLF')
+              i += 2
+          print('CHUNKS', len(chunks), 'LAST', chunks[-8:])
+          print('ENTITY_BYTES', len(out))
+          print('ENTITY_TAIL', bytes(out[-128:]).hex().upper())
+          # Parse pkt-lines only enough to locate final flush and any tail.
+          p=0
+          pkt=0
+          flushes=[]
+          while p < len(out):
+              if p+4 > len(out):
+                  print('TRAIL_SHORT_HDR', p, out[p:].hex().upper())
+                  break
+              hdr=bytes(out[p:p+4])
+              try:
+                  n=int(hdr,16)
+              except ValueError:
+                  print('TRAIL_NONHEX_HDR', p, hdr.hex().upper(), out[p:p+64].hex().upper())
+                  break
+              if n == 0:
+                  flushes.append(p)
+                  pkt += 1
+                  p += 4
+                  print('FLUSH', len(flushes), 'AT', p-4, 'REMAIN', len(out)-p)
+                  if len(flushes) >= 2:
+                      print('POST_FINAL_FLUSH', bytes(out[p:]).hex().upper())
+                      break
+                  continue
+              if n < 4 or p+n > len(out):
+                  print('BAD_PKT', p, n, len(out)-p)
+                  break
+              pkt += 1
+              p += n
+          print('PKTS_SEEN', pkt, 'FLUSHES', len(flushes))
+          PY
