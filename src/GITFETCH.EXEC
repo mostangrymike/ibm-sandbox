@@ -210,15 +210,19 @@ chunkfeed:
    if right(cline,4)='0D0A' then do
     ch=left(cline,length(cline)-4)
     cline=''
-    call asciitocms ch
-    ct=result
-    if ct='ERROR' then return 'ERROR'
-    parse var ct cs ';' .
-    cs=strip(cs)
-    if cs='' | length(cs)>8 |,
-       verify(translate(cs),'0123456789ABCDEF')\=0 then,
+    ep=bytepos('3B',ch)
+    if ep>0 then ch=left(ch,ep-1)
+    if ch='' | length(ch)//2\=0 | length(ch)>16 then,
        return 'ERROR'
-    cneed=x2d(cs)
+    cneed=0
+    do cj=1 to length(ch) by 2
+     cv=x2d(substr(ch,cj,2))
+     if cv>=48 & cv<=57 then cn=cv-48
+     else if cv>=65 & cv<=70 then cn=cv-55
+     else if cv>=97 & cv<=102 then cn=cv-87
+     else return 'ERROR'
+     cneed=cneed*16+cn
+    end
     if cneed>1048576 then return 'ERROR'
     if cneed=0 then do
      cstate='DONE'
