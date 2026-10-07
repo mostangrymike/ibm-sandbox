@@ -34,6 +34,8 @@ for needle in (
     "GITFETCH: discovery failed at",
     "GITFETCH: states",
     "GITFETCH: counts",
+    "GITFETCH: connect target",
+    "GITFETCH: connect RC",
 ):
     assert needle in src
 
