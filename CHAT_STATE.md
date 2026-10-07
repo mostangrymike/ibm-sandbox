@@ -6443,3 +6443,31 @@ restore both tap0 IPv4 addressing and the stunnel process across reboot.
 NEXT TARGET STEP: rerun M169CHK with the listener active. If the latest
 diagnostic GITFETCH.EXEC is already uploaded, no additional CMS transfer is
 needed.
+
+
+## 2026-10-07 M169 HTTP-PARSE ROOT CAUSE / RAW CHUNK PARSER FIX
+
+After restoring tap0 IPv4 and the stunnel listener, real CMS M169CHK connected
+and parsed nearly the complete live GitHub advertisement: HTTP BODY state,
+service 1, requested target 1, capability record 1, and 250 refs. It then
+failed at HTTP-PARSE with Git pkt state DONE while the HTTP chunk decoder still
+believed it was inside DATA.
+
+A one-off GitHub Actions wire probe fetched the same public info/refs endpoint
+with curl --http1.1 --raw. The current response had two HTTP chunks and the
+decoded Git entity ended exactly at the second 0000 flush with zero bytes
+after it. The Git protocol terminal framing assumption was therefore correct.
+
+The old target-proven M12 GIT12CHK decoder parses HTTP chunk sizes directly
+from raw ASCII bytes, converting each 0-9/A-F/a-f byte to a nibble. M169 had
+instead converted the size text to CMS characters and then passed that string
+to X2D. M169 now reuses the M12 raw-byte nibble algorithm while preserving the
+M169 1 MiB chunk bound and chunk-extension handling.
+
+Production fix f210760ad2cf90fb3fe069d8dc824233f553b27d and guard
+eb31f9ef487f6220c06075c5ae5c816e80af2bb5 are on main. Actions run 1274
+completed SUCCESS including M169 and the full native tree/PACK suite.
+
+NEXT CMS STEP: upload only GITFETCH.EXEC and rerun M169CHK. The stunnel
+listener must remain active on 192.168.200.1:8443. No GIT/GITVREF/M169CHK or
+native-module refresh is required.
