@@ -49,18 +49,33 @@ do i=1 to out.0
    say 'GITIMP: duplicate CATHEX metadata'
    exit 8
   end
-  if words(line)<12 then do
+  mline=line
+  mi=i+1
+  do while mi<=out.0 & out.mi\='OBJECT DATA BEGIN'
+   if length(mline)+length(out.mi)>200 then leave
+   mline=mline||out.mi
+   mi=mi+1
+  end
+  mline=space(mline,0)
+  moid=''
+  mobj=''
+  typ=''
+  size=''
+  prefix=''
+  parse var mline 'SEEKOBJECTOID' moid 'OBJ' mobj,
+       'TYPE' typ 'SIZE' size 'PREFIX' prefix
+  if moid\=oid | datatype(mobj,'W')\=1 |,
+     mobj<1 | mobj>1808 | prefix='' then do
    say 'GITIMP: malformed CATHEX metadata'
    exit 8
   end
-  if word(line,4)\=oid | word(line,5)\='OBJ' |,
-     word(line,7)\='TYPE' | word(line,9)\='SIZE' |,
-     word(line,11)\='PREFIX' then do
-   say 'GITIMP: CATHEX metadata fields mismatch'
-   exit 8
+  if prefix\='-' then do
+   if length(prefix)>32 | length(prefix)//2\=0 |,
+      verify(prefix,'0123456789ABCDEF')\=0 then do
+    say 'GITIMP: malformed CATHEX prefix'
+    exit 8
+   end
   end
-  typ=word(line,8)
-  size=word(line,10)
   if datatype(typ,'W')\=1 | typ<1 | typ>4 then do
    say 'GITIMP: invalid CATHEX object type'
    exit 8
