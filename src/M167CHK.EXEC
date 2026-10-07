@@ -1,0 +1,237 @@
+/* M167: integrated staged commit plus disposable ref CAS gate. */
+address cms
+zeros='0000000000000000000000000000000000000000'
+testref='refs/heads/m167test'
+dirty=0
+
+call absent 'M167TST','DATA','A'
+if result\=0 then exit 8
+call absent 'GITWORK','REPO','A'
+if result\=0 then exit 8
+call absent 'GITTREE','REPO','A'
+if result\=0 then exit 8
+
+drop rb.
+'EXECIO * DISKR GITREF2 REPO A 1 (STEM RB. FINIS'
+if rc\=0 | rb.0<3 then do
+ say 'M167 REF2 SNAPSHOT FAIL'
+ exit 8
+end
+headref=''
+head=''
+hcount=0
+tcount=0
+do i=1 to rb.0
+ if word(rb.i,1)='HEAD' then do
+  headref=word(rb.i,2)
+  hcount=hcount+1
+ end
+ if word(rb.i,1)='REF' & word(rb.i,2)=testref then tcount=tcount+1
+end
+if hcount\=1 | tcount\=0 then do
+ say 'M167 REF2 PREFLIGHT FAIL'
+ exit 8
+end
+do i=1 to rb.0
+ if word(rb.i,1)='REF' & word(rb.i,2)=headref then do
+  head=translate(word(rb.i,3))
+ end
+end
+if length(head)\=40 | verify(head,'0123456789ABCDEF')\=0 then do
+ say 'M167 HEAD RESOLUTION FAIL'
+ exit 8
+end
+say 'M167 REF2 BASELINE PASS' head
+
+cmd='EXEC GIT UPDATE-REF' testref head zeros
+address command cmd
+if rc\=0 then do
+ say 'M167 DISPOSABLE REF CREATE FAIL'
+ exit 8
+end
+dirty=1
+say 'M167 DISPOSABLE REF INITIALIZED'
+
+drop setup.
+'EXECIO * DISKR GITREF2 REPO A 1 (STEM SETUP. FINIS'
+if rc\=0 | setup.0\=rb.0+1 then do
+ call cleanup
+ say 'M167 SETUP SNAPSHOT FAIL'
+ exit 8
+end
+do i=1 to rb.0
+ if setup.i\=rb.i then do
+  call cleanup
+  say 'M167 SETUP CHANGED PROTECTED REF2'
+  exit 8
+ end
+end
+last=setup.0
+if setup.last\='REF' testref head then do
+ call cleanup
+ say 'M167 SETUP REF RECORD FAIL'
+ exit 8
+end
+
+cmd='EXEC GIT CHECKOUT-FILE HEAD src/GIT.EXEC M167TST DATA A'
+address command cmd
+if rc\=0 then do
+ call cleanup
+ say 'M167 CHECKOUT FAIL'
+ exit 8
+end
+
+drop t.
+t.1='M167 COMMIT REF'
+t.0=1
+'EXECIO 1 DISKW M167TST DATA A 1 (STEM T. FINIS'
+if rc\=0 then do
+ call cleanup
+ say 'M167 MODIFY FAIL'
+ exit 8
+end
+
+address command 'EXEC GIT ADD src/GIT.EXEC'
+if rc\=0 then do
+ call cleanup
+ say 'M167 ADD FAIL'
+ exit 8
+end
+say 'M167 STAGED CHANGE PASS'
+
+cmd='EXEC GIT COMMIT-STAGED-REF' testref head,
+    '-T 3 -Z +0000 -M M167_target'
+address command cmd
+crc=rc
+if crc\=0 then do
+ call cleanup
+ say 'M167 INTEGRATED COMMIT FAIL RC' crc
+ exit 8
+end
+say 'M167 INTEGRATED COMMIT RC0'
+
+drop post.
+'EXECIO * DISKR GITREF2 REPO A 1 (STEM POST. FINIS'
+if rc\=0 | post.0\=setup.0 then do
+ call cleanup
+ say 'M167 POST REF2 READ FAIL'
+ exit 8
+end
+do i=1 to rb.0
+ if post.i\=rb.i then do
+  call cleanup
+  say 'M167 PROTECTED REF2 CHANGED'
+  exit 8
+ end
+end
+line=post.post.0
+if word(line,1)\='REF' | word(line,2)\=testref then do
+ call cleanup
+ say 'M167 DISPOSABLE REF LOST'
+ exit 8
+end
+newcommit=translate(word(line,3))
+if length(newcommit)\=40 |,
+   verify(newcommit,'0123456789ABCDEF')\=0 | newcommit=head then do
+ call cleanup
+ say 'M167 NEW COMMIT REF FAIL'
+ exit 8
+end
+say 'M167 DISPOSABLE REF ADVANCED' newcommit
+
+address command 'EXEC GIT VERIFY-OBJECT' newcommit
+if rc\=0 then do
+ call cleanup
+ say 'M167 NEW COMMIT VERIFY FAIL'
+ exit 8
+end
+say 'M167 NEW COMMIT VERIFIED'
+
+address command 'EXEC GIT STATUS'
+if rc\=0 then do
+ call cleanup
+ say 'M167 POST COMMIT STATUS FAIL'
+ exit 8
+end
+say 'M167 HEAD WORKTREE REMAINS STAGED'
+
+cmd='EXEC GIT UPDATE-REF' testref zeros newcommit
+address command cmd
+if rc\=0 then do
+ call cleanup
+ say 'M167 DISPOSABLE REF DELETE FAIL'
+ exit 8
+end
+
+drop rf.
+'EXECIO * DISKR GITREF2 REPO A 1 (STEM RF. FINIS'
+if rc\=0 | rf.0\=rb.0 then do
+ call cleanup
+ say 'M167 REF2 RESTORE READ FAIL'
+ exit 8
+end
+do i=1 to rb.0
+ if rf.i\=rb.i then do
+  call cleanup
+  say 'M167 REF2 NOT RESTORED'
+  exit 8
+ end
+end
+dirty=0
+say 'M167 REF2 BYTE RESTORE PASS'
+
+call cleanup
+if result\=0 then do
+ say 'M167 CLEANUP FAIL'
+ exit 8
+end
+address command 'EXEC GIT VERIFY-OBJECT' newcommit
+if rc\=0 then do
+ say 'M167 RETAINED COMMIT LOST'
+ exit 8
+end
+say 'M167 RETAINED INTEGRATED COMMIT' newcommit
+say 'M167 COMMIT TO REF TARGET GATE PASS'
+exit 0
+
+absent:
+ parse arg afn,aft,afm
+ 'STATE' afn aft afm
+ if rc=28 then return 0
+ say 'M167: expected absent' afn aft afm 'RC' rc
+ return 8
+
+cleanup:
+ crc=0
+ if dirty then do
+  'STATE GITREF2 REPO A'
+  src=rc
+  if src=0 then do
+   'ERASE GITREF2 REPO A'
+   if rc\=0 then crc=8
+  end
+  else if src\=28 then crc=8
+  if crc=0 then do
+   'EXECIO' rb.0 'DISKW GITREF2 REPO A 1 (STEM RB. FINIS'
+   if rc\=0 then crc=8
+  end
+ end
+ 'STATE M167TST DATA A'
+ if rc=0 then do
+  'ERASE M167TST DATA A'
+  if rc\=0 then crc=8
+ end
+ else if rc\=28 then crc=8
+ 'STATE GITWORK REPO A'
+ if rc=0 then do
+  'ERASE GITWORK REPO A'
+  if rc\=0 then crc=8
+ end
+ else if rc\=28 then crc=8
+ 'STATE GITTREE REPO A'
+ if rc=0 then do
+  'ERASE GITTREE REPO A'
+  if rc\=0 then crc=8
+ end
+ else if rc\=28 then crc=8
+ return crc
