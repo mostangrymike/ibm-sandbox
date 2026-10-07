@@ -6398,3 +6398,29 @@ NEXT CMS STEP: upload only GITFETCH.EXEC and rerun M169CHK. Do not refresh
 GIT/GITVREF/M169CHK or any native module. The new target output should include
 GITFETCH: discovery failed at <stage>, GITFETCH: states ..., and
 GITFETCH: counts ... if it still fails.
+
+
+## 2026-10-07 M169 CONNECT BOUNDARY / STUNNEL LISTENER CHECK
+
+Second real CMS M169CHK isolated the failure to TCP CONNECT before any HTTP
+send or parser state. Target is 192.168.200.1:8443, the exact same private TAP
+listener and Socket('Connect',s,'AF_INET' port ip) shape target-proven by M12.
+Elapsed time remained about 0.04 seconds, consistent with an immediate connect
+failure rather than a long routing timeout.
+
+Open issue #5 remains relevant: the proven EC2 stunnel bridge was started
+manually with sudo stunnel /etc/stunnel/github.conf and automatic restart
+across EC2/Debian reboot was never configured or target-proven. The issue now
+records the M169 symptom without claiming listener absence until checked.
+
+GITFETCH commit 68c892fcbf6b14680f9c15bc581fe50f2440b8e5 reports the exact
+connect target and Socket Connect return code/rest on target and suppresses
+uninitialized parser-state diagnostics before connect. Guard commit
+a6e72ce4e31c5f8816a90ca3d8d455e956921a7f is host green. Actions run 1270
+completed SUCCESS including M169 and the full native tree/PACK suite.
+
+NEXT TARGET ACTION: on EC2 check whether 192.168.200.1:8443 is listening.
+If absent, restart the target-proven bridge with
+sudo stunnel /etc/stunnel/github.conf, verify the listener, then rerun M169CHK.
+Also upload latest GITFETCH.EXEC before rerun so any remaining CONNECT failure
+prints its exact socket return code.
