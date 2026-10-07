@@ -80,8 +80,9 @@ else do
    exit 8
   end
   do i=slot to refcount-1
-   refname.i=refname.i+1
-   refoid.i=refoid.i+1
+   ni=i+1
+   refname.i=refname.ni
+   refoid.i=refoid.ni
   end
   drop refname.refcount refoid.refcount
   refcount=refcount-1
