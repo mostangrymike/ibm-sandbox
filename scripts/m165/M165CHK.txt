@@ -1,0 +1,129 @@
+/* M165: disposable staged commit object gate; refs stay unchanged. */
+address cms
+call absent 'M165TST','DATA','A'
+if result\=0 then exit 8
+call absent 'GITWORK','REPO','A'
+if result\=0 then exit 8
+call absent 'GITTREE','REPO','A'
+if result\=0 then exit 8
+say 'M165 DISPOSABLE TARGETS ABSENT'
+
+drop rb.
+'EXECIO * DISKR GITREF2 REPO A 1 (STEM RB. FINIS'
+if rc\=0 then do
+ say 'M165 REF SNAPSHOT FAIL'
+ exit 8
+end
+
+cmd='EXEC GIT CHECKOUT-FILE HEAD src/GIT.EXEC M165TST DATA A'
+address command cmd
+if rc\=0 then do
+ call cleanup
+ say 'M165 CHECKOUT FAIL'
+ exit 8
+end
+
+drop t.
+t.1='M165 COMMIT STAGED'
+t.0=1
+'EXECIO 1 DISKW M165TST DATA A 1 (STEM T. FINIS'
+if rc\=0 then do
+ call cleanup
+ say 'M165 MODIFY FAIL'
+ exit 8
+end
+
+address command 'EXEC GIT ADD src/GIT.EXEC'
+if rc\=0 then do
+ call cleanup
+ say 'M165 ADD FAIL'
+ exit 8
+end
+say 'M165 STAGED CHANGE PASS'
+
+address command 'EXEC GIT STATUS'
+if rc\=0 then do
+ call cleanup
+ say 'M165 STAGED STATUS FAIL'
+ exit 8
+end
+
+cmd='EXEC GIT COMMIT-STAGED -T 1 -Z +0000 -M M165_target'
+address command cmd
+crc=rc
+if crc\=0 then do
+ call cleanup
+ say 'M165 COMMIT FAIL RC' crc
+ exit 8
+end
+say 'M165 COMMIT DIRECT RC0'
+
+'STATE GITTREE REPO A'
+if rc=28 then nop
+else do
+ call cleanup
+ say 'M165 TREE TEMP CLEANUP FAIL'
+ exit 8
+end
+
+drop ra.
+'EXECIO * DISKR GITREF2 REPO A 1 (STEM RA. FINIS'
+if rc\=0 | ra.0\=rb.0 then do
+ call cleanup
+ say 'M165 REF RECHECK FAIL'
+ exit 8
+end
+do ri=1 to rb.0
+ if ra.ri\=rb.ri then do
+  call cleanup
+  say 'M165 REF CHANGED'
+  exit 8
+ end
+end
+say 'M165 VERIFIED REFS UNCHANGED'
+
+address command 'EXEC GIT STATUS'
+if rc\=0 then do
+ call cleanup
+ say 'M165 POST COMMIT STATUS FAIL'
+ exit 8
+end
+
+call cleanup
+if result\=0 then do
+ say 'M165 CLEANUP FAIL'
+ exit 8
+end
+say 'M165 LOOSE COMMIT CANDIDATE RETAINED FOR REF CAS'
+say 'M165 STAGED COMMIT TARGET GATE PASS'
+exit 0
+
+absent:
+ parse arg afn,aft,afm
+ 'STATE' afn aft afm
+ if rc=28 then return 0
+ say 'M165: expected absent' afn aft afm 'RC' rc
+ return 8
+
+cleanup:
+ crc=0
+ 'STATE M165TST DATA A'
+ if rc=0 then do
+  'ERASE M165TST DATA A'
+  if rc\=0 then crc=8
+ end
+ else if rc\=28 then crc=8
+ 'STATE GITWORK REPO A'
+ if rc=0 then do
+  'ERASE GITWORK REPO A'
+  if rc\=0 then crc=8
+ end
+ else if rc\=28 then crc=8
+ 'STATE GITTREE REPO A'
+ if rc=0 then do
+  'ERASE GITTREE REPO A'
+  if rc\=0 then crc=8
+ end
+ else if rc\=28 then nop
+ else crc=8
+ return crc
