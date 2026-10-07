@@ -25,13 +25,15 @@ pkt = src[src.index("pktfeed:"):src.index("processpkt:")]
 for needle in ("parse arg cwork","cavail=length(cwork)%2","ctake=cneed",
                "cpiece=left(cwork,ctake*2)","cneed=cneed-ctake"):
     assert needle in chunk
+chunk_lines = {line.strip() for line in chunk.splitlines()}
 for forbidden in ("parse arg work","avail=length(work)%2","take=cneed"):
-    assert forbidden not in chunk
+    assert forbidden not in chunk_lines
 for needle in ("parse arg pwork","pavail=length(pwork)%2","ptake=pneed",
                "ppay=ppay||left(pwork,ptake*2)","pneed=pneed-ptake"):
     assert needle in pkt
+pkt_lines = {line.strip() for line in pkt.splitlines()}
 for forbidden in ("parse arg work","avail=length(work)%2","take=pneed"):
-    assert forbidden not in pkt
+    assert forbidden not in pkt_lines
 
 for forbidden in (
     "M11BODY DATA A",
