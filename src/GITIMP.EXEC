@@ -11,9 +11,7 @@ objfn=substr(oid,1,8)
 'STATE' objfn 'GITOBJ A'
 src=rc
 if src=0 then do
- drop chk.
- chk.0=0
- 'PIPE CMS GIT VERIFY-OBJECT' oid '| STEM chk.'
+ address command 'EXEC GIT VERIFY-OBJECT' oid
  if rc\=0 then do
   say 'GITIMP: existing loose object failed verification'
   exit 8
@@ -47,32 +45,59 @@ do i=1 to out.0
  line=out.i
  if word(line,1)='SEEK' & word(line,2)='OBJECT' &,
     word(line,3)='OID' then do
-  if meta then exit 8
-  if words(line)<11 then exit 8
+  if meta then do
+   say 'GITIMP: duplicate CATHEX metadata'
+   exit 8
+  end
+  if words(line)<12 then do
+   say 'GITIMP: malformed CATHEX metadata'
+   exit 8
+  end
   if word(line,4)\=oid | word(line,5)\='OBJ' |,
      word(line,7)\='TYPE' | word(line,9)\='SIZE' |,
-     word(line,11)\='PREFIX' then exit 8
+     word(line,11)\='PREFIX' then do
+   say 'GITIMP: CATHEX metadata fields mismatch'
+   exit 8
+  end
   typ=word(line,8)
   size=word(line,10)
-  if datatype(typ,'W')\=1 | typ<1 | typ>4 then exit 8
-  if datatype(size,'W')\=1 | size<0 | size>65536 then exit 8
+  if datatype(typ,'W')\=1 | typ<1 | typ>4 then do
+   say 'GITIMP: invalid CATHEX object type'
+   exit 8
+  end
+  if datatype(size,'W')\=1 | size<0 | size>65536 then do
+   say 'GITIMP: invalid CATHEX object size'
+   exit 8
+  end
   meta=1
  end
  else if line='OBJECT DATA BEGIN' then do
-  if begins | indata then exit 8
+  if begins | indata then do
+   say 'GITIMP: invalid CATHEX data begin'
+   exit 8
+  end
   begins=1
   indata=1
  end
  else if line='OBJECT DATA END' then do
-  if \indata | ends then exit 8
+  if \indata | ends then do
+   say 'GITIMP: invalid CATHEX data end'
+   exit 8
+  end
   ends=1
   indata=0
  end
  else if indata then do
-  if word(line,1)\='HEX' | words(line)\=2 then exit 8
+  if word(line,1)\='HEX' | words(line)\=2 then do
+   say 'GITIMP: malformed CATHEX data record'
+   exit 8
+  end
   h=translate(word(line,2))
   if h='' | length(h)>64 | length(h)//2\=0 |,
-     verify(h,'0123456789ABCDEF')\=0 then exit 8
+     verify(h,'0123456789ABCDEF')\=0 then do
+   say 'GITIMP: invalid CATHEX data hex'
+   exit 8
+  end
   body=body||h
  end
 end
@@ -109,9 +134,7 @@ if rc\=0 then do
  exit 8
 end
 
-drop chk.
-chk.0=0
-'PIPE CMS GIT VERIFY-OBJECT' oid '| STEM chk.'
+address command 'EXEC GIT VERIFY-OBJECT' oid
 vrc=rc
 if vrc\=0 then do
  'ERASE' objfn 'GITOBJ A'
