@@ -6309,3 +6309,28 @@ and native REF PACK.
 NEXT REAL CMS GATE: upload GIT.EXEC, GITVREF.EXEC, GITWT.EXEC, and
 M168CHK.EXEC; run GIT LEVEL; run M168CHK. Existing GITUPD.EXEC remains
 current. No GITIMP/GITREC rebuild, manual REF2 edit, or GITRUN is required.
+
+
+## 2026-10-07 M168 REAL CMS TARGET PASS
+
+Real CMS ran GIT/GITVREF M168/M168 and M168CHK completed RC0. The checker
+snapshotted REF2, temporarily made refs/heads/m168test the symbolic HEAD at
+sealed commit 00D8D63229305230C8D37F884CE87F9E1A89468C, checked out and staged
+src/GIT.EXEC as blob E19BDCDD7B277B0D71E727AE9FB0FB7622D5BF4D, rebuilt src tree
+779D930B88DB247FFB49466C5690006749097446 and root tree
+3ACA100EFACC7EB9D81E48CD7C7E0660927A35B9, and created verified child commit
+70BBE28ACAF4E835E4D71417D821D68060C2E71D.
+
+COMMIT-STAGED-REF advanced only m168test. GITWT ACCEPT then promoted the
+worktree map BASE to STAGE, and STATUS reported CLEAN with TRACKED 1,
+CHANGED 0, STAGED 0. The checker restored the original REF2 byte-for-byte,
+cleaned M168TST/GITWORK/GITTREE scratch files, and reverified the retained
+loose commit. Final line: M168 CURRENT BRANCH COMMIT TARGET GATE PASS.
+refs/heads/main never moved. M168 is REAL CMS TARGET-PROVEN.
+
+The practical roadmap now returns to the recorded post-porcelain network phase:
+generalized smart-HTTP fetch/clone, then receive-pack push. Old M12 already
+target-proved the EC2 stunnel bridge, live GitHub upload-pack discovery/POST,
+chunked HTTP decoding, side-band parsing, and the exact 340027-byte/1808-object
+PACK. The remaining fetch work is generalization/integration, not re-proving
+the old hard-coded transport fixture.
