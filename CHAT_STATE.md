@@ -6517,3 +6517,37 @@ The POST must use the OID returned by the immediately preceding discovery, not
 a historical constant; generate pkt-line/content length dynamically; consume
 and validate the complete upload-pack response without overwriting preserved
 M11/M12/GITPBUF fixtures.
+
+
+## 2026-10-07 M170 HOST AND LIVE-WIRE PASS / CMS GATE NEXT
+
+M169 is REAL CMS TARGET-PROVEN.
+
+M170 adds generalized FETCH-POST. M170CHK first runs live FETCH-DISCOVER,
+captures the short FETCH OID record, and passes that exact OID to FETCH-POST.
+No historical fixed want OID is used.
+
+GITPOST dynamically lowercases the wire OID, generates the want pkt-line
+length and HTTP Content-Length, and sends the same minimal capabilities
+target-proven in M12: side-band-64k and ofs-delta. The response parser requires
+HTTP 200, upload-pack result content type, chunked transfer coding, one NAK,
+valid pkt-lines/side-band, no channel-3 fatal, and PACK version 2/3 with a
+nonzero object count. It streams and discards PACK payload after counting it,
+retaining only the first 12 PACK header bytes. It does not touch M11BODY,
+M12BODY, GITPBUF, or GITPMETA.
+
+The standard native-stage suite completed SUCCESS in Actions run 1284,
+including M170, M169, complete tree recovery, and native PACK/index staging.
+
+A separate live GitHub exact-wire probe then used the same dynamic discovery
+and POST shape. It passed with current main OID
+29962C8274728E90FCF14B89C7B13F1B0907DD2E, HTTP 200,
+application/x-git-upload-pack-result, chunked transfer coding, 2167770 decoded
+entity bytes, 420 pkt-lines, 2158255 PACK bytes, 7408 progress bytes, PACK v2,
+and 7662 objects. This probe did not alter main and confirms the M170 protocol
+assumptions against current GitHub.
+
+GIT/GITVREF are M170/M170. NEXT REAL CMS GATE: upload GIT.EXEC,
+GITVREF.EXEC, GITFETCH.EXEC, GITPOST.EXEC, and M170CHK.EXEC; run GIT LEVEL;
+run M170CHK with stunnel still listening on 192.168.200.1:8443. Existing
+GITWT/GITUPD/GITIMP/GITREC/native modules do not change.
