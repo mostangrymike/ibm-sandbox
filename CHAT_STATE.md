@@ -6261,3 +6261,51 @@ REF PACK.
 
 NEXT CMS STEP: upload only M167CHK.EXEC and rerun M167CHK. No GIT/GITVREF,
 GITUPD, GITWT, GITIMP, GITREC, or REF2 manual work is required.
+
+
+## 2026-10-07 M167 REAL CMS TARGET PASS
+
+Real CMS M167CHK completed RC0. It staged blob
+73FB0F258910F1E987B67C4ADF895FF5CD6AA0BA, rebuilt src tree
+0FD6E9FB479FA7527E84E612EC883CA2FDED857C and root tree
+9FE900184AC3E9348C23D43C184C9EB67D876746, created verified child commit
+93E05DA32194B9C61E26418F1A8E2417564C18AE, advanced only
+refs/heads/m167test from sealed HEAD
+00D8D63229305230C8D37F884CE87F9E1A89468C to that child, verified the moved
+ref through direct REF2 inspection, then deleted the disposable ref and
+required GITREF2 to return byte-for-byte to baseline.
+
+Because symbolic HEAD remained refs/heads/main, STATUS intentionally remained
+STAGED after the disposable branch advanced. The new loose commit remained
+verified and retained. Final line was M167 COMMIT TO REF TARGET GATE PASS.
+M167 is REAL CMS TARGET-PROVEN.
+
+## 2026-10-07 M168 HOST PASS / CMS CURRENT-BRANCH GATE NEXT
+
+M168 adds GIT COMMIT-CURRENT. It resolves the symbolic HEAD ref and exact old
+OID from modern REF2, delegates commit creation and CAS to the target-proven
+M167 COMMIT-STAGED-REF path, then calls GITWT ACCEPT. ACCEPT requires exactly
+one staged tracked path, requires the workfile hash to still equal STAGE,
+promotes BASE=STAGE, writes the worktree map, rereads it, and verifies the
+accepted map. It snapshots GITWORK first and restores that exact snapshot if
+map acceptance or verification fails.
+
+If ACCEPT fails after the branch CAS, GIT COMMIT-CURRENT performs an exact CAS
+rollback from the new commit to the old current-branch OID.
+
+M168CHK snapshots REF2, creates refs/heads/m168test at the sealed native HEAD
+commit, temporarily points symbolic HEAD to that disposable branch, stages a
+deterministic src/GIT.EXEC change, and runs GIT COMMIT-CURRENT. It requires
+only m168test to advance, verifies the new commit, requires STATUS SUMMARY
+TRACKED 1 CHANGED 0 STAGED 0, then restores the original REF2 byte-for-byte
+and cleans disposable M168TST/GITWORK/GITTREE files. refs/heads/main never
+moves.
+
+GIT/GITVREF are M168/M168. GitHub Actions run 1261 completed SUCCESS on head
+831ab057b2252c50fddb147d4d7289b670c172a4, including M168, M167, M166,
+M165, M164, CATHEX/fallback, tree recovery, selector fuzz, staging/OID index,
+and native REF PACK.
+
+NEXT REAL CMS GATE: upload GIT.EXEC, GITVREF.EXEC, GITWT.EXEC, and
+M168CHK.EXEC; run GIT LEVEL; run M168CHK. Existing GITUPD.EXEC remains
+current. No GITIMP/GITREC rebuild, manual REF2 edit, or GITRUN is required.
