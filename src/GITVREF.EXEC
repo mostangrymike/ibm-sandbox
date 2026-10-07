@@ -1,4 +1,4 @@
-/* M163: authenticated first-parent complete presence horizon. */
+/* M164: practical CMS worktree porcelain bridge. */
 address cms
 /* CMS REXX defaults to 9 digits; Git epochs are already 10 digits. */
 numeric digits 20
@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M163'
+ say 'GITVREF EXEC LEVEL M164'
  exit 0
 end
 if command='STAMP' then do
