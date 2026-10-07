@@ -530,8 +530,11 @@ toasciihex:
 
 asciitocms:
  parse arg ah
- if length(ah)//2\=0 | verify(translate(ah),
-    '0123456789ABCDEF')\=0 then return 'ERROR'
+ if length(ah)//2\=0 then return 'ERROR'
+ ah=translate(ah)
+ do ai=1 to length(ah)
+  if pos(substr(ah,ai,1),'0123456789ABCDEF')=0 then return 'ERROR'
+ end
  ascii=x2c(ah)
  e2a='000102031A091A7F1A1A1A0B0C0D0E0F'
  e2a=e2a||'101112131A1A081A18191A1A1C1D1E1F'
