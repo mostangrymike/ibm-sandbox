@@ -278,6 +278,11 @@ pktfeed:
     else if pstage='REFS' then do
      pstage='DONE'
      pktdone=1
+     if work\='' then do
+      say 'GITFETCH: post-flush bytes' length(work)%2,
+          left(work,64)
+      return 'ERROR'
+     end
     end
     else return 'ERROR'
     iterate
