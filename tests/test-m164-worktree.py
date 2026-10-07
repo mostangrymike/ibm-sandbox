@@ -80,7 +80,8 @@ assert "final=word(m.2,6)" in chk
 assert "cmd='GIT HASH-WORKFILE M164TST DATA A' final" in chk
 assert "HASH-WORKFILE M164TST DATA A 1 | STEM h." not in chk
 assert "address command 'GIT " not in chk
-assert "cmd='GIT " not in chk
+assert "cmd='GIT IMPORT-OBJECT" not in chk
+assert "cmd='GIT VERIFY-OBJECT" not in chk
 
 for needle in (
     "GITREC PATHFULLCAT GITFIX M15NEW",
