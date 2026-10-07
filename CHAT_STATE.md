@@ -5947,3 +5947,8 @@ M160 is REAL CMS TARGET-PROVEN. M161 adds HISTORYFIRSTPRESENCEFRONTIER-REF-FULL,
 ## 2026-10-07 M161 REAL CMS TARGET PASS
 
 Real CMS ran GIT/GITVREF M161/M161 and M161CHK RC0 on the sealed depth-5 fixture. Full snapshots verified. Exact proof matched: HFPF P1 S 1 1 3 ABSENT TRUNCATED 1 6 6 and HFPF P1 B 5 4 5 ADDED. The incomplete region is run 3, ABSENT, one truncated node at step/depth 6/5; complete coverage ends at step/depth 5/4 and authenticated edge 5 ADDED is the frontier. M161 FRONTIER DIRECT RC0 and M161 COMPACT TARGET GATE PASS followed. M161 is REAL CMS TARGET-PROVEN.
+
+
+## 2026-10-07 M162 HOST PASS / CMS GATE NEXT
+
+M161 is REAL CMS TARGET-PROVEN. M162 adds HISTORYFIRSTPRESENCEFRONTIERDISTANCE-REF-FULL, extending the authenticated coverage frontier with first-parent step/depth distance and signed chronology from HEAD to the first incomplete node plus the delta across the frontier edge. Sealed proof: HFPG P1 S 1 5 5 105 105 and HFPG P1 E 5 ADDED 55 55. GIT/GITVREF is M162/M162. Native-stage run 37630359213 completed SUCCESS on code head 0a81b8a7e3243671e3979b45466b81a2804a0964, including M162 host checks and the full native-stage suite. Next target step: upload GIT.EXEC, GITVREF.EXEC, M162CHK.EXEC; run GIT LEVEL; run M162CHK. No GITREC rebuild. No GITRUN.
