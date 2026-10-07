@@ -199,6 +199,117 @@ if command='ADD' then do
  exit 0
 end
 
+if command='COMMIT' then do
+ stamp=''
+ zone=''
+ message=''
+ ci=1
+ do while ci<=words(rest)
+  if ci=words(rest) then do
+   say 'Usage: GIT COMMIT-STAGED -T seconds -Z zone -M message'
+   exit 4
+  end
+  opt=translate(word(rest,ci))
+  val=word(rest,ci+1)
+  if opt='-T' then stamp=val
+  else if opt='-Z' then zone=val
+  else if opt='-M' then message=val
+  else do
+   say 'GITWT: unknown COMMIT-STAGED option' word(rest,ci)
+   exit 4
+  end
+  ci=ci+2
+ end
+ if stamp='' | zone='' | message='' then do
+  say 'Usage: GIT COMMIT-STAGED -T seconds -Z zone -M message'
+  exit 4
+ end
+ say 'GITWT COMMIT LEVEL M165'
+ call loadmap
+ if result\='OK' then exit 8
+ if mapcount\=1 then do
+  say 'GITWT: M165 requires exactly one tracked path'
+  exit 8
+ end
+ if mapstage.1=mapbase.1 then do
+  say 'GITWT: no staged change'
+  exit 8
+ end
+ 'STATE' mapfn.1 mapft.1 mapfm.1
+ if rc\=0 then do
+  say 'GITWT: mapped workfile is absent'
+  exit 8
+ end
+ call workoid mapfn.1,mapft.1,mapfm.1,maplf.1,0
+ work=result
+ if work='ERROR' then exit 8
+ if work\=mapstage.1 then do
+  say 'GITWT: unstaged workfile change'
+  exit 8
+ end
+ call readrefs
+ if result\='OK' then exit 8
+ call resolve 'HEAD'
+ parent=result
+ if parent='ERROR' then exit 8
+ call bindnative
+ if result\='OK' then exit 8
+ call rootfor parent
+ root=result
+ if root='ERROR' then exit 8
+ call splitpath mappath.1
+ if result\='OK' then exit 8
+ current=root
+ do cd=1 to pcnt
+  treeoid.cd=current
+  call readtree current,pcomp.cd
+  if result\='OK' then exit 8
+  childoid.cd=foundoid
+  childmode.cd=foundmode
+  if cd<pcnt & foundmode\='40000' then do
+   say 'GITWT: staged path ancestor is not a tree'
+   exit 8
+  end
+  current=foundoid
+ end
+ if childoid.pcnt\=mapbase.1 then do
+  say 'GITWT: checkout base is stale against HEAD'
+  exit 8
+ end
+ if childmode.pcnt='40000' | childmode.pcnt='160000' then do
+  say 'GITWT: staged path is not a local blob'
+  exit 8
+ end
+ address command 'EXEC GIT VERIFY-OBJECT' mapstage.1
+ if rc\=0 then exit 8
+ replacement=mapstage.1
+ do cd=pcnt to 1 by -1
+  call rewritetree treeoid.cd,pcomp.cd,replacement
+  replacement=result
+  if replacement='ERROR' then exit 8
+  say 'COMMIT-STAGED TREE DEPTH' cd replacement
+ end
+ newroot=replacement
+ address command 'EXEC GIT IMPORT-OBJECT' parent
+ if rc\=0 then exit 8
+ drop co.
+ co.0=0
+ cmd='GIT COMMIT-TREE' newroot '-P' parent,
+     '-T' stamp '-Z' zone '-M' message
+ 'PIPE CMS' cmd '| STEM co.'
+ if rc\=0 then exit 8
+ call stemoid 'co.'
+ commit=result
+ if commit='ERROR' then exit 8
+ address command 'EXEC GIT VERIFY-OBJECT' commit
+ if rc\=0 then exit 8
+ say 'COMMIT-STAGED PARENT' parent
+ say 'COMMIT-STAGED ROOT' newroot
+ say 'COMMIT-STAGED COMMIT' commit
+ say 'COMMIT-STAGED REFS UNCHANGED'
+ exit 0
+end
+
 say 'GITWT: unknown command' command
 exit 4
 
