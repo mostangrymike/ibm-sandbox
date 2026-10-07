@@ -1,0 +1,138 @@
+/* M164: import one fully verified selected-generation object. */
+address cms
+parse upper arg oid extra
+if oid='' | extra\='' | length(oid)\=40 |,
+   verify(oid,'0123456789ABCDEF')\=0 then do
+ say 'Usage: GITIMP object-id'
+ exit 4
+end
+
+objfn=substr(oid,1,8)
+'STATE' objfn 'GITOBJ A'
+src=rc
+if src=0 then do
+ drop chk.
+ chk.0=0
+ 'PIPE CMS GIT VERIFY-OBJECT' oid '| STEM chk.'
+ if rc\=0 then do
+  say 'GITIMP: existing loose object failed verification'
+  exit 8
+ end
+ say 'IMPORT OBJECT ALREADY PRESENT' oid
+ exit 0
+end
+if src\=28 then do
+ say 'GITIMP: cannot inspect loose object target RC' src
+ exit 8
+end
+
+call bindnative
+if result\='OK' then exit 8
+drop out.
+out.0=0
+cmd='GITREC CATHEX GITFIX M15NEW' oid
+'PIPE CMS' cmd '| STEM out.'
+grc=rc
+if grc\=0 then do
+ say 'GITIMP: verified native object read failed RC' grc
+ exit grc
+end
+
+meta=0
+begins=0
+ends=0
+indata=0
+body=''
+do i=1 to out.0
+ line=out.i
+ if word(line,1)='SEEK' & word(line,2)='OBJECT' &,
+    word(line,3)='OID' then do
+  if meta then exit 8
+  if words(line)<11 then exit 8
+  if word(line,4)\=oid | word(line,5)\='OBJ' |,
+     word(line,7)\='TYPE' | word(line,9)\='SIZE' |,
+     word(line,11)\='PREFIX' then exit 8
+  typ=word(line,8)
+  size=word(line,10)
+  if datatype(typ,'W')\=1 | typ<1 | typ>4 then exit 8
+  if datatype(size,'W')\=1 | size<0 | size>65536 then exit 8
+  meta=1
+ end
+ else if line='OBJECT DATA BEGIN' then do
+  if begins | indata then exit 8
+  begins=1
+  indata=1
+ end
+ else if line='OBJECT DATA END' then do
+  if \indata | ends then exit 8
+  ends=1
+  indata=0
+ end
+ else if indata then do
+  if word(line,1)\='HEX' | words(line)\=2 then exit 8
+  h=translate(word(line,2))
+  if h='' | length(h)>64 | length(h)//2\=0 |,
+     verify(h,'0123456789ABCDEF')\=0 then exit 8
+  body=body||h
+ end
+end
+if meta\=1 | begins\=1 | ends\=1 | indata then do
+ say 'GITIMP: incomplete CATHEX framing'
+ exit 8
+end
+if length(body)%2\=size then do
+ say 'GITIMP: CATHEX size mismatch'
+ exit 8
+end
+if typ<1 | typ>3 then do
+ say 'GITIMP: loose TAG objects are not supported yet'
+ exit 8
+end
+type=word('COMMIT TREE BLOB',typ)
+
+drop loose.
+loose.1='OID' oid
+loose.2='TYPE' type
+loose.3='SIZE' size
+n=3
+p=1
+do while p<=length(body)
+ take=min(128,length(body)-p+1)
+ n=n+1
+ loose.n='DATA' substr(body,p,take)
+ p=p+take
+end
+loose.0=n
+'EXECIO' loose.0 'DISKW' objfn 'GITOBJ A 1 (STEM LOOSE. FINIS'
+if rc\=0 then do
+ say 'GITIMP: cannot create loose object'
+ exit 8
+end
+
+drop chk.
+chk.0=0
+'PIPE CMS GIT VERIFY-OBJECT' oid '| STEM chk.'
+vrc=rc
+if vrc\=0 then do
+ 'ERASE' objfn 'GITOBJ A'
+ say 'GITIMP: loose object verification failed'
+ exit 8
+end
+say 'IMPORTED' type size oid
+exit 0
+
+bindnative:
+ 'FILEDEF SEL0 DISK M15SL0 PTR A'
+ if rc\=0 then return 'ERROR'
+ 'FILEDEF SEL1 DISK M15SL1 PTR A'
+ if rc\=0 then return 'ERROR'
+ do j=1 to 4
+  t=word('STAGE INDEX SEEK GEN',j)
+  d=word('C0STG C0IDX C0SEEK C0GEN',j)
+  'FILEDEF' d 'DISK GITFIX' t 'A'
+  if rc\=0 then return 'ERROR'
+  d=word('C1STG C1IDX C1SEEK C1GEN',j)
+  'FILEDEF' d 'DISK M15NEW' t 'A'
+  if rc\=0 then return 'ERROR'
+ end
+ return 'OK'
