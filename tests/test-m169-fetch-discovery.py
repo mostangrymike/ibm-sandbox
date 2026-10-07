@@ -8,6 +8,16 @@ src = (root / "src" / "GITFETCH.EXEC").read_text()
 for number, line in enumerate(src.splitlines(), 1):
     assert len(line) <= 80, (number, len(line))
 
+for needle in (
+    "ep=bytepos('3B',ch)",
+    "cv=x2d(substr(ch,cj,2))",
+    "if cv>=48 & cv<=57 then cn=cv-48",
+    "else if cv>=65 & cv<=70 then cn=cv-55",
+    "else if cv>=97 & cv<=102 then cn=cv-87",
+    "cneed=cneed*16+cn",
+):
+    assert needle in src
+
 for forbidden in (
     "M11BODY DATA A",
     "M12BODY DATA A",
