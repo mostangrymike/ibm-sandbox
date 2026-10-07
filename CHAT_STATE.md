@@ -6148,3 +6148,23 @@ staging/OID index, and native REF PACK.
 NEXT CMS STEP: upload only GITUPD.EXEC and M166CHK.EXEC, then rerun M166CHK.
 GIT/GITVREF already remain correct at M166/M166. No manual REF2 edit, GITWT,
 GITIMP, GITREC rebuild, or GITRUN is required.
+
+
+## 2026-10-07 M166 REAL CMS TARGET PASS
+
+Real CMS ran GIT/GITVREF M166/M166 and M166CHK completed RC0. The checker
+first recovered the exact disposable m166test residue left by the earlier
+shorter-DISKW delete attempt. It then proved create-CAS of
+refs/heads/m166test to retained M165 commit
+D6FB8432692CF8EFBDC2DDA354425D8DCDC3A008, preserved all protected original
+REF2 records, rejected a stale expected-old OID with RC8 and byte-identical
+REF2, deleted the disposable ref with an exact CAS, restored GITREF2 REPO A
+byte-for-byte to its initial snapshot, and reverified the retained commit.
+
+Final lines were M166 DELETE CAS PASS, M166 REF2 BYTE RESTORE PASS,
+M166 RETAINED COMMIT STILL PRESENT, and M166 REF CAS TARGET GATE PASS.
+M166 is REAL CMS TARGET-PROVEN.
+
+Next milestone M167 integrates the two proven write boundaries: create a staged
+child commit and CAS a disposable branch from its expected parent to that new
+commit in one porcelain operation. HEAD and refs/heads/main remain protected.
