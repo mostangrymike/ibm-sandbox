@@ -31,8 +31,8 @@ if command = 'LEVEL' then do
    lvl.0 = 0
    'PIPE CMS EXEC GITVREF LEVEL | STEM lvl.'
    if rc \= 0 then exit rc
-   say 'GIT EXEC LEVEL M162'
-   if lvl.0 \= 1 | lvl.1 \= 'GITVREF EXEC LEVEL M162' then do
+   say 'GIT EXEC LEVEL M163'
+   if lvl.0 \= 1 | lvl.1 \= 'GITVREF EXEC LEVEL M163' then do
       say 'GITVREF EXEC LEVEL MISMATCH'
       exit 8
    end
@@ -270,6 +270,10 @@ if command = 'HISTORYFIRSTPRESENCEFRONTIER-REF-FULL' then do
 end
 if command = 'HISTORYFIRSTPRESENCEFRONTIERDISTANCE-REF-FULL' then do
    address command 'EXEC GITVREF HISTFPFDIST' rest
+   exit rc
+end
+if command = 'HISTORYFIRSTPRESENCEHORIZON-REF-FULL' then do
+   address command 'EXEC GITVREF HISTFPHORIZ' rest
    exit rc
 end
 if command = 'READ-REF-FULL' then do
