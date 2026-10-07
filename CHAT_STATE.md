@@ -6216,3 +6216,25 @@ captured proof remains within the target record width. M167CHK now preserves
 the command RC across cleanup. Fixes are 897fde0 and 35dad5b. Actions run 1251
 completed SUCCESS. Next CMS step: upload only GIT.EXEC and M167CHK.EXEC and
 rerun M167CHK. No manual REF2 cleanup is required.
+
+
+## 2026-10-07 M167 SECOND TARGET RUN / DIRECT REF2 VERIFY FIX
+
+Second real CMS M167CHK again created the deterministic child commit
+93E05DA32194B9C61E26418F1A8E2417564C18AE and advanced only
+refs/heads/m167test to it. The short-name PIPE proof still did not produce an
+acceptable captured verification record on target, so M167 correctly rolled
+the disposable ref back to 00D8D63229305230C8D37F884CE87F9E1A89468C and
+returned RC8. The checker now preserved and printed the true command RC8.
+
+M167 post-CAS verification no longer depends on nested PIPE/VERIFY-REF output.
+GIT.EXEC now reads GITREF2 REPO A directly with EXECIO, requires REF2 header,
+exactly one HEAD record, and exactly one matching disposable REF record with
+the new commit OID. The same exact CAS rollback remains active on proof
+failure. Production fix is 1b001951f61d2d327f658107a6568e0666a3d42d;
+host guard is 826d33f6374bed5c7a91f4078d0acf94f71e8052. Actions run 1253
+completed SUCCESS including M167, M166, M165, M164, CATHEX/fallback, tree
+recovery, selector fuzz, staging/OID index, and native REF PACK.
+
+NEXT CMS STEP: upload only GIT.EXEC and rerun M167CHK. M167CHK, GITVREF,
+GITUPD, and GITWT are already current. No manual REF2 cleanup is required.
