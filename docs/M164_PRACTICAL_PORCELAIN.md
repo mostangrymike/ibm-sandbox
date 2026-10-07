@@ -89,8 +89,8 @@ throughout.
 
 ## Host proof
 
-GitHub Actions native-stage run `37637566550` completed successfully on
-M164 code head `39659841c49bfaee8589a863c9cad5af30ef41d9`.
+GitHub Actions native-stage run `37637796564` completed successfully on
+M164 code head `bf969cb9bd8c16bfa57269c3a39035463f656509`.
 The run included all earlier M156-M163 checks, the M164 independent worktree
 model, native selector tests, full CATHEX/tree recovery, and native
 PACK/index tests.
