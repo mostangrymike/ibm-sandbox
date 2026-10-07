@@ -335,6 +335,46 @@ if command = 'VERIFY-OBJECT' | command = 'CAT-OBJECT' then do
    exit 0
 end
 
+/* M165 plumbing: hash/store an authenticated raw tree hex file. */
+if command = 'WRITE-TREE-HEXFILE' then do
+   parse var rest fn ft fm extra
+   if fn='' | ft='' | fm='' | extra\='' then do
+      say 'Usage: GIT WRITE-TREE-HEXFILE fn ft fm'
+      exit 4
+   end
+   fn=translate(fn)
+   ft=translate(ft)
+   fm=translate(fm)
+   drop th.
+   'EXECIO * DISKR' fn ft fm '1 (STEM TH. FINIS'
+   if rc\=0 then do
+      say 'GIT: cannot read tree hex file'
+      exit 8
+   end
+   datahex=''
+   if th.0=1 & th.1='EMPTY' then nop
+   else do i=1 to th.0
+      if word(th.i,1)\='HEX' | words(th.i)\=2 then do
+         say 'GIT: malformed tree hex record'
+         exit 8
+      end
+      h=translate(word(th.i,2))
+      if h='' | length(h)>64 | length(h)//2\=0 |,
+         verify(h,'0123456789ABCDEF')\=0 then do
+         say 'GIT: invalid tree hex record'
+         exit 8
+      end
+      datahex=datahex||h
+   end
+   call hashstored 'TREE',datahex
+   treeoid=result
+   if treeoid='HASHERROR' then exit 8
+   call storeobject treeoid,'TREE',datahex
+   if result\='OK' then exit 8
+   say treeoid
+   exit 0
+end
+
 /* M4 tree writer: one or more mode/name/OID triples. */
 if command = 'WRITE-TREE' then do
    wc = words(rest)
