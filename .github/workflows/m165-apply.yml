@@ -1,0 +1,33 @@
+name: Apply M165 branch patch
+
+on:
+  push:
+    branches:
+      - m165-staged-commit
+    paths:
+      - 'scripts/apply-m165.py'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: m165-staged-commit
+          fetch-depth: 0
+      - name: Apply deterministic M165 patch
+        run: python3 scripts/apply-m165.py
+      - name: Commit branch patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/GIT.EXEC src/GITVREF.EXEC src/GITWT.EXEC
+          git add src/M165CHK.EXEC tests/test-m165-staged-commit.py
+          git add docs/M165.md .github/workflows/native-stage.yml
+          if ! git diff --cached --quiet; then
+            git commit -m "M165: complete staged commit host implementation"
+            git push origin HEAD:m165-staged-commit
+          fi
