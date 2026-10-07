@@ -36,27 +36,48 @@ raw=x2c(wire)
 s=''
 r=Socket('Initialize','GITFETCH')
 parse var r src rest
-if src\=0 then exit 8
+if src\=0 then do
+ say 'GITFETCH: socket initialize failed RC' src
+ exit 8
+end
 if verify(bridge,'0123456789.')=0 then ip=bridge
 else do
  r=Socket('GetHostByName',bridge)
  parse var r src addrs
- if src\=0 then call bad
+ if src\=0 then do
+  fail='RESOLVE-RC'
+  call bad
+ end
  ip=word(addrs,1)
- if ip='' then call bad
+ if ip='' then do
+  fail='RESOLVE-EMPTY'
+  call bad
+ end
 end
 r=Socket('Socket')
 parse var r src s
-if src\=0 then call bad
+if src\=0 then do
+ fail='SOCKET-CREATE'
+ call bad
+end
 r=Socket('GetSockOpt',s,'SOL_SOCKET','SO_ASCII')
 parse var r src opt
-if src\=0 | translate(opt)\='OFF' then call bad
+if src\=0 | translate(opt)\='OFF' then do
+ fail='SO-ASCII'
+ call bad
+end
 r=Socket('Connect',s,'AF_INET' port ip)
 parse var r src rest
-if src\=0 then call bad
+if src\=0 then do
+ fail='CONNECT'
+ call bad
+end
 r=Socket('Send',s,raw)
 parse var r src sent
-if src\=0 | sent\=length(raw) then call bad
+if src\=0 | sent\=length(raw) then do
+ fail='SEND'
+ call bad
+end
 
 hstate='HEAD'
 header=''
@@ -83,19 +104,40 @@ total=0
 do forever
  r=Socket('Recv',s,256)
  parse var r src got data
- if src\=0 then call bad
+ if src\=0 then do
+  fail='RECV'
+  call bad
+ end
  if got=0 then leave
- if got>256 | length(data)\=got then call bad
+ if got>256 | length(data)\=got then do
+  fail='RECV-LENGTH'
+  call bad
+ end
  total=total+got
- if total>4194304 then call bad
+ if total>4194304 then do
+  fail='RESPONSE-LIMIT'
+  call bad
+ end
  call httpfeed c2x(data)
- if result\='OK' then call bad
+ if result\='OK' then do
+  fail='HTTP-PARSE'
+  call bad
+ end
 end
 r=Socket('Close',s)
 s=''
-if hstate\='BODY' | chunkdone\=1 | pktdone\=1 then call bad
-if service\=1 | targetcount\=1 | capseen\=1 then call bad
-if capsb\=1 | capofs\=1 then call bad
+if hstate\='BODY' | chunkdone\=1 | pktdone\=1 then do
+ fail='FINAL-FRAMING'
+ call bad
+end
+if service\=1 | targetcount\=1 | capseen\=1 then do
+ fail='FINAL-ADVERTISEMENT'
+ call bad
+end
+if capsb\=1 | capofs\=1 then do
+ fail='FINAL-CAPABILITIES'
+ call bad
+end
 r=Socket('Terminate')
 say 'FETCH DISCOVERED' targetoid target
 say 'FETCH CAPABILITY SIDE-BAND-64K'
@@ -106,6 +148,9 @@ say 'M169 FETCH DISCOVERY PASS'
 exit 0
 
 bad:
+ say 'GITFETCH: discovery failed at' fail
+ say 'GITFETCH: states' hstate cstate pstate pstage
+ say 'GITFETCH: counts' service targetcount capseen refs total
  if s\='' then r=Socket('Close',s)
  r=Socket('Terminate')
  exit 8
