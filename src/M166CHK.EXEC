@@ -13,6 +13,36 @@ if rc\=0 then do
 end
 say 'M166 RETAINED COMMIT PASS' candidate
 
+drop pre.
+'EXECIO * DISKR GITREF2 REPO A 1 (STEM PRE. FINIS'
+if rc\=0 | pre.0<3 then do
+ say 'M166 REF2 PREFLIGHT FAIL'
+ exit 8
+end
+residue=''
+do i=1 to pre.0
+ if word(pre.i,1)='REF' & word(pre.i,2)=testref then do
+  if words(pre.i)\=3 then do
+   say 'M166 DISPOSABLE REF COLLISION'
+   exit 8
+  end
+  residue=translate(word(pre.i,3))
+ end
+end
+if residue\='' then do
+ if residue\=candidate then do
+  say 'M166 DISPOSABLE REF COLLISION'
+  exit 8
+ end
+ cmd='EXEC GIT UPDATE-REF' testref zeros candidate
+ address command cmd
+ if rc\=0 then do
+  say 'M166 PRIOR RESIDUE RECOVERY FAIL'
+  exit 8
+ end
+ say 'M166 PRIOR DISPOSABLE REF RECOVERED'
+end
+
 drop rb.
 'EXECIO * DISKR GITREF2 REPO A 1 (STEM RB. FINIS'
 if rc\=0 | rb.0<3 then do
@@ -124,6 +154,19 @@ exit 0
 
 cleanup:
  if \dirty then return 0
+ 'STATE GITREF2 REPO A'
+ crc=rc
+ if crc=0 then do
+  'ERASE GITREF2 REPO A'
+  if rc\=0 then do
+   say 'M166 CLEANUP REF2 ERASE FAIL'
+   return 8
+  end
+ end
+ else if crc\=28 then do
+  say 'M166 CLEANUP REF2 STATE FAIL' crc
+  return 8
+ end
  'EXECIO' rb.0 'DISKW GITREF2 REPO A 1 (STEM RB. FINIS'
  if rc\=0 then do
   say 'M166 CLEANUP REF2 RESTORE FAIL'
