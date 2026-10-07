@@ -1,34 +1,29 @@
-name: Apply M165 branch patch
+name: Publish clean M165 branch
 
 on:
   push:
     branches:
       - m165-staged-commit
     paths:
-      - 'scripts/m165/**'
+      - 'scripts/m165/gitwt_helpers.txt'
 
 permissions:
   contents: write
 
 jobs:
-  apply:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: m165-staged-commit
           fetch-depth: 0
-      - name: Apply deterministic M165 patch
-        run: python3 scripts/apply-m165.py
-      - name: Commit branch patch
+      - name: Publish clean production branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/GIT.EXEC src/GITVREF.EXEC src/GITWT.EXEC
-          git add src/M165CHK.EXEC tests/test-m165-staged-commit.py
-          git add docs/M165.md
-          git restore .github/workflows/native-stage.yml
-          if ! git diff --cached --quiet; then
-            git commit -m "M165: complete staged commit host implementation"
-            git push origin HEAD:m165-staged-commit
-          fi
+          git fetch origin main
+          git checkout -b m165-clean origin/main
+          git cherry-pick e31ba10aa5cc6d187e877dbbb578ff0c613c0bb2
+          git cherry-pick bf4aa9fe5dae03b93c9866a611d06dd213ca04c8
+          git push origin m165-clean
