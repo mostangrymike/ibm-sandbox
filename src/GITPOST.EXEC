@@ -1,0 +1,4 @@
+/* M170 generalized upload-pack POST. */
+address cms
+say 'GITPOST PLACEHOLDER'
+exit 8
