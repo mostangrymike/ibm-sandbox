@@ -199,6 +199,60 @@ if command='ADD' then do
  exit 0
 end
 
+if command='ACCEPT' then do
+ if strip(rest)\='' then do
+  say 'Usage: GITWT ACCEPT'
+  exit 4
+ end
+ say 'GITWT ACCEPT LEVEL M168'
+ drop before.
+ 'EXECIO * DISKR GITWORK REPO A 1 (STEM BEFORE. FINIS'
+ if rc\=0 then do
+  say 'GITWT: cannot snapshot worktree map'
+  exit 8
+ end
+ call loadmap
+ if result\='OK' then exit 8
+ if mapcount\=1 then do
+  say 'GITWT: M168 requires exactly one tracked path'
+  exit 8
+ end
+ if mapstage.1=mapbase.1 then do
+  say 'GITWT: no staged change to accept'
+  exit 8
+ end
+ 'STATE' mapfn.1 mapft.1 mapfm.1
+ if rc\=0 then do
+  say 'GITWT: mapped workfile is absent'
+  exit 8
+ end
+ call workoid mapfn.1,mapft.1,mapfm.1,maplf.1,0
+ accepted=result
+ if accepted='ERROR' then exit 8
+ if accepted\=mapstage.1 then do
+  say 'GITWT: workfile changed after commit'
+  exit 8
+ end
+ oldbase=mapbase.1
+ mapbase.1=mapstage.1
+ call savemap
+ if result\='OK' then do
+  call restoremap
+  say 'GITWT: cannot accept committed worktree map'
+  exit 8
+ end
+ call loadmap
+ if result\='OK' | mapcount\=1 |,
+    mapbase.1\=accepted | mapstage.1\=accepted then do
+  call restoremap
+  say 'GITWT: accepted map verification failed'
+  exit 8
+ end
+ say 'ACCEPTED WORKTREE OLD' oldbase
+ say 'ACCEPTED WORKTREE NEW' accepted
+ exit 0
+end
+
 if command='COMMIT' then do
  stamp=''
  zone=''
@@ -681,6 +735,18 @@ loadmap:
   at=at+1
  end
  if wm.at\='WORKEND' mapcount then return 'ERROR'
+ return 'OK'
+
+restoremap:
+ 'STATE GITWORK REPO A'
+ rmc=rc
+ if rmc=0 then do
+  'ERASE GITWORK REPO A'
+  if rc\=0 then return 'ERROR'
+ end
+ else if rmc\=28 then return 'ERROR'
+ 'EXECIO' before.0 'DISKW GITWORK REPO A 1 (STEM BEFORE. FINIS'
+ if rc\=0 then return 'ERROR'
  return 'OK'
 
 savemap:
