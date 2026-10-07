@@ -188,6 +188,6 @@ assert "do ai=1 to length(ah)" in wt
 assert "pos(substr(ah,ai,1),'0123456789ABCDEF')" in wt
 assert "FILEDEF WTOUT" not in wt
 assert "'EXECIO 0 DISKW' wfn wft wfm '1 F 80 (FINIS'" in wt
-assert "'EXECIO' rec.0 'DISKW' wfn wft wfm in wt
+assert "'EXECIO' rec.0 'DISKW' wfn wft wfm" in wt
 assert "'1 F 80 (STEM REC. FINIS'" in wt
 print("M164 EBCDIC TABLE ROUND TRIP PASSED")
