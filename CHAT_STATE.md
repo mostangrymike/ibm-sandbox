@@ -6048,3 +6048,21 @@ native REF PACK. Real CMS target validation is the only remaining M165 gate.
 
 Required CMS runtime uploads for M165: GIT.EXEC, GITVREF.EXEC, GITWT.EXEC,
 and M165CHK.EXEC. Then run M165CHK.
+
+
+## 2026-10-07 M165 FIRST REAL CMS RUN / CHECKER CLEANUP FIX
+
+M165 first real CMS run reached verified child commit creation successfully.
+GIT/GITVREF both reported M165. The checker staged blob
+FCC4C824FF444B2C060DA631A10E05C79C81EA25, rebuilt tree depth 2 as
+650C8B3962A7EBBC004EEED8D217C1E2B0ED7EF8, rebuilt root tree depth 1 as
+AB3C1C8DAF034C6BF7BDD23E38CD204B4DF5A1C5, imported parent
+00D8D63229305230C8D37F884CE87F9E1A89468C, created and verified child commit
+D6FB8432692CF8EFBDC2DDA354425D8DCDC3A008, and verified GITREF2 remained
+unchanged. STATUS remained STAGED as intended.
+
+The only failure was M165CHK final cleanup. GITTREE REPO A was correctly
+already absent (STATE RC28), but the checker branch had the condition reversed
+and treated RC28 as failure. Commit 682b33a fixes the cleanup condition and
+0051ff1 adds a regression guard. Actions run 1231 passes the complete suite.
+Only M165CHK.EXEC needs target re-upload before rerunning M165CHK.
