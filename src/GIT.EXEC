@@ -300,6 +300,10 @@ if command = 'ADD' then do
    'EXEC GITWT ADD' rest
    exit rc
 end
+if command = 'COMMIT-STAGED' then do
+   'EXEC GITCMIT' rest
+   exit rc
+end
 if command = 'CHECKOUT' | command = 'HEAD' then do
    'EXEC GITHEAD' command rest
    exit rc
