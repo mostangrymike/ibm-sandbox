@@ -1,4 +1,4 @@
-name: M169 ref probe
+name: M169 exact request probe
 
 on:
   push:
@@ -9,32 +9,60 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe advertised refs
+      - name: Send exact M169 HTTP request
         run: |
-          set -euo pipefail
-          curl --http1.1 -sS -o /tmp/adv             'https://github.com/mostangrymike/ibm-sandbox.git/info/refs?service=git-upload-pack'
           python3 - <<'PY'
-          from pathlib import Path
-          data=Path('/tmp/adv').read_bytes()
-          p=0
-          nref=0
-          flush=0
-          while p < len(data):
-              if p+4>len(data): raise SystemExit(('short',p,len(data)-p))
-              n=int(data[p:p+4],16); p+=4
-              if n==0:
-                  flush+=1
-                  print('FLUSH',flush,'AT',p-4)
-                  continue
-              payload=data[p:p+n-4]; p+=n-4
-              if flush==0:
-                  print('SERVICE',payload)
-                  continue
-              nref+=1
-              main,sep,caps=payload.partition(b'\0')
-              print('REF',nref,'LEN',n,'MAIN',main.rstrip(b'\n')[:220])
-              if sep:
-                  print('CAPS',caps.rstrip(b'\n')[:500])
-              if nref>=60:
+          import socket, ssl
+          host='github.com'
+          req=(
+              b'GET /mostangrymike/ibm-sandbox.git/info/refs?service=git-upload-pack HTTP/1.1\r\n'
+              b'Host: github.com\r\n'
+              b'Accept: application/x-git-upload-pack-advertisement\r\n'
+              b'Connection: close\r\n\r\n'
+          )
+          ctx=ssl.create_default_context()
+          raw=socket.create_connection((host,443),timeout=10)
+          s=ctx.wrap_socket(raw,server_hostname=host)
+          s.sendall(req)
+          chunks=[]
+          while True:
+              b=s.recv(4096)
+              if not b: break
+              chunks.append(b)
+          wire=b''.join(chunks)
+          head,body=wire.split(b'\r\n\r\n',1)
+          print('HTTP_TOTAL',len(wire),'HEADER',len(head)+4,'BODY_RAW',len(body))
+          print(head.decode('latin1'))
+          p=0; entity=bytearray(); cs=[]
+          while True:
+              j=body.index(b'\r\n',p)
+              line=body[p:j]
+              size=int(line.split(b';',1)[0],16)
+              p=j+2
+              print('CHUNK',len(cs)+1,'LINE',line,'SIZE',size,'DATA_AT',p)
+              if size==0:
+                  print('AFTER_ZERO',body[p:].hex().upper())
                   break
+              cs.append(size)
+              entity += body[p:p+size]
+              p += size
+              print('CHUNK_END_CRLF',body[p:p+2].hex().upper(),'RAW_POS',p)
+              p += 2
+          print('ENTITY',len(entity),'CHUNKS',cs)
+          # Ref offsets.
+          q=0; flush=0; ref=0
+          while q < len(entity):
+              n=int(entity[q:q+4],16)
+              start=q
+              q += 4
+              if n==0:
+                  flush += 1
+                  print('FLUSH',flush,'ENTITY_OFF',start)
+                  continue
+              payload=bytes(entity[q:q+n-4]); q += n-4
+              if flush==0: continue
+              ref += 1
+              if 43 <= ref <= 52:
+                  print('REF',ref,'ENTITY_OFF',start,'LEN',n,
+                        payload.partition(b'\0')[0].rstrip(b'\n'))
           PY
