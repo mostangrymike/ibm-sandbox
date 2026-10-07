@@ -5932,3 +5932,8 @@ Real CMS ran GIT/GITVREF M159/M159 and M159CHK RC0 on the sealed depth-5 fixture
 ## 2026-10-06 M160 HOST PASS / CMS GATE NEXT
 
 M159 is REAL CMS TARGET-PROVEN. M160 adds HISTORYFIRSTPRESENCECOVERAGE-REF-FULL, reporting structural completeness of the bounded first-parent presence history. Sealed proof: HFPC P1 S 3 2 1 6 5 1 and HFPC P1 B 6666 3334 8333 1667. GIT/GITVREF is M160/M160. Native-stage run 37554322009 completed SUCCESS on code head 2300c420613d93757ba44aa422a3b09f9d0acf47. Next target step: upload GIT.EXEC, GITVREF.EXEC, M160CHK.EXEC; run GIT LEVEL; run M160CHK. No GITREC rebuild. No GITRUN.
+
+
+## 2026-10-06 M160 REAL CMS TARGET PASS
+
+Real CMS ran GIT/GITVREF M160/M160 and M160CHK RC0 on the sealed depth-5 fixture. Full snapshots verified. Exact proof matched: HFPC P1 S 3 2 1 6 5 1 and HFPC P1 B 6666 3334 8333 1667. The verbose report reconciled 3 presence runs as 2 complete/1 incomplete and 6 chain nodes as 5 complete/1 incomplete, yielding run coverage 6666/3334 bp and node coverage 8333/1667 bp. M160 COVERAGE DIRECT RC0 and M160 COMPACT TARGET GATE PASS followed. M160 is REAL CMS TARGET-PROVEN.
