@@ -43,6 +43,9 @@ assert "if newoid=zeros & oldoid=zeros then do" in upd
 assert "ni=i+1" in upd
 assert "refname.i=refname.ni" in upd
 assert "refoid.i=refoid.ni" in upd
+assert "'ERASE GITREF2 REPO A'" in upd
+assert "GITUPD: cannot replace REF2 database" in upd
+assert "GITUPD: REF2 rollback erase failed" in upd
 
 for needle in (
     "D6FB8432692CF8EFBDC2DDA354425D8DCDC3A008",
@@ -122,5 +125,21 @@ assert created[:3] == original
 restored = cas(created, TEST, ZERO, CAND)
 assert restored == original
 assert cas(original, "refs/heads/main", ZERO, MAIN) is None
+
+# CMS DISKW from record 1 overwrites but does not truncate a longer file.
+# M166 therefore must erase/recreate REF2 for both forward writes and rollback.
+def cms_overwrite(existing, replacement):
+    out = list(existing)
+    for index, line in enumerate(replacement):
+        if index < len(out):
+            out[index] = line
+        else:
+            out.append(line)
+    return out
+
+physical_bad = cms_overwrite(created, original)
+assert physical_bad != original
+assert physical_bad[-1] == f"REF {TEST} {CAND}"
+assert list(original) == original
 
 print("M166 REF2 COMPARE-AND-SWAP HOST MODEL PASSED")
