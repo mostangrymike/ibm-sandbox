@@ -1,4 +1,394 @@
-/* M169 generalized smart-HTTP discovery. */
+/* M169: generalized bounded smart-HTTP upload-pack discovery. */
 address cms
-say 'GITFETCH PLACEHOLDER'
-exit 8
+parse arg cmd bridge port authority repo branch extra
+cmd=translate(cmd)
+if cmd\='DISCOVER' | bridge='' | port='' | authority='' |,
+   repo='' | branch='' | extra\='' then do
+ say 'Usage: GITFETCH DISCOVER bridge port host repo branch'
+ exit 4
+end
+if datatype(port,'W')\=1 | port<1 | port>65535 then exit 4
+call safehost authority
+if result\='OK' then exit 4
+call safepath repo
+if result\='OK' then exit 4
+call safepath branch
+if result\='OK' then exit 4
+if left(repo,1)='/' | right(repo,1)='/' | pos('..',repo)>0 then exit 4
+if left(branch,1)='/' | right(branch,1)='/' |,
+   pos('..',branch)>0 then exit 4
+if left(branch,11)='refs/heads/' then target=branch
+else target='refs/heads/'||branch
+if length(target)>255 then exit 4
+
+path='/'||repo||'.git/info/refs?service=git-upload-pack'
+if length(path)>512 then exit 4
+call toasciihex 'GET '||path||' HTTP/1.1'
+wire=result||'0D0A'
+call toasciihex 'Host: '||authority
+wire=wire||result||'0D0A'
+call toasciihex 'Accept: application/x-git-upload-pack-advertisement'
+wire=wire||result||'0D0A'
+call toasciihex 'Connection: close'
+wire=wire||result||'0D0A0D0A'
+raw=x2c(wire)
+
+s=''
+r=Socket('Initialize','GITFETCH')
+parse var r src rest
+if src\=0 then exit 8
+if verify(bridge,'0123456789.')=0 then ip=bridge
+else do
+ r=Socket('GetHostByName',bridge)
+ parse var r src addrs
+ if src\=0 then call bad
+ ip=word(addrs,1)
+ if ip='' then call bad
+end
+r=Socket('Socket')
+parse var r src s
+if src\=0 then call bad
+r=Socket('GetSockOpt',s,'SOL_SOCKET','SO_ASCII')
+parse var r src opt
+if src\=0 | translate(opt)\='OFF' then call bad
+r=Socket('Connect',s,'AF_INET' port ip)
+parse var r src rest
+if src\=0 then call bad
+r=Socket('Send',s,raw)
+parse var r src sent
+if src\=0 | sent\=length(raw) then call bad
+
+hstate='HEAD'
+header=''
+cstate='SIZE'
+cline=''
+cneed=0
+ccrlf=''
+chunkdone=0
+pstate='HDR'
+phdr=''
+pneed=0
+ppay=''
+pstage='SERVICE'
+service=0
+pktdone=0
+refs=0
+targetcount=0
+targetoid=''
+capseen=0
+capsb=0
+capofs=0
+total=0
+
+do forever
+ r=Socket('Recv',s,256)
+ parse var r src got data
+ if src\=0 then call bad
+ if got=0 then leave
+ if got>256 | length(data)\=got then call bad
+ total=total+got
+ if total>4194304 then call bad
+ call httpfeed c2x(data)
+ if result\='OK' then call bad
+end
+r=Socket('Close',s)
+s=''
+if hstate\='BODY' | chunkdone\=1 | pktdone\=1 then call bad
+if service\=1 | targetcount\=1 | capseen\=1 then call bad
+if capsb\=1 | capofs\=1 then call bad
+r=Socket('Terminate')
+say 'FETCH DISCOVERED' targetoid target
+say 'FETCH CAPABILITY SIDE-BAND-64K'
+say 'FETCH CAPABILITY OFS-DELTA'
+say 'FETCH ADVERTISEMENT REFS' refs
+say 'FETCH HTTP BYTES' total
+say 'M169 FETCH DISCOVERY PASS'
+exit 0
+
+bad:
+ if s\='' then r=Socket('Close',s)
+ r=Socket('Terminate')
+ exit 8
+
+httpfeed:
+ parse arg hx
+ hx=translate(hx)
+ if hstate='HEAD' then do
+  header=header||hx
+  if length(header)>32768 then return 'ERROR'
+  hp=pos('0D0A0D0A',header)
+  if hp=0 then return 'OK'
+  body=substr(header,hp+8)
+  hpart=left(header,hp+7)
+  call checkhdr hpart
+  if result\='OK' then return 'ERROR'
+  hstate='BODY'
+  header=''
+  if body\='' then do
+   call chunkfeed body
+   if result\='OK' then return 'ERROR'
+  end
+  return 'OK'
+ end
+ if hstate\='BODY' then return 'ERROR'
+ call chunkfeed hx
+ return result
+
+checkhdr:
+ parse arg hh
+ if left(hh,24)\='485454502F312E3120323030' &,
+    left(hh,24)\='485454502F312E3020323030' then return 'ERROR'
+ call asciitocms hh
+ ht=result
+ if ht='ERROR' then return 'ERROR'
+ hu=translate(ht)
+ if pos('CONTENT-TYPE:',hu)=0 then return 'ERROR'
+ if pos('APPLICATION/X-GIT-UPLOAD-PACK-ADVERTISEMENT',hu)=0 then,
+  return 'ERROR'
+ if pos('TRANSFER-ENCODING:',hu)=0 | pos('CHUNKED',hu)=0 then,
+  return 'ERROR'
+ return 'OK'
+
+chunkfeed:
+ parse arg work
+ work=translate(work)
+ do while work\=''
+  if cstate='SIZE' then do
+   b=left(work,2)
+   work=substr(work,3)
+   cline=cline||b
+   if length(cline)>128 then return 'ERROR'
+   if right(cline,4)='0D0A' then do
+    ch=left(cline,length(cline)-4)
+    cline=''
+    call asciitocms ch
+    ct=result
+    if ct='ERROR' then return 'ERROR'
+    parse var ct cs ';' .
+    cs=strip(cs)
+    if cs='' | length(cs)>8 |,
+       verify(translate(cs),'0123456789ABCDEF')\=0 then,
+       return 'ERROR'
+    cneed=x2d(cs)
+    if cneed>1048576 then return 'ERROR'
+    if cneed=0 then do
+     cstate='DONE'
+     chunkdone=1
+     work=''
+    end
+    else cstate='DATA'
+   end
+  end
+  else if cstate='DATA' then do
+   avail=length(work)%2
+   take=cneed
+   if take>avail then take=avail
+   if take=0 then return 'OK'
+   piece=left(work,take*2)
+   work=substr(work,take*2+1)
+   call pktfeed piece
+   if result\='OK' then return 'ERROR'
+   cneed=cneed-take
+   if cneed=0 then do
+    cstate='CRLF'
+    ccrlf=''
+   end
+  end
+  else if cstate='CRLF' then do
+   take=4-length(ccrlf)
+   if take>length(work) then take=length(work)
+   ccrlf=ccrlf||left(work,take)
+   work=substr(work,take+1)
+   if length(ccrlf)=4 then do
+    if ccrlf\='0D0A' then return 'ERROR'
+    ccrlf=''
+    cstate='SIZE'
+   end
+  end
+  else if cstate='DONE' then work=''
+  else return 'ERROR'
+ end
+ return 'OK'
+
+pktfeed:
+ parse arg work
+ work=translate(work)
+ do while work\=''
+  if pstate='HDR' then do
+   take=8-length(phdr)
+   if take>length(work) then take=length(work)
+   phdr=phdr||left(work,take)
+   work=substr(work,take+1)
+   if length(phdr)<8 then iterate
+   call pktlen phdr
+   pn=result
+   phdr=''
+   if pn='ERROR' then return 'ERROR'
+   if pn=0 then do
+    if pstage='EXPECT' then pstage='REFS'
+    else if pstage='REFS' then do
+     pstage='DONE'
+     pktdone=1
+    end
+    else return 'ERROR'
+    iterate
+   end
+   if pn=1 | pn=2 | pn<4 then return 'ERROR'
+   pneed=pn-4
+   if pneed<1 | pneed>4096 then return 'ERROR'
+   ppay=''
+   pstate='PAY'
+  end
+  else if pstate='PAY' then do
+   avail=length(work)%2
+   take=pneed
+   if take>avail then take=avail
+   if take=0 then return 'OK'
+   ppay=ppay||left(work,take*2)
+   if length(ppay)>8192 then return 'ERROR'
+   work=substr(work,take*2+1)
+   pneed=pneed-take
+   if pneed=0 then do
+    call processpkt
+    if result\='OK' then return 'ERROR'
+    ppay=''
+    pstate='HDR'
+   end
+  end
+  else return 'ERROR'
+ end
+ return 'OK'
+
+processpkt:
+ if pstage='SERVICE' then do
+  want='2320736572766963653D6769742D75706C6F61642D7061636B0A'
+  if ppay\=want then return 'ERROR'
+  service=1
+  pstage='EXPECT'
+  return 'OK'
+ end
+ if pstage\='REFS' then return 'ERROR'
+ nul=bytepos('00',ppay)
+ if nul>0 then do
+  mainhex=left(ppay,nul-1)
+  caphex=substr(ppay,nul+2)
+ end
+ else do
+  mainhex=ppay
+  caphex=''
+ end
+ if right(mainhex,2)='0A' then,
+  mainhex=left(mainhex,length(mainhex)-2)
+ if caphex\='' & right(caphex,2)='0A' then,
+  caphex=left(caphex,length(caphex)-2)
+ call asciitocms mainhex
+ line=result
+ if line='ERROR' then return 'ERROR'
+ parse var line oid ref extra
+ oid=translate(oid)
+ if extra\='' | length(oid)\=40 |,
+    verify(oid,'0123456789ABCDEF')\=0 then return 'ERROR'
+ if ref\='HEAD' & left(ref,5)\='refs/' then return 'ERROR'
+ refs=refs+1
+ if refs>10000 then return 'ERROR'
+ if caphex\='' then do
+  capseen=capseen+1
+  if capseen>1 then return 'ERROR'
+  call asciitocms caphex
+  caps=result
+  if caps='ERROR' then return 'ERROR'
+  cu=' '||translate(caps)||' '
+  if pos(' SIDE-BAND-64K ',cu)>0 then capsb=1
+  if pos(' OFS-DELTA ',cu)>0 then capofs=1
+ end
+ if ref=target then do
+  targetcount=targetcount+1
+  targetoid=oid
+ end
+ return 'OK'
+
+pktlen: procedure
+ parse arg h
+ if length(h)\=8 then return 'ERROR'
+ n=0
+ do i=1 to 4
+  b=x2d(substr(h,i*2-1,2))
+  if b>=48 & b<=57 then v=b-48
+  else if b>=65 & b<=70 then v=b-55
+  else if b>=97 & b<=102 then v=b-87
+  else return 'ERROR'
+  n=n*16+v
+ end
+ return n
+
+bytepos: procedure
+ parse arg needle,hex
+ do bp=1 to length(hex)-1 by 2
+  if substr(hex,bp,2)=needle then return bp
+ end
+ return 0
+
+safehost: procedure
+ parse arg text
+ allowed='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-'
+ if text='' | length(text)>255 | verify(text,allowed)\=0 then,
+  return 'ERROR'
+ return 'OK'
+
+safepath: procedure
+ parse arg text
+ allowed='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-/'
+ if text='' | length(text)>255 | verify(text,allowed)\=0 then,
+  return 'ERROR'
+ return 'OK'
+
+toasciihex: procedure
+ parse arg text
+ e2a='000102031A091A7F1A1A1A0B0C0D0E0F'
+ e2a=e2a||'101112131A1A081A18191A1A1C1D1E1F'
+ e2a=e2a||'1A1A1C1A1A0A171B1A1A1A1A1A050607'
+ e2a=e2a||'1A1A161A1A1E1A041A1A1A1A14151A1A'
+ e2a=e2a||'20A6E180EB909FE2AB8B9B2E3C282B7C'
+ e2a=e2a||'26A9AA9CDBA599E3A89E21242A293B5E'
+ e2a=e2a||'2D2FDFDC9ADDDE989DACBA2C255F3E3F'
+ e2a=e2a||'D78894B0B1B2FCD6FB603A2340273D22'
+ e2a=e2a||'F861626364656667686996A4F3AFAEC5'
+ e2a=e2a||'8C6A6B6C6D6E6F7071729787CE93F1FE'
+ e2a=e2a||'C87E737475767778797AEFC0DA5BF2F9'
+ e2a=e2a||'B5B6FDB7B8B9E6BBBCBD8DD9BF5DD8C4'
+ e2a=e2a||'7B414243444546474849CBCABEE8ECED'
+ e2a=e2a||'7D4A4B4C4D4E4F505152A1ADF5F4A38F'
+ e2a=e2a||'5CE7535455565758595AA0858EE9E4D1'
+ e2a=e2a||'30313233343536373839B3F7F0FAA7FF'
+ tab=x2c(e2a)
+ bytes=xrange('00'x,'FF'x)
+ return c2x(translate(text,tab,bytes))
+
+asciitocms: procedure
+ parse arg ah
+ if ah='' then return ''
+ if length(ah)//2\=0 then return 'ERROR'
+ ah=translate(ah)
+ do ai=1 to length(ah)
+  if pos(substr(ah,ai,1),'0123456789ABCDEF')=0 then return 'ERROR'
+ end
+ ascii=x2c(ah)
+ e2a='000102031A091A7F1A1A1A0B0C0D0E0F'
+ e2a=e2a||'101112131A1A081A18191A1A1C1D1E1F'
+ e2a=e2a||'1A1A1C1A1A0A171B1A1A1A1A1A050607'
+ e2a=e2a||'1A1A161A1A1E1A041A1A1A1A14151A1A'
+ e2a=e2a||'20A6E180EB909FE2AB8B9B2E3C282B7C'
+ e2a=e2a||'26A9AA9CDBA599E3A89E21242A293B5E'
+ e2a=e2a||'2D2FDFDC9ADDDE989DACBA2C255F3E3F'
+ e2a=e2a||'D78894B0B1B2FCD6FB603AFAEC5'
+ e2a=e2a||'8C6A6B6C6D6E6F7071729787CE93F1FE'
+ e2a=e2a||'C87E737475767778797AEFC0DA5BF2F9'
+ e2a=e2a||'B5B6FDB7B8B9E6BBBCBD8DD9BF5DD8C4'
+ e2a=e2a||'7B414243444546474849CBCABEE8ECED'
+ e2a=e2a||'7D4A4B4C4D4E4F505152A1ADF5F4A38F'
+ e2a=e2a||'5CE7535455565758595AA0858EE9E4D1'
+ e2a=e2a||'30313233343536373839B3F7F0FAA7FF'
+ if length(e2a)\=512 then return 'ERROR'
+ tab=x2c(e2a)
+ bytes=xrange('00'x,'FF'x)
+ return translate(ascii,bytes,tab)
