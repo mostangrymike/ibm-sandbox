@@ -1,4 +1,4 @@
-name: Publish clean M165 branch
+name: Publish M165 source to main
 
 on:
   push:
@@ -18,14 +18,21 @@ jobs:
         with:
           ref: m165-staged-commit
           fetch-depth: 0
-      - name: Publish clean production branch
+      - name: Publish tested M165 source
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin main
-          git checkout -b m165-clean origin/main
-          git cherry-pick e31ba10aa5cc6d187e877dbbb578ff0c613c0bb2 || true
+          git checkout -B publish-main origin/main
+          git checkout 930c1e88728b80fd27777c05858ec797164d90e3 -- docs/M165.md
+          git checkout 930c1e88728b80fd27777c05858ec797164d90e3 -- src/GIT.EXEC
+          git checkout 930c1e88728b80fd27777c05858ec797164d90e3 -- src/GITVREF.EXEC
+          git checkout 930c1e88728b80fd27777c05858ec797164d90e3 -- src/GITWT.EXEC
+          git checkout 930c1e88728b80fd27777c05858ec797164d90e3 -- src/M165CHK.EXEC
+          git checkout 930c1e88728b80fd27777c05858ec797164d90e3 -- tests/check-verified-ref.sh
+          git checkout 930c1e88728b80fd27777c05858ec797164d90e3 -- tests/test-m165-staged-commit.py
+          git add docs/M165.md src/GIT.EXEC src/GITVREF.EXEC src/GITWT.EXEC
+          git add src/M165CHK.EXEC tests/check-verified-ref.sh
           git add tests/test-m165-staged-commit.py
-          git -c core.editor=true cherry-pick --continue
-          git cherry-pick bf4aa9fe5dae03b93c9866a611d06dd213ca04c8
-          git push origin m165-clean
+          git commit -m "M165: staged commit object"
+          git push origin HEAD:main
