@@ -30,6 +30,9 @@ for needle in (
     "GITUPD: refusing to delete symbolic HEAD target",
     "address command 'EXEC GIT VERIFY-OBJECT' oid",
     "GITUPD: branch target is not a COMMIT object",
+    "bak.0=rr.0",
+    "call restore",
+    "GITUPD: REF2 rollback restored prior snapshot",
 ):
     assert needle in upd
 
