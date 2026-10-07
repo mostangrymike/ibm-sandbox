@@ -1,0 +1,179 @@
+rootfor:
+ parse arg commit
+ drop sf.
+ sf.0=0
+ cmd='GITREC SHOWFULL GITFIX M15NEW' commit
+ 'PIPE CMS' cmd '| STEM sf.'
+ if rc\=0 then return 'ERROR'
+ marker=0
+ roots=0
+ answer=''
+ do sfi=1 to sf.0
+  if sf.sfi='SHOW FULL ROOT CLOSURE VERIFIED' then marker=marker+1
+  if word(sf.sfi,1)='COMMIT' & word(sf.sfi,2)='TREE' then do
+   oid=translate(word(sf.sfi,3))
+   if length(oid)\=40 |,
+      verify(oid,'0123456789ABCDEF')\=0 then return 'ERROR'
+   roots=roots+1
+   answer=oid
+  end
+ end
+ if marker\=1 | roots\=1 then return 'ERROR'
+ return answer
+
+splitpath:
+ parse arg ph
+ drop pcomp.
+ pcnt=0
+ part=''
+ if ph='' | length(ph)//2\=0 then return 'ERROR'
+ do spi=1 to length(ph) by 2
+  b=translate(substr(ph,spi,2))
+  if b='2F' then do
+   if part='' then return 'ERROR'
+   pcnt=pcnt+1
+   pcomp.pcnt=part
+   part=''
+  end
+  else do
+   if verify(b,'0123456789ABCDEF')\=0 then return 'ERROR'
+   part=part||b
+  end
+ end
+ if part='' then return 'ERROR'
+ pcnt=pcnt+1
+ pcomp.pcnt=part
+ if pcnt<1 | pcnt>16 then return 'ERROR'
+ return 'OK'
+
+readtree:
+ parse arg toid,target
+ drop tout. emode. enlen. eoid. ename.
+ tout.0=0
+ cmd='GITREC TREE GITFIX M15NEW' toid
+ 'PIPE CMS' cmd '| STEM tout.'
+ if rc\=0 then return 'ERROR'
+ begin=0
+ ending=0
+ declared=-1
+ ecount=0
+ currente=0
+ do ti=1 to tout.0
+  line=tout.ti
+  if line='TREE DATA BEGIN' then begin=begin+1
+  else if line='TREE DATA END' then ending=ending+1
+  else if word(line,1)='TREE' & word(line,2)='ENTRY' then do
+   if word(line,3)\='MODE' | word(line,5)\='NAMELEN' |,
+      word(line,7)\='OID' | words(line)\=8 then return 'ERROR'
+   ecount=ecount+1
+   currente=ecount
+   emode.ecount=word(line,4)
+   enlen.ecount=word(line,6)
+   eoid.ecount=translate(word(line,8))
+   ename.ecount=''
+  end
+  else if word(line,1)='TREE' & word(line,2)='NAMEHEX' then do
+   if currente<1 | words(line)\=3 then return 'ERROR'
+   ename.currente=ename.currente||translate(word(line,3))
+  end
+  else if word(line,1)='TREE' & word(line,2)='ENTRIES' then do
+   if words(line)\=3 then return 'ERROR'
+   declared=word(line,3)
+  end
+ end
+ if begin\=1 | ending\=1 then return 'ERROR'
+ if datatype(declared,'W')\=1 | declared\=ecount then return 'ERROR'
+ matches=0
+ foundoid=''
+ foundmode=''
+ foundindex=0
+ do ei=1 to ecount
+  mode=emode.ei
+  if mode\='100644' & mode\='100755' & mode\='120000' &,
+     mode\='40000' & mode\='160000' then return 'ERROR'
+  if datatype(enlen.ei,'W')\=1 | enlen.ei<1 then return 'ERROR'
+  if length(ename.ei)\=enlen.ei*2 then return 'ERROR'
+  if verify(ename.ei,'0123456789ABCDEF')\=0 then return 'ERROR'
+  if length(eoid.ei)\=40 |,
+     verify(eoid.ei,'0123456789ABCDEF')\=0 then return 'ERROR'
+  if ename.ei=target then do
+   matches=matches+1
+   foundoid=eoid.ei
+   foundmode=mode
+   foundindex=ei
+  end
+ end
+ if matches\=1 then return 'ERROR'
+ return 'OK'
+
+rewritetree:
+ parse arg oldtree,target,newchild
+ call readtree oldtree,target
+ if result\='OK' then return 'ERROR'
+ eoid.foundindex=newchild
+ raw=''
+ do rti=1 to ecount
+  call modehex emode.rti
+  mh=result
+  if mh='ERROR' then return 'ERROR'
+  raw=raw||mh||'20'||ename.rti||'00'||eoid.rti
+ end
+ call writehex raw
+ return result
+
+modehex:
+ parse arg mode
+ if mode='100644' then return '313030363434'
+ if mode='100755' then return '313030373535'
+ if mode='120000' then return '313230303030'
+ if mode='40000' then return '3430303030'
+ if mode='160000' then return '313630303030'
+ return 'ERROR'
+
+writehex:
+ parse arg raw
+ 'STATE GITTREE REPO A'
+ trc=rc
+ if trc=0 then do
+  'ERASE GITTREE REPO A'
+  if rc\=0 then return 'ERROR'
+ end
+ else if trc\=28 then return 'ERROR'
+ drop tr.
+ tn=0
+ tp=1
+ if raw='' then do
+  tn=1
+  tr.1='EMPTY'
+ end
+ else do while tp<=length(raw)
+  take=min(64,length(raw)-tp+1)
+  tn=tn+1
+  tr.tn='HEX' substr(raw,tp,take)
+  tp=tp+take
+ end
+ tr.0=tn
+ 'EXECIO' tr.0 'DISKW GITTREE REPO A 1 (STEM TR. FINIS'
+ if rc\=0 then return 'ERROR'
+ drop tw.
+ tw.0=0
+ 'PIPE CMS GIT WRITE-TREE-HEXFILE GITTREE REPO A | STEM tw.'
+ wrc=rc
+ 'ERASE GITTREE REPO A'
+ erc=rc
+ if wrc\=0 | erc\=0 then return 'ERROR'
+ found=0
+ answer=''
+ do wti=1 to tw.0
+  candidate=translate(strip(tw.wti))
+  if length(candidate)=40 &,
+     verify(candidate,'0123456789ABCDEF')=0 then do
+   found=found+1
+   answer=candidate
+  end
+ end
+ if found\=1 then return 'ERROR'
+ return answer
+
+loadmap:
+ drop mapfn. mapft. mapfm. maplf.
