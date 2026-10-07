@@ -36,6 +36,7 @@ for needle in (
     "GITFETCH: counts",
     "GITFETCH: connect target",
     "GITFETCH: connect RC",
+    "GITFETCH: post-flush bytes",
 ):
     assert needle in src
 
