@@ -124,6 +124,5 @@ cleanup:
   'ERASE GITTREE REPO A'
   if rc\=0 then crc=8
  end
- else if rc\=28 then nop
- else crc=8
+ else if rc\=28 then crc=8
  return crc
