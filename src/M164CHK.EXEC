@@ -44,6 +44,7 @@ if m.1\='WORK1 1' | word(m.2,1)\='ENTRY' |,
 end
 base=translate(word(m.3,3))
 stage=translate(word(m.4,3))
+final=word(m.2,6)
 expected='0FCE3C85DD9335CA7A4868E806F09B890D115F80'
 if word(m.3,1)\='BASE' | word(m.4,1)\='STAGE' |,
    base\=stage | base\=expected | word(m.2,6)\='0' then do
@@ -91,7 +92,8 @@ end
 
 drop h.
 h.0=0
-'PIPE CMS GIT HASH-WORKFILE M164TST DATA A 1 | STEM h.'
+cmd='GIT HASH-WORKFILE M164TST DATA A' final
+'PIPE CMS' cmd '| STEM h.'
 if rc\=0 | h.0\=1 then do
  call cleanup
  say 'M164 MODIFIED HASH FAIL'
