@@ -49,39 +49,19 @@ do i=1 to out.0
    say 'GITIMP: duplicate CATHEX metadata'
    exit 8
   end
-  mline=line
-  mi=i+1
-  do while mi<=out.0 & out.mi\='OBJECT DATA BEGIN'
-   if length(mline)+length(out.mi)>200 then leave
-   mline=mline||out.mi
-   mi=mi+1
-  end
-  mline=space(mline,0)
-  moid=''
-  mobj=''
-  typ=''
-  size=''
-  prefix=''
-  parse var mline 'SEEKOBJECTOID' moid 'OBJ' mobj,
-       'TYPE' typ 'SIZE' size 'PREFIX' prefix
-  if moid\=oid | datatype(mobj,'W')\=1 |,
-     mobj<1 | mobj>1808 | prefix='' then do
+  if words(line)<8 | word(line,4)\=oid |,
+     word(line,5)\='OBJ' | word(line,7)\='TYPE' then do
    say 'GITIMP: malformed CATHEX metadata'
    exit 8
   end
-  if prefix\='-' then do
-   if length(prefix)>32 | length(prefix)//2\=0 |,
-      verify(prefix,'0123456789ABCDEF')\=0 then do
-    say 'GITIMP: malformed CATHEX prefix'
-    exit 8
-   end
+  mobj=word(line,6)
+  typ=word(line,8)
+  if datatype(mobj,'W')\=1 | mobj<1 | mobj>1808 then do
+   say 'GITIMP: invalid CATHEX object number'
+   exit 8
   end
   if datatype(typ,'W')\=1 | typ<1 | typ>4 then do
    say 'GITIMP: invalid CATHEX object type'
-   exit 8
-  end
-  if datatype(size,'W')\=1 | size<0 | size>65536 then do
-   say 'GITIMP: invalid CATHEX object size'
    exit 8
   end
   meta=1
@@ -120,8 +100,9 @@ if meta\=1 | begins\=1 | ends\=1 | indata then do
  say 'GITIMP: incomplete CATHEX framing'
  exit 8
 end
-if length(body)%2\=size then do
- say 'GITIMP: CATHEX size mismatch'
+size=length(body)%2
+if size>65536 then do
+ say 'GITIMP: CATHEX body too large'
  exit 8
 end
 if typ<1 | typ>3 then do
