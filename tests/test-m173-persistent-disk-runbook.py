@@ -149,4 +149,22 @@ for evidence in (
     "No `USER DIRECT` source edits",
 ):
     assert evidence.lower() in runbook.lower(),evidence
+# Physical CP, not just DIRMAP, verified all three volumes at 11000 CYL.
+# Candidate must fit known real bounds and the explicit mapped free interval.
+cp_cylinders = 11000
+assert cp_cylinders > vmcom_gap_end >= vmcom_end
+for evidence in (
+    "REAL CP DASD GEOMETRY VERIFIED",
+    "0123 CUTYPE 3990-C2 DEVTYPE 3390-0C VOLSER M01RES CYLS 11000",
+    "0126 CUTYPE 3990-C2 DEVTYPE 3390-0C VOLSER M01W01 CYLS 11000",
+    "0127 CUTYPE 3990-C2 DEVTYPE 3390-0C VOLSER VMCOM1 CYLS 11000",
+    "MAINT 0123 MAINT 0123 3390 M01RES 0123 start0 size11000",
+    "MAINT 0124 MAINT 0124 3390 M01W01 0126 start0 size11000",
+    "scripts/map-cms-minidisk.sh",
+    "REAL RDEV",
+    "not yet live confirmations",
+    "new MDISK",
+    "are all still pending",
+):
+    assert evidence.lower() in runbook.lower(), evidence
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
