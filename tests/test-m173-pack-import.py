@@ -21,6 +21,9 @@ assert gm and vm and gm.group(1) == vm.group(1)
 assert int(gm.group(1)) >= 173
 assert "if command = 'PACK-IMPORT' then do" in g
 assert "'GITPIMP IMPORT'" in g
+assert "'GITPIMP IMPORT CHECKED'" in g
+assert "'STATE' target ftype 'A'" in g
+assert "'PIPE CMS GIT PACK-IMPORT' stage" in chk
 
 for needle in (
     "M173 PACK VERIFY CROSSCHECK PASS",
@@ -158,6 +161,13 @@ with tempfile.TemporaryDirectory() as td:
     assert "IMPORT OUTPUT EXISTS" in again.stdout
     assert (td / "dd:OBJOUT").read_text() == stage
 
+    (td / "dd:OBJOUT").unlink()
+    checked = subprocess.run(
+        [str(exe), "IMPORT", "CHECKED"], cwd=td,
+        text=True, capture_output=True
+    )
+    assert checked.returncode == 0, checked.stdout + checked.stderr
+    assert "M173 PACK IMPORT PASS" in checked.stdout
     (td / "dd:OBJOUT").unlink()
     (td / "dd:STGIN").unlink()
     big = b"0123456789ABCDEF" * 4375
