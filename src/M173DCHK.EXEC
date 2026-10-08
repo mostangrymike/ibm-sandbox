@@ -86,6 +86,15 @@ if matches\=1 then do
    spacing='YES'
   end
   say 'M173 DIR 0600 SPACING ONLY' spacing
+  norm=translate(word(n.prefixat,1))
+  do w=2 to 7
+   norm=norm||' '||translate(word(n.prefixat,w))
+  end
+  rebuilt='NO'
+  if norm=expected then rebuilt='YES'
+  say 'M173 DIR REBUILT WORDS MATCH' rebuilt
+  say 'M173 DIR STRIPPED LENGTH' length(strip(n.prefixat))
+  say 'M173 DIR EXPECTED LENGTH' length(expected)
   prev=prefixat-1
   head='NO'
   if prev>=1 then do
@@ -93,6 +102,22 @@ if matches\=1 then do
       translate(word(u.prev,2))='MAINT' then head='YES'
   end
   say 'M173 DIR PRECEDING SOURCE MAINT' head
+  sect='NONE'
+  sectat=0
+  owner='NO'
+  do si=1 to prev
+   t=translate(word(u.si,1))
+   if t='USER' | t='IDENTITY' | t='SUBCONFIG' then do
+    sect=t
+    sectat=si
+    owner='NO'
+    if t='USER' & translate(word(u.si,2))='MAINT' then,
+       owner='YES'
+   end
+  end
+  say 'M173 DIR ENCLOSING SECTION' sect
+  say 'M173 DIR ENCLOSING HEADER RECORD' sectat
+  say 'M173 DIR ENCLOSING USER MAINT' owner
   other=0
   first=0
   do ix=1 to u.0
