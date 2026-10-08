@@ -1540,3 +1540,29 @@ separately authorized privileged changes. The EBS source
 and region were operator-matched; a guest restore is untested.
 Do not LINK/ACCESS/FORMAT, change User DIRECT/MAINT-1 source,
 activate CP directory, or run M173 import at this gate.
+
+## 2026-10-08 16:32 — M173 Gate 5b rollback EDIT and DIRMAP PASS
+
+Live target rollback syntax check:
+`DIRECTXA M173BAK DIRECT C (EDIT` returned
+z/VM directory utility v6r3,
+`EOJ DIRECTORY NOT UPDATED` and RC0 16:31:49.
+Next `STATE M173NEW MDISKMAP C` confirmed destination
+absent RC28; `DIRMAP M173NEW DIRECT C C` completed with
+source read and candidate map written without errors
+at 16:32:10. Candidate map: F100 394 records,
+10 blocks, C1; previous original USER MDISKMAP C
+was F100 392 records. `QUERY DISK C`:
+MNT2CC C R/W 10 cylinders 4096 bytes/block,
+298 used/1502 free of 1800, eight files.
+
+**No CP directory activation**. This is a prospective
+source-derived map, not a proof of active or hidden
+allocations. Next inspect the VMCOM1 group including
+the MAINT-1 600/0600 extent 6000-7599 and
+neighboring free-gap boundaries privately.
+Canonical instructions are at the TOP of
+`docs/M173_DIRECTORY_CHANGE_PLAN.md`.
+Do not initialize/format any existing device or
+run Git M173 until active directory activation
+and independently verified newly-created G disk.
