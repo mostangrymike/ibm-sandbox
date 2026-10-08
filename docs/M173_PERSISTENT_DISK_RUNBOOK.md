@@ -1,0 +1,215 @@
+# M173 persistent 3390 data-minidisk provisioning runbook
+
+Status: **the new data minidisk has NOT been provisioned**.
+This document separates read-only discovery, privileged allocation,
+initialization of a NEW empty minidisk, and the actual Git importer.
+Never infer usable cylinder gaps from an accessed CMS filemode's
+BLKS LEFT value or from the Hercules backing-image size.
+
+## Target-proven inputs and capacity
+
+- GitHub project: `mostangrymike/ibm-sandbox`.
+- Existing MAINT virtual `0191`, CMS `A`, label `MNT191`,
+  physical CP `Rdev 0123`, volume `M01RES`, starts at
+  cylinder 494 and occupies 175 cylinders. The active Hercules
+  mapping was `0123 3390 dasd1`, effective host path
+  `/home/admin/vm630/dasd1`. The live host configuration
+  and process mapping must be reconfirmed before changes.
+- At the last CMS checkpoint: `212` files on A,
+  `8659` 4096-byte blocks used, `22841` free out of
+  `31500`. This is 27% usage, not an integrity check.
+- Retained `M171NET PACK A` and `M171NET META A` are essential;
+  2,171,129 compressed bytes, 7,736 PACK objects, retained
+  expected SHA-1 `A705122BC39A3383BC05ABC6C888A1F788B1D067`.
+- The failed M173 stage grew to 19,213 blocks on A and failed
+  independent verification at object 2625. Its incomplete A copy
+  was erased by the operator. **Never rerun M173 on A.**
+- The native M173 admission guard requires a writable 4K CMS
+  data disk with at least **180,000 free blocks**. A 3390 cylinder
+  of CMS 4K storage fits **180 blocks**, so admission requires
+  more than 1000 cylinders after filesystem overhead.
+- Planning size: **1,600 3390 cylinders**, approximately
+  288,000 CMS data blocks before filesystem overhead,
+  or about 1.10 GiB of block capacity. This is a *proposal*
+  and must be validated against the ACTUAL model and unallocated
+  extents; never assume any of the six existing DASD images
+  has such a contiguous free allocation. A 3390-1 cannot fit
+  1600 cylinders, whereas a sufficiently available 3390-2,
+  3390-3 or larger model may be able to.
+- Prefer persistent MDISK, not T-DISK or V-DISK; nothing
+  ephemeral should become the sole verified staged generation.
+
+## Phase 1: only read-only inventory; safe to run now
+
+On CMS MAINT (the last two commands require CP privileges
+which may not be assigned; errors are informational):
+
+    CP QUERY VIRTUAL DASD
+    CP QUERY MDISK 191 LOCATION
+    CP QUERY DASD ALL
+    CP QUERY ALLOC MAP ALL
+    QUERY DISK
+
+The `QUERY ALLOC` commands describe **CP-owned** system
+volumes/regions and do not enumerate all user permanent
+minidisks; the free-block counts from `QUERY DISK`
+describe free filespace WITHIN a minidisk. Neither constitutes
+authority to allocate a new MDISK extent.
+
+If DirMaint is actually installed and your userid is
+authorized, its inventory reports may supply the
+permanent-minidisk picture:
+
+    DIRM USEDEXT V=M01RES
+    DIRM FREEXT V=M01RES
+
+If other candidate CP volume IDs emerge from `CP QUERY DASD ALL`,
+repeat authorized reports for those volumes. Some installations
+lack DirMaint or manage the directory elsewhere; in that
+case an authorized administrator must audit all `MDISK` and
+`DEDICATE` definitions in the ACTIVE CP directory,
+the directory manager's extent database if any, and CP
+reserved `DRCT`, `PAGE`, `SPOOL`, `TDISK` extents.
+Do NOT paste a complete `USER DIRECT` to a public report:
+user entries may contain passwords or other secrets.
+Share only the relevant redacted extent reports.
+
+On the Linux Hercules host, after confirming the process
+and active configuration, read-only:
+
+    pgrep -af '[h]ercules'
+    ls -lh /home/admin/vm630/dasd*
+    df -h /home/admin/vm630
+    bash scripts/inspect-hercules-config.sh /home/admin/vm630/hercules.cnf
+
+Reconcile the CP real devices and volumes with the
+Hercules CKD image geometry and process cwd, not filenames
+alone. If a new DASD image is needed, capacity, device type,
+host storage, CKD initialization/CP attachment and the
+active guest directory must be planned separately. Do not
+create/attach/reformat one from guessed commands.
+
+## Phase 2: administrator-only allocation and backup
+
+**Stop at this gate without a VERIFIED contiguous free 1600-cylinder
+(or appropriately sized) region on a suitable volume.**
+IBM explicitly warns that CP and directory-processing tools
+do not completely prevent overlapping MDISK extents. The
+administrator must reconcile user minidisks, CP extents,
+historical/dummy users and current dedicated disks.
+
+Before any allocation or format operation, preserve the
+backing volume and all overlays/dependencies with a
+verified, quiesced offline copy, or coordinated provider
+snapshot. This matters particularly because of the earlier
+CMS A `DMSDKD1307T` / TRKDE 4 incident. The existing
+repo `scripts/backup-offline-dasd.sh` works ONLY after
+the actual Hercules instance is offline and the specific
+base image has been validated; a live ordinary `cp`
+of `dasd1` is not an acceptable substitute.
+
+With verified free physical extents, define a new
+**permanent** 3390 MDISK on the MAINT user with an
+unused virtual address, a verified real volume ID, a
+checked start location and agreed length. The directory
+`MDISK` statement format is:
+
+    MDISK <VDEV> 3390 <START> <CYLINDERS> <VOLSER> <MODE>
+
+This is **syntax only, not a command to execute**.
+The actual numbers and VOLSER are intentionally
+absent. Use the installed DirMaint's authorized
+allocation functions or carefully approved USER
+DIRECT/DIRECTXA procedure; do not overlay A/191,
+existing system extents or users. The directory must
+be applied and the device made visible in MAINT
+before continuing. Never choose VDEV 0192 because
+CMS can automatically manage it as its D disk.
+
+## Phase 3: format ONLY the newly created empty target
+
+After the administrator provides the verified VDEV,
+VOLSER, backing volume extent and confirmation that
+this is an unused NEW disk, inspect again:
+
+    CP QUERY VIRTUAL DASD
+    CP QUERY MDISK <VDEV> LOCATION
+
+**Do not run FORMAT against an old or uncertain device.**
+CMS `FORMAT` is destructive; it erases previous data.
+Initialize the newly allocated empty disk under the
+verified virtual device address, use a 4096-byte CMS
+blocksize and the intended volume label, and ACCESS
+that *new* device as G. Consult the installed z/VM
+6.3 `FORMAT` syntax and prompts before entering
+a destructive command.
+
+After new formatting/access:
+
+    QUERY DISK G
+
+Require exactly one G disk, R/W, TYPE 3390,
+BLKSZ 4096, with `BLKS LEFT` at least 180000.
+Record VDEV, label, size, used/free blocks and
+`CP QUERY MDISK <VDEV> LOCATION`.
+Avoid formatting or re-accessing A, and do not
+rename G to A.
+
+## Phase 4: Git source transfer, build and target gates
+
+GitHub contains updated `M173CHK.EXEC` to
+`M176CHK.EXEC`, all accepting a single non-A
+filemode letter, e.g. G. M173 output is
+`M173NET STAGE G`, M174 output `M174NET INDEX G`;
+live input PACK and META remain on A. M173/174 gates
+are fail-closed and retain failed output for diagnosis;
+they do not automatically ERASE a large output on failure.
+
+On the Mac from `ibm-sandbox/src`:
+
+    git pull
+    ./cms-upload.sh M173CHK.EXEC M174CHK.EXEC
+    ./cms-upload.sh M175CHK.EXEC M176CHK.EXEC
+
+On CMS, only after G has passed the capacity gate:
+
+    GIT LEVEL
+    QUERY DISK G
+    M173CHK G
+
+`GITPIMP MODULE` already exists from the M176
+target checkpoint; do not rebuild unless the module
+or source has changed. On M173 failure, retain the
+stage for diagnosis and do not rerun while it exists.
+If and only if M173 independent readback is PASS,
+continue (build later native modules as needed):
+
+    CMSCLNK GITPIDX PLAIN
+    M174CHK G
+    CMSCLNK GITPCAT PLAIN
+    M175CHK G
+    CMSCLNK GITPTRE PLAIN
+    M176CHK G
+
+Target-specific module compilation and `CMSCLNK`
+link modes must be cross-checked against each milestone
+before execution. The above commands assume the
+`.C` source for each later module is present on A;
+upload current GitHub sources first if missing.
+
+Do not claim M173–M176 target validation until real
+CMS produces their full expected PASS outputs.
+
+## Source documentation
+
+- IBM [MDISK directory statement](https://www.ibm.com/docs/en/zvm/7.2.0?topic=directory-mdisk-statement):
+  overlap warnings and persistent extent syntax.
+- IBM [QUERY ALLOC](https://www.ibm.com/docs/en/zvm/7.2?topic=commands-query-alloc):
+  CP-owned extents only.
+- IBM [DirMaint USEDEXT](https://www.ibm.com/docs/en/zvm/7.3.0?topic=ivp-test-0710-dm0710):
+  authorized extent inventory.
+- IBM [FORMAT](https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-format):
+  destructive initialization and 180 4K blocks/cylinder.
+- Existing project `docs/CMS_DASD_RECOVERY.md`:
+  exact Hercules 0123 volume mapping and prior A-disk
+  integrity warning.
