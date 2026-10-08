@@ -24,6 +24,7 @@ for m, written, minimum in specs:
     if written:
         assert "'PIPE CMS QUERY DISK' datafm" in source
         assert "word(d.di,4)='R/W'" in source
+        assert "word(d.di,7)='4096'" in source
         assert f"if avail<{minimum}" in source
         assert "matched\\=1 | datatype(avail,'W')\\=1" in source
     assert "GITFIX" not in source and "M15NEW" not in source
