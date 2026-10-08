@@ -8783,3 +8783,21 @@ DIRECTXA, no DIRMAP until collision and EDIT gates pass,
 no XEDIT/COPYFILE of protected directory sources,
 LINK/ACCESS/FORMAT, G admission or M173 import.
 Reference docs/M173_DIRECTORY_CHANGE_PLAN.md.
+
+## 2026-10-08 — M173 Gate 5b host CI GREEN
+
+GitHub native-stage workflow 37847107796 completed
+SUCCESS at commit f591df345091c37819085d88088c1c3afe1560dd.
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/37847107796
+Gate 5 real CMS CP-owned/no-active-device outcomes and
+next backup syntax check + guarded candidate map outputs
+are regression-checked. This is host CI, not proof that
+the new Gate 5b commands have run on CMS.
+
+Operator's next read-only DIRECTXA EDIT on untouched
+M173BAK DIRECT C; if RC0, check absent prospective
+M173NEW MDISKMAP C RC28; only then run DIRMAP
+M173NEW DIRECT C C and verify report on C.
+No CP directory activation, new virtual device or CMS
+FORMAT is authorized. Existing USER DIRECT C is to
+remain unchanged and is not the candidate.
