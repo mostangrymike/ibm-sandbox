@@ -20,7 +20,9 @@ assert "if u.i\\==b.i" in source
 assert "if u.i\\==n.j" in source
 assert "if translate(strip(n.added))\\=expected" in source
 assert "j=i+1" in source
-assert "if i>at then j=i+1" in source
+assert "added=i" in source
+assert "before=added-1" in source
+assert "do i=added to u.0" in source
 assert "if maint\\=1" in source
 
 expected = "MDISK 0600 3390 6000 1600 VMCOM1 W"
