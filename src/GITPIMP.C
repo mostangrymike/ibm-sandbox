@@ -393,7 +393,7 @@ static void cleanup_live(struct entry *e,unsigned long count) {
  }
 }
 
-static int import_pack(void) {
+static int import_pack(int prechecked) {
  FILE *f,*out,*probe;
  unsigned char *pack=0,*repr=0,*body=0,digest[20],trailer[20];
  struct entry *e=0;
@@ -466,11 +466,17 @@ static int import_pack(void) {
   goto done;
  }
 
- probe=fopen("dd:OBJOUT","r");
- if(probe) {
-  fclose(probe);
-  puts("IMPORT OUTPUT EXISTS");
-  goto done;
+ /* CMS FILEDEF may open an absent DISK output for input.
+  * PRECHECKED is allowed only after CMS STATE confirmed absence.
+  * Preserve native existence guard for direct/host IMPORT.
+  */
+ if(!prechecked) {
+  probe=fopen("dd:OBJOUT","r");
+  if(probe) {
+   fclose(probe);
+   puts("IMPORT OUTPUT EXISTS");
+   goto done;
+  }
  }
  out=fopen("dd:OBJOUT","w");
  if(!out) {
@@ -666,7 +672,10 @@ int main(int argc,char **argv) {
  unsigned long n;
  char *end;
  if(argc==2&&strcmp(argv[1],"IMPORT")==0)
-  return import_pack();
+  return import_pack(0);
+ if(argc==3&&strcmp(argv[1],"IMPORT")==0&&
+    strcmp(argv[2],"CHECKED")==0)
+  return import_pack(1);
  if(argc==3&&strcmp(argv[1],"VERIFY")==0) {
   n=strtoul(argv[2],&end,10);
   if(*end||n<1||n>OBJMAX) {
@@ -675,6 +684,6 @@ int main(int argc,char **argv) {
   }
   return verify_stage(n);
  }
- puts("Usage: GITPIMP IMPORT | VERIFY object-count");
+ puts("Usage: GITPIMP IMPORT [CHECKED] | VERIFY object-count");
  return 4;
 }
