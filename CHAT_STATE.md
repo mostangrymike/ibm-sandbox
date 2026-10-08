@@ -7376,3 +7376,39 @@ Updated docs/M173_PERSISTENT_DISK_RUNBOOK.md with
 this failure and possible MAINT 2CC directory map
 fallback. Updated test-m173-persistent-disk-runbook.py
 with source discovery and failure evidence assertions.
+
+
+## 2026-10-08 13:12 SOURCE DIRECTORY FOUND ON MAINT C
+
+After DirMaint's failure, operator ran STATE USER DIRECT C,
+which succeeded RC0, and LISTFILE * DIRECT C (ALLOC:
+USER DIRECT C1 F LRECL80 RECS4282 BLOCKS84. This is
+the conventional source directory on MAINT 02CC
+(accessed R/W C in prior QUERY DISK); source is
+plausible but currency against live CP binary directory
+is NOT independently established. Avoid pasting
+raw USER DIRECT lines due passwords. Do NOT use
+unqualified DIRECTXA (can activate new CP directory).
+
+Next safe mapping gate:
+QUERY DISK C
+STATE USER MDISKMAP C
+If output file absent RC28 and C has sufficient R/W
+space, run the IBM CMS systems-programmer utility
+DIRMAP USER DIRECT C C
+This makes USER MDISKMAP C, NOT A, without altering
+CP's active directory. DISKMAP USER DIRECT C would
+write USER DISKMAP A, so prefer DIRMAP's explicit
+outfm on the isolated C disk after collision check.
+IBM docs https://www.ibm.com/docs/SSB27U_7.2.0/com.ibm.zvm.v720.dmsb4/dirmap.htm
+After DIRMAP succeeds, compare MAINT 0191 (real0123
+M01RES start494 length175) and additional live
+CP QUERY MDISK 190/193/401 LOCATION to map
+to establish likely currency. Show only mapping
+output; output contains no USER/MDISK passwords.
+For initial volume-scoped map display:
+PIPE < USER MDISKMAP C | LOCATE /M01RES/ | CONSOLE
+Watch fullpack overlay flags and system DRCT 1-20.
+No MDISK extent has been chosen or formatted.
+Latest documentation docs/M173_PERSISTENT_DISK_RUNBOOK.md
+and test guard committed.
