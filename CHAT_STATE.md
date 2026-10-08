@@ -7121,3 +7121,43 @@ then ACLEAN APPLY BUILDDECK; QUERY DISK.
 The 952-block gain and 9-file reduction are PROJECTED only,
 not target-confirmed. This project still needs a separately
 provisioned large writable data minidisk for live M173 stage.
+
+
+## 2026-10-08 TARGET-PROVEN ACLEAN BUILDDECK SUCCESS (NINE SOURCE-BACKED DECKS)
+
+Operator ran real CMS ACLEAN APPLY BUILDDECK:
+ACLEAN APPLY BUILDDECK ITEMS 9
+ACLEAN FOUND GITCABI ASSEMBLE A
+ACLEAN FOUND GITCINF ASSEMBLE A
+ACLEAN FOUND GITCPARS ASSEMBLE A
+ACLEAN FOUND GITCPROB ASSEMBLE A
+ACLEAN FOUND GITC2 ASSEMBLE A
+ACLEAN FOUND GITREC ASSEMBLE A
+ACLEAN FOUND GITCIDX ASSEMBLE A
+ACLEAN FOUND GITCWALK ASSEMBLE A
+ACLEAN FOUND GITSEL ASSEMBLE A
+ACLEAN APPLY BUILDDECK FOUND 9 REMOVED 9
+
+Real post-erase QUERY DISK shows MNT191 virtual 191,
+A R/W 175 cylinders 3390 BLKSZ 4096,
+212 files, 8659 blocks used (27%), 22841 blocks free,
+31500 blocks total. Prior baseline: 221 files, 9620 used,
+21880 free. Exact gain: 9 files removed, 961 4-KiB
+blocks freed (~3.75 MiB), rather than predicted 952
+blocks alone; likely 9 metadata blocks as with earlier cleanup.
+This is CMS target proof that the build-deck cleanup completed.
+Do not interpret cleanup RC0 as an independent check of the
+disk after the earlier TRKDE 4 incident.
+
+C original sources for all nine generated decks remain canonical
+on GitHub; native MODULE and required hand-written assembler
+were not targeted. Any future CMSCLNK build of these C sources
+will regenerate the ASSEMBLE deck. ACLEAN and host regression
+remain in main; newest physical disk state is 212 files, 22841 free
+4K blocks. No reason to rerun old cleanup batches. M173 still
+requires a much larger separate persistent writable minidisk
+and new data filemode G (or another verified non-A letter).
+
+Further cleanup on A is not to be automated without confirming
+recoverability of unique old M13 test EXECs and SSL/TCP trace/
+M11BODY/G9* DATA records; no additional file erasures reported.
