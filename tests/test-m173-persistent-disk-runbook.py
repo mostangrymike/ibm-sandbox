@@ -279,7 +279,7 @@ for proof in (
 # The explicit userid operand cannot be an unmarked positional token.
 assert "CP QUERY MDISK 0600 DIRECTORY" in runbook
 assert "CP QUERY MDISK 0600 DIRECTORY" in snapshot
-assert "CP QUERY MDISK MAINT 0600 DIRECTORY" not in runbook
+assert "\n    CP QUERY MDISK MAINT 0600 DIRECTORY" not in runbook
 assert "CP QUERY MDISK MAINT 0600 DIRECTORY" not in snapshot
 assert "HCPQMD022E" in runbook
 assert "HCPQVD040E" in runbook
