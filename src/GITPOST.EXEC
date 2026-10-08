@@ -198,6 +198,7 @@ say 'FETCH POST HTTP BYTES' total
 if storemode then do
  say 'FETCH POST STORED' storefn 'PACK A'
  say 'FETCH POST META' storefn 'META A'
+ say 'M171 FETCH STORE PASS'
 end
 say 'M170 FETCH POST PASS'
 exit 0
