@@ -86,7 +86,7 @@ if brc\=0 then do
  do i=1 to b.0
   say b.i
  end
- 'ERASE' idx 'INDEX' datafm
+ say 'M174 FAILED OUTPUT RETAINED FOR DIAGNOSIS' idx 'INDEX' datafm
  say 'M174 INDEX BUILD FAIL RC' brc
  exit 8
 end
@@ -104,7 +104,7 @@ do i=1 to b.0
 end
 if btotal\=mobs | datatype(bunique,'W')\=1 |,
    bunique<1 | bunique>mobs | bpass\=1 then do
- 'ERASE' idx 'INDEX' datafm
+ say 'M174 FAILED OUTPUT RETAINED FOR DIAGNOSIS' idx 'INDEX' datafm
  say 'M174 INDEX BUILD CROSSCHECK FAIL'
  exit 8
 end
@@ -112,7 +112,7 @@ say 'M174 INDEX BUILD CROSSCHECK PASS'
 
 'FILEDEF IDXIN DISK' idx 'INDEX' datafm
 if rc\=0 then do
- 'ERASE' idx 'INDEX' datafm
+ say 'M174 FAILED OUTPUT RETAINED FOR DIAGNOSIS' idx 'INDEX' datafm
  say 'M174 IDXIN FILEDEF FAIL'
  exit 8
 end
@@ -125,7 +125,7 @@ if crc\=0 then do
   say c.i
  end
  'FILEDEF IDXIN CLEAR'
- 'ERASE' idx 'INDEX' datafm
+ say 'M174 FAILED OUTPUT RETAINED FOR DIAGNOSIS' idx 'INDEX' datafm
  say 'M174 INDEX CHECK FAIL RC' crc
  exit 8
 end
@@ -143,7 +143,7 @@ do i=1 to c.0
 end
 if ctotal\=mobs | cunique\=bunique | cpass\=1 then do
  'FILEDEF IDXIN CLEAR'
- 'ERASE' idx 'INDEX' datafm
+ say 'M174 FAILED OUTPUT RETAINED FOR DIAGNOSIS' idx 'INDEX' datafm
  say 'M174 INDEX CHECK CROSSCHECK FAIL'
  exit 8
 end
@@ -152,7 +152,7 @@ say 'M174 INDEX CHECK CROSSCHECK PASS'
 'FILEDEF STGIN DISK' stage 'STAGE' datafm
 if rc\=0 then do
  'FILEDEF IDXIN CLEAR'
- 'ERASE' idx 'INDEX' datafm
+ say 'M174 FAILED OUTPUT RETAINED FOR DIAGNOSIS' idx 'INDEX' datafm
  say 'M174 AUDIT STGIN FILEDEF FAIL'
  exit 8
 end
@@ -166,7 +166,7 @@ if arc\=0 then do
  end
  'FILEDEF STGIN CLEAR'
  'FILEDEF IDXIN CLEAR'
- 'ERASE' idx 'INDEX' datafm
+ say 'M174 FAILED OUTPUT RETAINED FOR DIAGNOSIS' idx 'INDEX' datafm
  say 'M174 INDEX AUDIT FAIL RC' arc
  exit 8
 end
@@ -182,7 +182,7 @@ end
 if aunique\=bunique | apass\=1 then do
  'FILEDEF STGIN CLEAR'
  'FILEDEF IDXIN CLEAR'
- 'ERASE' idx 'INDEX' datafm
+ say 'M174 FAILED OUTPUT RETAINED FOR DIAGNOSIS' idx 'INDEX' datafm
  say 'M174 INDEX AUDIT CROSSCHECK FAIL'
  exit 8
 end
@@ -198,7 +198,7 @@ if grc\=0 then do
  do i=1 to g.0
   say g.i
  end
- 'ERASE' idx 'INDEX' datafm
+ say 'M174 FAILED OUTPUT RETAINED FOR DIAGNOSIS' idx 'INDEX' datafm
  say 'M174 TIP LOOKUP FAIL RC' grc
  exit 8
 end
@@ -216,7 +216,7 @@ do i=1 to g.0
  if g.i='M174 INDEX GET PASS' then gpass=gpass+1
 end
 if goid\=translate(moid) | gtype\=1 | gpass\=1 then do
- 'ERASE' idx 'INDEX' datafm
+ say 'M174 FAILED OUTPUT RETAINED FOR DIAGNOSIS' idx 'INDEX' datafm
  say 'M174 TIP LOOKUP CROSSCHECK FAIL'
  exit 8
 end
