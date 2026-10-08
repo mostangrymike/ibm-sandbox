@@ -8474,3 +8474,32 @@ NEXT CMS MAINT: `M173DCHK` and return stdout/RC.
 Do not re-edit M173NEW without diagnostic evidence.
 DO NOT run DIRECTXA, DIRMAP, activate, LINK/ACCESS,
 FORMAT or M173 importer while Gate 3 blocked.
+
+
+## 2026-10-08 16:00 — Gate 3 exact MDISK missing, safe diagnostic revision
+
+Target MAINT `M173DCHK` returned at 16:00:11:
+`M173 DIR APPROVED LINE COUNT 0`,
+`M173 DIR MDISK 0600 PREFIX COUNT 1`,
+`M173 DIR INSERTED RECORD INVALID`, RC8.
+Thus there is ONE candidate record starting MDISK 0600,
+but ZERO exact `MDISK 0600 3390 6000 1600 VMCOM1 W`
+records. Source and backup remain identical under the
+checker; candidate is 4283 F80 records, NOT VERIFIED.
+Exact incorrect field/content remains unknown.
+
+The latest GitHub `src/M173DCHK.EXEC` adds PRIVATE-SAFE
+numeric/boolean diagnostics to its existing fail-closed
+rejection branch: 0600 row number, word count, per-field
+MATCH/DIFF (seven positions), spacing-only YES/NO,
+preceding original USER MAINT header YES/NO, count of
+all shifted-file mismatches, and first mismatch index.
+Never prints actual USER DIRECT/M173NEW text or passwords.
+Only the validator EXEC is changed, no CMS directory files.
+
+After CI passes: Mac `git pull` and
+`./cms-upload.sh M173DCHK.EXEC` in ibm-sandbox/src,
+then CMS `M173DCHK`. Stop on any nonzero; return
+numeric/indicator diagnostics only. Do not XEDIT,
+COPYFILE, DIRECTXA/EDIT, DIRMAP, LINK/ACCESS, FORMAT,
+activate the CP directory or run M173 import.
