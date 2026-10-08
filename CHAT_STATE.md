@@ -7311,3 +7311,18 @@ Host storage inventory pgrep/ls/df still PENDING.
 No physical disk allocated/formatted/created, and
 no M173 real target retest. An existing full-pack
 virtual disk is NOT spare space; never FORMAT it.
+
+
+## 2026-10-08 CP EXTENT AUDIT SOURCE-GUARD GREEN
+
+GitHub native-stage host CI run **1363** on commit
+e61c020d107e160475fdf4704d0b6d3741cfe33e
+COMPLETED SUCCESS. The newly hardened
+tests/test-m173-persistent-disk-runbook.py checks that
+the saved real CP extent inventory records M01RES
+DRCT 1-20, M01S01 SPOOL 1-10999, M01P01
+PAGE 1-10999, logged-on check for DIRMAINT, WHERETO
+startup failure, and warns NO VERIFIED PERMANENT
+MINIDISK EXTENT. Run 1362 also passed.
+Do not represent this as physical MDISK provisioning;
+it is documentation and safe software testing only.
