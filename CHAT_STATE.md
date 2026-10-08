@@ -8635,3 +8635,28 @@ directory source files and original 1808-object data.
 Runbook docs/M173_DIRECTORY_CHANGE_PLAN.md top banner
 now supersedes historical source-edit instructions.
 IBM reference: https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
+
+## 2026-10-08 — M173 Gate 3 checkpoint and Gate 4 CI success
+
+Native-stage workflow 37845531463 completed SUCCESS at commit
+`d19bf232710fd1b062bc52224050d3a3964ff8ed`.
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/37845531463
+Tests enforce the actual live M173DCHK PASS and
+only syntax-only `DIRECTXA M173NEW DIRECT C (EDIT`.
+IBM official DIRECTXA 7.2 reference documents EDIT
+does not update CP directory and successful return RC 0.
+`EOJ DIRECTORY NOT UPDATED` is also returned on error
+and is not alone enough to prove syntax success.
+By default DIRECTXA MODULE lives on PMAINT 551
+cross-release utilities minidisk, which must be accessed.
+
+Next safe CMS MAINT sequence: `STATE DIRECTXA MODULE *`
+first; if RC0 only, then
+`DIRECTXA M173NEW DIRECT C (EDIT`.
+Stop and report redacted diagnostics, final EOJ line
+and RC. Never omit the literal `(EDIT` or substitute
+USER DIRECT C. If DIRECTXA MODULE is not found,
+inspect virtual 0551 and currently accessed disks;
+do not improvise a write or active-directory command.
+Do not activate, LINK, ACCESS, DIRMAP, FORMAT,
+or import M173 at this syntax-check stage.
