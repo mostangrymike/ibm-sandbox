@@ -7567,3 +7567,41 @@ tests/test-m173-persistent-disk-runbook.py with
 gap bounds and crosschecks.
 
 Host CI native-stage run 1375 at 46be24055defb7ba3b8e331bc22a1466b809782b completed SUCCESS, verifying candidate starts/ends within the VMCOM1 reported gap and recording backup scope of both VMCOM1 and M01RES. No real minidisk definition has been made.
+
+
+## 2026-10-08 13:31 — REAL 11000 CYL GEOMETRY VERIFIED BY CP
+
+Operator ran live CP commands and got:
+CP QUERY DASD DETAILS 0123 ->
+CUTYPE 3990-C2 DEVTYPE 3390-0C VOLSER M01RES CYLS 11000
+CP QUERY DASD DETAILS 0126 ->
+CUTYPE 3990-C2 DEVTYPE 3390-0C VOLSER M01W01 CYLS 11000
+CP QUERY DASD DETAILS 0127 ->
+CUTYPE 3990-C2 DEVTYPE 3390-0C VOLSER VMCOM1 CYLS 11000
+CP QUERY MDISK 123 LOCATION ->
+MAINT 0123 owner MAINT 0123 type3390 VOLSER M01RES
+real0123 start0 size11000 (existing fullpack)
+CP QUERY MDISK 124 LOCATION ->
+MAINT 0124 owner MAINT 0124 type3390 VOLSER M01W01
+real0126 start0 size11000 (existing fullpack)
+
+This resolves actual geometry of VMCOM1 and the two
+other whole-pack devices; DIRMAP inferred stop10016
+is not physical limit for these emulated 3390s.
+Candidate persistent data minidisk VMCOM1 real0127
+start6000 length1600 end7599 is entirely within
+DIRMAP EXPLICIT gap5936-10016 (4081 cylinders),
+no need to depend on phantom space above 10016.
+Gross capacity 288000 CMS 4K blocks. Candidate is
+NOT allocated; real CP MDISK 02CC/049E/0551 locations
+still pending to crosscheck source directory currency.
+Host actual current Hercules process/cwd/0127
+backing image and host storage also PENDING.
+Independent coordinated/restorable backup of VMCOM1
+and M01RES remains PENDING. DirMaint initialization
+failed on this system. Never use DIRECTXA on USER DIRECT
+without confirming source currency, safe update process,
+and rollback. Do not FORMAT existing full pack!
+Updated docs/M173_PERSISTENT_DISK_RUNBOOK.md with
+real evidence and static tests checking exact
+11000-cylinder outputs and candidate bounds.
