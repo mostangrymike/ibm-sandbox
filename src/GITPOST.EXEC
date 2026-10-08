@@ -1,12 +1,33 @@
 /* M170: generalized bounded smart-HTTP upload-pack POST. */
 address cms
-parse arg cmd bridge port authority repo oid extra
+parse arg cmd bridge port authority repo oid storefn extra
 cmd=translate(cmd)
 oid=translate(oid)
-if cmd\='POST' | bridge='' | port='' | authority='' | repo='' |,
-   oid='' | extra\='' then do
+storemode=cmd='STORE'
+if (cmd\='POST' & cmd\='STORE') | bridge='' | port='' |,
+   authority='' | repo='' | oid='' | extra\='' then do
  say 'Usage: GITPOST POST bridge port host repo oid'
+ say '   or: GITPOST STORE bridge port host repo oid fn'
  exit 4
+end
+if cmd='POST' & storefn\='' then exit 4
+if storemode then do
+ storefn=translate(storefn)
+ call safefn storefn
+ if result\='OK' then exit 4
+ 'STATE' storefn 'PACK A'
+ if rc\=28 then do
+  say 'GITPOST: store PACK already exists' storefn
+  exit 8
+ end
+ 'STATE' storefn 'META A'
+ if rc\=28 then do
+  say 'GITPOST: store META already exists' storefn
+  exit 8
+ end
+ sbuf=''
+ srecs=0
+ drop sw.
 end
 if datatype(port,'W')\=1 | port<1 | port>65535 then exit 4
 call safehost authority
@@ -16,7 +37,6 @@ if result\='OK' then exit 4
 if left(repo,1)='/' | right(repo,1)='/' | pos('..',repo)>0 then exit 4
 if length(oid)\=40 | verify(oid,'0123456789ABCDEF')\=0 then exit 4
 
-wantoid=translate(oid,'abcdef','ABCDEF')
 want='want '||wantoid||' side-band-64k ofs-delta'
 plen=4+length(want)+1
 ph=right(d2x(plen),4,'0')
@@ -162,12 +182,23 @@ if (pver\=2 & pver\=3) | pobjects<1 then do
  fail='PACK-HEADER'
  call bad
 end
+if storemode then do
+ call storefinal
+ if result\='OK' then do
+  fail='STORE-FINAL'
+  call bad
+ end
+end
 r=Socket('Terminate')
 say 'FETCH POST WANT' oid
 say 'FETCH POST PACK VERSION' pver 'OBJECTS' pobjects
 say 'FETCH POST PACK BYTES' packbytes
 say 'FETCH POST PROGRESS BYTES' progress
 say 'FETCH POST HTTP BYTES' total
+if storemode then do
+ say 'FETCH POST STORED' storefn 'PACK A'
+ say 'FETCH POST META' storefn 'META A'
+end
 say 'M170 FETCH POST PASS'
 exit 0
 
@@ -179,7 +210,52 @@ bad:
   say 'GITPOST: PKT' pstate nak pktcount packbytes
  if s\='' then r=Socket('Close',s)
  r=Socket('Terminate')
+ if storemode then call storeclean
  exit 8
+
+storefeed:
+ parse arg shex
+ sbuf=sbuf||shex
+ do while length(sbuf)>=128
+  srecs=srecs+1
+  sw.srecs=left(sbuf,128)
+  sbuf=substr(sbuf,129)
+  if srecs=64 then do
+   call storeflush
+   if result\='OK' then return 'ERROR'
+  end
+ end
+ return 'OK'
+
+storeflush:
+ if srecs=0 then return 'OK'
+ sw.0=srecs
+ 'EXECIO' srecs 'DISKW' storefn 'PACK A 0 (STEM SW. FINIS'
+ if rc\=0 then return 'ERROR'
+ drop sw.
+ srecs=0
+ return 'OK'
+
+storefinal:
+ if sbuf\='' then do
+  srecs=srecs+1
+  sw.srecs=sbuf
+  sbuf=''
+ end
+ call storeflush
+ if result\='OK' then return 'ERROR'
+ sm.1='META' oid packbytes pver pobjects
+ sm.0=1
+ 'EXECIO 1 DISKW' storefn 'META A 1 (STEM SM. FINIS'
+ if rc\=0 then return 'ERROR'
+ return 'OK'
+
+storeclean:
+ 'STATE' storefn 'PACK A'
+ if rc=0 then 'ERASE' storefn 'PACK A'
+ 'STATE' storefn 'META A'
+ if rc=0 then 'ERASE' storefn 'META A'
+ return
 
 httpfeed:
  parse arg hx
@@ -359,6 +435,10 @@ pktfeed:
      if htake>length(ppiece) then htake=length(ppiece)
      packhead=packhead||left(ppiece,htake)
     end
+    if storemode then do
+     call storefeed ppiece
+     if result\='OK' then return 'ERROR'
+    end
    end
    else if pband='02' then progress=progress+ptake
    pneed=pneed-ptake
@@ -391,6 +471,13 @@ bytepos: procedure
   if substr(hex,bp,2)=needle then return bp
  end
  return 0
+
+safefn: procedure
+ parse arg text
+ if text='' | length(text)>8 then return 'ERROR'
+ if verify(text,'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')\=0 then,
+  return 'ERROR'
+ return 'OK'
 
 safehost: procedure
  parse arg text
