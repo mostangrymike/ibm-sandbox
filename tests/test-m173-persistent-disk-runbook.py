@@ -369,4 +369,15 @@ for proof in (
 ):
     assert proof.lower() in snapshot.lower(), proof
 
+
+# Single-writer mode selection must be reviewed before the directory edit.
+for proof in (
+    "Pre-activation access-mode review",
+    "W (single-writer",
+    "MR (multiple-write",
+    "Access mode is not",
+    "old illustrative MR line is NOT an instruction",
+):
+    assert proof.lower() in runbook.lower(), proof
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
