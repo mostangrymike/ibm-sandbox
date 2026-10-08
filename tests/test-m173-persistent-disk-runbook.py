@@ -309,4 +309,30 @@ assert "CP QUERY MDISK 0600 DIRECTORY" in runbook
 assert "\n    CP QUERY MDISK MAINT 0600 DIRECTORY" not in runbook
 assert "CP QUERY MDISK MAINT 0600 DIRECTORY" not in snapshot
 
+# Live permanent-directory sample from MAINT at 15:07: 4/4 source matches.
+for proof in (
+    "active MAINT CP directory source sample: 4/4 PASS",
+    "0190 | MAINT | MAINT/0190 | 3390 | M01RES/0123 | 280 / 214",
+    "0191 | MAINT | MAINT/0191 | 3390 | M01RES/0123 | 494 / 175",
+    "0193 | MAINT | MAINT/0193 | 3390 | M01RES/0123 | 669 / 500",
+    "0401 | MAINT | MAINT/0401 | 3390 | M01RES/0123 | 1961 / 292",
+    "15:07:39",
+    "15:07:52",
+    "not** a comprehensive equivalence",
+    "No directory source edit",
+    "no new G disk",
+    "No LINK/ACCESS",
+    "no FORMAT",
+):
+    assert proof.lower() in runbook.lower(), proof
+for proof in (
+    "post-snapshot permanent-directory comparison",
+    "0190 start280 size214",
+    "0191 start494 size175",
+    "0193 start669 size500",
+    "0401 start1961 size292",
+    "HARD STOP",
+):
+    assert proof.lower() in snapshot.lower(), proof
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
