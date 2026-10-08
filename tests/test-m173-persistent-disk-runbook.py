@@ -709,4 +709,48 @@ assert "16:23:33 — M173 Gate 5 CP-owned extent checks LIVE PASS" in state
 assert "Hidden from ALLOC MAP are PERM/PARM" in state
 assert "No unqualified" in state
 
+
+# Gate 5b independently succeeded on CMS; an F100 map is not
+# proof of source equivalence or hidden CP extent absence.
+for proof in (
+    "2026-10-08 16:32:22: Gate 5b CMS PASS",
+    "DIRECTXA M173BAK DIRECT C (EDIT",
+    "EOJ DIRECTORY NOT UPDATED",
+    "16:31:49",
+    "DMSSTT002E File M173NEW MDISKMAP C not found",
+    "Ready(00028)",
+    "DIRMAP M173NEW DIRECT C C",
+    "M173NEW MDISKMAP C1 written - no errors",
+    "394 10",
+    "1502 1800",
+    "Gate 5c: read-only prospective VMCOM1 extent review",
+    "PIPE < M173NEW MDISKMAP C | LOCATE /6000/ | CONSOLE",
+    "PIPE < M173NEW MDISKMAP C | LOCATE /7599/ | CONSOLE",
+    "PIPE < M173NEW MDISKMAP C | LOCATE /5936/ | CONSOLE",
+    "PIPE < M173NEW MDISKMAP C | LOCATE /7600/ | CONSOLE",
+    "PIPE < M173NEW MDISKMAP C | DROP 200 | TAKE 100 | CONSOLE",
+    "5936-5999",
+    "7600-10016",
+    "no LINK/ACCESS/FORMAT",
+):
+    assert proof.lower() in plan.lower(), proof
+for proof in (
+    "Gate 5b rollback EDIT and DIRMAP PASS",
+    "394 records",
+    "1502 free",
+    "No CP directory activation",
+):
+    assert proof.lower() in runbook.lower(), proof
+state = (root / "CHAT_STATE.md").read_text()
+for proof in (
+    "16:32:22 — M173 Gate 5b target PASS",
+    "Dirmap omits volume ID",
+    "394 records",
+    "1502 free",
+):
+    assert proof.lower() in state.lower(), proof
+assert plan.index("CURRENT GATE — 2026-10-08 16:32:22") < (
+    plan.index("CURRENT GATE — 2026-10-08 16:23:33")
+)
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
