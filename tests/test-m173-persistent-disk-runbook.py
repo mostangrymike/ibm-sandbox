@@ -465,4 +465,28 @@ assert not re.search(r"(?:snap|vol)-[0-9a-f]{8,17}", plan), (
     "No concrete EBS identifiers in public plan"
 )
 
+
+# Real 15:25 MAINT Gate 1 succeeded; output names were absent
+# before any controlled COPYFILE could be attempted.
+for proof in (
+    "Gate 1 completed on real CMS, Gate 2 authorized",
+    "1683 free 4K blocks",
+    "STATE USER DIRECT C",
+    "STATE M173BAK DIRECT C",
+    "STATE M173NEW DIRECT C",
+    "STATE M173NEW MDISKMAP C",
+    "HCPQMD040E Device 0600 does not exist",
+    "15:25:15",
+    "GATE 1 PASS",
+    "COPYFILE USER DIRECT C M173BAK DIRECT C (NEWFILE",
+    "COPYFILE USER DIRECT C M173NEW DIRECT C (NEWFILE",
+    "Stop if either copy fails",
+    "GATE 2 only",
+    "UNAUTHORIZED/PENDING",
+):
+    assert proof.lower() in plan.lower(), proof
+assert "15:25 — M173 Gate 1 read-only CMS PASS" in (
+    root / "CHAT_STATE.md"
+).read_text()
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
