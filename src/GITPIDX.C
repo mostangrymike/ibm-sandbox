@@ -232,7 +232,7 @@ static int grow(struct idxent **p,unsigned long *cap,
  return 1;
 }
 
-static int build_index(void) {
+static int build_index(int prechecked) {
  FILE *f,*out,*probe;
  struct idxent *e=0;
  unsigned long cap=0,count=0,unique=0,num,size;
@@ -293,11 +293,16 @@ static int build_index(void) {
    unique++;
   }
  }
- probe=fopen("dd:IDXOUT","r");
- if(probe) {
-  fclose(probe);
-  puts("INDEX OUTPUT EXISTS");
-  goto done;
+ /* CMS FILEDEF can make nonexistent outputs appear readable.
+  * Only a public STATE-guarded caller may request CHECKED.
+  */
+ if(!prechecked) {
+  probe=fopen("dd:IDXOUT","r");
+  if(probe) {
+   fclose(probe);
+   puts("INDEX OUTPUT EXISTS");
+   goto done;
+  }
  }
  out=fopen("dd:IDXOUT","w");
  if(!out) {
@@ -535,13 +540,16 @@ static int get_index(const char *text) {
 
 int main(int argc,char **argv) {
  if(argc==2&&strcmp(argv[1],"BUILD")==0)
-  return build_index();
+  return build_index(0);
+ if(argc==3&&strcmp(argv[1],"BUILD")==0&&
+    strcmp(argv[2],"CHECKED")==0)
+  return build_index(1);
  if(argc==2&&strcmp(argv[1],"CHECK")==0)
   return check_index();
  if(argc==2&&strcmp(argv[1],"AUDIT")==0)
   return audit_index();
  if(argc==3&&strcmp(argv[1],"GET")==0)
   return get_index(argv[2]);
- puts("Usage: GITPIDX BUILD | CHECK | AUDIT | GET oid");
+ puts("Usage: GITPIDX BUILD [CHECKED] | CHECK | AUDIT | GET oid");
  return 4;
 }
