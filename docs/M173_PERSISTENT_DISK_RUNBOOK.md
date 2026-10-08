@@ -1117,3 +1117,91 @@ References:
 - https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
 - https://www.ibm.com/docs/en/zvm/7.2.0?topic=directory-mdisk-statement
 - https://docs.aws.amazon.com/ebs/latest/userguide/ebs-describing-snapshots.html
+
+
+## 2026-10-08 14:44 — post-snapshot guest/host read-only checks passed
+
+After the operator reported the EBS snapshot completed, the
+EC2 instance and z/VM were restarted and the following
+live results were supplied (guest commands were read-only):
+
+    pgrep -af '[h]ercules'
+    724 hercules -f hercules.cnf -r hercules.rc
+
+    df -h /home/admin/vm630
+    /dev/nvme0n1p1 16G size, 8.8G used, 6.1G free (60%)
+
+    ls -l /home/admin/vm630/dasd1 /home/admin/vm630/dasd5
+    dasd1 769571364 bytes (Oct 8 19:29)
+    dasd5 1954890581 bytes (Oct 8 19:29)
+
+    CP QUERY DASD DETAILS 0127
+    VMCOM1 3390-0C real0127, 11000 cylinders
+
+    CP QUERY VIRTUAL DASD
+    MAINT 0122/0123/0124 fullpacks 11000 cylinders,
+    MAINT 02CC VMCOM1 10 cylinders R/W,
+    MAINT 049E VMCOM1 250 cylinders R/O,
+    MAINT 0551 VMCOM1 40 cylinders R/O,
+    and original A 0191 M01RES 175 cylinders R/W;
+    NO new 0600 disk in this session's virtual DASD list.
+
+    QUERY DISK A
+    MNT191 0191 A R/W 175 CYL BLKSZ4096,
+    212 files, 8659 used, 22841 free of 31500 (27%)
+
+    QUERY DISK C
+    MNT2CC 02CC C R/W 10 CYL BLKSZ4096,
+    5 files, 117 used, 1683 free of 1800 (7%)
+
+    STATE M171NET PACK A  --> RC0
+    STATE M171NET META A  --> RC0
+    STATE USER DIRECT C   --> RC0
+
+Thus the previously verified CP device topology survived
+restart, A's free-block count is unchanged, C contains
+the additional report, and required PACK/META/directory
+source files are still present. Their mere presence is
+NOT an end-to-end pack/directory checksum or proven
+snapshot restoration. Note Hercules is now PID **724**,
+so previous `/proc/7174` file descriptor observations
+do not describe the current process. The current
+`dasd1` and `dasd5` filenames exist, but if a new
+allocation operation is prepared, re-check current
+open FDs and CKD overlay state for PID 724.
+
+### Next safe VDEV gate — no directory changes
+
+The session's `CP QUERY VIRTUAL DASD` contained no
+`0600`, but the **active CP directory** must be
+queried as well. IBM documents that `QUERY MDISK ...
+DIRECTORY` reads directory-defined MDISK information,
+which can differ from currently instantiated disks.
+Both commands are read-only:
+
+    CP QUERY VIRTUAL 0600
+    CP QUERY MDISK MAINT 0600 DIRECTORY
+
+Only if both reports show no device can 0600 become
+a possible virtual address for a subsequent reviewed
+directory edit. The proposed physical offset is
+**decimal cylinder 6000**, length 1600, VMCOM1
+real Rdev0127; the unrelated VDEV `0600` is
+hexadecimal. No new MAINT MDISK has yet been defined.
+
+### Verify the recovery point, don't retake it blindly
+
+Operator-reported completed EBS snapshot must be
+correlated with the root EBS volume in AWS EC2 console
+(`Completed`, source ID, region, timestamp). If the
+instance was quiesced and snapshot is correct, save
+metadata and a credible restoration procedure; an
+isolated restore test is recommended. No additional
+snapshot is required simply because no ID was
+shared here. Do not publish account, instance, snapshot,
+or root volume identifiers in the public GitHub repo.
+
+References:
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=directory-mdisk-statement
