@@ -330,3 +330,27 @@ commit the screenshot itself.
 
 **NO new G disk, USER DIRECT edit, DIRECTXA activation, LINK,
 ACCESS, FORMAT or M173 run is authorized by this screenshot.**
+
+
+## 2026-10-08 — operator attests correct EBS source/Region and recovery steps
+
+After the AWS console screenshot had established `Completed` and `100%`,
+the operator explicitly confirmed: **"Source volume and region match;
+recovery procedure understood."** This is an operator-performed
+independent check that the completed snapshot's source Volume ID and
+AWS Region agree with the Hercules EC2 root volume. No AWS identifiers
+are recorded in this public repository.
+
+**Recovery provenance gate: OPERATOR VERIFIED.**
+This does **not** assert an isolated restore test or certify the
+complete guest-level consistency of every CKD image/overlay; those
+were not tested independently. No new G minidisk or directory edit,
+activation, LINK, ACCESS, FORMAT or M173 execution has taken place.
+
+Next phase is preparation only. See
+`docs/M173_DIRECTORY_CHANGE_PLAN.md` for a staged, collision-safe
+source-directory backup and candidate-only test workflow.
+Before authorizing any privileged change, keep `USER DIRECT C`
+unmodified, create separately named backups only after confirming
+their target filenames are absent, and use `DIRECTXA ... (EDIT`
+rather than activation for initial syntax validation.
