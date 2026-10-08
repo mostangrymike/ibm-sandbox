@@ -7511,3 +7511,57 @@ these gates; all source-backed 7736 PACK data on A
 remains untouched.
 
 GitHub native-stage CI run 1371 for geometry/gap test at commit 395442b9e5fa15fece9b55d9a8a54db532ece952 completed SUCCESS. No actual guest disk allocation was made. 
+
+
+## 2026-10-08 13:29 VMCOM1 LARGE GAP VERIFIED IN DIRMAP
+
+User's PIPE < USER MDISKMAP C | DROP 200 | TAKE 100 | CONSOLE
+showed a large explicit gap on REAL VOLUME VMCOM1, not
+M01RES: the last 6VMHCD20 0300 regular MDISK occupies
+cylinders 5756-5935, followed by GAP 5936-10016
+(4081 cylinders), then next volume 630RL1 starts.
+Some terminal lines were interleaved around pages 5/6,
+but the gap line itself is clear. IBM DIRMAP continues
+to assume a 10017-cylinder model where live CP showed
+11000 for the M01RES full pack; the VMCOM1 gap is
+WITHIN both possible sizes and thus does not rely
+on any cylinders beyond 10016.
+
+NEW PREFERRED M173 persistent data disk candidate:
+real RDEV 0127, VOLSER VMCOM1, START 6000,
+LENGTH 1600 CYL, END 7599. This is wholly inside
+DIRMAP-reported VMCOM1 gap 5936-10016.
+Gross 1600*180=288000 CMS 4K blocks, above
+M173 >=180000 free-block admission guard.
+Hercules config historically 0127 3390 dasd5
+with cwd /home/admin/vm630; MUST corroborate
+actual process/volume file/host free capacity NOW,
+not reuse old PID.
+
+Pending read-only target checks:
+CP QUERY DASD DETAILS 0127
+CP QUERY MDISK 02CC LOCATION
+CP QUERY MDISK 049E LOCATION
+CP QUERY MDISK 0551 LOCATION
+CP QUERY VIRTUAL DASD
+CP locations should match MAINT 02CC linked PMAINT
+02CC at VMCOM1 start121 length10, MAINT 049E
+linked 6VMLEN20 049E VMCOM1 start4104 length250,
+MAINT 0551 linked PMAINT 0551 start572 length40.
+Discrepancies halt provisioning. Host read-only:
+pgrep -af '[h]ercules'
+readlink -f /proc/<actualpid>/cwd
+ls -lh /home/admin/vm630/dasd5
+df -h /home/admin/vm630
+bash scripts/inspect-hercules-config.sh /home/admin/vm630/hercules.cnf
+No actual MDISK allocation/formatting done.
+Need independently verified offline copy or
+provider-consistent coordinated snapshot of BOTH
+VMCOM1 and M01RES (active CP directory) backing
+images/overlays plus directory source, and an
+administrator-approved directory modification
+and rollback procedure. DirMaint still fails to
+initialize, so do not rely on DIRM AMDISK.
+Updated docs/M173_PERSISTENT_DISK_RUNBOOK.md and
+tests/test-m173-persistent-disk-runbook.py with
+gap bounds and crosschecks.
