@@ -1,15 +1,21 @@
 /* M175: verified live commit/root closure through generalized index. */
 address cms
+parse upper arg datafm extra
+if length(datafm)\=1 | extra\='' |,
+   verify(datafm,'BCDEFGHIJKLMNOPQRSTUVWXYZ')\=0 then do
+ say 'Usage: M175 new-data-filemode'
+ exit 4
+end
 stage='M173NET'
 idx='M174NET'
 meta='M171NET'
 
-'STATE' stage 'STAGE A'
+'STATE' stage 'STAGE' datafm
 if rc\=0 then do
  say 'M175 RETAINED STAGE MISSING'
  exit 8
 end
-'STATE' idx 'INDEX A'
+'STATE' idx 'INDEX' datafm
 if rc\=0 then do
  say 'M175 RETAINED INDEX MISSING'
  exit 8
@@ -29,12 +35,12 @@ if tag\='META' | extra\='' | length(moid)\=40 |,
  exit 8
 end
 
-'FILEDEF STGIN DISK' stage 'STAGE A'
+'FILEDEF STGIN DISK' stage 'STAGE' datafm
 if rc\=0 then do
  say 'M175 STGIN FILEDEF FAIL'
  exit 8
 end
-'FILEDEF IDXIN DISK' idx 'INDEX A'
+'FILEDEF IDXIN DISK' idx 'INDEX' datafm
 if rc\=0 then do
  'FILEDEF STGIN CLEAR'
  say 'M175 IDXIN FILEDEF FAIL'
