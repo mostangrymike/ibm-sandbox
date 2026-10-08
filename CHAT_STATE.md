@@ -7426,3 +7426,52 @@ is never changed with DIRECTXA. This is host-only
 source/doc testing; DIRMAP has not yet been run on
 the user's CMS target. Later CHAT_STATE commit records
 this result. No disk provisioning completed.
+
+
+## 2026-10-08 13:18 DIRMAP C1 SUCCESS, M01RES FILTER INCOMPLETE
+
+Operator ran QUERY DISK C -> MNT2CC 2CC C R/W 10 cyl
+3390, 4K blocks, 4 files, 106 used, 1694 free / 1800.
+STATE USER MDISKMAP C returned RC28 (absent).
+DIRMAP USER DIRECT C C -> DMSCYD2231I source read,
+DMSCYD2232I USER MDISKMAP C1 written NO ERRORS, RC0.
+STATE USER MDISKMAP C now RC0. LISTFILE allocation
+USER MDISKMAP C1 F LRECL100, 392 records, 10 blocks.
+Thus a *report*, not CP directory activation, exists
+on C. The source USER DIRECT C is 4282 records 84 blocks.
+No new physical disk has been allocated/formatted.
+
+PIPE < USER MDISKMAP C | LOCATE /M01RES/ | CONSOLE
+returned ONLY 3 rows:
+ M01RES 3390 MAINT 0123 MR 000 10016 10017 MAINT-1 *
+ M01RES 3390 VMSERVR 0301 WR 3438 3439 002 VMSRVR-1 *
+ M01RES 3390 OSASF 0200 MR 7973 7987 015 OSASF-1 *
+These are page/section M01RES header rows, not ALL
+M01RES allocations: DIRMAP suppresses repetitive
+volser/devtype on other rows and GAP records.
+First MAINT 0123 is an overlapping full-pack view.
+DIRMAP inferred end 10016/10017 cylinders while
+live CP QUERY VIRTUAL DASD explicitly reports
+full-pack 0123 as 11000 CYL on same real 0123;
+avoid extrapolating free space outside 10016 or
+treating this as exclusivity. IBM DIRMAP documents
+fullpack overlaps and geometry inference caveats.
+
+CP QUERY MDISK LOCATION target evidence:
+MAINT 0190 M01RES real0123 start280 size214 -> 280-493
+MAINT 0191 M01RES real0123 start494 size175 -> 494-668
+MAINT 0193 M01RES real0123 start669 size500 -> 669-1168
+MAINT 0401 M01RES real0123 start1961 size292 -> 1961-2252.
+The next read-only commands, which preserve record order
+and blank-volser rows:
+PIPE < USER MDISKMAP C | TAKE 100 | CONSOLE
+PIPE < USER MDISKMAP C | DROP 100 | TAKE 100 | CONSOLE
+PIPE < USER MDISKMAP C | DROP 200 | TAKE 100 | CONSOLE
+PIPE < USER MDISKMAP C | DROP 300 | CONSOLE
+Retrieve relevant M01RES report pages with
+GAP/OVERLAP entries before any proposed MDISK
+start cylinder. Do not display raw password-containing
+USER DIRECT; map output is safe to audit.
+Persistent 1600-cylinder G disk still not allocated.
+Updated docs/M173_PERSISTENT_DISK_RUNBOOK.md
+and static test for complete audit.
