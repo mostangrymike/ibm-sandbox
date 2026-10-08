@@ -1,3 +1,69 @@
+## CURRENT GATE — 2026-10-08 16:13:55: TARGET GATE 3 PASS
+
+Real MAINT CMS output:
+
+```text
+M173DCHK
+M173 DIR ORIGINAL/BACKUP VERIFIED 4282
+M173 DIR MAINT-1 SUBCONFIG VERIFIED
+M173 DIR SINGLE MDISK INSERT RECORD 213
+M173 DIR DELTA CHECK PASS
+Ready; T=0.82/0.84 16:13:55
+```
+
+**Gate 3 is target-verified RC 0**. The 4282-record
+`USER DIRECT C` and `M173BAK DIRECT C` are identical;
+the 4283-record `M173NEW DIRECT C` is exactly the original
+plus one MDISK at record 213, within SSI-ready
+`SUBCONFIG MAINT-1` belonging to `IDENTITY MAINT` via
+its active BUILD reference. VDEV spelling `600` and `0600`
+denotes the same hexadecimal device address. No additional
+source edits or file copies are needed.
+
+### Gate 4 next: **DIRECTXA (EDIT) syntax-only**, no activation
+
+The IBM DIRECTXA documentation explicitly says the EDIT
+option checks syntax **without updating the directory on disk**.
+Supply the fully-qualified candidate file ID and keep the
+literal `(EDIT` option; omission can write the CP directory.
+Do not use the DELTA option: it is incompatible with
+IDENTITY/SUBCONFIG sources. `EOJ DIRECTORY NOT UPDATED` is
+necessary but not sufficient for success, because errors can
+produce that response too. Require no errors and RC0.
+
+From CMS MAINT, first check availability (read-only):
+
+```text
+STATE DIRECTXA MODULE *
+```
+
+If RC0 and the unchanged Gate 3 result is trusted, the
+only authorized Gate 4 operation is:
+
+```text
+DIRECTXA M173NEW DIRECT C (EDIT
+```
+
+Stop on any error or RC other than 0; preserve the full
+private console diagnostic for yourself and share only
+redacted, nonsecret error codes, final EOJ line and CMS
+return code. The CP user directory contains passwords.
+Do not perform an unqualified/non-EDIT DIRECTXA, DIRECTORY
+replacement, DIRMAP, LINK, ACCESS, FORMAT, or M173 importer
+as part of Gate 4. Do not change `USER DIRECT C` or
+`M173BAK DIRECT C`.
+
+If `STATE DIRECTXA MODULE *` reports missing, stop.
+IBM says DIRECTXA is normally on the PMAINT 551 cross-release
+utilities disk, whose MAINT-1 source contains a LINK;
+check its virtual presence and whether it is accessed
+before attempting any read-only disk ACCESS. Do not
+guess a filemode or replace any existing access entry.
+
+IBM reference:
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
+
+---
 ## IMPORTANT 2026-10-08 16:04 — SSI-ready MAINT-1 correction
 
 **Earlier Gate 3 directions that require a USER MAINT heading
