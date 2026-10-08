@@ -73,9 +73,19 @@ assert not audit(original, backup, bad)
 badbak = backup[:]
 badbak[222] = "changed backup"
 assert not audit(original, badbak, candidate)
+# Source may contain more than one heading candidate. The edit
+# must still be one exact insertion after an actual MAINT heading.
 ambiguous = original[:]
 ambiguous[10] = "USER MAINT another"
 assert not audit(ambiguous, ambiguous, candidate)
+candidate2 = ambiguous[:121] + [expected] + ambiguous[121:]
+assert audit(ambiguous, ambiguous, candidate2)
+noheading = original[:]
+noheading[120] = "USER OTHER"
+assert not audit(noheading, noheading,
+                 noheading[:121]+[expected]+noheading[121:])
+assert not audit(original, backup, [expected]+original)
+assert not audit(original, backup, original+[expected])
 
 assert "XEDIT M173NEW DIRECT C" in plan
 assert "INPUT MDISK 0600 3390 6000 1600 VMCOM1 W" in plan
