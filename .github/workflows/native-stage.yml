@@ -269,6 +269,8 @@ jobs:
         run: python3 tests/test-m175-pack-cat.py
       - name: Check M176 verified live tree closure
         run: python3 tests/test-m176-tree-closure.py
+      - name: Guard CMS storage mode for live PACK artifacts
+        run: python3 tests/test-m173-data-minidisk.py
       - name: Check combined compact M157 target gate
         run: sh tests/check-m157-gate.sh
       - name: Check neutral compiler EXEC source and F-disk setup
