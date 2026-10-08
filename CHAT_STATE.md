@@ -8242,3 +8242,38 @@ actually reports it. Stop at this gate: NO `DIRECTXA`
 FORMAT or M173 importer yet. Operator-supplied EBS
 snapshot provenance and restore procedure were confirmed,
 but isolated restore was not run.
+
+
+## 2026-10-08 — M173 directory safety CI GREEN
+
+Github Actions native-stage run 37840952884 completed **SUCCESS**
+at commit `4014d1c0881ae748d32f9c8c191fd7df9a9dcd54`.
+The run includes the new `M173DCHK.EXEC` static/host source
+contract and the updated `tests/test-m173-dir-delta.py` model,
+plus M173 persistent disk regression and other native checks.
+Earlier recent red runs were due to stale *host documentation
+assertions* ("a tested guest-level recovery" across a Markdown
+newline; old PREPARE ONLY status), now corrected. These do not
+establish target CMS execution of M173DCHK or provisioning.
+Run URL:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/37840952884
+
+Next Mac commands **from ibm-sandbox/src**:
+`git pull`
+`./cms-upload.sh M173DCHK.EXEC`
+Only M173DCHK EXEC should be newly transferred; do not touch
+original USER DIRECT C or M173BAK DIRECT C.
+
+Next CMS MAINT: `XEDIT M173NEW DIRECT C`.
+Inside XEDIT command line `TOP`, `LOCATE /USER MAINT /`,
+visually verify actual USER MAINT stanza header (do not print
+password-bearing text). `INPUT MDISK 0600 3390 6000 1600
+VMCOM1 W` adds one line immediately after the current heading;
+verify visually, then `FILE` to save candidate. Use `QQUIT`
+instead if anything is wrong, without saving. Check
+`LISTFILE M173NEW DIRECT C (ALLOC` expects 4283 F80;
+run `M173DCHK` read-only and demand terminal marker
+`M173 DIR DELTA CHECK PASS`. Stop on nonzero RC or if
+backup/source/candidate verification differs. No `DIRECTXA`
+(including EDIT), `DIRMAP`, activation, LINK/ACCESS, FORMAT
+or M173 import before reviewing the target result.
