@@ -593,3 +593,95 @@ Even after geometry confirmation, physical space,
 backup provenance, source directory currency and
 nonoverlap must be reconciled. Existing MAINT 0191
 M01RES and the project PACK/generations stay untouched.
+
+
+## 2026-10-08 13:29 — VMCOM1 is the preferred candidate
+
+The operator continued the actual `USER MDISKMAP C` output
+using `PIPE < USER MDISKMAP C | DROP 200 | TAKE 100 | CONSOLE`.
+The terminal output arrived with some page-boundary lines out of
+order, but its VMCOM1 physical extent list is unambiguous:
+
+- The last normal VMCOM1 allocation was `6VMHCD20 0300 MR`
+  on cylinders **5756–5935**, 180 cylinders.
+- DIRMAP then displayed an explicit **Gap 5936–10016,
+  4081 cylinders**.
+- The following report section is a *different* volume,
+  `630RL1`; those entries are not allocations on VMCOM1.
+- Real DASD `0127` is CP-owned volume `VMCOM1`.
+  Hercules config previously mapped `0127 3390 dasd5`
+  in the verified `/home/admin/vm630` working directory.
+- A proposed **1600-cylinder** permanent MAINT data minidisk
+  beginning at **6000** and ending at **7599** fits entirely
+  *within* DIRMAP's 5936–10016 reported gap, without
+  extrapolating past the map's conservative 10017-cylinder
+  3390 volume geometry. Gross CMS capacity is 288000
+  4096-byte blocks; the actual free count after FORMAT
+  must still exceed M173's 180000-block admission threshold.
+
+**This is a candidate, not a confirmed/authorized MDISK allocation.**
+IBM documents that CP does not completely prevent overlapping
+minidisk allocations. Before defining, initializing, or writing
+the proposed range, the operator/administrator must verify
+(1) live VMCOM1 real geometry, (2) live minidisk locations for
+at least two VMCOM1 entries vs the DIRMAP source, (3) MAINT
+virtual device address availability and any unrecorded
+subconfiguration/extent reservations, (4) Linux host space
+and active Hercules backing path, and (5) an independently
+verified backup or provider-consistent snapshot of the
+affected real volume and its dependencies. A new MDISK
+definition must also be saved/applied via a verified,
+site-approved directory management procedure; DirMaint
+currently does not initialize on this host.
+
+### Read-only next gate — CMS
+
+    CP QUERY DASD DETAILS 0127
+    CP QUERY MDISK 02CC LOCATION
+    CP QUERY MDISK 049E LOCATION
+    CP QUERY MDISK 0551 LOCATION
+    CP QUERY VIRTUAL DASD
+
+Expected from directory map, subject to *independent*
+confirmation: real 0127 VMCOM1 >=7600 cylinders;
+current virtual 02CC is linked to PMAINT 02CC
+at start 121 length 10; 049E maps to 6VMLEN20
+049E start 4104 length 250; PMAINT 0551 is
+start 572 length 40. If any mismatch, stop.
+Query only extant minidisks; do not create virtual
+device mappings to "test" cylinder boundaries.
+
+### Read-only next gate — verified Hercules host
+
+    pgrep -af '[h]ercules'
+    readlink -f /proc/ACTUAL_HERCULES_PID/cwd
+    ls -lh /home/admin/vm630/dasd5
+    df -h /home/admin/vm630
+    bash scripts/inspect-hercules-config.sh /home/admin/vm630/hercules.cnf
+
+Replace `ACTUAL_HERCULES_PID` with the process ID
+observed now, not a historical PID. The current 0127
+device must actually resolve to the active VMCOM1
+`dasd5` backing image; do not infer it solely from
+past process state. Do not copy a live CKD image with
+ordinary `cp`; take a verified offline backup after
+quiescing the guest/emulator, or a provider-consistent
+snapshot that covers the real image and overlays.
+Check that VMCOM1 has adequate growth space when
+M173 writes its potentially very large stage.
+
+### Gate to authorized provisioning
+
+No `USER DIRECT` source edits, `DIRECTXA`,
+`FORMAT`, `LINK`, or `ACCESS` of a proposed
+new virtual device until the above evidence and
+backup safeguards are satisfied. Choose a truly
+unused MAINT virtual address after verifying
+its currently active directory and device map;
+do not confuse the proposed real-volume cylinder
+start `6000` with the hexadecimal virtual device
+number. Only the site administrator should commit
+an appropriate permanent `MDISK` statement
+under MAINT and validate it before CMS initializes
+that *new empty* minidisk. Retain existing A, C,
+M171NET PACK/META and all sealed generations.
