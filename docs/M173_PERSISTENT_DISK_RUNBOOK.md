@@ -1403,3 +1403,47 @@ https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
 
 This does **not** replace independently validating the correct
 EBS snapshot/restore plan or final complete extent safety.
+
+
+## 2026-10-08 15:11 — VMCOM1 final preceding MDISK: live directory PASS
+
+The MAINT operator executed the documented *read-only* active
+permanent-directory query:
+
+    CP QUERY MDISK USERID 6VMHCD20 0300 LOCATION DIRECTORY
+    TargetID Tdev OwnerID  Odev Dtype Vol-ID Rdev   StartLoc       Size
+    6VMHCD20 0300 6VMHCD20 0300 3390  VMCOM1 0127       5756        180
+    Ready; T=0.01/0.01 15:11:52
+
+This **exactly matches** the `USER MDISKMAP C` source-directory
+record for user `6VMHCD20` virtual `0300`: VMCOM1 real `0127`,
+start `5756`, length `180`; inclusive end `5935`.
+The mapped gap begins at `5936` and extends to `10016`;
+candidate MAINT virtual `0600` on physical VMCOM1 `6000–7599`
+lies entirely inside that report. The existing four M01RES
+MAINT permanent-directory comparison rows also matched, and
+`0600` was absent from both the instantiated virtual view and
+the active MAINT CP permanent directory.
+
+**Result: LIVE LEADING-BOUNDARY MATCH PASS.** This directly
+corroborates the last mapped disk before the candidate gap,
+but is not itself a full active-directory equivalence proof
+or universal absence-of-overlap guarantee; the source map's
+remaining unrepresented/full-pack/CP reservations and future
+changes must still be considered before allocation.
+
+**Hard stop unchanged:** operator-reported EBS snapshot completion
+has not yet been independently correlated to correct source
+volume, region, timestamp and `completed` state or a credible
+restore procedure. Do not run `DIRECTXA` activation, write a
+USER DIRECT replacement, LINK/ACCESS or FORMAT. No new G
+minidisk exists and M173 has not been rerun.
+
+Next operator step requires **no CMS modifications**:
+privately inspect the existing EBS snapshot in the same AWS
+account and Region as the Hercules root volume, confirm
+`State=completed`, matching source volume and a usable
+restore path. Keep identifiers out of the public repository.
+Once the backup gate is attested, review a reversible, minimal
+one-MDISK source change and syntax-only `DIRECTXA ... (EDIT`
+before separately considering activation.
