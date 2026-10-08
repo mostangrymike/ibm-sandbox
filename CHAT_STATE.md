@@ -8736,3 +8736,50 @@ DIRECTXA compilation/activation from that backup
 a CMS source. Never assume currently logged-on
 MAINT auto-acquires a new permanent MDISK.
 No CP directory activation or FORMAT yet.
+
+## 2026-10-08 16:23:33 — M173 Gate 5 CP-owned extent checks LIVE PASS
+
+Operator real CMS MAINT:
+`CP QUERY CPOWNED VOLID VMCOM1`: slot5, VMCOM1,
+real 0127, Own, Online and attached, Ready 16:23:10.
+`CP QUERY ALLOC MAP VMCOM1`: VMCOM1/0127,
+NOT FOUND, all zeros, Ready 16:23:10. IBM says
+this excludes allocated CP-owned PAGE/SPOOL/TDISK/DRCT
+types only. Hidden from ALLOC MAP are PERM/PARM
+extents; this is not proof the full DASD is blank
+or that any permanent minidisk overlay is impossible.
+`CP QUERY ALLOC DRCT ALL`: M01RES/0123
+CKD physical cylinders 1-20, TOTAL20, IN USE1,
+HIGH2, USED5%, ACTIVE, Ready 16:23:25.
+`CP QUERY MDISK 0600 DIRECTORY`: HCPQMD040E
+absent, RC40, Ready 16:23:25.
+`M173DCHK`: original/backup 4282 verified,
+MAINT-1 subconfig verified, one new line 213,
+final DELTA CHECK PASS RC0, Ready 16:23:33.
+
+Previous source USER MDISKMAP C reports free VMCOM1
+cylinders 5936-10016, live 6VMHCD20 0300 map ends
+at 5935. Proposed MAINT 0600 occupies 6000-7599.
+Installed z/VM6.3 DIRECTXA M173NEW DIRECT C (EDIT
+had passed RC0 16:20:21, not updated live.
+
+**NEXT Gate 5b (no CP activation)** on CMS MAINT:
+`DIRECTXA M173BAK DIRECT C (EDIT` -> require RC0,
+no errors and EOJ DIRECTORY NOT UPDATED.
+`STATE M173NEW MDISKMAP C` -> expect RC28 absent,
+stop if any other status. Only after both pass:
+`DIRMAP M173NEW DIRECT C C` to create new C-only
+source map; `LISTFILE M173NEW MDISKMAP C (ALLOC`;
+`QUERY DISK C`. Inspect VMCOM1 map privately.
+Expect MAINT-1 600/0600 start6000 size1600 end7599
+and two residual free intervals 5936-5999,
+7600-10016, without reported overlay.
+Generated map is derived from candidate source,
+not independent CP proof; full-pack/PARM must
+remain a separately considered risk.
+
+Real CP directory remains unchanged. No unqualified
+DIRECTXA, no DIRMAP until collision and EDIT gates pass,
+no XEDIT/COPYFILE of protected directory sources,
+LINK/ACCESS/FORMAT, G admission or M173 import.
+Reference docs/M173_DIRECTORY_CHANGE_PLAN.md.
