@@ -6967,3 +6967,24 @@ a non-A data filemode, with M173 input on A and stage/index
 on a new R/W disk, and a source-guard host test.
 Do not rerun M173 on A even after listing cleanup; stage requires
 dedicated larger writable minidisk.
+
+## 2026-10-08 TARGET CLEANUP THREE GENERATED LISTINGS COMPLETED
+
+The operator executed (each Ready RC0) exact ERASes on A:
+ERASE GITREC LISTING A
+ERASE GITCWALK LISTING A
+ERASE GITCIDX LISTING A
+New QUERY DISK: MNT191 virtual 191 A R/W 175 3390, 4096 bytes
+per block, 295 files, 10361 blocks used (33%), 21139 free
+of 31500 total. Thus net 1868 blocks (~7.30 MiB) recovered
+across three files; their individual LISTFILE BLOCKS before
+were 1171, 371, 321 (sum 1863), with five extra blocks
+recovered in the actual observed free-space delta. The
+disk is no longer full. No recent module, code source, LINK
+input, GITFIX/M15NEW, selectors or M171NET was an erase
+target. A remains too small for the full 7736-object stage.
+The generalized M173-M176 checker source is updated to
+take a non-A mode argument (e.g. G), and host run 1347 was
+SUCCESS after adding the minimum 4-KiB-block guard;
+the next gate remains physically provisioning a correctly
+mapped, sufficiently large persistent writable minidisk.
