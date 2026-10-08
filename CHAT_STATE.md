@@ -6609,3 +6609,28 @@ NEXT REAL CMS GATE: upload GIT.EXEC, GITVREF.EXEC, GITPOST.EXEC,
 GITPCHK.C, and M171CHK.EXEC. Build GITPCHK with CMSCLNK GITPCHK PLAIN.
 Then run GIT LEVEL and M171CHK with stunnel listening on 192.168.200.1:8443.
 GITFETCH.EXEC is already current from M170 and need not be re-uploaded.
+
+
+## 2026-10-07 M171 REAL CMS TARGET PASS
+
+Real CMS built GITPCHK MODULE PLAIN and ran GIT/GITVREF M171/M171.
+M171CHK completed RC0 through the restored EC2 stunnel bridge.
+
+Live discovery returned main OID
+ADA83FF3B3813961CEF2A9FFC50A453540039E0B and 252 advertised refs.
+FETCH-STORE used that exact OID and persisted a new generalized PACK as
+M171NET PACK A plus metadata as M171NET META A.
+
+GitHub returned PACK v2 with 7736 objects, 2171129 PACK bytes, 7416 progress
+bytes, and 2181334 total HTTP wire bytes. META cross-check passed.
+
+Native streaming GITPCHK independently verified:
+PACK VERIFY BYTES 2171129
+PACK VERIFY VERSION 2 OBJECTS 7736
+PACK VERIFY SHA1 A705122BC39A3383BC05ABC6C888A1F788B1D067
+M171 PACK VERIFY PASS
+
+The checker cross-checked POST counters, META, and native verifier output,
+retained M171NET PACK A / META A, and finished with
+M171 GENERALIZED PACK STORE TARGET GATE PASS.
+M171 is REAL CMS TARGET-PROVEN.
