@@ -1,0 +1,77 @@
+/* M173: safe one-line MAINT directory delta checker. */
+/* Read-only: never display directory source or passwords. */
+address cms
+parse upper arg extra
+if strip(extra)\='' then do
+ say 'Usage: M173DCHK'
+ exit 4
+end
+'STATE USER DIRECT C'
+if rc\=0 then do
+ say 'M173 DIR ORIGINAL MISSING'
+ exit 8
+end
+'STATE M173BAK DIRECT C'
+if rc\=0 then do
+ say 'M173 DIR BACKUP MISSING'
+ exit 8
+end
+'STATE M173NEW DIRECT C'
+if rc\=0 then do
+ say 'M173 DIR CANDIDATE MISSING'
+ exit 8
+end
+drop u. b. n.
+'EXECIO * DISKR USER DIRECT C 1 (STEM u. FINIS'
+if rc\=0 then do
+ say 'M173 DIR ORIGINAL READ FAIL'
+ exit 8
+end
+'EXECIO * DISKR M173BAK DIRECT C 1 (STEM b. FINIS'
+if rc\=0 then do
+ say 'M173 DIR BACKUP READ FAIL'
+ exit 8
+end
+'EXECIO * DISKR M173NEW DIRECT C 1 (STEM n. FINIS'
+if rc\=0 then do
+ say 'M173 DIR CANDIDATE READ FAIL'
+ exit 8
+end
+if u.0\=4282 | b.0\=u.0 | n.0\=u.0+1 then do
+ say 'M173 DIR RECORD COUNT FAIL'
+ exit 8
+end
+maint=0
+do i=1 to u.0
+ if u.i\==b.i then do
+  say 'M173 DIR BACKUP CONTENT MISMATCH'
+  exit 8
+ end
+ if translate(word(u.i,1))='USER' &,
+    translate(word(u.i,2))='MAINT' then do
+  maint=maint+1
+  at=i
+ end
+end
+if maint\=1 then do
+ say 'M173 DIR MAINT STANZA NOT UNIQUE'
+ exit 8
+end
+k=at+1
+expected='MDISK 0600 3390 6000 1600 VMCOM1 W'
+if translate(strip(n.k))\=expected then do
+ say 'M173 DIR INSERTED RECORD INVALID'
+ exit 8
+end
+do i=1 to u.0
+ j=i
+ if i>at then j=i+1
+ if u.i\==n.j then do
+  say 'M173 DIR CANDIDATE EXTRA CHANGE'
+  exit 8
+ end
+end
+say 'M173 DIR ORIGINAL/BACKUP VERIFIED' u.0
+say 'M173 DIR MAINT INSERT VERIFIED 1'
+say 'M173 DIR DELTA CHECK PASS'
+exit 0
