@@ -13,8 +13,8 @@ g = (root / "src" / "GIT.EXEC").read_text()
 v = (root / "src" / "GITVREF.EXEC").read_text()
 chk = (root / "src" / "M171CHK.EXEC").read_text()
 
-gm = re.search(r"GIT EXEC LEVEL M(\\d+)", g)
-vm = re.search(r"GITVREF EXEC LEVEL M(\\d+)", v)
+gm = re.search(r"GIT EXEC LEVEL M(\d+)", g)
+vm = re.search(r"GITVREF EXEC LEVEL M(\d+)", v)
 assert gm and vm and gm.group(1) == vm.group(1)
 assert int(gm.group(1)) >= 171
 assert "EXEC GITPOST STORE" in g
