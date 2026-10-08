@@ -7882,3 +7882,5 @@ full disk-state before ANY write to planned extent.
 Updated runbook in docs/M173_PERSISTENT_DISK_RUNBOOK.md
 with actual post-boot evidence and next exact
 safe queries; native-stage regression test extended.
+
+GitHub native-stage run 1389 at commit db73fbca25b116fc05e3d6ff7b7e508cc5f2a546 completed SUCCESS. The added regression asserts persisted CMS A/C/PACK/META/directory presence, updated Hercules PID, 0600 active-directory check and no FORMAT/DIRECTXA activation. Run 1388 at commit 00a2e7413b9232f561a560eca1a180f34e1601d1 also passed. No CMS G disk has been defined and no M173 importer executed yet.
