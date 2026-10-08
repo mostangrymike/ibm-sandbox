@@ -8841,3 +8841,28 @@ to review contiguous VMCOM1 section. Only redact/share
 nonsecret report rows, never password-bearing USER DIRECT.
 STOP before any actual CP directory activation.
 Canonical gate docs/M173_DIRECTORY_CHANGE_PLAN.md.
+
+## 2026-10-08 — M173 Gate 5b checkpoint CI GREEN
+
+GitHub native-stage full workflow 37847789295 completed
+SUCCESS at commit 6fc5d59c7829321f780706eb688b06ed01909268.
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/37847789295
+Confirms the host regression for actual 16:31-16:32 Gate 5b
+backup DIRECTXA EDIT RC0, report collision RC28,
+candidate DIRMAP successful no-errors, F100 394 records,
+and 1502 free C blocks. Does NOT prove candidate
+report geometry until target output inspected.
+
+Next CMS MAINT read-only narrow extent filters:
+`PIPE < M173NEW MDISKMAP C | LOCATE /6000/ | CONSOLE`
+`PIPE < M173NEW MDISKMAP C | LOCATE /7599/ | CONSOLE`
+`PIPE < M173NEW MDISKMAP C | LOCATE /5936/ | CONSOLE`
+`PIPE < M173NEW MDISKMAP C | LOCATE /7600/ | CONSOLE`.
+These may return rows from other volumes or omit context
+because DIRMAP suppresses repeating VOLSER on continuation
+lines. When needed inspect contiguous chunk privately:
+`PIPE < M173NEW MDISKMAP C | DROP 200 | TAKE 100 | CONSOLE`.
+Check exactly one MAINT-1/600 VMCOM1 6000-7599 extent
+and non-overlapping free intervals 5936-5999, 7600-10016.
+Do not paste password-bearing directory records. Do not
+activate, LINK/ACCESS/FORMAT, or run M173 importer yet.
