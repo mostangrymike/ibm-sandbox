@@ -78,6 +78,10 @@ on:
       - 'src/M175CHK.EXEC'
       - 'tests/test-m175-pack-cat.py'
       - 'docs/M175.md'
+      - 'src/GITPTRE.C'
+      - 'src/M176CHK.EXEC'
+      - 'tests/test-m176-tree-closure.py'
+      - 'docs/M176.md'
       - 'docs/M172.md'
       - 'docs/M171.md'
       - 'docs/M170.md'
@@ -178,6 +182,10 @@ on:
       - 'src/M175CHK.EXEC'
       - 'tests/test-m175-pack-cat.py'
       - 'docs/M175.md'
+      - 'src/GITPTRE.C'
+      - 'src/M176CHK.EXEC'
+      - 'tests/test-m176-tree-closure.py'
+      - 'docs/M176.md'
       - 'docs/M172.md'
       - 'docs/M171.md'
       - 'docs/M170.md'
@@ -259,6 +267,8 @@ jobs:
         run: python3 tests/test-m174-stage-index.py
       - name: Check M175 verified generalized object access
         run: python3 tests/test-m175-pack-cat.py
+      - name: Check M176 verified live tree closure
+        run: python3 tests/test-m176-tree-closure.py
       - name: Check combined compact M157 target gate
         run: sh tests/check-m157-gate.sh
       - name: Check neutral compiler EXEC source and F-disk setup
