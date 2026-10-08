@@ -26,6 +26,8 @@ assert "'STATE' target ftype 'A'" in g
 assert "'PIPE CMS GITPIMP IMPORT CHECKED | STEM q.'" in chk
 assert "'FILEDEF OBJOUT DISK' stage" in chk
 assert "'FILEDEF OBJOUT CLEAR'" in chk
+assert "'ERASE'" not in chk, "M173 must retain failed output for inspection"
+assert "M173 FAILED OUTPUT RETAINED FOR DIAGNOSIS" in chk
 assert "'PIPE CMS GIT PACK-IMPORT' stage" not in chk
 
 for needle in (
