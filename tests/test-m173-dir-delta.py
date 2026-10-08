@@ -17,6 +17,26 @@ assert "M173 DIR INSERT POSITION INVALID" in source
 assert "M173 DIR APPROVED LINE COUNT" in source
 assert "M173 DIR MDISK 0600 PREFIX COUNT" in source
 assert "M173 DIR OTHER CHANGE AT RECORD" in source
+for diagnostic in (
+    "M173 DIR 0600 RECORD NUMBER",
+    "M173 DIR 0600 FIELD COUNT",
+    "M173 DIR 0600 FIELD",
+    "M173 DIR 0600 SPACING ONLY YES",
+    "M173 DIR 0600 SPACING ONLY NO",
+    "M173 DIR PRECEDING SOURCE MAINT",
+    "M173 DIR OUTSIDE INSERT DIFFERENCES",
+    "M173 DIR FIRST OUTSIDE CHANGE",
+):
+    assert diagnostic in source
+assert "space(translate(strip(n.prefixat)),1)=expected" in source
+assert "if translate(word(n.prefixat,w))=word(expected,w)" in source
+assert "if u.ix\\==n.j" in source
+assert "if ix>=prefixat then j=ix+1" in source
+assert "if prefix=1 then do" in source
+assert "say 'M173 DIR 0600 FIELD' w flag" in source
+for sensitive_output in ("say n.", "say u.", "say b.",
+                         "say word(n.", "say n.i", "say n.prefixat"):
+    assert sensitive_output not in source.lower(), sensitive_output
 assert "if matches\\=1" in source
 assert "if i>=added then j=i+1" in source
 assert "M173 DIR RECORD COUNT FAIL" in source
