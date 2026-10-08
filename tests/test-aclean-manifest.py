@@ -31,6 +31,20 @@ for name in oldtests:
 assert "M13AAREF" not in oldtests and "M13ABREF" not in oldtests
 assert "(batch\\='LISTINGS' & batch\\='EXPERIMENTS' &," in src
 assert "batch\\='OLDTESTS'" in src
+expected_builddeck = set("""
+GITCABI GITCINF GITCPARS GITCPROB GITC2
+GITREC GITCIDX GITCWALK GITSEL
+""".split())
+builddeck = re.findall(r"f\.n='([A-Z0-9]+) ASSEMBLE'",src)
+assert len(builddeck) == len(expected_builddeck) == 9
+assert set(builddeck) == expected_builddeck
+assert "batch\='BUILDDECK'" in src
+for name in builddeck:
+    assert (root / "src" / (name + ".C")).is_file(),name
+for protected in ("M12ATLS","M12TLS2","M12TLS3","M12TLS4",
+                  "GITCAPI","GITINFA","GITNCALL","GITNDRV",
+                  "GITNHEX","GITCORE","GITSTRM"):
+    assert protected not in builddeck
 assert len(set(declarations)) == len(declarations)
 assert {n for n,t in declarations if t == "LISTING"} == expected_listings
 assert {n for n,t in declarations if t == "MODULE"} == expected_experiments
