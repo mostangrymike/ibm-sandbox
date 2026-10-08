@@ -51,21 +51,27 @@ do i=1 to u.0
  if translate(word(u.i,1))='USER' &,
     translate(word(u.i,2))='MAINT' then heads=heads+1
 end
-/* Find actual first inserted record, not a guessed USER location. */
+/* Locate the exact approved line anywhere; never print content. */
+expected='MDISK 0600 3390 6000 1600 VMCOM1 W'
+matches=0
+prefix=0
 added=0
-do i=1 to u.0
- if u.i\==n.i then do
+do i=1 to n.0
+ if translate(strip(n.i))=expected then do
+  matches=matches+1
   added=i
-  leave
  end
+ if translate(word(n.i,1))='MDISK' &,
+    translate(word(n.i,2))='0600' then prefix=prefix+1
+end
+if matches\=1 then do
+ say 'M173 DIR APPROVED LINE COUNT' matches
+ say 'M173 DIR MDISK 0600 PREFIX COUNT' prefix
+ say 'M173 DIR INSERTED RECORD INVALID'
+ exit 8
 end
 if added<2 then do
  say 'M173 DIR INSERT POSITION INVALID'
- exit 8
-end
-expected='MDISK 0600 3390 6000 1600 VMCOM1 W'
-if translate(strip(n.added))\=expected then do
- say 'M173 DIR INSERTED RECORD INVALID'
  exit 8
 end
 before=added-1
@@ -74,10 +80,12 @@ if translate(word(u.before,1))\='USER' |,
  say 'M173 DIR INSERT NOT AFTER MAINT HEADER'
  exit 8
 end
-/* All remaining records must line up after exactly one insert. */
-do i=added to u.0
- j=i+1
+/* Verify every original record equals shifted candidate record. */
+do i=1 to u.0
+ j=i
+ if i>=added then j=i+1
  if u.i\==n.j then do
+  say 'M173 DIR OTHER CHANGE AT RECORD' i
   say 'M173 DIR CANDIDATE EXTRA CHANGE'
   exit 8
  end
