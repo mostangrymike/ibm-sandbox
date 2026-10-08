@@ -248,7 +248,7 @@ for proof in (
     'CP QUERY VIRTUAL 0600',
     'CP QUERY MDISK MAINT 0600 DIRECTORY',
     'MDISK <VERIFIED_UNUSED_VDEV> 3390 6000 1600 VMCOM1 MR',
-    'not yet independently checked',
+    'independently checked here',
 ):
     assert proof.lower() in snapshot.lower(), proof
 assert "USER DIRECT" in snapshot
