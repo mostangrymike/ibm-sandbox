@@ -46,6 +46,6 @@ for phrase in (
     assert phrase.lower() in runbook.lower(),phrase
 assert "FORMAT" in runbook
 assert "Never choose VDEV 0192" in runbook
-assert "not been provisioned" in runbook
+assert "not been provisioned" in runbook.lower()
 assert "MDISK <VDEV> 3390 <START> <CYLINDERS> <VOLSER> <MODE>" in runbook
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
