@@ -6927,3 +6927,43 @@ Then modify M173/M174 checker destinations/File Mode
 without touching sealed artifacts, run host regressions and real
 CMS gates. A temporary V-disk must not contain the sole persistent
 verified generation.
+
+
+## 2026-10-08 A-DISK POST-ERASE INVENTORY AND LISTING CLEANUP CANDIDATES
+
+Real CMS operator ran FILEDEF STGIN CLEAR and exactly
+ERASE M173NET STAGE A (RC0). QUERY DISK then reported MNT191
+A R/W 175 CYL, 298 files, 12229 used blocks, 19271 free
+blocks of 31500, BLKSZ 4096 (39% used). The 19213-block
+invalid partial M173 stage was reclaimed. This is target evidence
+of successful exact-file erase, not proof that the historical
+TRKDE 4 filesystem integrity issue was remediated.
+
+CMS read-only LISTFILE * LISTING A (ALLOC inventory enumerated 27
+generated compiler/assembler listings consuming 2743 4K blocks
+(~10.7 MiB). The three largest old rebuildable listings are
+GITREC LISTING A (1171 blocks), GITCWALK LISTING A (371) and
+GITCIDX LISTING A (321), combined 1863 blocks (~7.28 MiB).
+Retain current-diagnostic listings for GITPIMP (189 blocks),
+GITINFA (75), GITPCHK (70) and GITPCENS (57).
+The remaining 23 older generated LISTING files total 2352 blocks
+(~9.19 MiB). Their deletion is only a proposed safe candidate
+set and is NOT claimed executed. Individual ERASE after verified
+backups is preferable to wildcard or mass ASSEMBLE cleanup.
+
+Other reported inventories: 27 TEXT files totaling 644 4K blocks
+(~2.52 MiB), needed for native relink or rebuild; retain
+TEXT, MODULE, source C/ASSEMBLE, all GITFIX/M15NEW STAGE/INDEX/SEEK/GEN
+and selectors, GITPBUF PACK and M171NET PACK/META.
+M171NET PACK alone uses 1077 blocks; do not erase.
+M11BODY DATA 173 blocks, G9CDATA 40, GITNSTG 33; historical,
+but small relative to M173 requirement. The operator did not yet
+supply LISTFILE * ASSEMBLE A (ALLOC output; inspect before
+considering any assembly-deck cleanups, especially problematic
+M12ATLS ASSEMBLE A which previously triggered TRKDE 4.
+
+New generalized M173-M176 checker source is configurable to
+a non-A data filemode, with M173 input on A and stage/index
+on a new R/W disk, and a source-guard host test.
+Do not rerun M173 on A even after listing cleanup; stage requires
+dedicated larger writable minidisk.
