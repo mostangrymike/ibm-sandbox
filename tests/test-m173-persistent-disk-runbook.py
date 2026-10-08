@@ -612,4 +612,27 @@ assert "16:00 — Gate 3 exact MDISK missing" in (
     root / "CHAT_STATE.md"
 ).read_text()
 
+
+# Target-proven 16:13:55 live CMS PASS is distinguished from
+# syntax-only checking and active CP directory activation.
+for proof in (
+    "CURRENT GATE — 2026-10-08 16:13:55: TARGET GATE 3 PASS",
+    "M173 DIR ORIGINAL/BACKUP VERIFIED 4282",
+    "M173 DIR MAINT-1 SUBCONFIG VERIFIED",
+    "M173 DIR SINGLE MDISK INSERT RECORD 213",
+    "M173 DIR DELTA CHECK PASS",
+    "Gate 4 next",
+    "STATE DIRECTXA MODULE *",
+    "DIRECTXA M173NEW DIRECT C (EDIT",
+    "EOJ DIRECTORY NOT UPDATED",
+    "Require no errors and RC0",
+    "Do not use the DELTA option",
+    "Stop on any error",
+):
+    assert proof.lower() in plan.lower(), proof
+state = (root / "CHAT_STATE.md").read_text()
+assert "16:13:55 — M173 Gate 3 LIVE CMS PASS" in state
+assert "LIVE TARGET GATE 3 RC0 PASS" in state
+assert "DIRECTXA M173NEW DIRECT C (EDIT" in state
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
