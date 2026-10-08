@@ -5,8 +5,8 @@ address cms
 parse upper arg verb batch extra
 if extra\='' | (verb\='PLAN' & verb\='APPLY') |,
    (batch\='LISTINGS' & batch\='EXPERIMENTS' &,
-    batch\='OLDTESTS') then do
- say 'Usage: ACLEAN PLAN|APPLY LISTINGS|EXPERIMENTS|OLDTESTS'
+    batch\='OLDTESTS' & batch\='BUILDDECK') then do
+ say 'Usage: ACLEAN PLAN|APPLY batch-name'
  exit 4
 end
 drop f.
@@ -91,6 +91,18 @@ if batch='OLDTESTS' then do
  n=n+1; f.n='M13PSTG EXEC'
  n=n+1; f.n='M13SFAIL EXEC'
  n=n+1; f.n='M13WALK EXEC'
+end
+if batch='BUILDDECK' then do
+ n=0
+ n=n+1; f.n='GITCABI ASSEMBLE'
+ n=n+1; f.n='GITCINF ASSEMBLE'
+ n=n+1; f.n='GITCPARS ASSEMBLE'
+ n=n+1; f.n='GITCPROB ASSEMBLE'
+ n=n+1; f.n='GITC2 ASSEMBLE'
+ n=n+1; f.n='GITREC ASSEMBLE'
+ n=n+1; f.n='GITCIDX ASSEMBLE'
+ n=n+1; f.n='GITCWALK ASSEMBLE'
+ n=n+1; f.n='GITSEL ASSEMBLE'
 end
 say 'ACLEAN' verb batch 'ITEMS' n
 selected=0
