@@ -28,7 +28,9 @@ assert "if sect\\=='SUBCONFIG' | sid\\=='MAINT-1'" in source
 assert "if builds\\=1" in source
 
 expected = "MDISK 0600 3390 6000 1600 VMCOM1 W"
-assert f"expected='{expected}'" in source
+assert "if translate(word(n.added,1))\\=='MDISK'" in source
+assert "if translate(word(n.added,6))\\=='VMCOM1'" in source
+assert "if translate(word(n.added,7))\\=='W'" in source
 for target, stem in (("USER DIRECT C", "U."),
                      ("M173BAK DIRECT C", "B."),
                      ("M173NEW DIRECT C", "N.")):
