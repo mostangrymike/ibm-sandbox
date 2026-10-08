@@ -31,8 +31,8 @@ if command = 'LEVEL' then do
    lvl.0 = 0
    'PIPE CMS EXEC GITVREF LEVEL | STEM lvl.'
    if rc \= 0 then exit rc
-   say 'GIT EXEC LEVEL M172'
-   if lvl.0 \= 1 | lvl.1 \= 'GITVREF EXEC LEVEL M172' then do
+   say 'GIT EXEC LEVEL M173'
+   if lvl.0 \= 1 | lvl.1 \= 'GITVREF EXEC LEVEL M173' then do
       say 'GITVREF EXEC LEVEL MISMATCH'
       exit 8
    end
@@ -306,6 +306,14 @@ if command = 'PACK-CENSUS' then do
       exit 4
    end
    'GITPCENS'
+   exit rc
+end
+if command = 'PACK-IMPORT' then do
+   if strip(rest)\='' then do
+      say 'Usage: GIT PACK-IMPORT'
+      exit 4
+   end
+   'GITPIMP IMPORT'
    exit rc
 end
 if command = 'CHECKOUT-FILE' then do
