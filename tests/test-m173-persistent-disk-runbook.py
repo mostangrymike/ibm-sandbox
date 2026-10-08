@@ -390,7 +390,7 @@ for proof in (
     "16 GiB",
     "10.66 GiB",
     "2026/10/08 14:10 GMT-5",
-    "not show snapshot source Volume ID",
+    "NOT** show snapshot source Volume ID",
     "Region",
     "hard stop",
 ):
