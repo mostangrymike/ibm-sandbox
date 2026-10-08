@@ -8,10 +8,10 @@ This document records a human-controlled recovery-point procedure for the Hercul
 
 | Item | Verified observation |
 | --- | --- |
-| Linux EC2 host | `ip-172-31-14-90` |
+| Linux EC2 host | `the verified EC2 host` |
 | Host root block device | `/dev/nvme0n1p1` |
-| EBS volume serial | `vol004af6a43f567a33f` |
-| AWS volume ID | **`vol-004af6a43f567a33f`** |
+| EBS volume serial | `<NVMe-serial-mapped-volume-ID>` |
+| AWS volume ID | **Privately verified from live NVMe serial and EBS by-id link** |
 | Volume size | 16 GiB |
 | Host filesystem availability (last observation) | 6.1 GiB |
 | Hercules process at verification | PID `7174`, cwd `/home/admin/vm630` |
@@ -24,17 +24,17 @@ This document records a human-controlled recovery-point procedure for the Hercul
 | Source CP directory | `USER DIRECT C` on MAINT's 02CC; 4282 F80 records; full active-directory equivalence still not established |
 | DirMaint | Not operational: `XAUTOLOG DIRMAINT` logged off immediately; DIRM USEDEXT/FREEXT lacked WHERETO DATADVH |
 
-The NVMe serial, `lsblk SERIAL`, and `/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_vol004af6a43f567a33f` corroborate EBS identity. The hyphen in the AWS ID is required when using AWS console/API. Do not infer the AWS **Region** or **instance ID** from the hostname or volume serial.
+The NVMe serial, `lsblk SERIAL`, and `/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_<NVMe-serial-mapped-volume-ID>` corroborate EBS identity. The hyphen in the AWS ID is required when using AWS console/API. Do not infer the AWS **Region** or **instance ID** from the hostname or volume serial.
 
 ## 1. Identify AWS region, instance, and attachments (read-only)
 
-In the AWS EC2 console, select the correct account and region, then open **Elastic Block Store → Volumes** and find `vol-004af6a43f567a33f`. Verify its attachment, device, instance ID, state, and encryption. Confirm that it is the root volume of the intended Hercules EC2 instance. Record the AWS account ID, region, instance ID, and Availability Zone privately.
+In the AWS EC2 console, select the correct account and region, then open **Elastic Block Store → Volumes** and find the privately verified EBS volume. Verify its attachment, device, instance ID, state, and encryption. Confirm that it is the root volume of the intended Hercules EC2 instance. Record the AWS account ID, region, instance ID, and Availability Zone privately.
 
 If AWS CLI is already installed, authorized and correctly configured in the operator's local environment, these are optional **read-only** equivalents (specify the actually verified region):
 
 ```sh
 aws sts get-caller-identity
-aws ec2 describe-volumes --region REGION --volume-ids vol-004af6a43f567a33f \
+aws ec2 describe-volumes --region REGION --volume-ids "$EBS_VOLUME_ID" \
   --query 'Volumes[0].{ID:VolumeId,AZ:AvailabilityZone,Size:Size,State:State,Encrypted:Encrypted,Attachments:Attachments}' --output json
 ```
 
@@ -56,7 +56,7 @@ PID `7174` is historical observation as soon as Hercules restarts: re-obtain act
 1. Preserve the current CMS console work: complete commands, close active transfers, log off guest users as appropriate, and follow the site-approved z/VM orderly shutdown procedure. Do not improvise a CP system shutdown or interrupt active guest writes.
 2. Stop Hercules cleanly and confirm its process and writable CKD images are closed. Record the means to restart Hercules and its guest IPL and terminal access after EC2 resumes.
 3. In **EC2 → Instances**, select the verified instance and choose **Instance state → Stop instance** with normal OS shutdown; **do not** select Force/Skip OS shutdown. Wait for the **stopped** state. Stopping the EC2 instance can change its automatically assigned **public IPv4 address** unless an Elastic IP is in use; the private IP and EBS volume persist. Ensure an access/reconnect route before proceeding.
-4. In **EC2 → Elastic Block Store → Volumes**, select **`vol-004af6a43f567a33f`** and choose **Actions → Create snapshot** (or **Snapshots → Create snapshot**, resource type **Volume**, correct volume ID). Give it a descriptive name/description, e.g. `ibm-sandbox-pre-M173-2026-10-08`. This is a billable AWS storage operation.
+4. In **EC2 → Elastic Block Store → Volumes**, select **`<verified-EBS-volume-ID>`** and choose **Actions → Create snapshot** (or **Snapshots → Create snapshot**, resource type **Volume**, correct volume ID). Give it a descriptive name/description, e.g. `ibm-sandbox-pre-M173-2026-10-08`. This is a billable AWS storage operation.
 5. Record the returned `snap-...` ID, verified **account**, **region**, **source volume**, snapshot **start time**, and any snapshot tags. Wait for **State: Completed** and check for errors. AWS documents that snapshot creation is asynchronous; a pending snapshot is not yet a verified completed recovery artifact.
 6. Verify the intended restoration path: from the snapshot, **Create volume** in the required EC2 Availability Zone, and test mount/read access on a separate recovery instance when practicable. Record image paths, CKD metadata dependencies, and their versions. A snapshot state of `completed` alone is **not** a demonstrated guest-level restore test.
 7. Only after snapshot completion and a credible restoration test/procedure, start the original instance and verify SSH connectivity, the possibly changed public address, Hercules process/cwd/CKD FDs, CMS IPL, and retained M171NET PACK/META and sealed generations. Re-evaluate gap safety before activating any modified CP directory.
@@ -74,7 +74,7 @@ aws ec2 describe-snapshots --region REGION --snapshot-ids SNAPSHOT_ID \
   --query 'Snapshots[0].{ID:SnapshotId,Volume:VolumeId,State:State,Started:StartTime,Progress:Progress}' --output json
 ```
 
-Supply the real snapshot ID and verified region; do not publish AWS tokens/credentials. If the result does not show source volume `vol-004af6a43f567a33f` and completed state, **STOP**.
+Supply the real snapshot ID and verified region; do not publish AWS tokens/credentials. If the result does not show source volume `<verified-EBS-volume-ID>` and completed state, **STOP**.
 
 ## 4. Safe post-backup gate for M173
 
