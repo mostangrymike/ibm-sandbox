@@ -106,3 +106,22 @@ for native module linkage is CMSCLNK and each milestone doc.
 
 Do not rerun M173CHK with no argument or against A. No new
 network PACK download is required.
+
+## Cleanup completion — 2026-10-08 11:10
+
+Operator ran exact targeted erases, all Ready RC0:
+
+    ERASE GITREC LISTING A
+    ERASE GITCWALK LISTING A
+    ERASE GITCIDX LISTING A
+
+Afterward A reports 295 files, 10,361 blocks used, and
+21,139 blocks free (33% used). Free space rose from
+19,271 to 21,139 blocks, a gain of **1,868 blocks**
+(about 7.30 MiB). Original allocation inventory listed
+1,171 + 371 + 321 = 1,863 blocks for these three
+listings; the observed 5-block discrepancy is from disk
+accounting and has not been further diagnosed. No
+reformatting or wholesale clean was done. Additional
+generated listings remain but reclaiming them is not a
+substitute for a separate larger stage disk.
