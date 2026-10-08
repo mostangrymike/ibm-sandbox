@@ -302,3 +302,87 @@ and do not constitute safe free extents.
 Avoid CREATE/FORMAT/DEFINE until a verified
 nonoverlapping, persistent extent and independent
 backup are both available.
+
+
+## 2026-10-08 13:08 — DirMaint autolog does not stay running
+
+MAINT attempted the prescribed commands; actual results:
+
+    CP QUERY DIRMAINT
+    HCPCQU045E DIRMAINT not logged on
+    CP XAUTOLOG DIRMAINT
+    Command accepted
+    AUTO LOGON *** DIRMAINT USERS = 19
+    HCPCLS6056I XAUTOLOG information for DIRMAINT:
+      The IPL command is verified by the IPL command processor.
+    USER DSC LOGOFF AS DIRMAINT USERS = 18
+    CP QUERY DIRMAINT
+    HCPCQU045E DIRMAINT not logged on
+
+Both `DIRM USEDEXT V=M01RES` and `DIRM FREEXT V=M01RES`
+still produced `DVHDIR1002T FILE NOT FOUND: WHERETO
+DATADVH *; RC=28`, then `DVHDIR1001T`. These are NOT
+working directory allocation reports. `CP QUERY RDR ALL`
+displayed many old RDR files and CPDUMPs, not a
+DirMaint extent report. Do NOT clear/purge the reader
+queue or CP dump material while investigating.
+
+A successful XAUTOLOG acceptance and an IPL-command
+verification do not prove that the DIRMAINT service
+completed CMS initialization; it promptly logged off.
+Do not endlessly restart it. Find the underlying
+startup/PROFILE/DVHPROF/linked-disk condition or
+use an independently verified offline/read-only
+mapping alternative.
+
+### Next **read-only** CMS checks
+
+    LISTFILE ACCESS DATADVH *
+    LISTFILE CONFIG* DATADVH *
+    LISTFILE WHERETO DATADVH *
+    STATE USER DIRECT C
+    LISTFILE * DIRECT C (ALLOC
+    LISTFILE * BACKUP C (ALLOC
+    LISTFILE * DIRECT A (ALLOC
+
+In this z/VM 6.3 setup `MAINT 02CC` is accessed
+R/W as C (the last inventory showed just four
+files). IBM's z/VM basics manual identifies
+`MAINT 2CC USER DIRECT` as a common source-directory
+location. It is a **candidate**, NOT yet proven
+present/current on this system. Ask for the file
+STATE/LISTFILE and exact build provenance without
+displaying password-bearing directory text.
+
+If `USER DIRECT C` exists and the operator can
+establish it corresponds to the **currently active**
+CP directory, `DISKMAP USER DIRECT C` or the
+systems-programmer `DIRMAP USER DIRECT C <outfm>`
+can report MDISK gaps and overlaps without DirMaint.
+IMPORTANT: these utilities **write new map output files**
+(`USER DISKMAP` or `USER MDISKMAP` and related)
+to a CMS minidisk; they are not fully read-only.
+Before invoking, choose a verified writable output
+filemode, check that each named output is absent
+and leave headroom. Avoid A due to its earlier
+TRKDE 4 issue, and avoid accidentally replacing
+an existing saved map. IBM documents that DIRMAP
+may ignore or mischaracterize full-pack overlaps
+and can assume a smaller disk model if no high
+cylinder exists in the input. Reconcile volume
+geometry and CP reserved DRCT/SPOOL/PAGE extents
+independently. A stale `USER DIRECT` is NOT
+authority for allocating a new physical cylinder
+range.
+
+IBM docs:
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-diskmap
+- https://www.ibm.com/docs/SSB27U_7.2.0/com.ibm.zvm.v720.dmsb4/dirmap.htm
+- https://www.redbooks.ibm.com/redbooks/pdfs/sg247316.pdf
+
+DIRMAINT server recovery requiring logon to DIRMAINT,
+DVHBEGIN, or changes to its disks/profile is an
+independent, privileged maintenance task. Do not
+modify its configuration or source directory
+without a verified recovery plan and backup.
+No disk extents are yet approved for M173.
