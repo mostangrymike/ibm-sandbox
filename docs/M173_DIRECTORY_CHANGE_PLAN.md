@@ -1,7 +1,8 @@
 # M173 dedicated CMS G: controlled MAINT directory change plan
 
-Status: **PREPARE ONLY. No source copy, edit, DIRECTORY activation,
-LINK/ACCESS, FORMAT or M173 importer run has been reported.**
+Status: **Gate 2b PASS (2026-10-08): source and backup/candidate
+copies created, compared record-identical. Candidate edit PENDING;
+NO CP directory activation, LINK/ACCESS, FORMAT or M173 import.**
 This plan is for the z/VM 6.3 MAINT operator, not a shell script.
 Do not execute a privileged action automatically or as a single batch.
 
@@ -61,7 +62,7 @@ No existing output must be replaced or erased.
 All new CMS filenames/filetypes are at most 8 characters;
 `M173BAK` and `M173NEW` are distinct from `USER DIRECT C`.
 
-## Gate 2: controlled duplicate copies on C — not yet executed
+## Gate 2: controlled duplicate copies on C — completed, see below
 
 Only after Gate 1 passes, use IBM CMS COPYFILE **NEWFILE** so a
 collision fails closed instead of replacing an existing file:
@@ -288,3 +289,120 @@ or executed at the metadata stage.
 
 IBM reference:
 https://www.ibm.com/docs/en/zvm/7.2?topic=commands-compare
+
+
+## 2026-10-08 15:32 — Gate 2b record identity: target PASS
+
+The operator executed both IBM CMS COMPARE commands in MAINT:
+
+```text
+COMPARE USER DIRECT C M173BAK DIRECT C
+DMSCMP179I Comparing USER DIRECT C with M173BAK DIRECT C
+Ready; T=0.03/0.04 15:32:13
+
+COMPARE USER DIRECT C M173NEW DIRECT C
+DMSCMP179I Comparing USER DIRECT C with M173NEW DIRECT C
+Ready; T=0.04/0.04 15:32:15
+```
+
+IBM COMPARE reports differing records and `DMSCMP209W` on a
+mismatch; here each completed with just `DMSCMP179I` and Ready.
+**GATE 2b CONTENT EQUALITY PASS**. Both copies are 4282 F80
+records, and each is record-identical to `USER DIRECT C`
+at this checkpoint. The last C-disk usage was 287/1800 blocks,
+leaving **1513 free 4K blocks**.
+
+The `USER DIRECT C` and `M173BAK DIRECT C` files are now
+protected inputs; never XEDIT, replace or erase them.
+The only candidate is `M173NEW DIRECT C`.
+
+### Gate 3 controlled single-line edit in XEDIT (candidate only)
+
+The planned `M173DCHK EXEC` verifies after the edit that all
+4282 original records match the backup and that `M173NEW`
+has **exactly one inserted** entry, immediately after the
+single `USER MAINT` heading:
+
+    MDISK 0600 3390 6000 1600 VMCOM1 W
+
+On CMS MAINT, start the editor for the **candidate only**:
+
+```text
+XEDIT M173NEW DIRECT C
+```
+
+At the XEDIT command line, run one command at a time:
+
+```text
+TOP
+LOCATE /USER MAINT /
+```
+
+Privately inspect the located CURRENT line. It must be the
+actual directory `USER MAINT` heading, not a comment,
+not another user, and not an `INCLUDE` or `MDISK` line.
+**Do not paste its text**; the heading can carry a password.
+If it is wrong or ambiguous, exit XEDIT with `QQUIT`
+without modifying anything and report just the problem.
+
+Only if the correct `USER MAINT` heading is current, enter
+the XEDIT *subcommand* (not plain CMS and not data input mode):
+
+```text
+INPUT MDISK 0600 3390 6000 1600 VMCOM1 W
+```
+
+IBM XEDIT `INPUT line` inserts exactly one line **after the
+current line**. Visually verify that the new entry is exactly
+one line, inside the `USER MAINT` stanza, with the right
+VDEV/real extent and **W** mode. If anything is wrong use
+`QQUIT` to discard unsaved changes. If correct, from the
+XEDIT command line enter:
+
+```text
+FILE
+```
+
+This writes **only `M173NEW DIRECT C`** and exits XEDIT.
+On return to CMS, run metadata-only:
+
+```text
+LISTFILE M173NEW DIRECT C (ALLOC
+STATE USER DIRECT C
+STATE M173BAK DIRECT C
+```
+
+Expected `M173NEW` is **4283 F80 records**, while both
+original and backup remain 4282 records. Do not paste any
+directory text or password material.
+
+Before *any* `DIRECTXA` call, install the read-only checker
+from GitHub, using the proven Mac transfer workflow:
+
+```sh
+cd /path/to/ibm-sandbox/src
+git pull
+./cms-upload.sh M173DCHK.EXEC
+```
+
+Then on CMS:
+
+```text
+M173DCHK
+```
+
+Expected exact final marker:
+`M173 DIR DELTA CHECK PASS`. The check uses only read-only
+`STATE` and `EXECIO DISKR`, emits no directory contents,
+requires 4282 original records and 4283 candidate records,
+verifies both original and backup have identical bytes, and
+only accepts the single expected MDISK line directly after the
+unique `USER MAINT` record. It fails closed on **any**
+other change with RC8. Until actual CMS PASS, treat its
+behavior as host-reviewed, **not target-proven**.
+
+**STOP after XEDIT and M173DCHK.** Do not run `DIRECTXA`
+even with `(EDIT`, `DIRMAP`, any online activation or
+any CMS FORMAT before reviewing the result and planning
+the correct installed-utility options. All directory
+identifiers and passwords remain private.
