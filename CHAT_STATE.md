@@ -7509,3 +7509,5 @@ df -h /home/admin/vm630 and original backing file.
 Latest docs/M173_PERSISTENT_DISK_RUNBOOK.md describes
 these gates; all source-backed 7736 PACK data on A
 remains untouched.
+
+GitHub native-stage CI run 1371 for geometry/gap test at commit 395442b9e5fa15fece9b55d9a8a54db532ece952 completed SUCCESS. No actual guest disk allocation was made. 
