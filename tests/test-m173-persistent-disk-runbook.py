@@ -184,4 +184,21 @@ for evidence in (
     "still NOT established",
 ):
     assert evidence.lower() in runbook.lower(),evidence
+# Real host process FD16 and the third live VMCOM1 minidisk have
+# been confirmed, but snapshot/restoration and directory edits have not.
+for evidence in (
+    "live 0127 image and third minidisk VERIFIED",
+    "16 -> /home/admin/vm630/dasd5",
+    "37:0127 3390 dasd5",
+    "MAINT 0551 PMAINT 0551 3390 VMCOM1 real0127 start572 size40",
+    "all **three**",
+    "288000 blocks",
+    "findmnt -no SOURCE,TARGET,FSTYPE /",
+    "cat /sys/block/nvme0n1/device/serial",
+    "lsblk -o NAME,SIZE,TYPE,MOUNTPOINTS,SERIAL",
+    "independent",
+    "recovery point remains **NOT established**",
+    "Do not add an MDISK statement",
+):
+    assert evidence.lower() in runbook.lower(),evidence
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
