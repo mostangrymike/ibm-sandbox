@@ -1,6 +1,6 @@
 # M173 EC2 / EBS recovery checkpoint and safe change boundary
 
-Status as of 2026-10-08: **EBS volume positively identified; NO SNAPSHOT RECORDED, NO NEW CMS DISK CREATED.**
+Status as of 2026-10-08 (operator report): **SNAPSHOT COMPLETION REPORTED; source-volume metadata and a restoration test not yet independently verified. NO NEW CMS DISK CREATED.**
 
 This document records a human-controlled recovery-point procedure for the Hercules / z/VM environment before any `DIRECTXA`, `MDISK`, or `FORMAT` affecting the proposed M173 stage disk. It does **not** authorize automatic cloud, directory, or disk changes.
 
@@ -90,3 +90,96 @@ With independent recovery proven, recheck all live extents and select a *current
 - [EBS snapshot consistency and root-device stop recommendation](https://docs.aws.amazon.com/ebs/latest/userguide/ebs-creating-snapshot.html)
 - [Stop and start EC2 instances](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Stop_Start.html)
 - [Public IP changes and persistent EBS/private IP on stop/start](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/how-ec2-instance-stop-start-works.html)
+
+
+## Operator update — snapshot completion reported
+
+On 2026-10-08, the operator reported **"snapshot is complete"**.
+This means a snapshot is now reported as completed; it is
+**not** yet independently checked here against the AWS
+volume ID, region, creation timestamp, and `State:
+Completed`, and no isolated restoration test has
+been reported. Do not create a second snapshot merely
+because this document once said no snapshot was
+recorded. Preserve the snapshot and record its
+metadata privately.
+
+Next, verify in **EC2 → Snapshots** that the snapshot
+belongs to the previously identified root EBS volume
+and is `Completed`, and preserve its identifier and
+restore steps. The operator should start EC2 normally
+if it remains stopped, confirm the new public IP if
+needed, and **before any directory update** verify
+Hercules/guest startup and existing protected Git
+files. The cloud snapshot step is separate from any
+z/VM `DIRECTXA` or new CMS `FORMAT` command.
+
+### First post-snapshot checks (read-only)
+
+On the running Linux host, after reconnecting:
+
+```sh
+pgrep -af '[h]ercules'
+df -h /home/admin/vm630
+ls -l /home/admin/vm630/dasd1 /home/admin/vm630/dasd5
+```
+
+On the MAINT CMS session (after z/VM is back):
+
+```text
+CP QUERY DASD DETAILS 0127
+CP QUERY MDISK 02CC LOCATION
+CP QUERY MDISK 049E LOCATION
+CP QUERY MDISK 0551 LOCATION
+CP QUERY VIRTUAL DASD
+QUERY DISK A C
+STATE M171NET PACK A
+STATE M171NET META A
+STATE USER DIRECT C
+```
+
+Once those pass, inspect an unused MAINT virtual
+address before choosing a new permanent `MDISK`.
+One possible candidate is virtual `0600` (**not
+yet verified free**). Do not confuse the hexadecimal
+virtual number with the decimal real start cylinder
+6000.
+
+```text
+CP QUERY VIRTUAL 0600
+CP QUERY MDISK MAINT 0600 DIRECTORY
+```
+
+A not-found response for either query alone is not
+proof of free volume cylinders; both address checks
+and the verified DIRMAP gap are separate obligations.
+Do not access or format `0600` until a newly added
+permanent MDISK definition is properly reviewed,
+activated, and proven to resolve to `VMCOM1`
+start 6000, size 1600.
+
+A cautious, later administrative change will be
+to add **only one new MAINT MDISK statement**;
+a format-independent illustration (not a command
+to run now):
+
+```text
+MDISK <VERIFIED_UNUSED_VDEV> 3390 6000 1600 VMCOM1 MR
+```
+
+Ensure that edit is in the correct `USER MAINT`
+directory stanza. Keep old `USER DIRECT C`
+and active CP directory recovery paths available.
+A modified directory should first be syntax-
+checked with `DIRECTXA ... (EDIT` using a
+properly accessed correct-release utility and
+only promoted after a separately reviewed
+activation/rollback procedure. IBM states the
+`EDIT` option validates syntax without putting
+a new directory online. CP's directory update
+without `EDIT` can change the active directory,
+so it is not part of this preflight.
+
+IBM:
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=directory-mdisk-statement
