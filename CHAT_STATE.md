@@ -7660,3 +7660,56 @@ tests/test-m173-persistent-disk-runbook.py with exact
 host and CP evidence and safety gates.
 
 Native-stage host CI run 1379 (commit b815a1e8ab62b311e3f54da87485b3d9d3f13673) completed SUCCESS on GitHub, validating live VMCOM1 source/link and host PID/backup runbook assertions. This does not constitute CMS M173 target testing or an actual backup.
+
+
+## 2026-10-08 13:48 — VMCOM1 ACTIVE IMAGE AND THIRD CP LINK VERIFIED
+
+User (root on Hercules EC2 ip-172-31-14-90) supplied:
+- readlink -f /proc/7174/cwd -> /home/admin/vm630
+- grep config ^0127 3390 -> line37 "0127 3390 dasd5"
+- ls -l /proc/7174/fd | grep -F dasd5 ->
+  FD16 -> /home/admin/vm630/dasd5
+- du -h /home/admin/vm630/dasd5 -> 1.9G allocated
+- CP QUERY MDISK 0551 LOCATION ->
+  MAINT 0551 linked PMAINT 0551, VMCOM1 real0127,
+  start572, size40 cylinders: EXACT match DIRMAP.
+
+All three VMCOM1 live MDISK checks now match USER MDISKMAP C:
+MAINT 02CC (PMAINT start121 size10), MAINT 049E
+(6VMLEN20 start4104 size250), MAINT 0551
+(PMAINT start572 size40). Hercules PID7174 cwd and
+FD16 establish active real0127 file dasd5; this is
+stronger than inferred filename. Host df previous:
+root /dev/nvme0n1p1 16G total, 8.8G used, 6.1G free;
+dasd5 nominal size1.9GiB and du ~1.9G.
+No backup/snapshot has been created or tested yet.
+
+Preferred new persistent M173 data MDISK remains
+VMCOM1 0127 start6000 length1600 end7599, fully
+within DIRMAP gap 5936-10016 on CP-confirmed 11000
+cylinder real volume. No permission yet to edit
+USER DIRECT, run DIRECTXA, initialize, FORMAT, or
+rerun M173 until an independently restorable snapshot
+and rollback have been verified.
+
+Next useful read-only host proof:
+findmnt -no SOURCE,TARGET,FSTYPE /
+lsblk -o NAME,SIZE,TYPE,MOUNTPOINTS,SERIAL
+cat /sys/block/nvme0n1/device/serial
+ls -l /dev/disk/by-id/ | grep -E 'Elastic_Block_Store|nvme'
+These identify whether root partition containing
+both dasd1 and dasd5 is EBS and expose AWS volume ID.
+AWS EBS snapshot (if block device EBS) is independent
+of instance's root filesystem, unlike simply making
+a cp of dasd1/dasd5 to same root. AWS recommends
+quiescing writes and stopping instance for root
+snapshot. Plan guest/host downtime and snapshot
+before CP directory update; record snapshot ID and
+test recovery, ideally restore to independent volume.
+If images/overlays exist on other EBS devices,
+coordinate snapshot for all.
+
+Updated docs/M173_PERSISTENT_DISK_RUNBOOK.md and
+tests/test-m173-persistent-disk-runbook.py with the
+real active FD16 proof, exact third disk location,
+and backup-not-yet-established warnings.
