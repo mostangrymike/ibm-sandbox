@@ -41,110 +41,49 @@ if u.0\=4282 | b.0\=u.0 | n.0\=u.0+1 then do
  say 'M173 DIR RECORD COUNT FAIL'
  exit 8
 end
-/* Verify preserved source and backup record by record. */
-heads=0
+/* Verify the untouched original against its backup. */
 do i=1 to u.0
  if u.i\==b.i then do
   say 'M173 DIR BACKUP CONTENT MISMATCH'
   exit 8
  end
- if translate(word(u.i,1))='USER' &,
-    translate(word(u.i,2))='MAINT' then heads=heads+1
 end
-/* Locate the exact approved line anywhere; never print content. */
-expected='MDISK 0600 3390 6000 1600 VMCOM1 W'
-matches=0
-prefix=0
-prefixat=0
+/* CP vdev 600 and 0600 are the same hexadecimal number. */
+/* Use strict string checks to avoid REXX numeric = ambiguity. */
+found=0
 added=0
 do i=1 to n.0
- if translate(strip(n.i))=expected then do
-  matches=matches+1
+ w1=translate(word(n.i,1))
+ w2=word(n.i,2)
+ if w1=='MDISK' & (w2=='600' | w2=='0600') then do
+  found=found+1
   added=i
  end
- if translate(word(n.i,1))='MDISK' &,
-    translate(word(n.i,2))='0600' then do
-  prefix=prefix+1
-  prefixat=i
- end
 end
-if matches\=1 then do
- say 'M173 DIR APPROVED LINE COUNT' matches
- say 'M173 DIR MDISK 0600 PREFIX COUNT' prefix
- if prefix=1 then do
-  say 'M173 DIR 0600 RECORD NUMBER' prefixat
-  say 'M173 DIR 0600 FIELD COUNT' words(n.prefixat)
-  do w=1 to 7
-   flag='DIFF'
-   if translate(word(n.prefixat,w))=word(expected,w) then do
-    flag='MATCH'
-   end
-   say 'M173 DIR 0600 FIELD' w flag
-  end
-  spacing='NO'
-  if space(translate(strip(n.prefixat)),1)=expected then do
-   spacing='YES'
-  end
-  say 'M173 DIR 0600 SPACING ONLY' spacing
-  norm=translate(word(n.prefixat,1))
-  do w=2 to 7
-   norm=norm||' '||translate(word(n.prefixat,w))
-  end
-  rebuilt='NO'
-  if norm=expected then rebuilt='YES'
-  say 'M173 DIR REBUILT WORDS MATCH' rebuilt
-  say 'M173 DIR STRIPPED LENGTH' length(strip(n.prefixat))
-  say 'M173 DIR EXPECTED LENGTH' length(expected)
-  prev=prefixat-1
-  head='NO'
-  if prev>=1 then do
-   if translate(word(u.prev,1))='USER' &,
-      translate(word(u.prev,2))='MAINT' then head='YES'
-  end
-  say 'M173 DIR PRECEDING SOURCE MAINT' head
-  sect='NONE'
-  sectat=0
-  owner='NO'
-  do si=1 to prev
-   t=translate(word(u.si,1))
-   if t='USER' | t='IDENTITY' | t='SUBCONFIG' then do
-    sect=t
-    sectat=si
-    owner='NO'
-    if t='USER' & translate(word(u.si,2))='MAINT' then,
-       owner='YES'
-   end
-  end
-  say 'M173 DIR ENCLOSING SECTION' sect
-  say 'M173 DIR ENCLOSING HEADER RECORD' sectat
-  say 'M173 DIR ENCLOSING USER MAINT' owner
-  other=0
-  first=0
-  do ix=1 to u.0
-   j=ix
-   if ix>=prefixat then j=ix+1
-   if u.ix\==n.j then do
-    other=other+1
-    if first=0 then first=ix
-   end
-  end
-  say 'M173 DIR OUTSIDE INSERT DIFFERENCES' other
-  if other>0 then say 'M173 DIR FIRST OUTSIDE CHANGE' first
- end
- say 'M173 DIR INSERTED RECORD INVALID'
+if found\=1 then do
+ say 'M173 DIR VDEV 0600 ENTRY COUNT' found
  exit 8
 end
-if added<2 then do
+/* Seven tokens exactly; only a leading zero on vdev is optional. */
+valid=1
+if words(n.added)\=7 then valid=0
+if translate(word(n.added,1))\=='MDISK' then valid=0
+v=word(n.added,2)
+if v\=='600' & v\=='0600' then valid=0
+if word(n.added,3)\=='3390' then valid=0
+if word(n.added,4)\=='6000' then valid=0
+if word(n.added,5)\=='1600' then valid=0
+if translate(word(n.added,6))\=='VMCOM1' then valid=0
+if translate(word(n.added,7))\=='W' then valid=0
+if valid\=1 then do
+ say 'M173 DIR MDISK FIELDS INVALID'
+ exit 8
+end
+if added<2 | added>u.0 then do
  say 'M173 DIR INSERT POSITION INVALID'
  exit 8
 end
-before=added-1
-if translate(word(u.before,1))\='USER' |,
-   translate(word(u.before,2))\='MAINT' then do
- say 'M173 DIR INSERT NOT AFTER MAINT HEADER'
- exit 8
-end
-/* Verify every original record equals shifted candidate record. */
+/* One inserted line: all other source records must be unchanged. */
 do i=1 to u.0
  j=i
  if i>=added then j=i+1
@@ -154,11 +93,40 @@ do i=1 to u.0
   exit 8
  end
 end
-if heads<1 then do
- say 'M173 DIR MAINT HEADER MISSING'
+/* SSI-ready MAINT is IDENTITY plus BUILD ON and SUBCONFIG. */
+/* A subconfig MDISK need not follow an IDENTITY heading. */
+sect=''
+sid=''
+inmaint=0
+builds=0
+do i=1 to added-1
+ a=translate(word(u.i,1))
+ b=translate(word(u.i,2))
+ if a=='IDENTITY' | a=='USER' |,
+    a=='SUBCONFIG' | a=='PROFILE' then do
+  sect=a
+  sid=b
+  inmaint=0
+  if a=='IDENTITY' & b=='MAINT' then inmaint=1
+ end
+ if inmaint=1 & a=='BUILD' then do
+  if translate(word(u.i,2))=='ON' &,
+     word(u.i,3)=='*' &,
+     translate(word(u.i,4))=='USING' &,
+     translate(word(u.i,5))=='SUBCONFIG' &,
+     translate(word(u.i,6))=='MAINT-1' then builds=builds+1
+ end
+end
+if sect\=='SUBCONFIG' | sid\=='MAINT-1' then do
+ say 'M173 DIR WRONG ENCLOSING SUBCONFIG'
+ exit 8
+end
+if builds\=1 then do
+ say 'M173 DIR MAINT BUILD REFERENCE INVALID'
  exit 8
 end
 say 'M173 DIR ORIGINAL/BACKUP VERIFIED' u.0
-say 'M173 DIR MAINT INSERT VERIFIED 1'
+say 'M173 DIR MAINT-1 SUBCONFIG VERIFIED'
+say 'M173 DIR SINGLE MDISK INSERT RECORD' added
 say 'M173 DIR DELTA CHECK PASS'
 exit 0
