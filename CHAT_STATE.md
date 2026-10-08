@@ -8801,3 +8801,43 @@ M173NEW DIRECT C C and verify report on C.
 No CP directory activation, new virtual device or CMS
 FORMAT is authorized. Existing USER DIRECT C is to
 remain unchanged and is not the candidate.
+
+## 2026-10-08 16:32:22 — M173 Gate 5b target PASS
+
+MAINT CMS operator actually executed:
+`DIRECTXA M173BAK DIRECT C (EDIT` ->
+z/VM user directory compiler v6r3,
+`EOJ DIRECTORY NOT UPDATED`, Ready RC0 16:31:49.
+`STATE M173NEW MDISKMAP C` -> absent RC28 16:31:57.
+`DIRMAP M173NEW DIRECT C C` -> source read,
+`M173NEW MDISKMAP C1 written - no errors` Ready RC0
+16:32:10.
+`LISTFILE M173NEW MDISKMAP C (ALLOC` ->
+F100, 394 records, 10 blocks, C1, Ready 16:32:11.
+`QUERY DISK C` -> MAINT 02CC C R/W, 3390 10 cyl,
+4096-byte blocks, 8 files, 298 used, 1502 free,
+1800 total, Ready 16:32:22.
+
+**Gate 5b backup syntax and map generation PASSED on target.**
+Original USER MDISKMAP C was 392 records, whereas new
+candidate report contains 394; two-record difference
+does not alone establish which extents changed.
+No CP directory activation, minidisk G, formatting,
+LINK/ACCESS or M173 import. Original USER DIRECT C
+and M173BAK DIRECT C remain protected.
+
+**Next Gate 5c read-only candidate map inspection**:
+`PIPE < M173NEW MDISKMAP C | LOCATE /6000/ | CONSOLE`
+`PIPE < M173NEW MDISKMAP C | LOCATE /7599/ | CONSOLE`
+`PIPE < M173NEW MDISKMAP C | LOCATE /5936/ | CONSOLE`
+`PIPE < M173NEW MDISKMAP C | LOCATE /7600/ | CONSOLE`
+Confirm VMCOM1/MAINT-1 vdev600 (0600) physical
+start6000 end7599 size1600, gaps 5936-5999 and
+7600-10016. DIRMAP omits volume ID on continuation
+rows, so numeric LOCATE alone is NOT proof of volser
+or complete extent coverage. If ambiguous, use
+`PIPE < M173NEW MDISKMAP C | DROP 200 | TAKE 100 | CONSOLE`
+to review contiguous VMCOM1 section. Only redact/share
+nonsecret report rows, never password-bearing USER DIRECT.
+STOP before any actual CP directory activation.
+Canonical gate docs/M173_DIRECTORY_CHANGE_PLAN.md.
