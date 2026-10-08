@@ -7715,3 +7715,59 @@ real active FD16 proof, exact third disk location,
 and backup-not-yet-established warnings.
 
 GitHub native-stage run 1381 at commit dde3f8c7d266259139286593689ca44dd63b34f8 completed SUCCESS, including all added assertions that VMCOM1 active host FD16 and three CP-linked MDISK locations agree, and backup still pending. This is host static regression, not an EBS backup or CMS provisioning.
+
+
+## 2026-10-08 — AWS root EBS snapshot target positively identified
+
+Operator ran `lsblk -o NAME,SIZE,TYPE,MOUNTPOINTS,SERIAL`,
+read `/sys/block/nvme0n1/device/serial`, and displayed
+`/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_*`
+symlinks. All identify the root `/dev/nvme0n1` as
+an AWS EBS volume, 16 GiB, root filesystem
+`/dev/nvme0n1p1` at `/`. The exact cloud volume
+identifier was observed in the live conversation
+and **intentionally omitted from this public GitHub
+file**. Re-derive using NVMe serial/by-id before
+any AWS action; the AWS API ID format contains
+`vol-` hyphen, unlike NVMe serial.
+Root `/home/admin/vm630` holds both backing images:
+M01RES `dasd1` and verified live VMCOM1 `dasd5`.
+Snapshot of root EBS volume, after quiescing guest
+writes and stopping Hercules/EC2, should cover both
+base images if all overlays also reside on that
+same EBS volume.
+
+New comprehensive `docs/M173_EBS_RECOVERY_CHECKLIST.md`
+committed, covering console root volume confirmation,
+quiesced guest and Hercules shutdown, EC2 **Stop**
+(normal OS shutdown), EBS **Create snapshot**,
+snapshot ID/state verification (wait completed),
+isolated restore test, EC2 restart and SSH/3270
+public IPv4 change, and safety hold until recovery
+demonstrated. Stop/start may replace unassociated
+public IPv4 address; private IP and EBS persist.
+AWS recommendations:
+https://docs.aws.amazon.com/ebs/latest/userguide/ebs-creating-snapshot.html
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Stop_Start.html
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/how-ec2-instance-stop-start-works.html
+Runbook `docs/M173_PERSISTENT_DISK_RUNBOOK.md`
+updated to link to checklist and mark snapshot
+NOT yet created or tested.
+Tests `tests/test-m173-persistent-disk-runbook.py`
+now assert snapshot prerequisites and prevention
+of publishing an actual AWS ID/serial in docs.
+
+No AWS action was performed. No snapshot, new
+minidisk MDISK, DIRECTXA, FORMAT, M173 importer
+execution has occurred. Preferred new CMS G MDISK
+VMCOM1 real Rdev 0127 start cylinder 6000, length
+1600, end 7599. DIRMAP gap 5936-10016; CP-confirmed
+real geometry 11000 cylinders; three source/CP
+MDISK mappings checked. Next ask operator to
+snapshot after safely quiescing, then provide
+snapshot ID/status without credentials or AWS
+account secrets. Relevant CI initial run 1383
+failed only because a new test looked for the
+phrase "snapshot enters" and doc used different
+wording; corrected doc and test, new run 1384
+pending when this note written.
