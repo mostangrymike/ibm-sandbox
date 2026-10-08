@@ -7828,3 +7828,57 @@ docs/M173_PERSISTENT_DISK_RUNBOOK.md and
 tests/test-m173-persistent-disk-runbook.py.
 No target MDISK, DIRECTXA, FORMAT, ACCESS, M173
 import or additional AWS resource changes occurred.
+
+
+## 2026-10-08 14:44 — POST-SNAPSHOT GUEST AND HOST RESTART VERIFIED
+
+User supplied successful read-only post-snapshot results:
+- Linux `pgrep -af '[h]ercules'`: NEW PID 724,
+  `hercules -f hercules.cnf -r hercules.rc`.
+- root EBS mount `/dev/nvme0n1p1` at /,
+  16G total, 8.8G used, 6.1G free (60%).
+- `/home/admin/vm630/dasd1`: 769,571,364 bytes,
+  `dasd5`: 1,954,890,581 bytes (both Oct 8 19:29).
+- CMS `CP QUERY DASD DETAILS 0127`:
+  VMCOM1 real0127 3390-0C CYLS 11000.
+- CMS `CP QUERY VIRTUAL DASD` unchanged relative
+  to prior full list: no `0600` device attached;
+  original A 0191 M01RES 175 CYL, C 02CC
+  VMCOM1 10 CYL, links 049E 250 CYL and 0551
+  40 CYL present. Three system fullpack mappings
+  0122/0123/0124 still 11000 CYL.
+- `QUERY DISK A`: MNT191 0191 A R/W 175
+  cylinders, BLKSZ4096, 212 files, 8659 blocks
+  used, 22841 free / 31500 (unchanged since before
+  snapshot).
+- `QUERY DISK C`: MNT2CC 02CC C R/W 10
+  cylinders, 5 files, 117 used, 1683 free /1800;
+  map report accounts for file increase.
+- `STATE M171NET PACK A`, `STATE M171NET META A`,
+  `STATE USER DIRECT C` all RC0 (present).
+  Presence is NOT end-to-end content hash verification.
+
+Operator previously said EBS snapshot is complete,
+but snapshot ID/source metadata/region/status
+and quiescence/restoration not independently checked.
+Do not request an unnecessary second snapshot.
+Critical next read-only CMS checks:
+  CP QUERY VIRTUAL 0600
+  CP QUERY MDISK MAINT 0600 DIRECTORY
+These test candidate **hex virtual address 0600**
+for a possible permanent G minidisk; no device
+0600 in current Q V DASD, but directory must
+also be checked. Proposed separate **decimal**
+VMCOM1 real0127 cylinder offset 6000, length1600,
+ending7599; within DIRMAP gap5936–10016 and real
+11000-cylinder geometry. Do not issue non-EDIT
+DIRECTXA, new MDISK definition, or FORMAT
+until full process and snapshot/recovery gates.
+Hercules PID changed 7174 -> 724 at restart,
+so old process /proc/7174 fd checks no longer
+current. Need verify new PID config/FDs and
+full disk-state before ANY write to planned extent.
+
+Updated runbook in docs/M173_PERSISTENT_DISK_RUNBOOK.md
+with actual post-boot evidence and next exact
+safe queries; native-stage regression test extended.
