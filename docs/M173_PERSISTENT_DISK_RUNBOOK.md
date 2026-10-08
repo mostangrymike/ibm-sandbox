@@ -969,3 +969,60 @@ or FORMAT any disk without a recorded independent
 backup and a reviewed fallback/restore procedure.
 Existing A, C, all sealed GITFIX/M15NEW generations,
 and retained M171NET PACK/META must be preserved.
+
+
+## 2026-10-08 — AWS EBS root volume positively identified
+
+The operator's live `lsblk`, `/sys/block/nvme0n1/device/serial`,
+and `/dev/disk/by-id` outputs agree that the 16 GiB
+`/dev/nvme0n1` root block device is an **Amazon Elastic Block
+Store volume**. Its exact volume identifier was verified in
+the live conversation but is **intentionally omitted from
+this public repository**; retrieve it from the host NVMe
+serial or EC2 console when performing a snapshot.
+
+The host's mounted `/dev/nvme0n1p1` root filesystem
+contains both active Hercules images `dasd1`
+(M01RES) and `dasd5` (VMCOM1); operator should
+check `findmnt` and all CKD overlay locations
+once more before backup. This means one **root
+EBS volume snapshot** may cover both base images,
+provided all dependencies reside on that volume.
+
+**Required human-controlled steps before provisioning:**
+
+1. Verify correct AWS account, region, EC2 instance
+   and root volume attachment in the AWS EC2 console.
+2. Quiesce guest I/O and cleanly shut down Hercules,
+   then stop EC2 normally through the console and
+   confirm the stopped state. AWS advises stopping
+   an instance before snapshotting its root volume.
+3. Create a snapshot of the privately verified EBS
+   volume. Record `snap-...`, account/region,
+   originating EBS volume, state, and completion.
+   A snapshot is `pending` until its data transfer
+   is finished; wait for `completed` before
+   risky directory/storage changes.
+4. Check the snapshot recovery route; ideally create
+   a new test volume and examine data in isolation.
+   Verify SSH access after instance restart, because
+   AWS may assign a new public IPv4 address if no
+   Elastic IP is attached. Confirm Hercules startup
+   and guest state; do not assume guest restarted.
+5. Review the complete admin-only checklist
+   `docs/M173_EBS_RECOVERY_CHECKLIST.md`. Its
+   exact host cloud identifiers are intentionally
+   omitted from the public Git repository.
+
+A snapshot completion state does **not** prove
+a bootable guest or tested restoration, and an
+inconsistent live-root snapshot is not equivalent
+to an orderly offline backup. No snapshot has been
+reported as created or tested so far; no new
+permanent VMCOM1 MDISK, CMS FORMAT, or M173 run
+has occurred.
+
+References:
+- https://docs.aws.amazon.com/ebs/latest/userguide/ebs-creating-snapshot.html
+- https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Stop_Start.html
+- https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/how-ec2-instance-stop-start-works.html
