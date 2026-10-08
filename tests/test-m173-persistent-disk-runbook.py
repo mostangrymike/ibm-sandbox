@@ -367,7 +367,10 @@ for proof in (
     "describe-snapshots",
     "a tested guest-level recovery",
 ):
-    assert proof.lower() in snapshot.lower(), proof
+    # Markdown wraps prose across newlines; compare normalized words.
+    assert " ".join(proof.lower().split()) in (
+        " ".join(snapshot.lower().split())
+    ), proof
 
 
 # Single-writer mode selection must be reviewed before the directory edit.
