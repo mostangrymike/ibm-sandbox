@@ -308,21 +308,54 @@ if command = 'PACK-CENSUS' then do
    'GITPCENS'
    exit rc
 end
-if command = 'PACK-IMPORT' then do
-   if strip(rest)\='' then do
-      say 'Usage: GIT PACK-IMPORT'
+/* Named output uses CMS STATE before a FILEDEF can manufacture an
+ * apparent input stream for a file that is not yet on disk. */
+if command = 'PACK-IMPORT' | command = 'PACK-INDEX' then do
+   parse upper var rest target extra
+   if target = '' then do
+      if command = 'PACK-IMPORT' then 'GITPIMP IMPORT'
+      else 'GITPIDX BUILD'
+      exit rc
+   end
+   valid='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@$#'
+   first='ABCDEFGHIJKLMNOPQRSTUVWXYZ@$#'
+   if extra \= '' | length(target)>8 | length(target)<1 then do
+      say 'Usage: GIT' command '[new CMS filename]'
       exit 4
    end
-   'GITPIMP IMPORT'
-   exit rc
-end
-if command = 'PACK-INDEX' then do
-   if strip(rest)\='' then do
-      say 'Usage: GIT PACK-INDEX'
+   if verify(target,valid)\=0 |,
+      verify(substr(target,1,1),first)\=0 then do
+      say 'GIT: invalid CMS output filename'
       exit 4
    end
-   'GITPIDX BUILD'
-   exit rc
+   if command = 'PACK-IMPORT' then do
+      ftype='STAGE'
+      dd='OBJOUT'
+   end
+   else do
+      ftype='INDEX'
+      dd='IDXOUT'
+   end
+   'STATE' target ftype 'A'
+   staterc=rc
+   if staterc=0 then do
+      say 'GIT: output already exists' target ftype 'A'
+      exit 8
+   end
+   if staterc\=28 then do
+      say 'GIT: output STATE failed RC' staterc
+      exit 8
+   end
+   'FILEDEF' dd 'DISK' target ftype 'A (RECFM V LRECL 80'
+   if rc\=0 then do
+      say 'GIT: output FILEDEF failed'
+      exit 8
+   end
+   if command = 'PACK-IMPORT' then 'GITPIMP IMPORT CHECKED'
+   else 'GITPIDX BUILD CHECKED'
+   workrc=rc
+   'FILEDEF' dd 'CLEAR'
+   exit workrc
 end
 if command = 'PACK-CAT' then do
    parse var rest oid extra
