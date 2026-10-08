@@ -13,7 +13,7 @@ assert "M173 DIR DELTA CHECK PASS" in source
 assert "M173 DIR MAINT INSERT VERIFIED 1" in source
 assert "M173 DIR BACKUP CONTENT MISMATCH" in source
 assert "M173 DIR CANDIDATE EXTRA CHANGE" in source
-assert "M173 DIR MAINT STANZA NOT UNIQUE" in source
+assert "M173 DIR INSERT POSITION INVALID" in source
 assert "M173 DIR RECORD COUNT FAIL" in source
 assert "if u.0\\=4282 | b.0\\=u.0 | n.0\\=u.0+1" in source
 assert "if u.i\\==b.i" in source
