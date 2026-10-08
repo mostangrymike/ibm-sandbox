@@ -8355,3 +8355,47 @@ Do not recopy USER DIRECT C, do not alter backup, do not
 rerun XEDIT. Stop on any nonzero result, and do not
 DIRECTXA (EDIT or activation), DIRMAP, FORMAT, LINK,
 ACCESS or perform M173 import until actual target PASS.
+
+
+## 2026-10-08 15:49 — M173DCHK heading-count RC8, exact-delta repair
+
+Actual MAINT:
+`LISTFILE M173NEW DIRECT C (ALLOC` returned
+`M173NEW DIRECT C1 F 80 4283 84`, Ready 15:49:40.
+`M173DCHK` printed
+`M173 DIR MAINT STANZA NOT UNIQUE`, Ready(00008)
+15:49:42. This time EXECIO/EXECCOMM worked, all 3
+files read and record counts validated; previous checker
+failed at assumption that `USER DIRECT C` has exactly
+one line starting `USER MAINT`. Actual count may
+be 0 or >1; no count was printed. **NOT VERIFIED**.
+
+Updated GitHub `src/M173DCHK.EXEC` removes global
+heading uniqueness. It independently verifies
+original/backup equality for all 4282 records,
+finds actual first original/candidate mismatch,
+requires it to be precisely the one approved
+`MDISK 0600 3390 6000 1600 VMCOM1 W` line
+immediately after an original record beginning
+`USER MAINT`, then proves every remaining source
+record aligns with the candidate shifted by one.
+Record counts 4282/4282/4283 and exact REXX
+EXECIO uppercase stem commands remain enforced.
+No actual contents or passwords printed; no writes
+or filesystem modifications. Additional host model
+tests cover duplicate-like headings and negative
+position/insertion cases. The checker cannot
+by itself establish CP directory syntax validity;
+future `DIRECTXA ... (EDIT` remains separately
+gated.
+
+**No other CMS file or live CP directory changed.**
+Preserve original `USER DIRECT C`, original backup
+`M173BAK DIRECT C`, and existing 4283-record
+candidate `M173NEW DIRECT C`. Next Mac:
+`git pull`, `./cms-upload.sh M173DCHK.EXEC`
+in `ibm-sandbox/src`. Next CMS:
+`M173DCHK`, stop on any nonzero RC.
+Do not rerun COPYFILE/XEDIT, and no DIRECTXA,
+DIRMAP, activation, LINK/ACCESS, FORMAT or
+M173 import before verified exact-delta PASS.
