@@ -1081,7 +1081,7 @@ session's virtual device table and the active CP
 directory are checked. These are read-only:
 
     CP QUERY VIRTUAL 0600
-    CP QUERY MDISK MAINT 0600 DIRECTORY
+    CP QUERY MDISK 0600 DIRECTORY
 
 IBM documents `QUERY MDISK ... DIRECTORY` as
 querying the directory-defined MDISK rather
@@ -1180,7 +1180,7 @@ which can differ from currently instantiated disks.
 Both commands are read-only:
 
     CP QUERY VIRTUAL 0600
-    CP QUERY MDISK MAINT 0600 DIRECTORY
+    CP QUERY MDISK 0600 DIRECTORY
 
 Only if both reports show no device can 0600 become
 a possible virtual address for a subsequent reviewed
@@ -1205,3 +1205,30 @@ References:
 - https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
 - https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
 - https://www.ibm.com/docs/en/zvm/7.2.0?topic=directory-mdisk-statement
+
+
+## 2026-10-08 14:53 — corrected MAINT 0600 directory query
+
+After the post-snapshot boot, the operator confirmed Hercules PID 724,
+cwd `/home/admin/vm630`, and open image FDs 12 => `dasd1`
+(real 0123) and 16 => `dasd5` (real 0127); active config has
+`0123 3390 dasd1` and `0127 3390 dasd5`.
+`CP QUERY VIRTUAL 0600` returned `HCPQVD040E Device 0600 does
+not exist`, establishing that 0600 is not currently attached.
+
+The previous example `CP QUERY MDISK MAINT 0600 DIRECTORY` was
+syntactically wrong and returned `HCPQMD022E` (invalid/missing
+virtual device number). The **correct** read-only query on the
+MAINT session is:
+
+    CP QUERY MDISK 0600 DIRECTORY
+
+IBM documents `QUERY MDISK vdev DIRECTORY`: `DIRECTORY` checks
+the permanent CP directory, and the issuing userid (MAINT) is used
+when `USERID` is omitted. The response is **still pending**;
+do not infer that the permanent 0600 entry is absent from the
+syntax error. Once the directory check is satisfactory, independent
+snapshot provenance and credible restoration procedure, source-directory
+currency, and a syntax-only directory change plus rollback review
+remain required before **any** activation, LINK/ACCESS or FORMAT.
+IBM reference: https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
