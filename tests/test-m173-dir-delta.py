@@ -21,14 +21,16 @@ for diagnostic in (
     "M173 DIR 0600 RECORD NUMBER",
     "M173 DIR 0600 FIELD COUNT",
     "M173 DIR 0600 FIELD",
-    "M173 DIR 0600 SPACING ONLY YES",
-    "M173 DIR 0600 SPACING ONLY NO",
+    "M173 DIR 0600 SPACING ONLY",
     "M173 DIR PRECEDING SOURCE MAINT",
     "M173 DIR OUTSIDE INSERT DIFFERENCES",
     "M173 DIR FIRST OUTSIDE CHANGE",
 ):
     assert diagnostic in source
 assert "space(translate(strip(n.prefixat)),1)=expected" in source
+assert "spacing='NO'" in source
+assert "spacing='YES'" in source
+assert "say 'M173 DIR 0600 SPACING ONLY' spacing" in source
 assert "if translate(word(n.prefixat,w))=word(expected,w)" in source
 assert "if u.ix\\==n.j" in source
 assert "if ix>=prefixat then j=ix+1" in source
