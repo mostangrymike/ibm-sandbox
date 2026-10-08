@@ -380,4 +380,38 @@ for proof in (
 ):
     assert proof.lower() in runbook.lower(), proof
 
+
+# Operator AWS console screenshot (2026-10-08) verifies lifecycle completion
+# without exposing snapshot ID or falsely passing source/Region/restore gates.
+for proof in (
+    "snapshot Completed/100% screenshot proof",
+    "Completed",
+    "100%",
+    "16 GiB",
+    "10.66 GiB",
+    "2026/10/08 14:10 GMT-5",
+    "not show snapshot source Volume ID",
+    "Region",
+    "hard stop",
+):
+    assert proof.lower() in runbook.lower(), proof
+for proof in (
+    "SNAPSHOT COMPLETION UI GATE PASS",
+    "Completed",
+    "100%",
+    "16 GiB",
+    "10.66 GiB",
+    "2026/10/08 14:10 GMT-5",
+    "snapshot's Volume ID",
+    "account/region/source",
+    "PENDING",
+    "No new G disk",
+):
+    assert proof.lower() in snapshot.lower(), proof
+assert "source-volume match, account/Region" in snapshot
+assert "restoration test not yet independently verified" in snapshot
+assert not re.search(r"snap-[0-9a-f]{8,17}", snapshot+runbook), (
+    "Do not commit a concrete AWS snapshot ID"
+)
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
