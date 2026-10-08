@@ -48,14 +48,14 @@ def audit(original, backup, candidate):
         return False
     if len(candidate) != len(original) + 1 or backup != original:
         return False
-    positions = [i for i, s in enumerate(original)
-                 if s.split()[:2] == ["USER", "MAINT"]]
-    if len(positions) != 1:
+    first = next((i for i, line in enumerate(original)
+                  if candidate[i] != line), None)
+    if first is None or first < 1:
         return False
-    i = positions[0]
-    return (candidate[i+1].strip().upper() == expected
-            and candidate[:i+1] == original[:i+1]
-            and candidate[i+2:] == original[i+1:])
+    if original[first-1].split()[:2] != ["USER", "MAINT"]:
+        return False
+    return (candidate[first].strip().upper() == expected
+            and candidate[first+1:] == original[first:])
 
 original = ["COMMENT"] * 4282
 original[120] = "USER MAINT NOT-A-REAL-PASSWORD"
