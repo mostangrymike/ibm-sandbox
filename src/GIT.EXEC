@@ -31,8 +31,8 @@ if command = 'LEVEL' then do
    lvl.0 = 0
    'PIPE CMS EXEC GITVREF LEVEL | STEM lvl.'
    if rc \= 0 then exit rc
-   say 'GIT EXEC LEVEL M174'
-   if lvl.0 \= 1 | lvl.1 \= 'GITVREF EXEC LEVEL M174' then do
+   say 'GIT EXEC LEVEL M175'
+   if lvl.0 \= 1 | lvl.1 \= 'GITVREF EXEC LEVEL M175' then do
       say 'GITVREF EXEC LEVEL MISMATCH'
       exit 8
    end
@@ -322,6 +322,17 @@ if command = 'PACK-INDEX' then do
       exit 4
    end
    'GITPIDX BUILD'
+   exit rc
+end
+if command = 'PACK-CAT' then do
+   parse var rest oid extra
+   oid=translate(strip(oid))
+   if extra\='' | length(oid)\=40 |,
+      verify(oid,'0123456789ABCDEF')\=0 then do
+      say 'Usage: GIT PACK-CAT object-id'
+      exit 4
+   end
+   'GITPCAT CAT' oid
    exit rc
 end
 if command = 'CHECKOUT-FILE' then do
