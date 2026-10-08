@@ -635,4 +635,44 @@ assert "16:13:55 — M173 Gate 3 LIVE CMS PASS" in state
 assert "LIVE TARGET GATE 3 RC0 PASS" in state
 assert "DIRECTXA M173NEW DIRECT C (EDIT" in state
 
+
+# Gate 4 on real z/VM 6.3 was a nonactivating, RC0 syntax compile.
+for proof in (
+    "CURRENT GATE — 2026-10-08 16:20:21: TARGET GATE 4 PASS",
+    "STATE DIRECTXA MODULE *",
+    "DIRECTXA M173NEW DIRECT C (EDIT",
+    "VERSION 6 RELEASE 3.0",
+    "EOJ DIRECTORY NOT UPDATED",
+    "GATE 4 RC0 PASS",
+    "CP QUERY CPOWNED VOLID VMCOM1",
+    "CP QUERY ALLOC MAP VMCOM1",
+    "CP QUERY ALLOC DRCT ALL",
+    "CP QUERY MDISK 0600 DIRECTORY",
+    "M173DCHK",
+    "6000–7599",
+    "not ordinary",
+    "rollback",
+    "Do not use",
+):
+    assert proof.lower() in plan.lower(), proof
+for proof in (
+    "DIRECTXA EDIT syntax-only SUCCESS",
+    "VERSION 6 RELEASE 3.0",
+    "EOJ DIRECTORY NOT UPDATED",
+    "16:20:21",
+    "Gate 4",
+    "Active CP directory STILL UNCHANGED",
+):
+    assert proof.lower() in runbook.lower(), proof
+state = (root / "CHAT_STATE.md").read_text()
+for proof in (
+    "16:20:21 — M173 Gate 4 LIVE DIRECTXA EDIT PASS",
+    "GATE 4 LIVE RC0 PASS",
+    "CP QUERY ALLOC MAP VMCOM1",
+    "CP QUERY CPOWNED VOLID VMCOM1",
+    "non-EDIT DIRECTXA writes a new alternate",
+):
+    assert proof.lower() in state.lower(), proof
+assert "DIRECTXA M173NEW DIRECT C (EDIT" in plan
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
