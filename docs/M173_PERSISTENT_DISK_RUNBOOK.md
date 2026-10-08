@@ -1314,3 +1314,67 @@ offline restoration path for the original images/overlays.
 No AWS identifiers or password-bearing directory text belong in
 this public repo or a pasted diagnostic transcript.
 IBM: https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
+
+
+## 2026-10-08 15:07 — active MAINT CP directory source sample: 4/4 PASS
+
+Operator issued four **read-only** `CP QUERY MDISK vdev LOCATION DIRECTORY`
+commands from MAINT. All four returned RC0 and matched the independently
+generated `USER MDISKMAP C` report, including userid, owner, device type,
+volume, real address, start and size:
+
+| Tdev | TargetID | OwnerID/Odev | Dtype | Vol-ID/Rdev | Active start/size | Source-map start/size |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0190 | MAINT | MAINT/0190 | 3390 | M01RES/0123 | 280 / 214 | 280 / 214 |
+| 0191 | MAINT | MAINT/0191 | 3390 | M01RES/0123 | 494 / 175 | 494 / 175 |
+| 0193 | MAINT | MAINT/0193 | 3390 | M01RES/0123 | 669 / 500 | 669 / 500 |
+| 0401 | MAINT | MAINT/0401 | 3390 | M01RES/0123 | 1961 / 292 | 1961 / 292 |
+
+Actual query completion times: 15:07:39, 15:07:40, 15:07:51,
+and 15:07:52, respectively, all `Ready` without an error.
+**PASS: 4/4 source-to-active sample matches.**
+
+These are *permanent directory* reports rather than merely running
+guest links. Together with the earlier three VMCOM1 live MDISK
+location matches, they substantially improve confidence that the
+MAINT `USER DIRECT C` source matches the current active directory.
+They are **not** a comprehensive equivalence check of every
+directory entry or SSI/subconfiguration variant, and do not
+establish that no unrepresented MDISK/CP-reserved extent overlaps
+the candidate VMCOM1 6000–7599 allocation.
+
+**Preserve the current checkpoint:** No directory source edit, no
+DIRECTXA activation, no new G disk, no LINK/ACCESS, no FORMAT,
+and no M173CHK G execution. Proposed new MAINT `0600` virtual
+address passed both virtual and directory absence checks.
+Host PID724 FD12 / `dasd1` and FD16 / `dasd5` are corroborated.
+
+### Remaining operator-controlled safety gate
+
+Before modifying or compiling an altered `USER DIRECT` source:
+1. Privately verify the already reported completed AWS root EBS
+   snapshot's **account/region, source volume, state, date**,
+   and image/overlay coverage; preserve a credible restore procedure.
+   Do not repeat a snapshot merely because its ID was not shared here.
+2. Establish how a saved, unchanged known-good `USER DIRECT C`
+   can be recovered without overwriting protected CMS A/C data;
+   confirm the active CP directory corresponds to the source
+   sufficiently for a controlled one-MDISK change. If needed,
+   use further nonmutating permanent-directory location reports.
+3. Separately review a minimal one-line `MAINT MDISK 0600`
+   source change for VMCOM1 cylinders 6000–7599 (1,600).
+   Confirm the required directory permissions/access mode for
+   the intended CMS disk. A source edit is NOT authorized by
+   these four successful location queries.
+4. IBM's `DIRECTXA filename filetype filemode (EDIT` is a
+   **syntax-only test compile** (not directory activation);
+   review the exact invocation and output locations for this
+   installed system before considering it. **Never run the
+   non-EDIT variant** during preflight. Do not FORMAT unless
+   the independently verified new minidisk is later created,
+   attached and exclusively identified by start/length/volume.
+
+Official references:
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=directory-mdisk-statement
