@@ -129,8 +129,9 @@ TRKDE 4 deallocation-map error.
 
 The new optional `BUILDDECK` batch contains exactly nine
 GCCCMS-generated intermediary ASSEMBLE files, each corresponding
-to a retained original `.C` source in GitHub and a built MODULE
-on CMS: GITCABI, GITCINF, GITCPARS, GITCPROB,
+to a retained original `.C` source in GitHub. Current production
+MODULEs are untouched; the old experiment MODULEs were already
+retired in the previous cleanup: GITCABI, GITCINF, GITCPARS, GITCPROB,
 GITC2, GITREC, GITCIDX, GITCWALK, GITSEL.
 Individual CMS LISTFILE allocations total **952 blocks**,
 about 3.72 MiB. These files are not required to *run*
