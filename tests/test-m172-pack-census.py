@@ -9,6 +9,33 @@ root = Path(__file__).resolve().parents[1]
 src = root / "src" / "GITPCENS.C"
 stub = root / "tests" / "m172_gitcapi_host.c"
 
+g = (root / "src" / "GIT.EXEC").read_text()
+v = (root / "src" / "GITVREF.EXEC").read_text()
+chk = (root / "src" / "M172CHK.EXEC").read_text()
+
+import re
+gm = re.search(r"GIT EXEC LEVEL M(\d+)", g)
+vm = re.search(r"GITVREF EXEC LEVEL M(\d+)", v)
+assert gm and vm and gm.group(1) == vm.group(1)
+assert int(gm.group(1)) >= 172
+assert "if command = 'PACK-CENSUS' then do" in g
+assert "'GITPCENS'" in g
+
+for needle in (
+    "M172 PACK VERIFY CROSSCHECK PASS",
+    "M172 CENSUS CROSSCHECK PASS",
+    "M172 RETAINED PACK UNCHANGED",
+    "M172 GENERALIZED PACK CENSUS TARGET GATE PASS",
+):
+    assert needle in chk
+
+for forbidden in (
+    "ERASE M171NET",
+    "GITFIX STAGE",
+    "M15NEW STAGE",
+):
+    assert forbidden not in chk
+
 for number, line in enumerate(src.read_text().splitlines(), 1):
     assert len(line) <= 80, (number, len(line))
 text = src.read_text()
