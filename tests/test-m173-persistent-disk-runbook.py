@@ -555,4 +555,23 @@ for proof in (
 ):
     assert proof.lower() in plan.lower(), proof
 
+
+# 15:49 real CMS checker failure: heading count unproven, no data changed.
+for proof in (
+    "Gate 3 failure at global MAINT count",
+    "15:49:42",
+    "M173 DIR MAINT STANZA NOT UNIQUE",
+    "zero or greater than one",
+    "Revised target verifier",
+    "first difference",
+    "must begin with `USER MAINT`",
+    "every original record from that insertion onward",
+    "semantic validity",
+    "NO",
+):
+    assert proof.lower() in plan.lower(), proof
+assert "15:49 — M173DCHK heading-count RC8" in (
+    root / "CHAT_STATE.md"
+).read_text()
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
