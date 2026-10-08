@@ -111,7 +111,8 @@ int main(void) {
   return 8;
  }
 
- if(memcmp(pack,"PACK",4)!=0) {
+ if(pack[0]!=0x50||pack[1]!=0x41||
+    pack[2]!=0x43||pack[3]!=0x4b) {
   puts("CENSUS PACK SIGNATURE FAIL");
   free(pack);
   return 8;
@@ -138,7 +139,7 @@ int main(void) {
   size=(unsigned long)(b&15);
   shift=4;
   while(b&128) {
-   if(pos>=end||shift>63) {
+   if(pos>=end||shift>28) {
     puts("CENSUS SIZE OVERFLOW");
     free(pack);
     return 8;
