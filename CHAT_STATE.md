@@ -8561,3 +8561,29 @@ SUPERSEDES its old USER MAINT editing instructions.
 then Mac `git pull`, `./cms-upload.sh M173DCHK.EXEC`,
 then CMS `M173DCHK` only. No COPYFILE/XEDIT or
 DIRECTXA/DIRMAP/activation/LINK/ACCESS/FORMAT/import.
+
+## 2026-10-08 — M173 SSI-ready MAINT-1 verifier host CI PASSED
+
+GitHub native-stage workflow run 37845074071 succeeded on
+commit abbfa6977ab3133ed31d1ec7ac48dc7e8a68fd97.
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/37845074071
+All existing host checks including the updated SSI-ready
+M173 one-record directory verifier now pass.
+
+Last target CMS verification remains RC8 at 16:04:54.
+User's subsequent private XEDIT structural inspection
+established active IDENTITY MAINT/BUILD and SUBCONFIG MAINT-1
+with the one new 600 device line at record 213.
+No directory source needs further editing merely to make
+the old USER MAINT checker assumption pass.
+
+NEXT Mac (ibm-sandbox/src): git pull; then
+./cms-upload.sh M173DCHK.EXEC
+NEXT CMS MAINT: M173DCHK
+Expect ORIGINAL/BACKUP VERIFIED 4282,
+MAINT-1 SUBCONFIG VERIFIED, SINGLE MDISK INSERT RECORD 213,
+DELTA CHECK PASS, RC0. Require live CMS result.
+No DIRECTXA (including EDIT), DIRMAP, CP activation,
+LINK, ACCESS, FORMAT, or M173 import before reviewing
+that result. Preserve USER DIRECT C, M173BAK DIRECT C
+and M173NEW DIRECT C unchanged and confidential.
