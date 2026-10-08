@@ -8025,3 +8025,27 @@ Sample agreement helps source confidence but is not full active
 directory equivalence. Independently verify the completed EBS
 snapshot's correct source/region and restoration plan before any
 directory modifications, even syntax-only work on a proposed copy.
+
+
+## 2026-10-08 15:07 — M173 source vs active directory comparison PASS
+
+Target MAINT permanent-directory results:
+`CP QUERY MDISK 0190 LOCATION DIRECTORY` ->
+MAINT/0190 M01RES real0123 start280 length214 (Ready 15:07:39).
+`CP QUERY MDISK 0191 LOCATION DIRECTORY` ->
+MAINT/0191 M01RES real0123 start494 length175 (15:07:40).
+`CP QUERY MDISK 0193 LOCATION DIRECTORY` ->
+MAINT/0193 M01RES real0123 start669 length500 (15:07:51).
+`CP QUERY MDISK 0401 LOCATION DIRECTORY` ->
+MAINT/0401 M01RES real0123 start1961 length292 (15:07:52).
+**ALL FOUR exactly agree** with original `USER MDISKMAP C`
+(source `USER DIRECT C`). Strengthens source-current evidence,
+not full equivalence or independent proof of all physical extents.
+Earlier MAINT 0600 query pair proved it absent from both virtual
+view and active permanent directory; VMCOM1 real0127 candidate
+6000–7599 length1600 remains prospective.
+Next independent operator gate: confirm already completed EBS
+snapshot against correct root volume/region and workable restore
+plan, then source backup/change/rollback review and syntax-only
+DIRECTXA (EDIT) on reviewed copy. No source edits, no directory
+activation, LINK/ACCESS, FORMAT, or M173 G test performed.
