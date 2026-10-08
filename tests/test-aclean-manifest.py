@@ -23,7 +23,7 @@ M11ATCP M11BRAW M11CHTTP M11DGIT M11PROBE
 M12GDISC M12HADV M12ICHNK M12JPOST M12KPACK M12PRXY
 M13NTEST M13POUT M13PREP M13PSTG M13SFAIL M13WALK
 """.split())
-oldtests = re.findall(r"f\\.n='([A-Z0-9]+) EXEC'",src)
+oldtests = re.findall(r"f\.n='([A-Z0-9]+) EXEC'",src)
 assert len(oldtests) == len(expected_oldtests) == 29
 assert set(oldtests) == expected_oldtests
 for name in oldtests:
