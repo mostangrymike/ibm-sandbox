@@ -16,6 +16,21 @@ GITC2 GIT12Q M12ABEG M12BOPN M12TLS2 M12TLS3 M12TLS4
 """.split())
 declarations = re.findall(r"f\.n='([A-Z0-9]+) (LISTING|MODULE|TEXT)'",src)
 assert len(declarations) == 20 + 26
+expected_oldtests = set("""
+M9JSTRM M9JZLIB M9NSTRM M9O4096 M9PCHAIN M9PCONS M9PCTX
+M10AFEED M10BFRAG M10CRESP M10DREAL M10ESTRS
+M11ATCP M11BRAW M11CHTTP M11DGIT M11PROBE
+M12GDISC M12HADV M12ICHNK M12JPOST M12KPACK M12PRXY
+M13NTEST M13POUT M13PREP M13PSTG M13SFAIL M13WALK
+""".split())
+oldtests = re.findall(r"f\\.n='([A-Z0-9]+) EXEC'",src)
+assert len(oldtests) == len(expected_oldtests) == 29
+assert set(oldtests) == expected_oldtests
+for name in oldtests:
+    assert (root / "src" / (name + ".EXEC")).is_file(),name
+assert "M13AAREF" not in oldtests and "M13ABREF" not in oldtests
+assert "(batch\\='LISTINGS' & batch\\='EXPERIMENTS' &," in src
+assert "batch\\='OLDTESTS'" in src
 assert len(set(declarations)) == len(declarations)
 assert {n for n,t in declarations if t == "LISTING"} == expected_listings
 assert {n for n,t in declarations if t == "MODULE"} == expected_experiments
