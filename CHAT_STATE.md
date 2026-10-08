@@ -8704,3 +8704,35 @@ or M173 import has taken place.
 docs/M173_DIRECTORY_CHANGE_PLAN.md top gate is current.
 Source: https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
 Source: https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-alloc
+
+## 2026-10-08 — M173 Gate 4 target PASS, Gate 5 preflight CI GREEN
+
+GitHub native-stage workflow run 37846412790 completed
+**SUCCESS** at commit
+`c017a19e00b3df752f9029321b3e8ffc0f4f4a3b`.
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/37846412790
+The full workflow includes the M173 permanent disk safety
+regression updated for actual live DIRECTXA EDIT RC0.
+
+Next requested results from MAINT are READ-ONLY:
+`CP QUERY CPOWNED VOLID VMCOM1`,
+`CP QUERY ALLOC MAP VMCOM1`,
+`CP QUERY ALLOC DRCT ALL`,
+`CP QUERY MDISK 0600 DIRECTORY`,
+`M173DCHK`.
+Check CP-owned allocations not overlapping VMCOM1
+cylinders 6000-7599, identify ACTIVE DRCT and
+available alternate space, reconfirm virtual 0600
+not currently in the permanent directory, and
+re-run the approved delta verifier. QUERY ALLOC
+requires class D; denial must fail closed.
+
+The correct original is USER DIRECT C, with an
+untouched backup M173BAK DIRECT C.
+The validated candidate is M173NEW DIRECT C.
+A future rollback would require a separately approved
+DIRECTXA compilation/activation from that backup
+(after EDIT validation), not merely XEDIT/renaming
+a CMS source. Never assume currently logged-on
+MAINT auto-acquires a new permanent MDISK.
+No CP directory activation or FORMAT yet.
