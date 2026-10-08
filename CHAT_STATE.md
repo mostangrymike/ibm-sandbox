@@ -8417,3 +8417,34 @@ Next on Mac in ibm-sandbox/src: `git pull`, then
 `M173DCHK`. Require RC0 and
 `M173 DIR DELTA CHECK PASS`. Do not edit source/backup/
 candidate or activate/format any device at this gate.
+
+
+## 2026-10-08 15:56 — M173DCHK approved-line mismatch, Gate 3 blocked
+
+Actual CMS: `M173DCHK` returned
+`M173 DIR INSERTED RECORD INVALID`,
+`Ready(00008)` at 15:56:14. Original/backup
+full-content verification ran before this branch and did not
+report a mismatch, and 4282/4282/4283 count check passed,
+but candidate **NOT VERIFIED**. This is not evidence
+that no approved MDISK exists: the prior verifier
+assumed the *first* original/candidate mismatch
+must be the inserted record. Another change
+earlier in the candidate would trigger the error.
+
+Updated GitHub `src/M173DCHK.EXEC` is read-only,
+finds number of exact approved MDISK records and
+number of `MDISK 0600`-prefixed candidate records,
+then performs full original/candidate shifted
+alignment against the expected inserted record.
+Outputs no directory contents/passwords; on failure
+reports counts and possibly only mismatch record index.
+Host regression model covers a modified earlier record,
+missing approved line, and duplicate approved line.
+
+**Gate 3 remains PENDING.** Preserve `USER DIRECT C`,
+`M173BAK DIRECT C`, `M173NEW DIRECT C` 4283 F80.
+Next once CI passes: Mac `git pull` then
+`./cms-upload.sh M173DCHK.EXEC`; MAINT `M173DCHK`.
+Do not re-edit/re-copy blindly, DIRECTXA EDIT/activation,
+DIRMAP, LINK/ACCESS, FORMAT, or run M173 import.
