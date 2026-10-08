@@ -165,3 +165,63 @@ with >=180000 free blocks, start `M173CHK G`, then M174–M176.
   https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
 - IBM MDISK modes and overlapping extent warnings:
   https://www.ibm.com/docs/en/zvm/7.2.0?topic=directory-mdisk-statement
+
+
+## 2026-10-08 15:25 — Gate 1 completed on real CMS, Gate 2 authorized
+
+The MAINT operator supplied six read-only results:
+
+```text
+QUERY DISK C
+MNT2CC 2CC C R/W 10 3390 4096 5 117-07 1683 1800
+Ready; 15:24:53
+
+STATE USER DIRECT C
+Ready; T=0.01/0.01 15:24:54
+
+STATE M173BAK DIRECT C
+DMSSTT002E File M173BAK DIRECT C not found
+Ready(00028); T=0.01/0.01 15:25:03
+
+STATE M173NEW DIRECT C
+DMSSTT002E File M173NEW DIRECT C not found
+Ready(00028); T=0.01/0.01 15:25:04
+
+STATE M173NEW MDISKMAP C
+DMSSTT002E File M173NEW MDISKMAP C not found
+Ready(00028); T=0.01/0.01 15:25:14
+
+CP QUERY MDISK 0600 DIRECTORY
+HCPQMD040E Device 0600 does not exist
+Ready(00040); T=0.01/0.01 15:25:15
+```
+
+**GATE 1 PASS**: original USER DIRECT C present RC0, C is R/W
+3390/4096 with **1683 free 4K blocks**, both intended directory
+copy destinations and prospective map absent RC28, and MAINT 0600
+still unassigned in its permanent directory. The prior original
+`USER DIRECT C` was 4282 fixed 80-byte records, ~84 blocks;
+two copies should leave ample room, subject to actual allocation.
+
+IBM CMS COPYFILE `NEWFILE` was independently checked against
+IBM's COPYFILE reference: it rejects pre-existing destinations
+with DMS024E/RC28 instead of REPLACE. Its temporary `COPYFILE
+CMSUT1` workfile may be created by the utility. The operator
+may now perform **Gate 2 only**:
+
+```text
+COPYFILE USER DIRECT C M173BAK DIRECT C (NEWFILE
+COPYFILE USER DIRECT C M173NEW DIRECT C (NEWFILE
+LISTFILE USER DIRECT C (ALLOC
+LISTFILE M173BAK DIRECT C (ALLOC
+LISTFILE M173NEW DIRECT C (ALLOC
+QUERY DISK C
+```
+
+**Stop if either copy fails** and do not execute the second if
+the first fails. Verify all copies are F80 and have exactly
+4282 records, with no source or destination replacement.
+Return metadata/RC only: the real USER DIRECT source may contain
+passwords. Gate 3 candidate edits, Gate 4 `DIRECTXA ... (EDIT`,
+directory activation, LINK/ACCESS, G FORMAT and M173 importer
+remain **UNAUTHORIZED/PENDING**.
