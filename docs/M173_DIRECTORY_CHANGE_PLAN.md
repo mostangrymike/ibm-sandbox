@@ -500,3 +500,51 @@ If this revised checker reports anything other than
 `M173 DIR DELTA CHECK PASS` and RC0, **STOP**.
 `DIRECTXA`, `DIRMAP`, online directory replacement, LINK,
 ACCESS, FORMAT and M173 import are still off limits.
+
+
+## 2026-10-08 15:56 — Gate 3 first-difference check failed
+
+Actual MAINT operator output:
+
+```text
+M173DCHK
+M173 DIR INSERTED RECORD INVALID
+Ready(00008); T=0.52/0.54 15:56:14
+```
+
+**Not a pass.** Three `EXECIO DISKR` reads and record-count
+checks succeeded, and the full original/backup record
+comparison did not report an error. The verifier rejected the
+first difference between original and candidate because the
+candidate record at that position was not the approved MDISK
+line. This does **not** establish that the approved MDISK
+line is absent: another altered record may precede it.
+The count and metadata alone do not prove exact insertion.
+
+The revised **read-only** `src/M173DCHK.EXEC` no longer
+assumes the first difference is the added record. It scans
+all candidate records for exact approved MDISK text, and
+then checks **all 4282** original records against the
+candidate aligned around the one approved insertion.
+No relaxation of the acceptance gate: precisely one
+`MDISK 0600 3390 6000 1600 VMCOM1 W` immediately
+after an original `USER MAINT`-prefixed record,
+unmodified `USER DIRECT C` and `M173BAK DIRECT C`,
+and no other file changes. Its diagnostics disclose
+**only counts and an optional mismatch record number**:
+`M173 DIR APPROVED LINE COUNT`,
+`M173 DIR MDISK 0600 PREFIX COUNT`,
+`M173 DIR OTHER CHANGE AT RECORD`.
+No directory data or passwords are displayed.
+
+**Action:** Leave all three directory files unchanged.
+After checking host CI, update only the verifier EXEC
+with `git pull` and `./cms-upload.sh M173DCHK.EXEC`
+from the Mac `ibm-sandbox/src` directory, rerun
+`M173DCHK` on MAINT and return its output. If the
+checker again fails RC8, use the safe counters to
+determine whether any source-candidate repair is needed;
+do **not** try XEDIT edits by guesswork.
+Never invoke `DIRECTXA`, `DIRMAP`, CP directory
+activation, LINK/ACCESS, FORMAT or M173 import
+until complete target verification passes.
