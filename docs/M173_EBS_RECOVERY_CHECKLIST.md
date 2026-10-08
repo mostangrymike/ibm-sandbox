@@ -196,3 +196,29 @@ The verified read-only command from MAINT is
 new directory entry. Hercules PID 724 and FDs 12 (`dasd1`) / 16
 (`dasd5`) now corroborate the active image configuration.
 IBM: https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
+
+
+## 2026-10-08 15:01 — VDEV 0600 validation result
+
+On the logged-on MAINT CMS session, both queries completed with
+**device absent**, not a syntax error:
+
+    CP QUERY VIRTUAL 0600
+    HCPQVD040E Device 0600 does not exist
+
+    CP QUERY MDISK 0600 DIRECTORY
+    HCPQMD040E Device 0600 does not exist
+
+Thus the candidate 0600 virtual address is currently unused both
+in MAINT's active virtual configuration and permanent directory.
+This confirms only *virtual address* availability; the independent
+VMCOM1 mapped-gap evidence remains the separate physical extent
+case. Check again if the directory or guest configuration changes.
+
+Status remains: operator-reported EBS snapshot completed, but the
+snapshot's source volume, region, Completed metadata and restoration
+plan have **not been independently attested in this conversation**.
+There is still no new G minidisk and no directory activation,
+LINK/ACCESS, FORMAT or M173 execution. Perform AWS snapshot
+provenance/recovery checks and source-directory/rollback review
+before any privileged disk change.
