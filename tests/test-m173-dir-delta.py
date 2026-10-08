@@ -14,15 +14,20 @@ assert "M173 DIR MAINT INSERT VERIFIED 1" in source
 assert "M173 DIR BACKUP CONTENT MISMATCH" in source
 assert "M173 DIR CANDIDATE EXTRA CHANGE" in source
 assert "M173 DIR INSERT POSITION INVALID" in source
+assert "M173 DIR APPROVED LINE COUNT" in source
+assert "M173 DIR MDISK 0600 PREFIX COUNT" in source
+assert "M173 DIR OTHER CHANGE AT RECORD" in source
+assert "if matches\\=1" in source
+assert "if i>=added then j=i+1" in source
 assert "M173 DIR RECORD COUNT FAIL" in source
 assert "if u.0\\=4282 | b.0\\=u.0 | n.0\\=u.0+1" in source
 assert "if u.i\\==b.i" in source
 assert "if u.i\\==n.j" in source
-assert "if translate(strip(n.added))\\=expected" in source
+assert "if translate(strip(n.i))=expected" in source
 assert "j=i+1" in source
 assert "added=i" in source
 assert "before=added-1" in source
-assert "do i=added to u.0" in source
+assert "do i=1 to u.0" in source
 assert "if heads<1" in source
 
 expected = "MDISK 0600 3390 6000 1600 VMCOM1 W"
@@ -48,14 +53,15 @@ def audit(original, backup, candidate):
         return False
     if len(candidate) != len(original) + 1 or backup != original:
         return False
-    first = next((i for i, line in enumerate(original)
-                  if candidate[i] != line), None)
-    if first is None or first < 1:
+    matches = [i for i, line in enumerate(candidate)
+               if line.strip().upper() == expected]
+    if len(matches) != 1:
         return False
-    if original[first-1].split()[:2] != ["USER", "MAINT"]:
+    at = matches[0]
+    if at < 1 or original[at-1].split()[:2] != ["USER", "MAINT"]:
         return False
-    return (candidate[first].strip().upper() == expected
-            and candidate[first+1:] == original[first:])
+    return (candidate[:at] == original[:at]
+            and candidate[at+1:] == original[at:])
 
 original = ["COMMENT"] * 4282
 original[120] = "USER MAINT NOT-A-REAL-PASSWORD"
@@ -86,6 +92,20 @@ assert not audit(noheading, noheading,
                  noheading[:121]+[expected]+noheading[121:])
 assert not audit(original, backup, [expected]+original)
 assert not audit(original, backup, original+[expected])
+
+# Approved entry can appear after an earlier unrelated modification,
+# but must still fail the full alignment proof.
+modified_earlier = candidate[:]
+modified_earlier[5] = "UNRELATED MODIFICATION"
+assert not audit(original, backup, modified_earlier)
+no_approved_entry = candidate[:]
+no_approved_entry[121] = "MDISK 0600 3390 6000 1600 VMCOM1 MR"
+assert not audit(original, backup, no_approved_entry)
+duplicate_approved = candidate[:]
+duplicate_approved[200] = expected
+assert not audit(original, backup, duplicate_approved)
+assert "M173 DIR APPROVED LINE COUNT" in source
+assert "M173 DIR MDISK 0600 PREFIX COUNT" in source
 
 assert "XEDIT M173NEW DIRECT C" in plan
 assert "INPUT MDISK 0600 3390 6000 1600 VMCOM1 W" in plan
