@@ -462,7 +462,9 @@ for proof in (
 assert plan.index("Gate 1: read-only") < plan.index("Gate 2: controlled")
 assert plan.index("Gate 2: controlled") < plan.index("Gate 3: candidate-only")
 assert plan.index("Gate 3: candidate-only") < plan.index("Gate 4: syntax")
-assert "Gate 2b PASS (2026-10-08)" in plan
+assert "Gate 2b PASS;" in plan
+assert "EXECCOMM rc8" in plan
+assert "CMS rerun PENDING" in plan
 assert "NO CP directory activation" in plan
 assert "No isolated restore" in plan
 assert not re.search(r"(?:snap|vol)-[0-9a-f]{8,17}", plan), (
@@ -535,5 +537,22 @@ for proof in (
 ):
     assert proof.lower() in plan.lower(), proof
 assert "15:32 — M173 Gate 2b" in (root / "CHAT_STATE.md").read_text()
+
+
+# First real delta check stopped at invalid lower-case EXECIO STEM.
+# The repair must never be confused with a target PASS.
+for proof in (
+    "M173DCHK first target run RC8",
+    "M173NEW DIRECT C1 F 80 4283 84",
+    "DMSEIO632E I/O error in EXECIO; rc=8",
+    "M173 DIR ORIGINAL READ FAIL",
+    "GATE 3 DELTA VERIFICATION STILL PENDING",
+    "(STEM U. FINIS",
+    "(STEM B. FINIS",
+    "(STEM N. FINIS",
+    "No new copy, file edits",
+    "M173 DIR DELTA CHECK PASS",
+):
+    assert proof.lower() in plan.lower(), proof
 
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
