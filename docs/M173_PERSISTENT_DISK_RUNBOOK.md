@@ -535,3 +535,61 @@ DIRMAP gap estimates as automatically validated
 unallocated physical cylinders, particularly
 because DIRMAP excludes special full-pack overlaps
 and can assume a different device geometry.
+
+
+## 2026-10-08: M01RES tail discovered; physical end not yet verified
+
+Second set of operator-supplied MDISKMAP records (through end of M01RES)
+shows minidisks allocated consecutively through cylinder 9412:
+ZHCP 0100 4478-7807, assorted service disks 7808-9412,
+including CBDIODSP 0400 9053-9412.
+DIRMAP explicitly reports GAP 9413-9419 (7 cylinders),
+MAINT 029D 9420-9439 (20 cylinders), then
+GAP 9440-10016 (577 cylinders).
+The next page switches to M01S01, confirming no further
+ordinary M01RES rows under DIRMAP's assumed geometry.
+
+However real CP QUERY VIRTUAL DASD reported that the
+MAINT fullpack 0123 mapping of M01RES is 11000
+cylinders. A physically available tail 9440-10999
+would be 1560 consecutive cylinders if this geometry
+and absence of allocations beyond 10016 are independently
+established. Gross CMS 4K capacity at 180 blocks per
+cylinder is 280800 blocks (~1.07 GiB), above M173's
+180000-free-block preflight. One possible future
+conservative allocation would use fewer than all
+1560 cylinders, such as 1500, preserving end headroom.
+None is authorized or proven free yet.
+
+The DIRMAP output's fullpack end 10016 may reflect
+default legacy 3390-9 model geometry. IBM DIRMAP
+documents the FULLPACK DEFINES file, with
+"3390 10999" identifying an 11000-cylinder fullpack,
+and explicitly ignores fullpack overlaps during detection.
+Do not infer availability solely from the partial report,
+and DO NOT alter FULLPACK DEFINES or rerun DIRMAP over
+the existing USER MDISKMAP C without a separately
+verified output-collision plan.
+
+Use read-only live CP geometry checks:
+
+    CP QUERY DASD DETAILS 0123
+    CP QUERY MDISK 0123 LOCATION
+
+Review the rest of the 392-record map, especially
+the remaining VMCOM1/630RL1 sections:
+
+    PIPE < USER MDISKMAP C | DROP 200 | TAKE 100 | CONSOLE
+    PIPE < USER MDISKMAP C | DROP 300 | CONSOLE
+
+Host free space must also be checked BEFORE expanding
+CKD allocations or writing a large imported stage:
+
+    df -h /home/admin/vm630
+    ls -lh /home/admin/vm630/dasd1
+
+Do NOT run FORMAT or change the active CP directory.
+Even after geometry confirmation, physical space,
+backup provenance, source directory currency and
+nonoverlap must be reconciled. Existing MAINT 0191
+M01RES and the project PACK/generations stay untouched.
