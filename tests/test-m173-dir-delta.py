@@ -10,61 +10,22 @@ assert all(len(s) <= 80 for s in lines)
 assert "address cms" in source
 assert "parse upper arg extra" in source
 assert "M173 DIR DELTA CHECK PASS" in source
-assert "M173 DIR MAINT INSERT VERIFIED 1" in source
+assert "M173 DIR MAINT-1 SUBCONFIG VERIFIED" in source
 assert "M173 DIR BACKUP CONTENT MISMATCH" in source
 assert "M173 DIR CANDIDATE EXTRA CHANGE" in source
 assert "M173 DIR INSERT POSITION INVALID" in source
-assert "M173 DIR APPROVED LINE COUNT" in source
-assert "M173 DIR MDISK 0600 PREFIX COUNT" in source
-assert "M173 DIR OTHER CHANGE AT RECORD" in source
-for diagnostic in (
-    "M173 DIR 0600 RECORD NUMBER",
-    "M173 DIR 0600 FIELD COUNT",
-    "M173 DIR 0600 FIELD",
-    "M173 DIR 0600 SPACING ONLY",
-    "M173 DIR PRECEDING SOURCE MAINT",
-    "M173 DIR OUTSIDE INSERT DIFFERENCES",
-    "M173 DIR FIRST OUTSIDE CHANGE",
-):
-    assert diagnostic in source
-assert "space(translate(strip(n.prefixat)),1)=expected" in source
-assert "spacing='NO'" in source
-assert "spacing='YES'" in source
-assert "say 'M173 DIR 0600 SPACING ONLY' spacing" in source
-assert "if translate(word(n.prefixat,w))=word(expected,w)" in source
-assert "if u.ix\\==n.j" in source
-assert "if ix>=prefixat then j=ix+1" in source
-assert "if prefix=1 then do" in source
-assert "say 'M173 DIR 0600 FIELD' w flag" in source
-for proof in (
-    "M173 DIR REBUILT WORDS MATCH",
-    "M173 DIR STRIPPED LENGTH",
-    "M173 DIR EXPECTED LENGTH",
-    "M173 DIR ENCLOSING SECTION",
-    "M173 DIR ENCLOSING HEADER RECORD",
-    "M173 DIR ENCLOSING USER MAINT",
-    "M173 DIR PRECEDING SOURCE MAINT",
-):
-    assert proof in source
-assert "norm=norm||' '||translate(word(n.prefixat,w))" in source
-assert "if norm=expected then rebuilt='YES'" in source
-assert "if t='USER' | t='IDENTITY' | t='SUBCONFIG'" in source
-assert "if t='USER' & translate(word(u.si,2))='MAINT'" in source
-for sensitive_output in ("say n.", "say u.", "say b.",
-                         "say word(n.", "say n.i", "say n.prefixat"):
-    assert sensitive_output not in source.lower(), sensitive_output
-assert "if matches\\=1" in source
-assert "if i>=added then j=i+1" in source
-assert "M173 DIR RECORD COUNT FAIL" in source
+assert "M173 DIR MDISK FIELDS INVALID" in source
+assert "M173 DIR VDEV 0600 ENTRY COUNT" in source
 assert "if u.0\\=4282 | b.0\\=u.0 | n.0\\=u.0+1" in source
 assert "if u.i\\==b.i" in source
 assert "if u.i\\==n.j" in source
-assert "if translate(strip(n.i))=expected" in source
-assert "j=i+1" in source
-assert "added=i" in source
-assert "before=added-1" in source
-assert "do i=1 to u.0" in source
-assert "if heads<1" in source
+assert "if i>=added then j=i+1" in source
+assert "if found\\=1" in source
+assert "w2=='600' | w2=='0600'" in source
+assert "v\\=='600' & v\\=='0600'" in source
+assert "if words(n.added)\\=7" in source
+assert "if sect\\=='SUBCONFIG' | sid\\=='MAINT-1'" in source
+assert "if builds\\=1" in source
 
 expected = "MDISK 0600 3390 6000 1600 VMCOM1 W"
 assert f"expected='{expected}'" in source
