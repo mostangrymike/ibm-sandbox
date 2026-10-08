@@ -8171,3 +8171,32 @@ Then `LISTFILE USER DIRECT C (ALLOC`,
 matching copies. No USER DIRECT editing or DIRECTORY
 activation/FORMAT/import yet; source and copies are private
 and must not be displayed.
+
+
+## 2026-10-08 15:29 — M173 Gate 2 CMS directory copies METADATA PASS
+
+Actual `COPYFILE USER DIRECT C M173BAK DIRECT C (NEWFILE`
+Ready RC0 at 15:28:37. `COPYFILE USER DIRECT C M173NEW DIRECT
+C (NEWFILE` Ready RC0 at 15:28:46. The original USER DIRECT
+C1, untouched backup M173BAK DIRECT C1, and editable copy
+M173NEW DIRECT C1 all `LISTFILE (ALLOC` reported **F 80,
+4282 records, 84 blocks**. C1 remains R/W 3390 BLKSZ4096,
+7 files, 287 blocks used, **1513 free / 1800 total** at
+15:29:07. No original directory source modification occurred.
+
+**Both copies CREATED and metadata-verified. Full contents
+not yet independently COMPAREd.** Next two read-only private
+CMS record comparisons, in order, stop on nonzero RC:
+
+```text
+COMPARE USER DIRECT C M173BAK DIRECT C
+COMPARE USER DIRECT C M173NEW DIRECT C
+```
+
+IBM COMPARE prints dissimilar records when they exist, which
+can expose directory/password entries. Operator must return
+ONLY comparison success/RC and not paste mismatching record
+data publicly. `DMSCMP209W` RC4 means not identical. Do
+not begin candidate XEDIT, DIRECTXA EDIT, directory activation,
+LINK/ACCESS, FORMAT or M173 import before both compare PASS
+and separately reviewed safe directory modification.
