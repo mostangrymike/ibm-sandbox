@@ -256,4 +256,23 @@ assert not re.search(r"vol-[0-9a-f]{17}", snapshot+runbook), "No public concrete
 assert not re.search(r"vol[0-9a-f]{17}", snapshot+runbook), "No public NVMe ID"
 assert "force/skip os shutdown" in snapshot.lower() or "force/skip" in snapshot.lower()
 
+# Post-snapshot boot survived and original CMS data is still present.
+# A successful STATE establishes presence, not full integrity.
+for proof in (
+    'post-snapshot guest/host read-only checks passed',
+    '724 hercules -f hercules.cnf -r hercules.rc',
+    '769571364 bytes',
+    '1954890581 bytes',
+    '22841 free of 31500',
+    '1683 free of 1800',
+    'STATE M171NET PACK A',
+    'STATE M171NET META A',
+    'STATE USER DIRECT C',
+    'No new MAINT MDISK has yet been defined',
+    'CP QUERY MDISK MAINT 0600 DIRECTORY',
+    'active CP directory',
+    'NOT an end-to-end pack/directory checksum',
+    'No additional',
+):
+    assert proof.lower() in runbook.lower(), proof
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
