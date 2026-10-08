@@ -1515,3 +1515,28 @@ candidate-only `DIRECTXA M173NEW DIRECT C (EDIT` gate will
 precede any separate authorization for online activation.
 This does **not** prove all active directory extent mappings
 or grant permission to format A, C or an uncertain device.
+
+## 2026-10-08 16:20 — M173 DIRECTXA EDIT syntax-only SUCCESS
+
+Actual target, MAINT CMS: `STATE DIRECTXA MODULE *` Ready RC0
+16:20:11; `DIRECTXA M173NEW DIRECT C (EDIT` displayed
+`z/VM USER DIRECTORY CREATION PROGRAM - VERSION 6 RELEASE 3.0`
+and `EOJ DIRECTORY NOT UPDATED`, then Ready RC0 at
+16:20:21. No errors. **Candidate syntax compiled, Gate 4
+PASS on live installed z/VM 6.3**. Earlier M173DCHK
+confirmed precisely one new 600/0600 disk in MAINT-1,
+source/backup identity, and no other directory changes.
+**Active CP directory STILL UNCHANGED.**
+
+Proceed only with Gate 5 READ-ONLY queries as defined in
+`docs/M173_DIRECTORY_CHANGE_PLAN.md`. Need independent
+CP CPOWNED/ALLOC extent evidence and a precise rollback
+procedure before attempting anything without DIRECTXA EDIT.
+IBM notes a non-EDIT compile writes an alternate directory
+and changes the CP-owned volume-label pointer, potentially
+putting a directory online immediately. The old directory
+source backup is protected, but activation/rollback require
+separately authorized privileged changes. The EBS source
+and region were operator-matched; a guest restore is untested.
+Do not LINK/ACCESS/FORMAT, change User DIRECT/MAINT-1 source,
+activate CP directory, or run M173 import at this gate.
