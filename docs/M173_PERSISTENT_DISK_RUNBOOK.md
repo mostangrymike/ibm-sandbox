@@ -1447,3 +1447,20 @@ restore path. Keep identifiers out of the public repository.
 Once the backup gate is attested, review a reversible, minimal
 one-MDISK source change and syntax-only `DIRECTXA ... (EDIT`
 before separately considering activation.
+
+
+### Pre-activation access-mode review: do not blindly copy MR
+
+The earlier non-executable illustration ended in `MR`, but IBM's
+MDISK directory statement distinguishes **W (single-writer
+exclusive write access)** from **MR (multiple-write with fallback
+to read-only)**. This dedicated G staging disk has no documented
+need for multiwriter access. Consider `W` as the safer planned
+access mode, subject to exact installed-version semantics and
+the site's existing MAINT directory policy. **Access mode is not
+yet approved; the old illustrative MR line is NOT an instruction
+to paste into USER DIRECT.** Confirm access restrictions, passwords,
+links, SSI/subconfig implications and any full-pack interactions
+in the privileged change review. Regardless of mode, the real
+CMS admission gate is R/W, block size 4096, >=180000 free blocks.
+IBM: https://www.ibm.com/docs/en/zvm/7.2.0?topic=directory-mdisk-statement
