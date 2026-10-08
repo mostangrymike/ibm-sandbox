@@ -6634,3 +6634,40 @@ The checker cross-checked POST counters, META, and native verifier output,
 retained M171NET PACK A / META A, and finished with
 M171 GENERALIZED PACK STORE TARGET GATE PASS.
 M171 is REAL CMS TARGET-PROVEN.
+
+
+## 2026-10-07 M172 HOST PASS / RETAINED LIVE PACK CENSUS NEXT
+
+M171 is REAL CMS TARGET-PROVEN. Retained files are M171NET PACK A and
+M171NET META A; the verified target PACK was 2171129 bytes, PACK v2,
+7736 objects, SHA1 A705122BC39A3383BC05ABC6C888A1F788B1D067.
+
+M172 adds native GITPCENS plus public GIT PACK-CENSUS. It is a read-only
+structural walk for arbitrary verified PACKIN input and deliberately does not
+modify GITCWALK or the sealed GITPBUF/GITFIX/M15NEW paths. GITPCENS bounds
+the full PACK and any one inflated representation to 16 MiB and declared
+object count to 100000. It parses ordinary/OFS_DELTA/REF_DELTA entry framing,
+validates OFS distance and REF base-id length, inflates each zlib member
+through target-proven GITCAPI/GITINFA, advances by exact consumed bytes, and
+requires the final object boundary to equal PACK bytes minus the 20-byte
+trailer. It reports ordinary/OFS/REF counts plus largest inflated/compressed
+entry. It does not reconstruct deltas or compute object OIDs.
+
+M172CHK reuses retained M171NET PACK/META, reruns GITPCHK, FILEDEFs the same
+PACK into GIT PACK-CENSUS, and requires byte/version/object counts to agree
+across META, GITPCHK and GITPCENS. It also requires
+ordinary + ofs + ref == declared objects. No persistent file is written or
+erased.
+
+Host coverage compiles the production GITPCENS C89 source against a zlib
+GITCAPI adapter and walks a generated PACK containing one ordinary, one
+OFS_DELTA and one REF_DELTA entry, plus end-boundary and signature negatives.
+PACK signature parsing uses explicit ASCII bytes for CMS safety. GitHub
+Actions run 1299 completed SUCCESS on head
+8fa908facaaa3b3028a6d25aa890131350a351e9, including M172, M171, M170,
+complete tree recovery, and native PACK/index staging.
+
+GIT/GITVREF are M172/M172. NEXT REAL CMS GATE: upload GIT.EXEC,
+GITVREF.EXEC, GITPCENS.C and M172CHK.EXEC. Build GITPCENS with
+CMSCLNK GITPCENS (NAPI default), then run GIT LEVEL and M172CHK.
+Existing GITPCHK MODULE and retained M171NET PACK/META are reused.
