@@ -258,12 +258,19 @@ bad:
  return 0;
 }
 
+static int anib(int c) {
+ if(c>=0x30&&c<=0x39) return c-0x30;
+ if(c>=0x41&&c<=0x46) return c-0x41+10;
+ if(c>=0x61&&c<=0x66) return c-0x61+10;
+ return -1;
+}
+
 static int commit_oid40(const unsigned char *p,
                         unsigned char oid[20]) {
  int i,hi,lo;
  for(i=0;i<20;i++) {
-  hi=nib((unsigned char)p[i*2]);
-  lo=nib((unsigned char)p[i*2+1]);
+  hi=anib((unsigned char)p[i*2]);
+  lo=anib((unsigned char)p[i*2+1]);
   if(hi<0||lo<0) return 0;
   oid[i]=(unsigned char)((hi<<4)|lo);
  }
@@ -271,6 +278,12 @@ static int commit_oid40(const unsigned char *p,
 }
 
 static int commit_summary(const unsigned char *p,unsigned long n) {
+ static const unsigned char treep[5]={
+  0x74,0x72,0x65,0x65,0x20
+ };
+ static const unsigned char parentp[7]={
+  0x70,0x61,0x72,0x65,0x6e,0x74,0x20
+ };
  unsigned long at=0,start,len,parents=0;
  unsigned char oid[20];
  int first=1;
@@ -281,13 +294,13 @@ static int commit_summary(const unsigned char *p,unsigned long n) {
   len=at-start;
   if(len==0) break;
   if(first) {
-   if(len!=45||memcmp(p+start,"tree ",5)!=0||
+   if(len!=45||memcmp(p+start,treep,5)!=0||
       !commit_oid40(p+start+5,oid)) return 0;
    printf("PACKOBJ COMMIT TREE ");
    printoid(stdout,oid);
    putchar('\n');
    first=0;
-  } else if(len==47&&memcmp(p+start,"parent ",7)==0) {
+  } else if(len==47&&memcmp(p+start,parentp,7)==0) {
    if(!commit_oid40(p+start+7,oid)) return 0;
    printf("PACKOBJ COMMIT PARENT ");
    printoid(stdout,oid);
@@ -301,7 +314,7 @@ static int commit_summary(const unsigned char *p,unsigned long n) {
  return 1;
 }
 
-static int cat_object(const char *text) {
+static int read_object(const char *text,int emithex) {
  struct pick pick;
  unsigned char want[20],stored[20],got[20],*body=0;
  unsigned long total=0,unique=0,num,size,k,take,m;
@@ -347,26 +360,31 @@ static int cat_object(const char *text) {
   puts("PACKOBJ COMMIT FORMAT FAIL");
   return 8;
  }
- if(size==0) puts("PACKOBJ HEX EMPTY");
- for(k=0;k<size;k+=take) {
-  take=size-k;
-  if(take>32) take=32;
-  fputs("PACKOBJ HEX ",stdout);
-  for(m=0;m<take;m++) {
-   fputc(hex[body[k+m]>>4],stdout);
-   fputc(hex[body[k+m]&15],stdout);
+ if(emithex) {
+  if(size==0) puts("PACKOBJ HEX EMPTY");
+  for(k=0;k<size;k+=take) {
+   take=size-k;
+   if(take>32) take=32;
+   fputs("PACKOBJ HEX ",stdout);
+   for(m=0;m<take;m++) {
+    fputc(hex[body[k+m]>>4],stdout);
+    fputc(hex[body[k+m]&15],stdout);
+   }
+   putchar('\n');
   }
-  putchar('\n');
  }
  free(body);
  printf("PACKOBJ INDEX TOTAL %lu UNIQUE %lu\n",total,unique);
- puts("M175 PACK CAT PASS");
+ if(emithex) puts("M175 PACK CAT PASS");
+ else puts("M175 PACK INFO PASS");
  return 0;
 }
 
 int main(int argc,char **argv) {
  if(argc==3&&strcmp(argv[1],"CAT")==0)
-  return cat_object(argv[2]);
- puts("Usage: GITPCAT CAT oid");
+  return read_object(argv[2],1);
+ if(argc==3&&strcmp(argv[1],"INFO")==0)
+  return read_object(argv[2],0);
+ puts("Usage: GITPCAT CAT|INFO oid");
  return 4;
 }
