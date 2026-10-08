@@ -322,7 +322,7 @@ The only candidate is `M173NEW DIRECT C`.
 The planned `M173DCHK EXEC` verifies after the edit that all
 4282 original records match the backup and that `M173NEW`
 has **exactly one inserted** entry, immediately after the
-single `USER MAINT` heading:
+specific `USER MAINT` heading that precedes the actual delta:
 
     MDISK 0600 3390 6000 1600 VMCOM1 W
 
@@ -398,7 +398,8 @@ Expected exact final marker:
 requires 4282 original records and 4283 candidate records,
 verifies both original and backup have identical bytes, and
 only accepts the single expected MDISK line directly after the
-unique `USER MAINT` record. It fails closed on **any**
+source record immediately preceding the actual insertion, which
+must begin with `USER MAINT`. It fails closed on **any**
 other change with RC8. Until actual CMS PASS, treat its
 behavior as host-reviewed, **not target-proven**.
 
@@ -445,3 +446,57 @@ Only upload corrected `M173DCHK.EXEC` from GitHub to CMS and
 rerun `M173DCHK`. The upload replaces the verifier EXEC only,
 not any directory source. Require terminal
 `M173 DIR DELTA CHECK PASS` and RC0 before Gate 4.
+
+
+## 2026-10-08 15:49 — Gate 3 failure at global MAINT count
+
+Actual CMS output after the previous uppercase-STEM fix:
+
+```text
+LISTFILE M173NEW DIRECT C (ALLOC
+M173NEW DIRECT C1 F 80 4283 84
+Ready; T=0.01/0.01 15:49:40
+M173DCHK
+M173 DIR MAINT STANZA NOT UNIQUE
+Ready(00008); T=0.54/0.56 15:49:42
+```
+
+**Not a pass.** The three DISKR calls succeeded and the 4282,
+4282, 4283 record-count gate passed. The former source checker
+required that `USER DIRECT C` contain *exactly one* record
+whose first two fields were `USER MAINT`. The printed failure
+means the count was **zero or greater than one**; it did not
+report which, so do NOT claim duplicates as a confirmed fact.
+This earlier uniqueness assumption was not proven by source
+inspection and is not needed to verify the exact inserted line.
+
+### Revised target verifier — preserves fail-closed behavior
+
+`src/M173DCHK.EXEC` now checks, in order:
+
+1. All three files exist, READ without error, and counts match
+   original 4282, backup 4282, candidate 4283.
+2. Every original record is identical to its backup counterpart.
+3. Find the **first difference** between original and candidate.
+   This must be the one new record, with exact fields
+   `MDISK 0600 3390 6000 1600 VMCOM1 W`.
+4. Check that the record immediately before that insertion in the
+   original begins `USER MAINT`; no global uniqueness assumption.
+5. Check that **every original record from that insertion onward**
+   matches the candidate one record later. Any extra modification,
+   deletion or second insertion returns RC8.
+6. Never print a directory line, password or other file content.
+
+This proves precisely one new approved MDISK record after a
+`USER MAINT`-prefixed source line, even when the unmodified
+directory has multiple similarly prefixed lines. It does **not**
+establish the *semantic validity* of a duplicate/alternate
+MAINT stanza or CP directory syntax; those require a separately
+reviewed **syntax-only DIRECTXA (EDIT)** gate later.
+
+Do not re-edit or re-copy the original or candidate. Update
+`M173DCHK.EXEC` only from the repository, then run it on CMS.
+If this revised checker reports anything other than
+`M173 DIR DELTA CHECK PASS` and RC0, **STOP**.
+`DIRECTXA`, `DIRMAP`, online directory replacement, LINK,
+ACCESS, FORMAT and M173 import are still off limits.
