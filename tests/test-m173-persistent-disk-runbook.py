@@ -120,4 +120,31 @@ for evidence in (
     "df -h /home/admin/vm630",
 ):
     assert evidence.lower() in runbook.lower(),evidence
+# A second directory map section exposed the independent VMCOM1 gap.
+# Its candidate must fit the 3390-9 inferred ceiling, without assuming
+# any additional cylinders beyond 10016.
+vmcom_gap_start, vmcom_gap_end = 5936, 10016
+vmcom_start, vmcom_end = 6000, 7599
+assert vmcom_gap_end - vmcom_gap_start + 1 == 4081
+assert vmcom_gap_start <= vmcom_start <= vmcom_end <= vmcom_gap_end
+assert vmcom_end - vmcom_start + 1 == target_cyl
+for evidence in (
+    "VMCOM1 is the preferred candidate",
+    "6VMHCD20 0300",
+    "5756–5935",
+    "5936–10016",
+    "4081 cylinders",
+    "6000",
+    "7599",
+    "0127",
+    "dasd5",
+    "CP QUERY DASD DETAILS 0127",
+    "CP QUERY MDISK 02CC LOCATION",
+    "CP QUERY MDISK 049E LOCATION",
+    "CP QUERY MDISK 0551 LOCATION",
+    "readlink -f /proc/ACTUAL_HERCULES_PID/cwd",
+    "independently",
+    "No `USER DIRECT` source edits",
+):
+    assert evidence.lower() in runbook.lower(),evidence
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
