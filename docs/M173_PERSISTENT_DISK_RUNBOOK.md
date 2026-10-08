@@ -1026,3 +1026,94 @@ References:
 - https://docs.aws.amazon.com/ebs/latest/userguide/ebs-creating-snapshot.html
 - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Stop_Start.html
 - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/how-ec2-instance-stop-start-works.html
+
+
+## 2026-10-08 — snapshot completion reported by operator
+
+The operator reports **"snapshot is complete"** for
+the previously identified AWS EBS root volume. This
+advances the backup state from "not taken" to
+**"operator-reported completed"**, but the actual
+`snap-...` ID, source volume ID, AWS region, state
+`completed`, whether the EC2/Hercules I/O was
+quiesced, and isolated restoration have not yet
+been independently inspected or reported. Do not
+treat this as a validated restoration or claim to
+have created or checked an AWS resource from GitHub.
+
+Detailed next-phase checklist (public file deliberately
+omits exact AWS identifiers):
+`docs/M173_EBS_RECOVERY_CHECKLIST.md`.
+
+After the EC2 instance is started again, first
+verify its reachable endpoint, booted Hercules
+configuration, and all protected Git artifacts.
+**Do not yet modify `USER DIRECT C`, run non-EDIT
+`DIRECTXA`, or FORMAT any minidisk.** Validate
+the most important host and CMS read-only checks.
+
+Linux host:
+
+    pgrep -af '[h]ercules'
+    df -h /home/admin/vm630
+    ls -l /home/admin/vm630/dasd1 /home/admin/vm630/dasd5
+
+CMS MAINT:
+
+    CP QUERY DASD DETAILS 0127
+    CP QUERY MDISK 02CC LOCATION
+    CP QUERY MDISK 049E LOCATION
+    CP QUERY MDISK 0551 LOCATION
+    CP QUERY VIRTUAL DASD
+    QUERY DISK A
+    QUERY DISK C
+    STATE M171NET PACK A
+    STATE M171NET META A
+    STATE USER DIRECT C
+
+The favored new allocation on physical volume
+VMCOM1 real Rdev 0127 is still **start cylinder
+6000, length 1600, end cylinder 7599**, wholly
+within verified DIRMAP free gap 5936–10016.
+An example unused virtual device to investigate is
+`0600`, **not approved** until both the current
+session's virtual device table and the active CP
+directory are checked. These are read-only:
+
+    CP QUERY VIRTUAL 0600
+    CP QUERY MDISK MAINT 0600 DIRECTORY
+
+IBM documents `QUERY MDISK ... DIRECTORY` as
+querying the directory-defined MDISK rather
+than only the current virtual assignment.
+An absent VDEV does not itself prove there is
+an available real DASD cylinder interval.
+
+A later one-line **illustrative** CP directory
+addition under the actual `USER MAINT` stanza,
+after vdev/source/backup/privilege/recovery gates:
+
+    MDISK <VERIFIED_UNUSED_VDEV> 3390 6000 1600 VMCOM1 MR
+
+This is not a CMS command to run, and `6000`
+here is **decimal cylinder start** whereas the
+virtual device number is hexadecimal. Read
+IBM's MDISK statement notes: CP does NOT prevent
+every overlapping minidisk allocation, and
+any overlap can damage existing data.
+
+A candidate modified USER DIRECT must be
+preserved separately from the active source;
+DIRECTXA `(EDIT` offers syntax checking
+without activating the directory. IBM's
+non-EDIT DIRECTXA can bring a new directory
+online and change CP directory pointers.
+Do not issue activation without a reviewed
+recovery plan, confirmed source equivalence,
+and an independently restorable snapshot.
+
+References:
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=directory-mdisk-statement
+- https://docs.aws.amazon.com/ebs/latest/userguide/ebs-describing-snapshots.html
