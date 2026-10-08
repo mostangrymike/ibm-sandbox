@@ -628,8 +628,12 @@ at least two VMCOM1 entries vs the DIRMAP source, (3) MAINT
 virtual device address availability and any unrecorded
 subconfiguration/extent reservations, (4) Linux host space
 and active Hercules backing path, and (5) an independently
-verified backup or provider-consistent snapshot of the
-affected real volume and its dependencies. A new MDISK
+verified backup or provider-consistent snapshot covering
+both VMCOM1 (the proposed target and MAINT 2CC source)
+and M01RES (which contains the active CP directory),
+including every relevant CKD overlay or shadow. Record
+recoverable source-directory and active-directory state
+before any directory recompilation. A new MDISK
 definition must also be saved/applied via a verified,
 site-approved directory management procedure; DirMaint
 currently does not initialize on this host.
