@@ -8660,3 +8660,47 @@ inspect virtual 0551 and currently accessed disks;
 do not improvise a write or active-directory command.
 Do not activate, LINK, ACCESS, DIRMAP, FORMAT,
 or import M173 at this syntax-check stage.
+
+## 2026-10-08 16:20:21 — M173 Gate 4 LIVE DIRECTXA EDIT PASS
+
+MAINT CMS operator successfully ran:
+`STATE DIRECTXA MODULE *` -> Ready/RC0 16:20:11.
+`DIRECTXA M173NEW DIRECT C (EDIT` printed
+`z/VM USER DIRECTORY CREATION PROGRAM - VERSION 6 RELEASE 3.0`
+and `EOJ DIRECTORY NOT UPDATED`, followed by normal
+`Ready; T=0.52/0.57 16:20:21` (RC0). NO errors.
+**GATE 4 LIVE RC0 PASS**; the CP directory was NOT updated.
+Installed DIRECTXA 6.3 syntax-compiled verified MAINT-1
+candidate, and the prior M173DCHK target PASS remains.
+
+NEXT GATE 5 is CP allocation/rollback READ-ONLY preflight:
+  CP QUERY CPOWNED VOLID VMCOM1
+  CP QUERY ALLOC MAP VMCOM1
+  CP QUERY ALLOC DRCT ALL
+  CP QUERY MDISK 0600 DIRECTORY
+  M173DCHK
+IBM QUERY CPOWNED class G; QUERY ALLOC class D.
+Require VMCOM1 real0127, no CP-owned allocation
+overlap with new candidate physical cylinders 6000-7599,
+the existing MDISK source map gap and live queries
+still valid, presence/space of current ACTIVE DRCT,
+and 0600 still absent from CP permanent directory.
+QUERY ALLOC MAP does not show PERM/PARM minidisks;
+that requires prior DIRMAP and CP live MDISK checks.
+Any privilege denial or ambiguous extent = STOP.
+
+According to IBM, non-EDIT DIRECTXA writes a new alternate
+object directory, changes volume label pointer and may bring
+it online immediately; restoring original source via a
+non-EDIT compile of M173BAK DIRECT C is a separate
+high-privilege rollback operation, NOT authorized yet.
+Do not invoke activation or rollback now. Before any
+later approval, consider testing M173BAK with EDIT,
+documenting current CP DRCT location and logoff/logon
+refresh, and verifying the completed EBS snapshot's
+operator-attested recovery procedure.
+No new 0600 device, G filemode, FORMAT, source changes
+or M173 import has taken place.
+docs/M173_DIRECTORY_CHANGE_PLAN.md top gate is current.
+Source: https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
+Source: https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-alloc
