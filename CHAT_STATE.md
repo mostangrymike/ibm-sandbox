@@ -8866,3 +8866,82 @@ Check exactly one MAINT-1/600 VMCOM1 6000-7599 extent
 and non-overlapping free intervals 5936-5999, 7600-10016.
 Do not paste password-bearing directory records. Do not
 activate, LINK/ACCESS/FORMAT, or run M173 importer yet.
+
+## NEW CHAT HANDOFF — 2026-10-08 16:32:22 / M173 Gate 5c PENDING
+
+Canonical project: `mostangrymike/ibm-sandbox`, `main`.
+Host is AWS EC2 Debian ARM64 running Hercules + z/VM 6.3
+(VM/CMS MAINT). Protected PACK: `M171NET PACK A`, 2,171,129
+bytes, 7736 objects. Native M173 pack importer needs NEW
+dedicated large R/W 4K CMS G minidisk, >=180000 free blocks;
+DO NOT rerun M173 on A and do not erase the existing PACK
+or verified Git generations, selectors, or source files.
+
+NEW G proposal: permanent MAINT virtual `600`/`0600`,
+3390 VMCOM1 (real CP 0127), physical cylinder 6000,
+length 1600 (ends 7599), access mode W, inside source
+DIRMAP gap 5936–10016. Hercules real volume VMCOM1
+is online/CP-owned. M01RES real0123 contains ACTIVE
+CP object directory, `QUERY ALLOC DRCT ALL` reported
+cylinders 1–20, total20, in-use1, high2, used5%.
+`CP QUERY ALLOC MAP VMCOM1`: NOT FOUND for CP-owned
+PAGE/SPOOL/TDISK/DRCT areas (NOT proof of no PERM/PARM
+or hidden/full-pack extents). Permanent 0600 absent RC40.
+
+Protected CMS C files:
+- `USER DIRECT C`: original 4282 F80, unchanged.
+- `M173BAK DIRECT C`: rollback backup 4282 F80;
+  `DIRECTXA M173BAK DIRECT C (EDIT` passed RC0 16:31:49.
+- `M173NEW DIRECT C`: 4283 F80, exactly one inserted MDISK
+  in active `SUBCONFIG MAINT-1` linked by `IDENTITY MAINT`.
+  `M173DCHK` PASSED on target 16:13:55 and 16:23:33.
+  `DIRECTXA M173NEW DIRECT C (EDIT` PASSED RC0
+  16:20:21, `EOJ DIRECTORY NOT UPDATED`.
+- `USER MDISKMAP C`: original source map F100 392 rows.
+- `M173NEW MDISKMAP C`: generated candidate map F100
+  **394 records, 10 blocks** at 16:32:10 via
+  `DIRMAP M173NEW DIRECT C C` after RC28 absence test.
+  No DIRMAP errors. CMS C: 4096 blocks, R/W, 1502 free.
+
+**MOST RECENT GATE 5b COMPLETE/PASS on real CMS:**
+`DIRECTXA M173BAK DIRECT C (EDIT`: PASS 16:31:49;
+`STATE M173NEW MDISKMAP C`: absent RC28 16:31:57;
+`DIRMAP M173NEW DIRECT C C`: PASS no errors 16:32:10;
+`LISTFILE M173NEW MDISKMAP C (ALLOC`: 394 F100,
+10 blocks, 16:32:11; `QUERY DISK C` 1502 free 16:32:22.
+Host CI native-stage run `37847789295` PASS at commit
+`6fc5d59c7829321f780706eb688b06ed01909268`.
+
+**IMMEDIATE NEXT STEP (Gate 5c) READ-ONLY CMS MAINT:**
+`PIPE < M173NEW MDISKMAP C | LOCATE /6000/ | CONSOLE`
+`PIPE < M173NEW MDISKMAP C | LOCATE /7599/ | CONSOLE`
+`PIPE < M173NEW MDISKMAP C | LOCATE /5936/ | CONSOLE`
+`PIPE < M173NEW MDISKMAP C | LOCATE /7600/ | CONSOLE`
+If rows don't establish all nearby extents, privately inspect
+`PIPE < M173NEW MDISKMAP C | DROP 200 | TAKE 100 | CONSOLE`.
+DIRMAP continuation lines omit repeated VOLSER, so interpret
+VMCOM1 section CONTEXT; narrow LOCATE filters alone do not
+prove complete extent coverage. Check exactly one MDISK
+MAINT-1/600 VMCOM1 start6000-end7599 size1600 and
+residual gap 5936–5999 and 7600–10016, no overlaps.
+Never post password-bearing USER DIRECT records.
+
+**HARD STOP**: The online CP directory has NOT changed;
+new virtual 0600/G is NOT attached or formatted.
+Do NOT run non-EDIT DIRECTXA (activation), DIRMAP again,
+LINK, ACCESS, FORMAT, M173CHK, or import before reviewing
+Gate 5c and agreeing a controlled rollback+activation plan.
+Snapshot of Hercules AWS root EBS completed/100%, source
+and Region operator-matched, recovery steps understood;
+there has been NO isolated restore test. Protect original
+USER DIRECT C and M173BAK DIRECT C; do not overwrite.
+Postactivation MAINT may need proper logoff/logon to
+acquire new MDISK, followed by READ-ONLY physical extent
+checks before any destructive initial FORMAT.
+
+Canonical operational procedure:
+`docs/M173_DIRECTORY_CHANGE_PLAN.md` top CURRENT GATE
+and `docs/M173_PERSISTENT_DISK_RUNBOOK.md`.
+Past comments/procedures below their latest headings
+can be obsolete. Proceed with max substantive work per
+turn, GitHub edits first, conservative explicit CMS gates.
