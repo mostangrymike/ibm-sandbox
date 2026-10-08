@@ -7475,3 +7475,37 @@ USER DIRECT; map output is safe to audit.
 Persistent 1600-cylinder G disk still not allocated.
 Updated docs/M173_PERSISTENT_DISK_RUNBOOK.md
 and static test for complete audit.
+
+ 
+## M01RES end-range evidence (2026-10-08 13:26)
+
+The second 100-record DIRMAP output showed M01RES contiguous
+ordinary allocation through cylinder 9412, gap 9413-9419 (7
+cylinders), MAINT 029D 9420-9439, then gap 9440-10016
+(577 cylinders) before M01S01 starts on next page.
+No ordinary M01RES allocations were shown beyond 9439,
+but DIRMAP model only runs through 10016 (legacy 3390-9
+10017 cylinders) even though live CP QUERY VIRTUAL DASD
+showed 11000 cylinders for MAINT 0123 M01RES.
+If real physical geometry is truly 11000 and tail
+10017-10999 is genuinely unallocated, 9440-10999
+would yield 1560 continuous cylinders, 280800 gross
+CMS 4K blocks. This would exceed the M173 admission
+requirement >=180000 free blocks after CMS formatting.
+This is a CANDIDATE, NOT a confirmed free extent;
+do not issue directory MDISK changes or CMS FORMAT yet.
+Important IBM DIRMAP feature FULLPACK DEFINES supports
+custom 3390 10999, but don't overwrite existing
+USER MDISKMAP C during rerun without collision protection.
+The remaining 192 map records (DROP200, DROP300)
+and CP real geometry remain to be checked.
+New read-only commands:
+CP QUERY DASD DETAILS 0123
+CP QUERY MDISK 0123 LOCATION
+PIPE < USER MDISKMAP C | DROP 200 | TAKE 100 | CONSOLE
+PIPE < USER MDISKMAP C | DROP 300 | CONSOLE
+Also confirm Linux host free space with
+df -h /home/admin/vm630 and original backing file.
+Latest docs/M173_PERSISTENT_DISK_RUNBOOK.md describes
+these gates; all source-backed 7736 PACK data on A
+remains untouched.
