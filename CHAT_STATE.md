@@ -7771,3 +7771,5 @@ failed only because a new test looked for the
 phrase "snapshot enters" and doc used different
 wording; corrected doc and test, new run 1384
 pending when this note written.
+
+GitHub native-stage CI run 1384 at commit 643aec32c996793cb569fe3e6f92e6a2f783e552 completed SUCCESS after correcting snapshot checklist phrasing and tests. Host suite passed including the EBS snapshot prerequisite and docs volume-ID omission gates. Earlier run 1383 failed on a brittle literal doc assertion ("snapshot enters"), not a guest/data failure. No AWS resource mutation or snapshot has been carried out.
