@@ -1,0 +1,135 @@
+/* M176: verified recursive closure of live main root tree. */
+address cms
+stage='M173NET'
+idx='M174NET'
+meta='M171NET'
+
+'STATE' stage 'STAGE A'
+if rc\=0 then do
+ say 'M176 RETAINED STAGE MISSING'
+ exit 8
+end
+'STATE' idx 'INDEX A'
+if rc\=0 then do
+ say 'M176 RETAINED INDEX MISSING'
+ exit 8
+end
+drop m.
+'EXECIO 1 DISKR' meta 'META A 1 (STEM M. FINIS'
+if rc\=0 | m.0\=1 then do
+ say 'M176 META READ FAIL'
+ exit 8
+end
+parse var m.1 tag moid mbytes mver mobs extra
+moid=translate(moid)
+if tag\='META' | extra\='' | length(moid)\=40 |,
+   verify(moid,'0123456789ABCDEF')\=0 |,
+   datatype(mobs,'W')\=1 then do
+ say 'M176 META FORMAT FAIL'
+ exit 8
+end
+
+'FILEDEF STGIN DISK' stage 'STAGE A'
+if rc\=0 then do
+ say 'M176 STGIN FILEDEF FAIL'
+ exit 8
+end
+'FILEDEF IDXIN DISK' idx 'INDEX A'
+if rc\=0 then do
+ 'FILEDEF STGIN CLEAR'
+ say 'M176 IDXIN FILEDEF FAIL'
+ exit 8
+end
+
+drop c.
+c.0=0
+'PIPE CMS GITPCAT INFO' moid '| STEM c.'
+crc=rc
+if crc\=0 then do
+ do i=1 to c.0
+  say c.i
+ end
+ 'FILEDEF IDXIN CLEAR'
+ 'FILEDEF STGIN CLEAR'
+ say 'M176 COMMIT INFO FAIL RC' crc
+ exit 8
+end
+tree=''
+ctype=''
+cpass=0
+do i=1 to c.0
+ say c.i
+ if word(c.i,1)='PACKOBJ' & word(c.i,2)='OBJ' &,
+    word(c.i,4)='TYPE' & words(c.i)=7 then,
+    ctype=word(c.i,5)
+ if word(c.i,1)='PACKOBJ' & word(c.i,2)='COMMIT' &,
+    word(c.i,3)='TREE' & words(c.i)=4 then,
+    tree=translate(word(c.i,4))
+ if c.i='M175 PACK INFO PASS' then cpass=cpass+1
+end
+if ctype\=1 | length(tree)\=40 |,
+   verify(tree,'0123456789ABCDEF')\=0 | cpass\=1 then do
+ 'FILEDEF IDXIN CLEAR'
+ 'FILEDEF STGIN CLEAR'
+ say 'M176 COMMIT TREE CROSSCHECK FAIL'
+ exit 8
+end
+say 'M176 ROOT TREE' tree
+
+drop w.
+w.0=0
+'PIPE CMS GITPTRE WALK' tree '| STEM w.'
+wrc=rc
+'FILEDEF IDXIN CLEAR'
+'FILEDEF STGIN CLEAR'
+if wrc\=0 then do
+ do i=1 to w.0
+  say w.i
+ end
+ say 'M176 TREE WALK FAIL RC' wrc
+ exit 8
+end
+root=''
+trees=''
+blobs=''
+links=''
+entries=''
+verified=''
+itotal=''
+pass=0
+do i=1 to w.0
+ say w.i
+ if word(w.i,1)='TREE' & word(w.i,2)='CLOSURE' &,
+    word(w.i,3)='ROOT' & words(w.i)=4 then,
+    root=translate(word(w.i,4))
+ if word(w.i,1)='TREE' & word(w.i,2)='CLOSURE' &,
+    word(w.i,3)='TREES' & word(w.i,5)='BLOBS' &,
+    word(w.i,7)='GITLINKS' & words(w.i)=8 then do
+  trees=word(w.i,4)
+  blobs=word(w.i,6)
+  links=word(w.i,8)
+ end
+ if word(w.i,1)='TREE' & word(w.i,2)='CLOSURE' &,
+    word(w.i,3)='ENTRIES' & word(w.i,5)='VERIFIED' &,
+    words(w.i)=6 then do
+  entries=word(w.i,4)
+  verified=word(w.i,6)
+ end
+ if word(w.i,1)='TREE' & word(w.i,2)='CLOSURE' &,
+    word(w.i,3)='INDEX' & word(w.i,4)='TOTAL' &,
+    words(w.i)=7 then itotal=word(w.i,5)
+ if w.i='M176 TREE CLOSURE PASS' then pass=pass+1
+end
+if root\=tree | datatype(trees,'W')\=1 |,
+   datatype(blobs,'W')\=1 | datatype(links,'W')\=1 |,
+   datatype(entries,'W')\=1 | datatype(verified,'W')\=1 |,
+   trees<1 | verified\=trees+blobs |,
+   entries<blobs+trees-1+links | itotal\=mobs | pass\=1 then do
+ say 'M176 TREE CLOSURE CROSSCHECK FAIL'
+ exit 8
+end
+say 'M176 TREE CLOSURE CROSSCHECK PASS'
+say 'M176 TREES' trees 'BLOBS' blobs 'GITLINKS' links
+say 'M176 ENTRIES' entries 'VERIFIED' verified
+say 'M176 LIVE ROOT TREE CLOSURE TARGET GATE PASS'
+exit 0
