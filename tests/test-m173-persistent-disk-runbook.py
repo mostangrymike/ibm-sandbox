@@ -283,4 +283,30 @@ assert "\n    CP QUERY MDISK MAINT 0600 DIRECTORY" not in runbook
 assert "CP QUERY MDISK MAINT 0600 DIRECTORY" not in snapshot
 assert "HCPQMD022E" in runbook
 assert "HCPQVD040E" in runbook
+# Target-confirmed 15:01 MAINT 0600 directory response.
+# Distinguish HCPQMD040E from the earlier invalid HCPQMD022E form.
+for proof in (
+    "BOTH MAINT 0600 VDEV GATES PASSED",
+    "HCPQVD040E Device 0600 does not exist",
+    "HCPQMD040E Device 0600 does not exist",
+    "15:01:35",
+    "MAINT",
+    "current permanent MAINT MDISK",
+    "independently",
+    "NO DIRECTORY EDIT, DIRECTXA, LINK, ACCESS, FORMAT, OR M173 IMPORT",
+):
+    assert proof.lower() in runbook.lower(), proof
+for proof in (
+    "VDEV 0600 validation result",
+    "HCPQVD040E Device 0600 does not exist",
+    "HCPQMD040E Device 0600 does not exist",
+    "source volume",
+    "restoration",
+    "no new G minidisk",
+):
+    assert proof.lower() in snapshot.lower(), proof
+assert "CP QUERY MDISK 0600 DIRECTORY" in runbook
+assert "\n    CP QUERY MDISK MAINT 0600 DIRECTORY" not in runbook
+assert "CP QUERY MDISK MAINT 0600 DIRECTORY" not in snapshot
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
