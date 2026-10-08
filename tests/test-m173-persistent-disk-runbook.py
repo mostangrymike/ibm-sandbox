@@ -675,4 +675,38 @@ for proof in (
     assert proof.lower() in state.lower(), proof
 assert "DIRECTXA M173NEW DIRECT C (EDIT" in plan
 
+
+# Live CP system extent validation and safe prospective-map guard.
+for proof in (
+    "2026-10-08 16:23:33: CP preactivation reads PASS",
+    "VMCOM1 0127 - - 0 0 0 0% NOT FOUND",
+    "M01RES 0123 1 20 20 1 2 5% ACTIVE",
+    "CP QUERY MDISK 0600 DIRECTORY",
+    "M173 DIR DELTA CHECK PASS",
+    "GATE 5 read-only allocation checks PASS",
+    "PERM/PARM",
+    "6000-7599",
+    "Gate 5b: prepare rollback source and prospective map",
+    "DIRECTXA M173BAK DIRECT C (EDIT",
+    "STATE M173NEW MDISKMAP C",
+    "RC is not 28",
+    "DIRMAP M173NEW DIRECT C C",
+    "LISTFILE M173NEW MDISKMAP C (ALLOC",
+    "QUERY DISK C",
+    "5936-5999",
+    "7600-10016",
+    "STOP after Gate 5b",
+):
+    assert proof.lower() in plan.lower(), proof
+assert plan.index("DIRECTXA M173BAK DIRECT C (EDIT") < (
+    plan.index("STATE M173NEW MDISKMAP C")
+)
+assert plan.index("STATE M173NEW MDISKMAP C") < (
+    plan.index("DIRMAP M173NEW DIRECT C C")
+)
+state = (root / "CHAT_STATE.md").read_text()
+assert "16:23:33 — M173 Gate 5 CP-owned extent checks LIVE PASS" in state
+assert "Hidden from ALLOC MAP are PERM/PARM" in state
+assert "No unqualified" in state
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
