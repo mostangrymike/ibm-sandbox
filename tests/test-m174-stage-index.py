@@ -19,6 +19,7 @@ assert gm and vm and gm.group(1) == vm.group(1)
 assert int(gm.group(1)) >= 174
 assert "if command = 'PACK-INDEX' then do" in g
 assert "'GITPIDX BUILD'" in g
+assert "'GITPIDX BUILD CHECKED'" in g
 
 for needle in (
     "M174 INDEX BUILD CROSSCHECK PASS",
