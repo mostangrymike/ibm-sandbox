@@ -36,6 +36,20 @@ assert "if u.ix\\==n.j" in source
 assert "if ix>=prefixat then j=ix+1" in source
 assert "if prefix=1 then do" in source
 assert "say 'M173 DIR 0600 FIELD' w flag" in source
+for proof in (
+    "M173 DIR REBUILT WORDS MATCH",
+    "M173 DIR STRIPPED LENGTH",
+    "M173 DIR EXPECTED LENGTH",
+    "M173 DIR ENCLOSING SECTION",
+    "M173 DIR ENCLOSING HEADER RECORD",
+    "M173 DIR ENCLOSING USER MAINT",
+    "M173 DIR PRECEDING SOURCE MAINT",
+):
+    assert proof in source
+assert "norm=norm||' '||translate(word(n.prefixat,w))" in source
+assert "if norm=expected then rebuilt='YES'" in source
+assert "if t='USER' | t='IDENTITY' | t='SUBCONFIG'" in source
+assert "if t='USER' & translate(word(u.si,2))='MAINT'" in source
 for sensitive_output in ("say n.", "say u.", "say b.",
                          "say word(n.", "say n.i", "say n.prefixat"):
     assert sensitive_output not in source.lower(), sensitive_output
