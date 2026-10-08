@@ -335,4 +335,15 @@ for proof in (
 ):
     assert proof.lower() in snapshot.lower(), proof
 
+# Planned read-only permanent VMCOM1 boundary query must preserve stop gates.
+for proof in (
+    "CP QUERY MDISK USERID 6VMHCD20 0300 LOCATION DIRECTORY",
+    "startloc 5756",
+    "size 180",
+    "ending cylinder 5935",
+    "gap begins",
+    "This does **not** replace",
+):
+    assert proof.lower() in runbook.lower(), proof
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
