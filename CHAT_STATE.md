@@ -8315,3 +8315,43 @@ Only upload corrected `M173DCHK.EXEC` from GitHub to CMS and
 rerun `M173DCHK`. The upload replaces the verifier EXEC only,
 not any directory source. Require terminal
 `M173 DIR DELTA CHECK PASS` and RC0 before Gate 4.
+
+
+## 2026-10-08 — M173DCHK EXECCOMM RC8 repair, CI GREEN, CMS retry pending
+
+After real M173NEW DIRECT C reached 4283 F80 rows, the original
+read-only M173DCHK failed at its first EXECIO with:
+`DMSEIO632E I/O error in EXECIO; rc=8 from EXECCOMM command`,
+`M173 DIR ORIGINAL READ FAIL`, Ready(00008) 15:44:42.
+The failure occurred **before** validating any directory records.
+
+Root cause confirmed from IBM documentation: EXECCOMM RC8 is an
+invalid variable name, and the literal EXECIO STEM operand must
+use an UPPERCASE REXX stem identifier. New
+`src/M173DCHK.EXEC` changes `(STEM u.` to `U.`,
+`(STEM b.` to `B.`, and `(STEM n.` to `N.`.
+No other comparison logic or CMS directory data is changed.
+`tests/test-m173-dir-delta.py` now regression-checks all
+three uppercase command forms, and the M173 runbook documents
+the failed first trial without claiming verification PASS.
+
+**FULL native-stage GitHub Actions CI SUCCESS**
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/37842138714
+commit `f15adb0f282cdee114788a055b129576aff1821f`.
+The earlier red runs were host-test expectations lagging the
+documentation status and are resolved. This is HOST CI, not
+CMS target PASS.
+
+**Only next Mac action** from `ibm-sandbox/src`:
+`git pull` then `./cms-upload.sh M173DCHK.EXEC`
+(replace the verifier EXEC only).
+**Only next CMS action**:
+`LISTFILE M173NEW DIRECT C (ALLOC` (still 4283 F80);
+`M173DCHK`. Expected three markers:
+`M173 DIR ORIGINAL/BACKUP VERIFIED 4282`;
+`M173 DIR MAINT INSERT VERIFIED 1`;
+`M173 DIR DELTA CHECK PASS`.
+Do not recopy USER DIRECT C, do not alter backup, do not
+rerun XEDIT. Stop on any nonzero result, and do not
+DIRECTXA (EDIT or activation), DIRMAP, FORMAT, LINK,
+ACCESS or perform M173 import until actual target PASS.
