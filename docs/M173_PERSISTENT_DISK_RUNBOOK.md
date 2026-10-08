@@ -386,3 +386,73 @@ independent, privileged maintenance task. Do not
 modify its configuration or source directory
 without a verified recovery plan and backup.
 No disk extents are yet approved for M173.
+
+
+## 2026-10-08 13:12 — confirmed USER DIRECT on MAINT C (2CC)
+
+Operator ran `STATE USER DIRECT C` on CMS, RC0, then
+`LISTFILE * DIRECT C (ALLOC`. This confirmed:
+
+    USER DIRECT C1 F 80, 4282 records, 84 CMS blocks.
+
+This is the conventional directory source on MAINT's
+virtual 02CC, already accessed as C R/W with roughly
+1694 free 4-KiB blocks in the last `QUERY DISK`.
+The file is **a candidate source, not independently
+proven equal to the active CP binary directory**.
+Do not display/paste raw USER DIRECT (may contain
+user passwords or MDISK access passwords). Do not
+run `DIRECTXA` without the `EDIT` option: the
+non-EDIT form can activate a replacement CP directory.
+
+IBM `DISKMAP USER DIRECT C` would write `USER DISKMAP A`,
+so avoid it after the earlier A-disk integrity incident.
+IBM `DIRMAP` accepts an independent `outfm` and
+writes `fn MDISKMAP` there. Only after an output
+collision check and capacity check, it can run against
+the candidate source, **without activating it**.
+
+Next target commands, in order:
+
+    QUERY DISK C
+    STATE USER MDISKMAP C
+
+If C is still writable with ample space, and STATE
+returns RC28 (file absent), generate the map there:
+
+    DIRMAP USER DIRECT C C
+
+The last C is the output filemode, so the output
+will be `USER MDISKMAP C`, not on A.
+`DIRMAP` writes this file and must not be described
+as entirely read-only; verify there is no preexisting
+`USER MDISKMAP C` before running it. It does not
+alter the source USER DIRECT or CP active directory.
+
+After a successful map, compare at least the
+MAINT 0191 and additional 0190, 0193, 0401 MDISK
+locations with live `CP QUERY MDISK ... LOCATION`.
+Flag discrepancy as a potentially stale directory
+source and do not allocate anything. Inspect only
+the map output (which reports owner, virtual address,
+VOLSER and physical start/end but not passwords).
+For a focused read-only display:
+
+    PIPE < USER MDISKMAP C | LOCATE /M01RES/ | CONSOLE
+
+If that produces excessive output, show
+the map's gap and overlap lines separately, along
+with appropriate surrounding minidisk records,
+or extract the relevant sections to another
+report after reviewing what they expose.
+Do not choose a new starting cylinder on the
+strength of any single map or gap marker: reconcile
+its total volume geometry, all full-pack definitions,
+CP DRCT/PAGE/SPOOL, and directory-source currency
+first.
+
+Source: IBM z/VM CMS `DIRMAP` utility specifies
+`fn ft fm outfm` and states that default A1 may
+be overridden; IBM z/VM `DISKMAP` writes its output
+to A and flags unbounded END MDISK statements
+unless DOENDS is used.
