@@ -47,5 +47,19 @@ for phrase in (
 assert "FORMAT" in runbook
 assert "Never choose VDEV 0192" in runbook
 assert "not been provisioned" in runbook.lower()
+for evidence in (
+    "real CP extent inventory",
+    "CP QUERY DIRMAINT",
+    "CP XAUTOLOG DIRMAINT",
+    "WHERETO DATADVH",
+    "DIRM USEDEXT V=M01RES",
+    "DIRM FREEXT V=M01RES",
+    "cylinders **1–10999**",
+    "cylinders **1–20**",
+    "not**\n  number of free cylinders",
+    "NO PERMANENT MINIDISK EXTENT CONFIRMED",
+):
+    assert evidence.lower() in runbook.lower(), evidence
+
 assert "MDISK <VDEV> 3390 <START> <CYLINDERS> <VOLSER> <MODE>" in runbook
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
