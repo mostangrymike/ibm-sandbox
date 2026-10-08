@@ -7773,3 +7773,58 @@ wording; corrected doc and test, new run 1384
 pending when this note written.
 
 GitHub native-stage CI run 1384 at commit 643aec32c996793cb569fe3e6f92e6a2f783e552 completed SUCCESS after correcting snapshot checklist phrasing and tests. Host suite passed including the EBS snapshot prerequisite and docs volume-ID omission gates. Earlier run 1383 failed on a brittle literal doc assertion ("snapshot enters"), not a guest/data failure. No AWS resource mutation or snapshot has been carried out.
+
+
+## 2026-10-08 — EBS SNAPSHOT COMPLETION REPORTED; SAFE M173 NEXT GATES
+
+Operator reports: **"snapshot is complete"**. The root EBS
+volume has been positively identified through NVMe serial/by-id
+in the preceding host evidence; do NOT copy its actual cloud
+identifier into this PUBLIC repository. The user says snapshot
+completed, but no snapshot ID/state/source-volume evidence has
+been provided to this assistant, nor confirmation the EC2
+instance was stopped and guest writes quiesced, nor an isolated
+restore test. Treat as OPERATOR-REPORTED COMPLETION; do not
+claim independently verified or restored backup. DO NOT
+trigger a second snapshot automatically.
+
+After EC2 restart, confirm guest and protected source state:
+Linux pgrep -af '[h]ercules'; df -h /home/admin/vm630;
+ls -l /home/admin/vm630/dasd1 /home/admin/vm630/dasd5.
+CMS: CP QUERY DASD DETAILS 0127; CP QUERY MDISK 02CC
+LOCATION; CP QUERY MDISK 049E LOCATION;
+CP QUERY MDISK 0551 LOCATION; CP QUERY VIRTUAL DASD;
+QUERY DISK A; QUERY DISK C; STATE M171NET PACK A;
+STATE M171NET META A; STATE USER DIRECT C.
+
+Candidate for new MAINT hexadecimal virtual device:
+0600 (UNVERIFIED, do NOT assume free). Read-only probes:
+CP QUERY VIRTUAL 0600
+CP QUERY MDISK MAINT 0600 DIRECTORY
+Need absence from both virtual and actual active CP
+directory, and review USER MAINT stanza without
+exposing directory passwords. Physical real Rdev 0127
+VMCOM1 has CP-verified 11000 cylinders; DIRMAP
+explicit gap 5936-10016; proposed 1600-cyl interval
+6000-7599 gross 288000 CMS 4K blocks. Do NOT confuse
+hex virtual device 0600 and decimal cylinder 6000.
+
+Later illustrative directory MDISK statement, only
+after all gates and a reviewed change rollback:
+MDISK <VERIFIED_UNUSED_VDEV> 3390 6000 1600 VMCOM1 MR
+The IBM DIRECTXA (EDIT option syntax checks without
+activating CP's directory. Running without EDIT can
+activate and rewrite directory pointer and must NOT
+be done until the change is reviewed and recovery
+proven. DirMaint still not functioning. Preserve A
+(M171NET PACK/META and GIT generations) and C
+(USER DIRECT/source and MDISKMAP) intact.
+
+Updated docs/M173_EBS_RECOVERY_CHECKLIST.md with
+snapshot status report, cloud verification/restore
+warnings, post-restart guest checks and candidate
+VDEV queries; updated
+docs/M173_PERSISTENT_DISK_RUNBOOK.md and
+tests/test-m173-persistent-disk-runbook.py.
+No target MDISK, DIRECTXA, FORMAT, ACCESS, M173
+import or additional AWS resource changes occurred.
