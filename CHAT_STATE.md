@@ -6988,3 +6988,58 @@ take a non-A mode argument (e.g. G), and host run 1347 was
 SUCCESS after adding the minimum 4-KiB-block guard;
 the next gate remains physically provisioning a correctly
 mapped, sufficiently large persistent writable minidisk.
+
+
+## 2026-10-08 REQUEST TO CLEAN OBSOLETE A FILES / GUARD EXEC
+
+User explicitly wants CMS A cleaned of old and obsolete files, beyond
+the three largest erased LISTING files. The current A baseline is
+MNT191 191 A R/W 175 CYL, BLKSZ 4096, 295 files, 10361 blocks used
+and 21139 free. The previous exact erases of GITREC/GITCWALK/GITCIDX
+LISTING succeeded. No proof of filesystem integrity repair or
+verified offline backup has been provided since the historic TRKDE 4.
+
+GitHub now has canonical src/ACLEAN.EXEC and a source allowlist test
+tests/test-aclean-manifest.py, with documentation
+docs/CMS_A_CLEANUP.md. ACLEAN requires explicit
+ACLEAN PLAN|APPLY LISTINGS|EXPERIMENTS|OLDTESTS.
+It never deletes anything without APPLY, requires exact filename/type
+and A filemode, does a per-file STATE, skips RC28 absent items and
+stops immediately on any unexpected state or ERASE RC. No wildcard
+file removal and no protected fixture, source, adapter or active
+Git module is targeted. Safety host test runs in native-stage workflow.
+
+Batch LISTINGS: 20 remaining older generated LISTING files,
+about 489 blocks by operator's preexisting inventory. Four recent
+debug listings GITPIMP, GITINFA, GITPCHK, GITPCENS are kept.
+Batch EXPERIMENTS: 26 MODULE/TEXT generated binary artifacts for
+13 older diagnostic programs (not current protected modules). Their
+source C/ASSEMBLE remains; old standalone modules require rebuilding.
+Batch OLDTESTS: 29 M9–M13 source-backed historical test EXECs, not
+used by current production Git entrypoints; excluded older
+M13AAREF/M13ABREF referenced by GITTEST.
+If all 75 candidates are still present and all three APPLY
+invocations pass, file count falls to about 220 plus newly uploaded
+ACLEAN EXEC, from 295. Actual blocks reclaimed must be measured on
+real CMS. Never represent PLAN as an actual cleanup or claim
+that these erases have happened.
+
+NEXT USER ACTION: after verified backup/snapshot as prudent with
+the old TRKDE 4 issue, on Mac from ibm-sandbox/src:
+git pull
+./cms-upload.sh ACLEAN.EXEC
+On CMS:
+ACLEAN PLAN LISTINGS
+ACLEAN APPLY LISTINGS
+QUERY DISK
+ACLEAN PLAN EXPERIMENTS
+ACLEAN APPLY EXPERIMENTS
+QUERY DISK
+ACLEAN PLAN OLDTESTS
+ACLEAN APPLY OLDTESTS
+QUERY DISK
+The latter batch is most disruptive to historical test convenience:
+preview and approve separately; its original sources remain on
+GitHub for later upload. STOP on the first unexpected RC.
+None of this makes A big enough for M173. M173-M176 are configured
+for a larger new persistent R/W data minidisk accessed e.g. G.
