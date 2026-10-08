@@ -125,3 +125,26 @@ accounting and has not been further diagnosed. No
 reformatting or wholesale clean was done. Additional
 generated listings remain but reclaiming them is not a
 substitute for a separate larger stage disk.
+
+
+## Provisioning checkpoint after A cleanup (2026-10-08)
+
+The real CMS A disk is now **212 files, 8659 4 KiB blocks
+used, 22841 free**; A has been cleaned but still cannot
+hold the generalized M173 output. The detailed and
+evidence-gated new persistent disk procedure is in
+`docs/M173_PERSISTENT_DISK_RUNBOOK.md`.
+The new proposed data disk is 1600 3390 cylinders, subject
+to actual volume model/extent checks, with M173 admission
+requiring at least 180000 4K blocks free after formatting.
+
+The M173/M174 checker sources now preserve failed
+generated STAGE/INDEX output for diagnosis rather
+than automatically attempting an ERASE, because
+an earlier CMS disk error was associated with an
+ERASE operation. If a failed output remains it
+intentionally blocks re-running the importer or
+indexer by STATE; cleanup must be separately
+diagnosed, backed up and explicitly authorized.
+Do not confuse passing host CI with a provisioned
+physical minidisk.
