@@ -1486,3 +1486,32 @@ verification of the snapshot's source Volume ID and Region versus
 the Hercules EC2 instance's attached root EBS volume, followed by
 review of the recovery path. No additional CMS CP commands are
 required for this AWS identity step. No new 0600 minidisk exists.
+
+
+## 2026-10-08 — EBS source/Region match and recovery procedure attested
+
+The user explicitly confirmed that the completed snapshot's
+**source volume and Region match** the Hercules EC2 instance root
+EBS volume and that the **recovery procedure is understood**.
+The earlier AWS screenshot independently showed snapshot
+`Completed`, `100%` progress, 16 GiB source volume.
+**PROVENANCE: OPERATOR VERIFIED**. A separate isolated
+restoration test has NOT been performed; do not elevate this
+operator attestation to a demonstrated guest-level restore.
+
+The prior snapshot-provenance stop condition is now satisfied
+as operator attestation, so advance to **source-directory
+preparation**, not activation/formatting. The new staged and
+collision-safe runbook is
+`docs/M173_DIRECTORY_CHANGE_PLAN.md`. Its immediate gate
+is purely read-only: `QUERY DISK C`, `STATE USER DIRECT C`,
+`STATE M173BAK DIRECT C`, `STATE M173NEW DIRECT C`,
+`STATE M173NEW MDISKMAP C`, and
+`CP QUERY MDISK 0600 DIRECTORY`.
+Do NOT copy anything until the intended new filenames are
+absent (RC28), the original is present, and C is R/W with
+ample free 4K blocks. A verified source copy and a
+candidate-only `DIRECTXA M173NEW DIRECT C (EDIT` gate will
+precede any separate authorization for online activation.
+This does **not** prove all active directory extent mappings
+or grant permission to format A, C or an uncertain device.
