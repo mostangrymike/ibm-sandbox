@@ -6551,3 +6551,22 @@ GIT/GITVREF are M170/M170. NEXT REAL CMS GATE: upload GIT.EXEC,
 GITVREF.EXEC, GITFETCH.EXEC, GITPOST.EXEC, and M170CHK.EXEC; run GIT LEVEL;
 run M170CHK with stunnel still listening on 192.168.200.1:8443. Existing
 GITWT/GITUPD/GITIMP/GITREC/native modules do not change.
+
+
+## 2026-10-07 M170 REAL CMS TARGET PASS
+
+Real CMS ran GIT/GITVREF M170/M170 and M170CHK completed RC0 through the
+restored EC2 stunnel bridge. Live discovery returned main OID
+9A5DC725EF0AA81AC9FA2BB0533A5961FAC95767, 252 advertised refs, and
+side-band-64k/ofs-delta capability proof. M170 passed that exact OID into the
+generalized POST.
+
+GitHub returned HTTP 200 upload-pack result with PACK v2, 7665 objects,
+2159080 PACK bytes, 7409 progress bytes, and 2168858 total HTTP wire bytes.
+The checker verified FETCH POST WANT exactly matched the immediately discovered
+OID and finished with M170 GENERALIZED UPLOAD PACK TARGET GATE PASS.
+M170 is REAL CMS TARGET-PROVEN.
+
+NEXT: persist a fresh generalized live PACK into a new buffer/file set that
+does not overwrite preserved GITPBUF PACK A or the M11/M12 capture artifacts,
+then run the existing native PACK verifier/walker against that fresh capture.
