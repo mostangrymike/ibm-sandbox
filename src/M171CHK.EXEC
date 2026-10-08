@@ -1,0 +1,167 @@
+/* M171: live generalized PACK persistence and verification gate. */
+address cms
+bridge='192.168.200.1'
+port='8443'
+host='github.com'
+repo='mostangrymike/ibm-sandbox'
+store='M171NET'
+stored=0
+
+call absent store,'PACK','A'
+if result\=0 then exit 8
+call absent store,'META','A'
+if result\=0 then exit 8
+
+drop d.
+d.0=0
+cmd='EXEC GIT FETCH-DISCOVER' bridge port host repo 'main'
+'PIPE CMS' cmd '| STEM d.'
+drc=rc
+if drc\=0 then do
+ say 'M171 DISCOVERY FAIL RC' drc
+ exit 8
+end
+oid=''
+ocount=0
+do i=1 to d.0
+ say d.i
+ if word(d.i,1)='FETCH' & word(d.i,2)='OID' & words(d.i)=3 then do
+  cand=translate(word(d.i,3))
+  if length(cand)=40 &,
+     verify(cand,'0123456789ABCDEF')=0 then do
+   ocount=ocount+1
+   oid=cand
+  end
+ end
+end
+if ocount\=1 then do
+ say 'M171 DISCOVERY OID FRAMING FAIL' ocount
+ exit 8
+end
+say 'M171 LIVE OID' oid
+
+drop p.
+p.0=0
+cmd='EXEC GIT FETCH-STORE' bridge port host repo oid store
+'PIPE CMS' cmd '| STEM p.'
+prc=rc
+do i=1 to p.0
+ say p.i
+end
+if prc\=0 then do
+ call cleanup
+ say 'M171 STORE FAIL RC' prc
+ exit 8
+end
+stored=1
+
+pbytes=''
+pver=''
+pobjects=''
+storeseen=0
+storepass=0
+do i=1 to p.0
+ if word(p.i,1)='FETCH' & word(p.i,2)='POST' &,
+    word(p.i,3)='PACK' & word(p.i,4)='BYTES' &,
+    words(p.i)=5 then pbytes=word(p.i,5)
+ if word(p.i,1)='FETCH' & word(p.i,2)='POST' &,
+    word(p.i,3)='PACK' & word(p.i,4)='VERSION' &,
+    word(p.i,6)='OBJECTS' & words(p.i)=7 then do
+  pver=word(p.i,5)
+  pobjects=word(p.i,7)
+ end
+ if p.i='FETCH POST STORED' store 'PACK A' then storeseen=storeseen+1
+ if p.i='M171 FETCH STORE PASS' then storepass=storepass+1
+end
+if datatype(pbytes,'W')\=1 | datatype(pver,'W')\=1 |,
+   datatype(pobjects,'W')\=1 | storeseen\=1 | storepass\=1 then do
+ call cleanup
+ say 'M171 STORE RESULT FRAMING FAIL'
+ exit 8
+end
+say 'M171 STORE RESULT' pbytes pver pobjects
+
+drop m.
+'EXECIO 1 DISKR' store 'META A 1 (STEM M. FINIS'
+if rc\=0 | m.0\=1 then do
+ call cleanup
+ say 'M171 META READ FAIL'
+ exit 8
+end
+parse var m.1 tag moid mbytes mver mobs extra
+if tag\='META' | extra\='' | translate(moid)\=oid |,
+   mbytes\=pbytes | mver\=pver | mobs\=pobjects then do
+ call cleanup
+ say 'M171 META CROSSCHECK FAIL'
+ exit 8
+end
+say 'M171 META CROSSCHECK PASS'
+
+'FILEDEF PACKIN DISK' store 'PACK A'
+if rc\=0 then do
+ call cleanup
+ say 'M171 PACKIN FILEDEF FAIL'
+ exit 8
+end
+drop v.
+v.0=0
+'PIPE CMS GITPCHK | STEM v.'
+vrc=rc
+'FILEDEF PACKIN CLEAR'
+if vrc\=0 then do
+ do i=1 to v.0
+  say v.i
+ end
+ call cleanup
+ say 'M171 PACK VERIFY FAIL RC' vrc
+ exit 8
+end
+vbytes=''
+vver=''
+vobjects=''
+vsha=''
+vpass=0
+do i=1 to v.0
+ say v.i
+ if word(v.i,1)='PACK' & word(v.i,2)='VERIFY' &,
+    word(v.i,3)='BYTES' & words(v.i)=4 then,
+    vbytes=word(v.i,4)
+ if word(v.i,1)='PACK' & word(v.i,2)='VERIFY' &,
+    word(v.i,3)='VERSION' & word(v.i,5)='OBJECTS' &,
+    words(v.i)=6 then do
+  vver=word(v.i,4)
+  vobjects=word(v.i,6)
+ end
+ if word(v.i,1)='PACK' & word(v.i,2)='VERIFY' &,
+    word(v.i,3)='SHA1' & words(v.i)=4 then,
+    vsha=translate(word(v.i,4))
+ if v.i='M171 PACK VERIFY PASS' then vpass=vpass+1
+end
+if vbytes\=pbytes | vver\=pver | vobjects\=pobjects |,
+   length(vsha)\=40 | verify(vsha,'0123456789ABCDEF')\=0 |,
+   vpass\=1 then do
+ call cleanup
+ say 'M171 PACK CROSSCHECK FAIL'
+ exit 8
+end
+say 'M171 PACK CROSSCHECK PASS'
+say 'M171 RETAINED PACK' store 'PACK A'
+say 'M171 RETAINED META' store 'META A'
+say 'M171 GENERALIZED PACK STORE TARGET GATE PASS'
+exit 0
+
+absent:
+ parse arg afn,aft,afm
+ 'STATE' afn aft afm
+ if rc=28 then return 0
+ say 'M171: expected absent' afn aft afm 'RC' rc
+ return 8
+
+cleanup:
+ 'FILEDEF PACKIN CLEAR'
+ 'STATE' store 'PACK A'
+ if rc=0 then 'ERASE' store 'PACK A'
+ 'STATE' store 'META A'
+ if rc=0 then 'ERASE' store 'META A'
+ stored=0
+ return
