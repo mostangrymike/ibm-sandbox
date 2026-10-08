@@ -1,7 +1,8 @@
 # M173 dedicated CMS G: controlled MAINT directory change plan
 
-Status: **Gate 2b PASS (2026-10-08): source and backup/candidate
-copies created, compared record-identical. Candidate edit PENDING;
+Status: **Gate 2b PASS; candidate M173NEW now has 4283 F80 records.
+Gate 3 first read-only verifier attempt failed at original EXECIO
+(EXECCOMM rc8). Corrected checker is host-gated; CMS rerun PENDING.
 NO CP directory activation, LINK/ACCESS, FORMAT or M173 import.**
 This plan is for the z/VM 6.3 MAINT operator, not a shell script.
 Do not execute a privileged action automatically or as a single batch.
