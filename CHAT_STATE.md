@@ -7161,3 +7161,87 @@ and new data filemode G (or another verified non-A letter).
 Further cleanup on A is not to be automated without confirming
 recoverability of unique old M13 test EXECs and SSL/TCP trace/
 M11BODY/G9* DATA records; no additional file erasures reported.
+
+
+## 2026-10-08 PROCEED AFTER A CLEANUP: PERSISTENT M173 DATA DISK GATE
+
+User said "proceed" after CMS A was cleaned to 212 files,
+8659/31500 4K blocks used, 22841 free, 27% utilization.
+The next priority is to provision a **new permanent large 3390
+CMS minidisk**, separate from existing A, to hold generalized
+M173NET STAGE and M174NET INDEX and support M175/M176.
+
+Current physical mapping retained from prior read-only work:
+MAINT virtual 0191, label MNT191, real CP 0123
+Vol-ID M01RES, start 494, length 175 cylinders;
+live Hercules actual base image /home/admin/vm630/dasd1.
+Do NOT treat anything in that existing extent as free.
+Six Hercules CKD real devices 0123–0128 are in the
+verified old inventory, but other free minidisk extents,
+guest directory overlaps, remaining physical space and
+new volumes remain UNVERIFIED.
+
+Source main now contains
+docs/M173_PERSISTENT_DISK_RUNBOOK.md,
+which lays out evidence-gated read-only CP/Hercules
+inventory, administrative allocation, backup, new
+disk 4K CMS formatting/access and target gating.
+Recommended proposed size: 1600 3390 cylinders,
+180 4K blocks/cylinder, 288000 blocks gross
+(~1.10 GiB). M173 runtime requires >=180000 free
+blocks and R/W 4K CMS filemode (e.g. G). If no verified
+contiguous 1600-cylinder extent exists, provision
+additional dedicated physical DASD appropriately.
+Do not guess a CP USER DIRECTORY MDISK starting
+cylinder; IBM says CP does not prevent all overlapping
+minidisk extents. CP QUERY ALLOC MAP covers CP
+areas, not all permanent user MDISK extents.
+
+Operator read-only inventory request:
+CP QUERY VIRTUAL DASD
+CP QUERY MDISK 191 LOCATION
+CP QUERY DASD ALL
+CP QUERY ALLOC MAP ALL
+QUERY DISK
+If installed and authorized DirMaint:
+DIRM USEDEXT V=M01RES
+DIRM FREEXT V=M01RES
+Find other candidate volume serials in CP QUERY DASD.
+Host read-only:
+pgrep -af '[h]ercules'
+ls -lh /home/admin/vm630/dasd*
+df -h /home/admin/vm630
+bash scripts/inspect-hercules-config.sh /home/admin/vm630/hercules.cnf
+Avoid exposing user directory passwords or full USER DIRECT
+in chat; only redact/record relevant extent lines.
+Actual persistent MDISK definition/FORMAT are explicitly
+BLOCKED until extent allocation, correct device model,
+independent backup and empty-new-disk status are confirmed.
+
+Also performed fail-safe GitHub code updates:
+M173CHK: removed 7 automatic ERASE calls on import/verify
+failure; retains failed output with diagnostic.
+M174CHK: removed 10 automatic ERASE calls on
+build/check/audit/get failures, retains index for diagnostics.
+All existing non-A filemode admission/STATE checks remain.
+tests/test-m173-pack-import.py and
+tests/test-m174-stage-index.py now assert no implicit ERASE.
+A new tests/test-m173-persistent-disk-runbook.py
+asserts geometry, 4K R/W, no auto ERASE, source/documentation
+consistency and correctly blocked provisioning; new
+CI workflow triggers on the new documentation and test.
+Old host CI runs 1355-1358 passed; run 1359
+failed only due to an overly exact test assertion
+for CMS EXECIO META input, fixed at
+a04a027d5b941e8aceddaa938c7bb6b6ca505eca.
+Check latest run 1360 (or later) for final outcome;
+do not claim it passed without tool confirmation.
+
+After verified fresh new disk accessed as G, Mac:
+git pull
+./cms-upload.sh M173CHK.EXEC M174CHK.EXEC
+./cms-upload.sh M175CHK.EXEC M176CHK.EXEC
+CMS: QUERY DISK G, M173CHK G, and only on full M173
+PASS proceed to native M174 index and M175/176 closure gates.
+Do not repeat M171 network PACK fetch; input
+M171NET PACK/META A remains retained.
