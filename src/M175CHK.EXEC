@@ -1,0 +1,177 @@
+/* M175: verified live commit/root closure through generalized index. */
+address cms
+stage='M173NET'
+idx='M174NET'
+meta='M171NET'
+
+'STATE' stage 'STAGE A'
+if rc\=0 then do
+ say 'M175 RETAINED STAGE MISSING'
+ exit 8
+end
+'STATE' idx 'INDEX A'
+if rc\=0 then do
+ say 'M175 RETAINED INDEX MISSING'
+ exit 8
+end
+drop m.
+'EXECIO 1 DISKR' meta 'META A 1 (STEM M. FINIS'
+if rc\=0 | m.0\=1 then do
+ say 'M175 META READ FAIL'
+ exit 8
+end
+parse var m.1 tag moid mbytes mver mobs extra
+moid=translate(moid)
+if tag\='META' | extra\='' | length(moid)\=40 |,
+   verify(moid,'0123456789ABCDEF')\=0 |,
+   datatype(mobs,'W')\=1 then do
+ say 'M175 META FORMAT FAIL'
+ exit 8
+end
+
+'FILEDEF STGIN DISK' stage 'STAGE A'
+if rc\=0 then do
+ say 'M175 STGIN FILEDEF FAIL'
+ exit 8
+end
+'FILEDEF IDXIN DISK' idx 'INDEX A'
+if rc\=0 then do
+ 'FILEDEF STGIN CLEAR'
+ say 'M175 IDXIN FILEDEF FAIL'
+ exit 8
+end
+
+drop o.
+o.0=0
+'PIPE CMS GITPCAT INFO' moid '| STEM o.'
+orc=rc
+if orc\=0 then do
+ do i=1 to o.0
+  say o.i
+ end
+ 'FILEDEF IDXIN CLEAR'
+ 'FILEDEF STGIN CLEAR'
+ say 'M175 MAIN INFO FAIL RC' orc
+ exit 8
+end
+
+ooid=''
+otype=''
+osize=''
+tree=''
+parents=-1
+pcount=0
+opass=0
+itotal=''
+do i=1 to o.0
+ say o.i
+ if word(o.i,1)='PACKOBJ' & word(o.i,2)='OID' &,
+    words(o.i)=3 then ooid=translate(word(o.i,3))
+ if word(o.i,1)='PACKOBJ' & word(o.i,2)='OBJ' &,
+    word(o.i,4)='TYPE' & word(o.i,6)='SIZE' &,
+    words(o.i)=7 then do
+  otype=word(o.i,5)
+  osize=word(o.i,7)
+ end
+ if word(o.i,1)='PACKOBJ' & word(o.i,2)='COMMIT' &,
+    word(o.i,3)='TREE' & words(o.i)=4 then,
+    tree=translate(word(o.i,4))
+ if word(o.i,1)='PACKOBJ' & word(o.i,2)='COMMIT' &,
+    word(o.i,3)='PARENT' & words(o.i)=4 then do
+  pcount=pcount+1
+  parent.pcount=translate(word(o.i,4))
+ end
+ if word(o.i,1)='PACKOBJ' & word(o.i,2)='COMMIT' &,
+    word(o.i,3)='PARENTS' & words(o.i)=4 then,
+    parents=word(o.i,4)
+ if word(o.i,1)='PACKOBJ' & word(o.i,2)='INDEX' &,
+    word(o.i,3)='TOTAL' & words(o.i)=6 then,
+    itotal=word(o.i,4)
+ if o.i='M175 PACK INFO PASS' then opass=opass+1
+end
+if ooid\=moid | otype\=1 | datatype(osize,'W')\=1 |,
+   length(tree)\=40 | verify(tree,'0123456789ABCDEF')\=0 |,
+   datatype(parents,'W')\=1 | parents\=pcount |,
+   parents>64 | itotal\=mobs | opass\=1 then do
+ 'FILEDEF IDXIN CLEAR'
+ 'FILEDEF STGIN CLEAR'
+ say 'M175 MAIN INFO CROSSCHECK FAIL'
+ exit 8
+end
+say 'M175 MAIN COMMIT VERIFIED' moid
+say 'M175 MAIN TREE' tree
+say 'M175 MAIN PARENTS' parents
+
+drop t.
+t.0=0
+'PIPE CMS GITPCAT INFO' tree '| STEM t.'
+trc=rc
+if trc\=0 then do
+ do i=1 to t.0
+  say t.i
+ end
+ 'FILEDEF IDXIN CLEAR'
+ 'FILEDEF STGIN CLEAR'
+ say 'M175 TREE INFO FAIL RC' trc
+ exit 8
+end
+toid=''
+ttype=''
+tpass=0
+do i=1 to t.0
+ say t.i
+ if word(t.i,1)='PACKOBJ' & word(t.i,2)='OID' &,
+    words(t.i)=3 then toid=translate(word(t.i,3))
+ if word(t.i,1)='PACKOBJ' & word(t.i,2)='OBJ' &,
+    word(t.i,4)='TYPE' & words(t.i)=7 then,
+    ttype=word(t.i,5)
+ if t.i='M175 PACK INFO PASS' then tpass=tpass+1
+end
+if toid\=tree | ttype\=2 | tpass\=1 then do
+ 'FILEDEF IDXIN CLEAR'
+ 'FILEDEF STGIN CLEAR'
+ say 'M175 TREE CROSSCHECK FAIL'
+ exit 8
+end
+say 'M175 ROOT TREE VERIFIED' tree
+
+do pi=1 to pcount
+ drop p.
+ p.0=0
+ 'PIPE CMS GITPCAT INFO' parent.pi '| STEM p.'
+ prc=rc
+ if prc\=0 then do
+  do i=1 to p.0
+   say p.i
+  end
+  'FILEDEF IDXIN CLEAR'
+  'FILEDEF STGIN CLEAR'
+  say 'M175 PARENT INFO FAIL' pi 'RC' prc
+  exit 8
+ end
+ poid=''
+ ptype=''
+ ppass=0
+ do i=1 to p.0
+  say p.i
+  if word(p.i,1)='PACKOBJ' & word(p.i,2)='OID' &,
+     words(p.i)=3 then poid=translate(word(p.i,3))
+  if word(p.i,1)='PACKOBJ' & word(p.i,2)='OBJ' &,
+     word(p.i,4)='TYPE' & words(p.i)=7 then,
+     ptype=word(p.i,5)
+  if p.i='M175 PACK INFO PASS' then ppass=ppass+1
+ end
+ if poid\=parent.pi | ptype\=1 | ppass\=1 then do
+  'FILEDEF IDXIN CLEAR'
+  'FILEDEF STGIN CLEAR'
+  say 'M175 PARENT CROSSCHECK FAIL' pi
+  exit 8
+ end
+ say 'M175 PARENT VERIFIED' pi parent.pi
+end
+
+'FILEDEF IDXIN CLEAR'
+'FILEDEF STGIN CLEAR'
+say 'M175 LIVE COMMIT TREE CLOSURE PASS'
+say 'M175 VERIFIED RANDOM ACCESS TARGET GATE PASS'
+exit 0
