@@ -7713,3 +7713,5 @@ Updated docs/M173_PERSISTENT_DISK_RUNBOOK.md and
 tests/test-m173-persistent-disk-runbook.py with the
 real active FD16 proof, exact third disk location,
 and backup-not-yet-established warnings.
+
+GitHub native-stage run 1381 at commit dde3f8c7d266259139286593689ca44dd63b34f8 completed SUCCESS, including all added assertions that VMCOM1 active host FD16 and three CP-linked MDISK locations agree, and backup still pending. This is host static regression, not an EBS backup or CMS provisioning.
