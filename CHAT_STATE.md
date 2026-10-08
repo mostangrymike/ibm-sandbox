@@ -8503,3 +8503,27 @@ then CMS `M173DCHK`. Stop on any nonzero; return
 numeric/indicator diagnostics only. Do not XEDIT,
 COPYFILE, DIRECTXA/EDIT, DIRMAP, LINK/ACCESS, FORMAT,
 activate the CP directory or run M173 import.
+
+
+## 2026-10-08 — M173DCHK confidential field diagnosis CI GREEN
+
+Native-stage GitHub Actions run **37844069052 SUCCESS** at
+commit `bf47186e88a287d4662c1519b6480d7a9ccf66ed`:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/37844069052
+The new read-only `src/M173DCHK.EXEC` reports the one
+candidate MDISK 0600 row's number/word count, seven
+MATCH/DIFF indicators (without exposing values),
+spacing-only YES/NO, preceding original USER MAINT
+heading YES/NO, and other shifted-record mismatch
+count/first index. If the approved record is not
+exactly present once, the script still exits RC8.
+CMS target has not rerun after the 16:00 finding.
+
+Next Mac from ibm-sandbox/src: `git pull` then
+`./cms-upload.sh M173DCHK.EXEC` (only the checker).
+Next CMS MAINT: `M173DCHK`, return sanitized stdout
+and RC. No XEDIT or COPYFILE before interpreting
+the diagnostic; no DIRECTXA, DIRMAP, activation,
+LINK/ACCESS, FORMAT or M173 importer. Existing
+USER DIRECT C / M173BAK DIRECT C / M173NEW DIRECT C
+must remain unchanged and private.
