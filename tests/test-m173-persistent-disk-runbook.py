@@ -489,4 +489,29 @@ assert "15:25 — M173 Gate 1 read-only CMS PASS" in (
     root / "CHAT_STATE.md"
 ).read_text()
 
+
+# Gate 2: both NEWFILE operations succeeded in actual CMS.
+# Equal LISTFILE attributes are not proof of equal records.
+for proof in (
+    "Gate 2 actual CMS copies: metadata PASS",
+    "15:28:37",
+    "15:28:46",
+    "USER DIRECT | C1 | F | 80 | 4282 | 84",
+    "M173BAK DIRECT | C1 | F | 80 | 4282 | 84",
+    "M173NEW DIRECT | C1 | F | 80 | 4282 | 84",
+    "1513 free blocks",
+    "GATE 2 METADATA PASS; FULL CONTENT EQUALITY PENDING",
+    "COMPARE USER DIRECT C M173BAK DIRECT C",
+    "COMPARE USER DIRECT C M173NEW DIRECT C",
+    "do not paste mismatch records",
+    "Gate 2b: read-only record-for-record",
+):
+    assert proof.lower() in plan.lower(), proof
+assert plan.index("Gate 2 actual CMS copies") < (
+    plan.index("Gate 2b: read-only record-for-record")
+)
+assert "Full contents\nnot yet independently COMPAREd" in (
+    root / "CHAT_STATE.md"
+).read_text()
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
