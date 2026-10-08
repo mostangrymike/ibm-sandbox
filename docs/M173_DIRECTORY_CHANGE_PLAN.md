@@ -225,3 +225,66 @@ Return metadata/RC only: the real USER DIRECT source may contain
 passwords. Gate 3 candidate edits, Gate 4 `DIRECTXA ... (EDIT`,
 directory activation, LINK/ACCESS, G FORMAT and M173 importer
 remain **UNAUTHORIZED/PENDING**.
+
+
+## 2026-10-08 15:29 — Gate 2 actual CMS copies: metadata PASS
+
+The operator completed both individually guarded copies successfully:
+
+```text
+COPYFILE USER DIRECT C M173BAK DIRECT C (NEWFILE
+Ready; T=0.01/0.01 15:28:37
+COPYFILE USER DIRECT C M173NEW DIRECT C (NEWFILE
+Ready; T=0.01/0.01 15:28:46
+```
+
+The resulting three independent `LISTFILE ... (ALLOC` reports
+agreed exactly in the published **nonsecret metadata**:
+
+| CMS file | FM | RECFM | LRECL | RECS | BLOCKS |
+| --- | --- | --- | ---: | ---: | ---: |
+| USER DIRECT | C1 | F | 80 | 4282 | 84 |
+| M173BAK DIRECT | C1 | F | 80 | 4282 | 84 |
+| M173NEW DIRECT | C1 | F | 80 | 4282 | 84 |
+
+The operator's last `QUERY DISK C` at **15:29:07**
+reported `MNT2CC 2CC C R/W 10 3390 4096`, **7 files**,
+**287 used blocks**, **1513 free blocks**, **1800 total**.
+The operation raised used blocks from 117 to 287, preserving
+plenty of CMS C free space. No `USER DIRECT C` edit,
+new 0600 MDISK, online directory activation, G FORMAT or M173
+execution has been reported.
+
+**GATE 2 METADATA PASS; FULL CONTENT EQUALITY PENDING.**
+Identical file attributes, records, and allocated blocks are
+necessary but not a full record-by-record content check.
+
+### Gate 2b: read-only record-for-record content comparisons
+
+IBM CMS `COMPARE` checks every column of each record by default
+when no COL option is specified. It is read-only. It returns an
+ordinary Ready/RC0 response for identical files; nonidentical
+contents produce `DMSCMP209W`/RC4, and mismatched file lengths
+can produce `DMSCMP010E`/RC40. **CAUTION**: when files differ,
+COMPARE can display their differing records, which can include
+passwords embedded in `USER DIRECT`. Keep this on the operator's
+private console and **do not paste mismatch records** into chat
+or the public GitHub repository. Report only return code and
+whether they were identical.
+
+```text
+COMPARE USER DIRECT C M173BAK DIRECT C
+COMPARE USER DIRECT C M173NEW DIRECT C
+```
+
+Run the second **only if the first returns RC0**. If either
+does not return RC0, STOP; do not edit or replace any of the
+three directory files. If both pass, `M173BAK DIRECT C` is a
+record-identical, untouched CMS backup and `M173NEW DIRECT C`
+is a record-identical candidate ready for separate
+`USER MAINT` stanza review. Gate 3 XEDIT and Gate 4
+syntax-only `DIRECTXA ... (EDIT` have NOT been authorized
+or executed at the metadata stage.
+
+IBM reference:
+https://www.ibm.com/docs/en/zvm/7.2?topic=commands-compare
