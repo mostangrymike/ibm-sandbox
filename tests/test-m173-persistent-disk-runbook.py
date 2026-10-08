@@ -167,4 +167,21 @@ for evidence in (
     "are all still pending",
 ):
     assert evidence.lower() in runbook.lower(), evidence
+# The live host has space but PID/FD linkage and backups are not yet proven.
+for evidence in (
+    "live VMCOM1 link corroboration and host capacity",
+    "MAINT 02CC PMAINT 02CC 3390 VMCOM1 real0127 start121 size10",
+    "MAINT 049E 6VMLEN20 049E 3390 VMCOM1 real0127",
+    "start4104 size250",
+    "has **not yet**",
+    "7174 hercules -f hercules.cnf -r hercules.rc",
+    "6.1 GiB available",
+    "readlink -f /proc/7174/cwd",
+    "grep -nE '^[[:space:]]*0127[[:space:]]+3390'",
+    "ls -l /proc/7174/fd | grep -F 'dasd5'",
+    "du -h /home/admin/vm630/dasd5",
+    "not independent",
+    "still NOT established",
+):
+    assert evidence.lower() in runbook.lower(),evidence
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
