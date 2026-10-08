@@ -6,7 +6,7 @@ parse arg command spec depth extra
 command=translate(command)
 if command='LEVEL' then do
  if spec\='' | depth\='' | extra\='' then exit 4
- say 'GITVREF EXEC LEVEL M174'
+ say 'GITVREF EXEC LEVEL M175'
  exit 0
 end
 if command='STAMP' then do
