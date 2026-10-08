@@ -41,35 +41,50 @@ if u.0\=4282 | b.0\=u.0 | n.0\=u.0+1 then do
  say 'M173 DIR RECORD COUNT FAIL'
  exit 8
 end
-maint=0
+/* Verify preserved source and backup record by record. */
+heads=0
 do i=1 to u.0
  if u.i\==b.i then do
   say 'M173 DIR BACKUP CONTENT MISMATCH'
   exit 8
  end
  if translate(word(u.i,1))='USER' &,
-    translate(word(u.i,2))='MAINT' then do
-  maint=maint+1
-  at=i
+    translate(word(u.i,2))='MAINT' then heads=heads+1
+end
+/* Find actual first inserted record, not a guessed USER location. */
+added=0
+do i=1 to u.0
+ if u.i\==n.i then do
+  added=i
+  leave
  end
 end
-if maint\=1 then do
- say 'M173 DIR MAINT STANZA NOT UNIQUE'
+if added<2 then do
+ say 'M173 DIR INSERT POSITION INVALID'
  exit 8
 end
-k=at+1
 expected='MDISK 0600 3390 6000 1600 VMCOM1 W'
-if translate(strip(n.k))\=expected then do
+if translate(strip(n.added))\=expected then do
  say 'M173 DIR INSERTED RECORD INVALID'
  exit 8
 end
-do i=1 to u.0
- j=i
- if i>at then j=i+1
+before=added-1
+if translate(word(u.before,1))\='USER' |,
+   translate(word(u.before,2))\='MAINT' then do
+ say 'M173 DIR INSERT NOT AFTER MAINT HEADER'
+ exit 8
+end
+/* All remaining records must line up after exactly one insert. */
+do i=added to u.0
+ j=i+1
  if u.i\==n.j then do
   say 'M173 DIR CANDIDATE EXTRA CHANGE'
   exit 8
  end
+end
+if heads<1 then do
+ say 'M173 DIR MAINT HEADER MISSING'
+ exit 8
 end
 say 'M173 DIR ORIGINAL/BACKUP VERIFIED' u.0
 say 'M173 DIR MAINT INSERT VERIFIED 1'
