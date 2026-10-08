@@ -148,7 +148,7 @@ virtual number with the decimal real start cylinder
 
 ```text
 CP QUERY VIRTUAL 0600
-CP QUERY MDISK MAINT 0600 DIRECTORY
+CP QUERY MDISK 0600 DIRECTORY
 ```
 
 A not-found response for either query alone is not
@@ -184,3 +184,15 @@ so it is not part of this preflight.
 IBM:
 https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
 https://www.ibm.com/docs/en/zvm/7.2.0?topic=directory-mdisk-statement
+
+
+## Confirmed query syntax correction (2026-10-08)
+
+`CP QUERY VIRTUAL 0600` returned HCPQVD040E (no virtual device).
+The obsolete command with `MAINT` before `0600` returned HCPQMD022E,
+which is a **syntax error**, not evidence about the CP directory.
+The verified read-only command from MAINT is
+`CP QUERY MDISK 0600 DIRECTORY`; wait for its response before any
+new directory entry. Hercules PID 724 and FDs 12 (`dasd1`) / 16
+(`dasd5`) now corroborate the active image configuration.
+IBM: https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
