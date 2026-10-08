@@ -1232,3 +1232,47 @@ snapshot provenance and credible restoration procedure, source-directory
 currency, and a syntax-only directory change plus rollback review
 remain required before **any** activation, LINK/ACCESS or FORMAT.
 IBM reference: https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
+
+
+## 2026-10-08 15:01 — BOTH MAINT 0600 VDEV GATES PASSED
+
+Actual CMS MAINT command and response:
+
+    CP QUERY VIRTUAL 0600
+    HCPQVD040E Device 0600 does not exist
+    Ready(00040); T=0.01/0.01 14:53:40
+
+    CP QUERY MDISK 0600 DIRECTORY
+    HCPQMD040E Device 0600 does not exist
+    Ready(00040); T=0.01/0.01 15:01:35
+
+The first confirms no MAINT 0600 *instantiated* virtual device.
+IBM's QUERY MDISK DIRECTORY operand checks the *permanent CP user
+directory* for the issuing userid MAINT; its HCPQMD040E establishes
+no current permanent MAINT MDISK at 0600. Unlike the earlier
+HCPQMD022E syntax failure, **both are valid absence results**.
+Virtual address 0600 is therefore confirmed available at this
+point in the **MAINT** virtual/directory views only, not globally.
+Recheck immediately before activation because configuration may change.
+
+The previously independently mapped physical range on VMCOM1 real
+0127, cylinders 6000 through 7599 inclusive, length 1600, is
+still a candidate for the new permanent G minidisk; confirming
+a VDEV does not, by itself, prove physical extent safety.
+
+Host at the previous gate: Hercules PID 724, cwd
+`/home/admin/vm630`, real 0123 -> `dasd1` FD12 and real
+0127 -> `dasd5` FD16, config lines 33 and 37, respectively.
+
+**NO DIRECTORY EDIT, DIRECTXA, LINK, ACCESS, FORMAT, OR M173 IMPORT
+HAS OCCURRED.** Next safeguards before any change: independently
+match the operator-reported completed EBS snapshot to its correct
+source volume and region; retain a credible offline restoration
+procedure, including CKD overlay dependencies; establish the
+currency of `USER DIRECT C` against active directory entries and
+review the entire nonoverlap/CP-reserved extent inventory; and
+prepare a separately reviewed reversible one-MDISK directory
+change with syntax-only `DIRECTXA ... (EDIT`. Do not execute a
+non-EDIT DIRECTXA command or initialize any device at this gate.
+IBM QUERY MDISK documentation:
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
