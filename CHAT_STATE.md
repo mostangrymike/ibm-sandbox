@@ -7326,3 +7326,53 @@ startup failure, and warns NO VERIFIED PERMANENT
 MINIDISK EXTENT. Run 1362 also passed.
 Do not represent this as physical MDISK provisioning;
 it is documentation and safe software testing only.
+
+
+## 2026-10-08 13:08 DIRMAINT XAUTOLOG LOGS OFF IMMEDIATELY
+
+User executed:
+CP QUERY DIRMAINT -> HCPCQU045E DIRMAINT not logged on.
+CP XAUTOLOG DIRMAINT -> Command accepted, AUTO LOGON
+*** DIRMAINT USERS=19, HCPCLS6056I IPL command verified,
+then USER DSC LOGOFF AS DIRMAINT USERS=18.
+Subsequent CP QUERY DIRMAINT -> still not logged on RC45.
+DIRM USEDEXT V=M01RES and DIRM FREEXT V=M01RES
+still error DVHDIR1002T missing WHERETO DATADVH RC28,
+DVHDIR1001T required file missing RC1001.
+Thus DirMaint never remained running; no usable extent
+report obtained. XAUTOLOG success only means CP
+accepted login, NOT that DirMaint server initialized.
+Do NOT repeatedly XAUTOLOG or start disk mutation.
+User also ran CP QUERY RDR ALL, showing historical
+spool files and CPDUMPs in OPERATNS; do NOT purge
+reader files or destroy dumps as part of this task.
+
+Consulted IBM authoritative docs: IBM z/VM DirMaint
+messages says WHERETO created at server initialization;
+IBM DISKMAP utility can map USER DIRECT MDISK extents
+and flag overlap/gaps; DIRMAP also exists on PMAINT
+551 (E R/O accessible on MAINT). IBM Redbooks z/VM
+basics identifies USER DIRECT commonly stored on
+MAINT 2CC (this system C R/W MNT2CC, 10 cyl).
+Not yet verified present or same as active CP directory.
+Next READ ONLY discovery:
+LISTFILE ACCESS DATADVH *
+LISTFILE CONFIG* DATADVH *
+LISTFILE WHERETO DATADVH *
+STATE USER DIRECT C
+LISTFILE * DIRECT C (ALLOC
+LISTFILE * BACKUP C (ALLOC
+LISTFILE * DIRECT A (ALLOC
+If source exists and its currency against active CP
+directory is verified, use DISKMAP or DIRMAP in a
+later separately evaluated step. Both write mapping
+output files, so avoid writing to A without backup,
+avoid overwriting existing map, select writable
+output disk with capacity. Full-pack minidisk
+overlaps and simulated geometry need careful review.
+No physical G disk allocated and no M173 retest.
+
+Updated docs/M173_PERSISTENT_DISK_RUNBOOK.md with
+this failure and possible MAINT 2CC directory map
+fallback. Updated test-m173-persistent-disk-runbook.py
+with source discovery and failure evidence assertions.
