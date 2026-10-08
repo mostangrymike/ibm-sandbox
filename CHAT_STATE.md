@@ -7605,3 +7605,5 @@ and rollback. Do not FORMAT existing full pack!
 Updated docs/M173_PERSISTENT_DISK_RUNBOOK.md with
 real evidence and static tests checking exact
 11000-cylinder outputs and candidate bounds.
+
+Native-stage host CI run 1377 at commit d72b4f06f018636dfcd6b7c9a47603b84c4037db completed SUCCESS, including the 11,000-cylinder geometry and unallocated-gap regression tests. No CP directory activation or minidisk allocation performed. 
