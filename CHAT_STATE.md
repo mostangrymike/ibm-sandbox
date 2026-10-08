@@ -7979,3 +7979,35 @@ declaring the virtual address unused in the permanent directory.
 No new disk or directory activation has occurred. The EBS snapshot
 is operator-reported completed but not independently provenance/restore
 verified here; protected A/C/M171 files remain untouched.
+
+
+## 2026-10-08 15:01 — M173 MAINT 0600 VDEV directory gate PASSED
+
+Latest operator output, from MAINT on z/VM 6.3:
+
+    CP QUERY VIRTUAL 0600
+    HCPQVD040E Device 0600 does not exist
+    Ready(00040); T=0.01/0.01 14:53:40
+    CP QUERY MDISK 0600 DIRECTORY
+    HCPQMD040E Device 0600 does not exist
+    Ready(00040); T=0.01/0.01 15:01:35
+
+**Both query forms are syntactically valid and returned absence**.
+Virtual 0600 is not currently instantiated and does not have a
+permanent MAINT directory entry. Earlier erroneous
+`CP QUERY MDISK MAINT 0600 DIRECTORY` was HCPQMD022E,
+not absence; do not reuse it.
+
+VMCOM1 real 0127 cylinders 6000–7599 (1600 cylinders) is still
+a candidate extent inside verified DIRMAP gap 5936–10016, with
+live CP geometries and three matching historical minidisk locations.
+Post-reboot Hercules PID724 maps FD12->dasd1 and FD16->dasd5.
+No G MDISK or new filesystem exists. Next independent gate:
+validate EBS snapshot **correct source volume/region/completed state**
+and credible recovery procedure (snapshot was operator-reported
+completed), reconfirm active USER DIRECT C source currency and
+rollback, then separately approve a syntax-only directory change.
+Do not run non-EDIT DIRECTXA, FORMAT or M173CHK G until all
+prerequisites are passed. Protect M171NET PACK/META A and
+sealed 1808-object GITFIX/M15NEW generations. The runbook and
+recovery checklist now include the 15:01 observed query evidence.
