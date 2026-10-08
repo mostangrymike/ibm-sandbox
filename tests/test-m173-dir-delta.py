@@ -18,7 +18,7 @@ assert "M173 DIR RECORD COUNT FAIL" in source
 assert "if u.0\\=4282 | b.0\\=u.0 | n.0\\=u.0+1" in source
 assert "if u.i\\==b.i" in source
 assert "if u.i\\==n.j" in source
-assert "if translate(strip(n.k))\\=expected" in source
+assert "if translate(strip(n.added))\\=expected" in source
 assert "j=i+1" in source
 assert "if i>at then j=i+1" in source
 assert "if maint\\=1" in source
