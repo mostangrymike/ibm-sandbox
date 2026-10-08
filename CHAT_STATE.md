@@ -7081,3 +7081,43 @@ M15NEW, selector PTR files, GITPBUF, M171NET PACK/META,
 or live native Git module dependencies. No amount of A cleanup
 creates adequate capacity for full M173 generalized stage;
 use dedicated persistent large writable minidisk.
+
+
+## 2026-10-08 SECOND A INVENTORY AND NEW BUILDDECK CLEANUP
+
+After real CMS ACLEAN first pass reduced A to 221 files and
+9620 used/21880 free 4-KiB blocks, operator supplied detailed
+LISTFILE * ASSEMBLE A (ALLOC and LISTFILE * EXEC A (ALLOC.
+26 assembler decks remain; 9 are unambiguously compiler-generated
+from current C sources retained in GitHub, with historical allocations:
+GITCABI 2; GITCINF 13; GITCPARS 10; GITCPROB 11;
+GITC2 19; GITREC 543; GITCIDX 142; GITCWALK 178;
+GITSEL 34. Total 952 4K blocks, about 3.72 MiB,
+nine files. GCCCMS via CMSCLNK can regenerate these decks
+from their .C sources. New src/ACLEAN.EXEC supports
+ACLEAN PLAN BUILDDECK / ACLEAN APPLY BUILDDECK as
+an exact allowlist batch, with tests/test-aclean-manifest.py
+asserting every name and matching GitHub .C source.
+Host native-stage run 1352 passed this source guard.
+The earlier other three cleanup batches are unchanged.
+
+Do not delete handmade assembler/source decks
+GITCORE/GITSTRM/GITCAPI/GITINFA/GITNCALL/GITNDRV/GITNHEX,
+recent generated GITPIMP/GITPCENS/GITPCHK diagnostics,
+historically problematic M12ATLS ASSEMBLE (TRKDE 4),
+M12TLS* source, or CCTEST1 ASSEMBLE unique-only source.
+The older experiment MODULE/TEXT were already retired in
+earlier cleanup; do not claim those modules still exist.
+EXEC list also includes protected current GIT/GITVREF/GITWT/
+GITFETCH/GITPOST/GITIMP/GITUPD/PROFILE and current milestone
+M155-M173 checkers, native bridge, GITTEST, old M13 test files
+not all sourced in GitHub. No EXEC deletion is planned from
+this second inventory.
+
+Next CMS step after backup/snapshot prudent given prior TRKDE 4:
+from Mac ibm-sandbox/src run git pull; ./cms-upload.sh ACLEAN.EXEC;
+on CMS run ACLEAN PLAN BUILDDECK; inspect expected names;
+then ACLEAN APPLY BUILDDECK; QUERY DISK.
+The 952-block gain and 9-file reduction are PROJECTED only,
+not target-confirmed. This project still needs a separately
+provisioned large writable data minidisk for live M173 stage.
