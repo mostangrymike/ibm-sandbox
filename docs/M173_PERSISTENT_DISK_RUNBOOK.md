@@ -213,3 +213,92 @@ CMS produces their full expected PASS outputs.
 - Existing project `docs/CMS_DASD_RECOVERY.md`:
   exact Hercules 0123 volume mapping and prior A-disk
   integrity warning.
+
+
+## 2026-10-08 11:49 — real CP extent inventory
+
+The operator supplied the following live evidence:
+
+- `CP QUERY VIRTUAL DASD` listed full-pack MAINT virtual
+  `0122 M01S01` (real `0124`), `0123 M01RES` (real `0123`),
+  and `0124 M01W01` (real `0126`), each 11,000 cylinders.
+  These are **existing mappings**, not unused/new storage.
+  Virtual `0191 M01RES` remains 175 cylinders on real `0123`.
+  Several other minidisks share M01RES.
+- `CP QUERY DASD ALL` reports `0123 M01RES` with 158
+  *links* to minidisks; `0124 M01S01` with 1,
+  `0125 M01P01` with 0, `0126 M01W01` with 1,
+  `0127 VMCOM1` with 15, and `0128 630RL1`
+  with 32. These trailing counts are links, **NOT**
+  number of free cylinders. No free or offline real
+  DASD device was reported.
+- `CP QUERY ALLOC MAP ALL` shows existing CP allocations:
+  `M01RES` real `0123`, cylinders **1–20**,
+  `DRCT ACTIVE`; `M01S01` real `0124`,
+  cylinders **1–10999**, `SPOOL`; and `M01P01`
+  real `0125`, cylinders **1–10999**, `PAGE`.
+  The extremely low **IN USE** numbers on PAGE/SPOOL
+  do not imply that the extents are allocatable for
+  permanent user MDISK definitions. Do not allocate
+  an M173 minidisk in these regions.
+- `DIRM USEDEXT V=M01RES` failed with
+  `DVHDIR1002T FILE NOT FOUND: WHERETO DATADVH *; RC=28`
+  and `DVHDIR1001T ... 1 REQUIRED FILES NOT FOUND`
+  (overall RC1001). It produced **no valid
+  minidisk allocation report**. IBM's DVH1001T
+  reference says WHERETO absence means DirMaint may
+  be stopped or its interface disk/configuration is
+  unavailable. The IBM-recommended first recovery
+  step if it is not running is starting the DIRMAINT
+  service machine, often with `XAUTOLOG DIRMAINT`
+  performed by an authorized system administrator.
+
+### Next DirMaint investigation
+
+First use the non-mutating CP status check:
+
+    CP QUERY DIRMAINT
+
+If DIRMAINT is **not logged on**, an authorized
+administrator can initialize it with:
+
+    CP XAUTOLOG DIRMAINT
+
+This step starts a privileged service, so do not run
+blindly if already logged on or if the installation's
+DirMaint interface was intentionally disabled. If
+the service is already logged on, check the accessed
+interface disk, current CONFIG DATADVH, WHERETO
+availability and DirMaint log; IBM also documents
+`DVHBEGIN` at the DIRMAINT virtual console when
+appropriate. Do not reset its configuration arbitrarily.
+
+Once the service and its interface are functioning,
+request read-only allocation reports:
+
+    DIRM USEDEXT V=M01RES
+    DIRM FREEXT V=M01RES
+
+If needed and the other available volumes are
+registered for DirMaint extent management, request
+the same for `M01W01` and `VMCOM1`, avoiding CP
+SPOOL and PAGE extents. DirMaint usually returns
+these as CMS reader files, so check reader queue
+rather than expecting the full report at the
+command prompt. Do not share unredacted full USER
+DIRECT contents with authentication fields.
+
+If DirMaint is not configured or cannot be safely
+started, have the authorized administrator locate
+the true active source CP directory and use IBM's
+read-only `DISKMAP` utility to display gaps and
+overlaps from the MDISK definitions. DISKMAP writes
+an output report file; do not process a guessed,
+outdated, or untrusted directory as the source of
+truth. Full-pack mappings must be handled specially
+and do not constitute safe free extents.
+
+**NO PERMANENT MINIDISK EXTENT CONFIRMED YET.**
+Avoid CREATE/FORMAT/DEFINE until a verified
+nonoverlapping, persistent extent and independent
+backup are both available.
