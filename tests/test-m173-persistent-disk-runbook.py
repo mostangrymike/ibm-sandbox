@@ -138,6 +138,8 @@ for evidence in (
     "7599",
     "0127",
     "dasd5",
+    "both VMCOM1 (the proposed target and MAINT 2CC source)",
+    "M01RES (which contains the active CP directory)",
     "CP QUERY DASD DETAILS 0127",
     "CP QUERY MDISK 02CC LOCATION",
     "CP QUERY MDISK 049E LOCATION",
