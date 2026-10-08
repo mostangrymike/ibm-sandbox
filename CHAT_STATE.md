@@ -8587,3 +8587,51 @@ No DIRECTXA (including EDIT), DIRMAP, CP activation,
 LINK, ACCESS, FORMAT, or M173 import before reviewing
 that result. Preserve USER DIRECT C, M173BAK DIRECT C
 and M173NEW DIRECT C unchanged and confidential.
+
+## 2026-10-08 16:13:55 — M173 Gate 3 LIVE CMS PASS
+
+Operator executed latest read-only M173DCHK on MAINT:
+`M173 DIR ORIGINAL/BACKUP VERIFIED 4282`
+`M173 DIR MAINT-1 SUBCONFIG VERIFIED`
+`M173 DIR SINGLE MDISK INSERT RECORD 213`
+`M173 DIR DELTA CHECK PASS`
+`Ready; T=0.82/0.84 16:13:55`.
+**LIVE TARGET GATE 3 RC0 PASS.**
+
+Original USER DIRECT C (4282 F80) remains identical
+to protected M173BAK DIRECT C; candidate M173NEW DIRECT C
+(4283 F80) is precisely the original plus one MAINT-1
+MDISK at record 213. Validated SSI-ready
+IDENTITY MAINT + BUILD ON * USING SUBCONFIG MAINT-1
+and either virtual 600/0600 hex spelling. The real
+CP directory has not been changed; no minidisk G exists.
+Snapshot completed/100%; correct EC2 root EBS volume
+and region were independently operator-confirmed;
+recovery procedure understood, untested isolated restore.
+
+**NEXT: Gate 4 non-activating syntax-only compile.**
+IBM DIRECTXA utility EDIT option explicitly parses the
+candidate source without updating active object directory.
+On CMS MAINT first:
+`STATE DIRECTXA MODULE *`
+if RC0, only then:
+`DIRECTXA M173NEW DIRECT C (EDIT`
+Never omit `(EDIT`; do not use DELTA in SSI-ready
+IDENTITY/SUBCONFIG directory. Need RC0, no syntax errors,
+and EOJ DIRECTORY NOT UPDATED. That EOJ message ALONE
+does not establish success, because error cases can
+also produce it. Share only redacted messages/RC;
+USER DIRECT includes private credentials.
+
+If DIRECTXA MODULE unavailable, do not improvise.
+IBM says PMAINT 551 cross-release utility disk must
+be accessed. MAINT-1 candidate contains an existing
+LINK PMAINT 551 551 RR, but no target ACCESS confirmed.
+Inspect virtual 0551 and filemode access before any
+non-mutating access attempt. No online activation,
+DIRMAP, LINK, FORMAT, disk access or M173 import
+authorized during syntax gate. Preserve three
+directory source files and original 1808-object data.
+Runbook docs/M173_DIRECTORY_CHANGE_PLAN.md top banner
+now supersedes historical source-edit instructions.
+IBM reference: https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
