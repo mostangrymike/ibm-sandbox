@@ -41,13 +41,9 @@ for phrase in (
     "Never infer usable cylinder gaps",
     "1600",
     "180,000",
-    "22841", # deliberately check below for formatting
+    "22,841",
 ):
-    # The actual free-block count is formatted with a thousands separator.
-    if phrase == "22841":
-        assert "22841" in runbook, "A last-target inventory must be recorded"
-    else:
-        assert phrase.lower() in runbook.lower(),phrase
+    assert phrase.lower() in runbook.lower(),phrase
 assert "FORMAT" in runbook
 assert "Never choose VDEV 0192" in runbook
 assert "not been provisioned" in runbook
