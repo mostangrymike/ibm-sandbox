@@ -9,6 +9,24 @@ root = Path(__file__).resolve().parents[1]
 post = (root / "src" / "GITPOST.EXEC").read_text()
 check = root / "src" / "GITPCHK.C"
 
+g = (root / "src" / "GIT.EXEC").read_text()
+v = (root / "src" / "GITVREF.EXEC").read_text()
+chk = (root / "src" / "M171CHK.EXEC").read_text()
+
+gm = re.search(r"GIT EXEC LEVEL M(\\d+)", g)
+vm = re.search(r"GITVREF EXEC LEVEL M(\\d+)", v)
+assert gm and vm and gm.group(1) == vm.group(1)
+assert int(gm.group(1)) >= 171
+assert "EXEC GITPOST STORE" in g
+assert "M171 FETCH STORE PASS" in post
+for needle in (
+    "M171 META CROSSCHECK PASS",
+    "M171 PACK CROSSCHECK PASS",
+    "M171 RETAINED PACK",
+    "M171 GENERALIZED PACK STORE TARGET GATE PASS",
+):
+    assert needle in chk
+
 for path in (root / "src" / "GITPOST.EXEC", check):
     for number, line in enumerate(path.read_text().splitlines(), 1):
         assert len(line) <= 80, (path.name, number, len(line))
