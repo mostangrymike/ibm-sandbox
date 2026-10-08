@@ -8113,3 +8113,37 @@ snapshot Details for its original source Volume ID and actual
 Region; compare privately with Hercules EC2 instance Storage
 root EBS volume ID and account. Establish workable restoration
 procedure before separate reviewed directory-source/rollback work.
+
+
+## 2026-10-08 — M173 EBS source/Region match OPERATOR VERIFIED
+
+User: **"Source volume and region match; recovery procedure
+understood."** This follows the AWS screenshot documenting
+Completed/100% and 16 GiB original root EBS volume.
+**Operator verified** matching source EBS volume and Region;
+understands the recovery procedure. No isolated recovery
+test is claimed. Keep snapshot/account/volume IDs private.
+
+Resume M173 at `docs/M173_DIRECTORY_CHANGE_PLAN.md`,
+added on GitHub as the canonical controlled preparation
+plan. Stage 1 is *read-only* CMS MAINT:
+`QUERY DISK C`; `STATE USER DIRECT C`;
+`STATE M173BAK DIRECT C`; `STATE M173NEW DIRECT C`;
+`STATE M173NEW MDISKMAP C`; `CP QUERY MDISK 0600 DIRECTORY`.
+Confirm output names absent RC28, original present,
+C writable with >500 free 4096-byte blocks and 0600 still
+absent. Do not run `COPYFILE` until checks pass.
+
+Only then, in a separate step, safely `COPYFILE` USER
+DIRECT C to untouched `M173BAK DIRECT C` and editable
+`M173NEW DIRECT C` with `(NEWFILE`, verify counts.
+Never edit `USER DIRECT C` or show private directory
+passwords. Candidate-only single MDISK illustration:
+`MDISK 0600 3390 6000 1600 VMCOM1 W` under USER MAINT,
+reviewed independently. `DIRECTXA M173NEW DIRECT C
+(EDIT` is syntax-only (not activation). DirMaint is
+nonoperational, and full directory/CP extent equivalence
+remains non-exhaustive. **No live directory activation,
+G FORMAT or M173 importer yet.** Keep protected files
+and snapshot intact; require distinct approval before
+activating an altered directory.
