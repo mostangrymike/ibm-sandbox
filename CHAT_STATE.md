@@ -8011,3 +8011,17 @@ Do not run non-EDIT DIRECTXA, FORMAT or M173CHK G until all
 prerequisites are passed. Protect M171NET PACK/META A and
 sealed 1808-object GITFIX/M15NEW generations. The runbook and
 recovery checklist now include the 15:01 observed query evidence.
+
+
+**Next read-only source-directory comparison** (still no edits):
+`CP QUERY MDISK 0190 LOCATION DIRECTORY`,
+`CP QUERY MDISK 0191 LOCATION DIRECTORY`,
+`CP QUERY MDISK 0193 LOCATION DIRECTORY`,
+`CP QUERY MDISK 0401 LOCATION DIRECTORY`.
+Compare to recorded source-map M01RES real0123 locations:
+0190 start280/214, 0191 start494/175,
+0193 start669/500, 0401 start1961/292.
+Sample agreement helps source confidence but is not full active
+directory equivalence. Independently verify the completed EBS
+snapshot's correct source/region and restoration plan before any
+directory modifications, even syntax-only work on a proposed copy.
