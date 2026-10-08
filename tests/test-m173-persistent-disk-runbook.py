@@ -105,4 +105,19 @@ for evidence in (
     "NOT the entire M01RES",
 ):
     assert evidence.lower() in runbook.lower(), evidence
+# The second DIRMAP chunk revealed a small and a possibly extended gap.
+for evidence in (
+    "9413-9419",
+    "9420-9439",
+    "9440-10016",
+    "9440-10999",
+    "1560 consecutive cylinders",
+    "280800 blocks",
+    "CP QUERY DASD DETAILS 0123",
+    "CP QUERY MDISK 0123 LOCATION",
+    "FULLPACK DEFINES",
+    "3390 10999",
+    "df -h /home/admin/vm630",
+):
+    assert evidence.lower() in runbook.lower(),evidence
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
