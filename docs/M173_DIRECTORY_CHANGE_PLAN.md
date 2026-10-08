@@ -1,3 +1,80 @@
+## CURRENT GATE — 2026-10-08 16:32:22: Gate 5b CMS PASS
+
+Operator completed every Gate 5b command in sequence:
+
+```text
+DIRECTXA M173BAK DIRECT C (EDIT
+z/VM USER DIRECTORY CREATION PROGRAM - VERSION 6 RELEASE 3.0
+EOJ DIRECTORY NOT UPDATED
+Ready; T=0.17/0.19 16:31:49
+STATE M173NEW MDISKMAP C
+DMSSTT002E File M173NEW MDISKMAP C not found
+Ready(00028); T=0.01/0.01 16:31:57
+DIRMAP M173NEW DIRECT C C
+DMSCYD2231I M173NEW DIRECT C1 read.
+DMSCYD2232I M173NEW MDISKMAP C1 written - no errors.
+Ready; T=0.02/0.03 16:32:10
+LISTFILE M173NEW MDISKMAP C (ALLOC
+M173NEW MDISKMAP C1 F 100 394 10
+Ready; T=0.01/0.01 16:32:11
+QUERY DISK C
+MNT2CC 2CC C R/W 10 3390 4096 8 298-17 1502 1800
+Ready; T=0.01/0.01 16:32:22
+```
+
+**Gate 5b backup EDIT + new C-only map generation PASS.**
+The original backup syntax-compiles with RC0, not updated.
+Report output was absent before generation and the DIRMAP
+utility wrote it without errors. New report is 394 F100
+records, ten 4K blocks; the prior original USER MDISKMAP C
+was 392 F100 records, ten blocks. This difference is
+consistent with new allocation and free-gap splitting but
+is NOT by itself proof of their physical locations.
+CMS C (MAINT 02CC) is R/W with 1502 free 4K blocks;
+the two original directory source files are untouched.
+
+### Gate 5c: read-only prospective VMCOM1 extent review
+
+CMS MAINT: use the proven CMS PIPE syntax to filter the
+new candidate report by extent-boundary numbers. Unlike
+a filter on VMCOM1 alone, numeric matching finds rows
+whose leading VOLSER is omitted by DIRMAP continuation
+format. These reads do not modify any CMS file:
+
+```text
+PIPE < M173NEW MDISKMAP C | LOCATE /6000/ | CONSOLE
+PIPE < M173NEW MDISKMAP C | LOCATE /7599/ | CONSOLE
+PIPE < M173NEW MDISKMAP C | LOCATE /5936/ | CONSOLE
+PIPE < M173NEW MDISKMAP C | LOCATE /7600/ | CONSOLE
+```
+
+Expect the new MAINT-1 allocation on VMCOM1 with
+VDEV `600` (or `0600`), type 3390, exclusive W,
+start 6000, end 7599, size1600; gaps 5936-5999
+and 7600-10016, unless the report reveals additional
+allocations. The 6000 filter can also match other
+volumes or values. Check report section headings and
+surrounding entries privately before accepting a row;
+do not infer completeness from four text filters.
+
+If outputs are ambiguous, privately use the earlier
+proven contiguous report chunk to see the whole
+VMCOM1 section, without showing USER DIRECT lines:
+
+```text
+PIPE < M173NEW MDISKMAP C | DROP 200 | TAKE 100 | CONSOLE
+```
+
+**Never paste password-bearing USER DIRECT excerpts.**
+The map is generated and ordered by DIRMAP from a
+candidate source, not an independent live CP database;
+source-invisible permanent extents, full-volume mappings
+and parameter reservations require separate review.
+STOP on any wrong volser/start/end/size, overlap, missing
+boundary, or unknown report meaning. Do NOT activate CP
+directory, LINK, ACCESS, FORMAT, or run M173 importer.
+
+---
 ## CURRENT GATE — 2026-10-08 16:23:33: CP preactivation reads PASS
 
 Observed real z/VM 6.3 MAINT console results:
