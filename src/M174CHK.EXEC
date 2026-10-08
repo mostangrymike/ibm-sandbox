@@ -1,0 +1,190 @@
+/* M174: generalized index over retained M173 stage. */
+address cms
+stage='M173NET'
+idx='M174NET'
+meta='M171NET'
+
+'STATE' stage 'STAGE A'
+if rc\=0 then do
+ say 'M174 RETAINED STAGE MISSING'
+ exit 8
+end
+'STATE' idx 'INDEX A'
+if rc=0 then do
+ say 'M174 OUTPUT ALREADY EXISTS' idx 'INDEX A'
+ exit 8
+end
+
+drop m.
+'EXECIO 1 DISKR' meta 'META A 1 (STEM M. FINIS'
+if rc\=0 | m.0\=1 then do
+ say 'M174 META READ FAIL'
+ exit 8
+end
+parse var m.1 tag moid mbytes mver mobs extra
+if tag\='META' | extra\='' | datatype(mobs,'W')\=1 then do
+ say 'M174 META FORMAT FAIL'
+ exit 8
+end
+say 'M174 META OID' moid 'OBJECTS' mobs
+
+'FILEDEF STGIN DISK' stage 'STAGE A'
+if rc\=0 then do
+ say 'M174 STGIN FILEDEF FAIL'
+ exit 8
+end
+'FILEDEF IDXOUT DISK' idx 'INDEX A (RECFM V LRECL 80'
+if rc\=0 then do
+ 'FILEDEF STGIN CLEAR'
+ say 'M174 IDXOUT FILEDEF FAIL'
+ exit 8
+end
+
+drop b.
+b.0=0
+'PIPE CMS GIT PACK-INDEX | STEM b.'
+brc=rc
+'FILEDEF IDXOUT CLEAR'
+'FILEDEF STGIN CLEAR'
+if brc\=0 then do
+ do i=1 to b.0
+  say b.i
+ end
+ 'ERASE' idx 'INDEX A'
+ say 'M174 INDEX BUILD FAIL RC' brc
+ exit 8
+end
+btotal=''
+bunique=''
+bpass=0
+do i=1 to b.0
+ say b.i
+ if word(b.i,1)='INDEX' & word(b.i,2)='WRITTEN' &,
+    word(b.i,4)='UNIQUE' & words(b.i)=5 then do
+  btotal=word(b.i,3)
+  bunique=word(b.i,5)
+ end
+ if b.i='M174 INDEX BUILD PASS' then bpass=bpass+1
+end
+if btotal\=mobs | datatype(bunique,'W')\=1 |,
+   bunique<1 | bunique>mobs | bpass\=1 then do
+ 'ERASE' idx 'INDEX A'
+ say 'M174 INDEX BUILD CROSSCHECK FAIL'
+ exit 8
+end
+say 'M174 INDEX BUILD CROSSCHECK PASS'
+
+'FILEDEF IDXIN DISK' idx 'INDEX A'
+if rc\=0 then do
+ 'ERASE' idx 'INDEX A'
+ say 'M174 IDXIN FILEDEF FAIL'
+ exit 8
+end
+drop c.
+c.0=0
+'PIPE CMS GITPIDX CHECK | STEM c.'
+crc=rc
+if crc\=0 then do
+ do i=1 to c.0
+  say c.i
+ end
+ 'FILEDEF IDXIN CLEAR'
+ 'ERASE' idx 'INDEX A'
+ say 'M174 INDEX CHECK FAIL RC' crc
+ exit 8
+end
+ctotal=''
+cunique=''
+cpass=0
+do i=1 to c.0
+ say c.i
+ if word(c.i,1)='INDEX' & word(c.i,2)='VERIFIED' &,
+    word(c.i,4)='UNIQUE' & words(c.i)=5 then do
+  ctotal=word(c.i,3)
+  cunique=word(c.i,5)
+ end
+ if c.i='M174 INDEX CHECK PASS' then cpass=cpass+1
+end
+if ctotal\=mobs | cunique\=bunique | cpass\=1 then do
+ 'FILEDEF IDXIN CLEAR'
+ 'ERASE' idx 'INDEX A'
+ say 'M174 INDEX CHECK CROSSCHECK FAIL'
+ exit 8
+end
+say 'M174 INDEX CHECK CROSSCHECK PASS'
+
+'FILEDEF STGIN DISK' stage 'STAGE A'
+if rc\=0 then do
+ 'FILEDEF IDXIN CLEAR'
+ 'ERASE' idx 'INDEX A'
+ say 'M174 AUDIT STGIN FILEDEF FAIL'
+ exit 8
+end
+drop a.
+a.0=0
+'PIPE CMS GITPIDX AUDIT | STEM a.'
+arc=rc
+if arc\=0 then do
+ do i=1 to a.0
+  say a.i
+ end
+ 'FILEDEF STGIN CLEAR'
+ 'FILEDEF IDXIN CLEAR'
+ 'ERASE' idx 'INDEX A'
+ say 'M174 INDEX AUDIT FAIL RC' arc
+ exit 8
+end
+apass=0
+aunique=''
+do i=1 to a.0
+ say a.i
+ if word(a.i,1)='INDEX' & word(a.i,2)='AUDIT' &,
+    word(a.i,3)='VERIFIED' & word(a.i,5)='UNIQUE' &,
+    words(a.i)=6 then aunique=word(a.i,6)
+ if a.i='M174 INDEX AUDIT PASS' then apass=apass+1
+end
+if aunique\=bunique | apass\=1 then do
+ 'FILEDEF STGIN CLEAR'
+ 'FILEDEF IDXIN CLEAR'
+ 'ERASE' idx 'INDEX A'
+ say 'M174 INDEX AUDIT CROSSCHECK FAIL'
+ exit 8
+end
+say 'M174 INDEX AUDIT CROSSCHECK PASS'
+
+drop g.
+g.0=0
+'PIPE CMS GITPIDX GET' moid '| STEM g.'
+grc=rc
+'FILEDEF STGIN CLEAR'
+'FILEDEF IDXIN CLEAR'
+if grc\=0 then do
+ do i=1 to g.0
+  say g.i
+ end
+ 'ERASE' idx 'INDEX A'
+ say 'M174 TIP LOOKUP FAIL RC' grc
+ exit 8
+end
+gpass=0
+goid=''
+gtype=''
+do i=1 to g.0
+ say g.i
+ if word(g.i,1)='INDEX' & word(g.i,2)='OID' &,
+    word(g.i,4)='OBJ' & word(g.i,6)='TYPE' &,
+    words(g.i)>=10 then do
+  goid=translate(word(g.i,3))
+  gtype=word(g.i,7)
+ end
+ if g.i='M174 INDEX GET PASS' then gpass=gpass+1
+end
+if goid\=translate(moid) | gtype\=1 | gpass\=1 then do
+ 'ERASE' idx 'INDEX A'
+ say 'M174 TIP LOOKUP CROSSCHECK FAIL'
+ exit 8
+end
+say 'M174 TIP COMMIT LOOKUP PASS'
+say 'M174 RETAINED INDEX' idx 'INDEX A'
+say 'M174 GENERALIZED STAGE INDEX TARGET GATE PASS'
+exit 0
