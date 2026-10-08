@@ -6797,3 +6797,53 @@ with explicit bounds and regressions.
 
 Standing user preference remains maximum work per turn and no pause unless
 real CMS validation is the only remaining boundary.
+
+
+## 2026-10-08 M172 REAL CMS PASS AND M173 REPAIR AFTER ABEND 001
+
+M172 is REAL CMS TARGET-PROVEN: native GITPCENS read retained M171NET
+PACK A (2171129 bytes, PACK v2, 7736 objects, SHA1
+A705122BC39A3383BC05ABC6C888A1F788B1D067), independently counted
+2432 ordinary objects, 5304 OFS deltas, zero REF deltas, with maximum
+inflated packed representation 393767 and maximum compressed member
+122378. M172CHK completed RC0 in T=29.26/29.47 on 2026-10-08.
+
+M173 first real CMS run compiled GITPIMP NAPI, independently verified
+the retained PACK, and completed its whole 7736-object prepass to byte
+offset 2171109. It then returned IMPORT OUTPUT EXISTS though the checker
+had verified M173NET STAGE A absent. The native C fopen("dd:OBJOUT","r")
+existence check can give a false positive against a CMS FILEDEF. A
+CHECKED mode was added to GITPIMP; a public named GIT PACK-IMPORT
+dispatcher was added to do CMS STATE before defining OBJOUT.
+
+The next real CMS attempt compiled current GITPIMP NAPI, ran GIT LEVEL
+M176/M176, and reran M173CHK. Retained PACK authentication passed
+again, but the VM produced:
+DMSABE148T System abend 001 called from 00F26EC0 reason code 00000000
+before any visible import prepass output. IBM identifies CMS abend
+001 from DMSSTP as lost active FILEDEF (FCB) pointer and specifically
+warns about FILEDEF CLEAR during active operations. The M173 checker
+was still defining OBJOUT outside PIPE CMS GIT, while the new nested
+public GIT dispatcher was defining/clearing OBJOUT within the PIPE;
+this is the leading, not yet target-proven, root-cause explanation.
+
+LATEST GITHUB CORRECTION: the M173 checker owns a single OBJOUT FILEDEF,
+performs STATE nonexistence preflight (requiring RC28), and directly
+runs PIPE CMS GITPIMP IMPORT CHECKED | STEM q., avoiding the nested
+public GIT dispatcher and its FILEDEF CLEAR while PIPE is active.
+The M174 checker likewise owns IDXOUT and directly runs
+PIPE CMS GITPIDX BUILD CHECKED | STEM b. Both code paths are protected
+by host assertions. Do not claim M173/174 target pass until real CMS
+validation. Original GITPBUF/GITFIX/M15NEW and M171NET PACK/META remain
+protected and untouched. The abend may have left a disposable
+M173NET STAGE A; M173CHK now detects and refuses to overwrite it.
+
+NEXT REAL CMS BOUNDARY: on the Mac from ibm-sandbox/src:
+git pull
+./cms-upload.sh M173CHK.EXEC
+On CMS after normal abend recovery, run M173CHK.
+No GITPIMP MODULE rebuild, re-upload of GIT/GITVREF, fetch, M172
+census rerun, or access to sealed generations is required. If the
+M173NET STAGE A output already exists, do not erase without checking
+it first. If the M173 gate passes, proceed with M174 native generalized
+index using latest M174CHK.EXEC and GITPIDX.C.
