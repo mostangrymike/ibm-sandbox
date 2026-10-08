@@ -7043,3 +7043,41 @@ preview and approve separately; its original sources remain on
 GitHub for later upload. STOP on the first unexpected RC.
 None of this makes A big enough for M173. M173-M176 are configured
 for a larger new persistent R/W data minidisk accessed e.g. G.
+
+
+## 2026-10-08 REAL CMS ACLEAN RESULTS — 221 FILES / 31% USED
+
+User reports after ACLEAN on real CMS:
+MNT191 virtual 191, A R/W, 175 cylinders, 3390 4096-byte blocks,
+221 files, 9620 blocks used (31%), 21880 blocks left, total 31500.
+Previous baseline after three large manual listing ERASes was
+295 files, 10361 blocks used (33%), 21139 free. This is a net
+reduction of 74 files and reclamation of 741 blocks (~2.895 MiB).
+ACLEAN EXEC was newly added on A, so the 74-file net reduction
+matches all 75 source-approved candidate files being erased. The
+operator provided only the final QUERY DISK summary, not each
+ACLEAN batch's logs; do not overclaim which individual file
+erases are verified beyond the measured aggregate disk state.
+GitHub host safety test for ACLEAN passed native-stage CI run 1350
+on head fbe29a08a8c431f5046b4bd6dddc070d564f1829.
+
+Current production paths GIT/GITVREF/GITWT/GITFETCH/GITPOST/GITIMP
+were checked for exact names of remaining legacy G9/G10/M11/M12
+DATA/SSL/TCP debug files; no names were referenced. Older test
+paths such as GIT9CTX do reference G9CDATA/G9CIDX/G9CMETA and
+other GITBASE/GITBMETA data. Native GITNBRG/GITNSTG/GITNOUT
+still reference GITNOUT/GITNRES/GITNSTG/GITNSMT/GITOBUF/GITOMETA
+and must be preserved. M11BODY DATA, M12BODY DATA, and historical
+SSL/TCP trace outputs remain possible individually audited cleanup
+candidates, not yet confirmed safe to erase: some may contain
+unique diagnostics unavailable in GitHub. Do NOT assume these
+have been erased or write a blanket wildcard erase command.
+
+Next if pursuing still more A cleanup: inspect remaining
+old DATA/TCPIP/MODULE/TEXT inventory and backup provenance,
+separate reproducible outputs from unique logs/data before
+targeted per-file deletion. Do not delete protected GITFIX,
+M15NEW, selector PTR files, GITPBUF, M171NET PACK/META,
+or live native Git module dependencies. No amount of A cleanup
+creates adequate capacity for full M173 generalized stage;
+use dedicated persistent large writable minidisk.
