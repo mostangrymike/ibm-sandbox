@@ -6671,3 +6671,34 @@ GIT/GITVREF are M172/M172. NEXT REAL CMS GATE: upload GIT.EXEC,
 GITVREF.EXEC, GITPCENS.C and M172CHK.EXEC. Build GITPCENS with
 CMSCLNK GITPCENS (NAPI default), then run GIT LEVEL and M172CHK.
 Existing GITPCHK MODULE and retained M171NET PACK/META are reused.
+
+
+## 2026-10-07 M172 HOST PASS / CMS PACK CENSUS NEXT
+
+M171 is REAL CMS TARGET-PROVEN. Retained live files:
+M171NET PACK A, 2171129 bytes, PACK v2, 7736 objects, SHA1
+A705122BC39A3383BC05ABC6C888A1F788B1D067; M171NET META A records
+live main OID ADA83FF3B3813961CEF2A9FFC50A453540039E0B and matching counts.
+
+M172 canonical implementation uses GIT PACK-CENSUS -> native GITPCENS.
+GITPCENS bounds PACK input to 16 MiB and object count to 100000, parses every
+ordinary/OFS_DELTA/REF_DELTA entry header, validates OFS distance and REF base
+framing, inflates every packed representation through target-proven
+GITCAPI/GITINFA, requires inflated output length to equal the entry size,
+advances by exact inflater-consumed bytes, and requires the final object
+boundary to equal PACK bytes minus the 20-byte trailer.
+
+M172CHK reuses retained M171NET PACK/META read-only. It first reruns streaming
+GITPCHK authentication and cross-checks bytes/version/object count against
+META, then runs GIT PACK-CENSUS through the same PACKIN and requires census
+bytes/version/object count to match META and ordinary+ofs+ref to equal the
+declared object count. It does not erase or modify M171NET, GITPBUF, GITFIX,
+M15NEW, selectors, stages, indexes, or manifests.
+
+GIT/GITVREF are M172/M172. GitHub Actions run 1299 completed SUCCESS,
+including M172, M171, complete tree recovery, and native PACK/index staging.
+
+NEXT REAL CMS GATE: upload GIT.EXEC, GITVREF.EXEC, GITPCENS.C, and
+M172CHK.EXEC. Build GITPCENS with CMSCLNK GITPCENS NAPI. Existing GITPCHK
+MODULE and retained M171NET PACK/META are reused. Then run GIT LEVEL and
+M172CHK. No network/stunnel activity is required for M172.
