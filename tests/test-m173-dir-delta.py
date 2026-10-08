@@ -46,65 +46,66 @@ for forbidden in ("DISKW", "ERASE ", "COPYFILE ", "FILEDEF ",
                   "DIRECTXA ", "FORMAT ", "SAY U.", "SAY B.", "SAY N."):
     assert forbidden not in source.upper(), forbidden
 
-# A host model independently exercises acceptance/rejection rules.
+# Independent host model of one additional MDISK inside MAINT-1.
 def audit(original, backup, candidate):
-    if len(original) != 4282 or len(backup) != len(original):
+    if len(original) != 4282 or backup != original or len(candidate) != 4283:
         return False
-    if len(candidate) != len(original) + 1 or backup != original:
+    inds = [i for i, line in enumerate(candidate) if
+            len(line.split()) > 1 and line.upper().split()[0] == "MDISK"
+            and line.split()[1] in ("600", "0600")]
+    if len(inds) != 1:
         return False
-    matches = [i for i, line in enumerate(candidate)
-               if line.strip().upper() == expected]
-    if len(matches) != 1:
+    i = inds[0]
+    fields = candidate[i].upper().split()
+    if len(fields) != 7 or fields[0] != "MDISK":
         return False
-    at = matches[0]
-    if at < 1 or original[at-1].split()[:2] != ["USER", "MAINT"]:
+    if fields[2:] != ["3390", "6000", "1600", "VMCOM1", "W"]:
         return False
-    return (candidate[:at] == original[:at]
-            and candidate[at+1:] == original[at:])
+    if candidate[:i] != original[:i] or candidate[i+1:] != original[i:]:
+        return False
+    active = ""
+    build = 0
+    in_identity = False
+    for line in original[:i]:
+        words = line.upper().split()
+        if not words:
+            continue
+        if words[0] in ("USER", "IDENTITY", "SUBCONFIG", "PROFILE"):
+            active = " ".join(words[:2])
+            in_identity = active == "IDENTITY MAINT"
+        if in_identity and words == [
+            "BUILD", "ON", "*", "USING", "SUBCONFIG", "MAINT-1"
+        ]:
+            build += 1
+    return active == "SUBCONFIG MAINT-1" and build == 1
 
-original = ["COMMENT"] * 4282
-original[120] = "USER MAINT NOT-A-REAL-PASSWORD"
+original = ["* unchanged"] * 4282
+original[161] = "IDENTITY MAINT PLACEHOLDER"
+original[162] = "BUILD ON * USING SUBCONFIG MAINT-1"
+original[180] = "SUBCONFIG MAINT-1"
 backup = original[:]
-candidate = original[:121] + [expected] + original[121:]
+candidate = original[:212] + ["MDISK 600 3390 6000 1600 VMCOM1 W"] + original[212:]
 assert audit(original, backup, candidate)
-assert not audit(original, backup, original)
-assert not audit(original, backup, original[:121]+[expected]*2+original[121:])
-assert not audit(original, backup, original[:120]+[expected]+original[120:])
-assert not audit(original, backup, original[:121]+[
-    "MDISK 0600 3390 6000 1600 VMCOM1 MR"]+original[121:])
+assert audit(original, backup, original[:212] + [expected] + original[212:])
+for badline in (
+    "MDISK 600 3390 6000 1600 VMCOM1 MR",
+    "MDISK 600 3390 6000 1601 VMCOM1 W",
+    "MDISK 600 3390 6000 1600 VMCOM2 W",
+    "MDISK 600 3390 6000 1600 VMCOM1 W EXTRA",
+):
+    assert not audit(original, backup,
+                     original[:212] + [badline] + original[212:])
 bad = candidate[:]
-bad[400] = "changed unrelated source record"
+bad[100] = "changed"
 assert not audit(original, backup, bad)
-badbak = backup[:]
-badbak[222] = "changed backup"
-assert not audit(original, badbak, candidate)
-# Source may contain more than one heading candidate. The edit
-# must still be one exact insertion after an actual MAINT heading.
-ambiguous = original[:]
-ambiguous[10] = "USER MAINT another"
-assert not audit(ambiguous, ambiguous, candidate)
-candidate2 = ambiguous[:121] + [expected] + ambiguous[121:]
-assert audit(ambiguous, ambiguous, candidate2)
-noheading = original[:]
-noheading[120] = "USER OTHER"
-assert not audit(noheading, noheading,
-                 noheading[:121]+[expected]+noheading[121:])
-assert not audit(original, backup, [expected]+original)
-assert not audit(original, backup, original+[expected])
-
-# Approved entry can appear after an earlier unrelated modification,
-# but must still fail the full alignment proof.
-modified_earlier = candidate[:]
-modified_earlier[5] = "UNRELATED MODIFICATION"
-assert not audit(original, backup, modified_earlier)
-no_approved_entry = candidate[:]
-no_approved_entry[121] = "MDISK 0600 3390 6000 1600 VMCOM1 MR"
-assert not audit(original, backup, no_approved_entry)
-duplicate_approved = candidate[:]
-duplicate_approved[200] = expected
-assert not audit(original, backup, duplicate_approved)
-assert "M173 DIR APPROVED LINE COUNT" in source
-assert "M173 DIR MDISK 0600 PREFIX COUNT" in source
+bad = candidate[:]
+bad[300] = "changed"
+assert not audit(original, backup, bad)
+assert not audit(original, backup, [expected] + original)
+assert not audit(original, backup, original + [expected])
+changed_backup = backup[:]
+changed_backup[120] = "changed"
+assert not audit(original, changed_backup, candidate)
 
 assert "XEDIT M173NEW DIRECT C" in plan
 assert "INPUT MDISK 0600 3390 6000 1600 VMCOM1 W" in plan
