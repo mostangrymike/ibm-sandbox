@@ -1,0 +1,123 @@
+/* M172: retained generalized PACK structural census gate. */
+address cms
+store='M171NET'
+
+'STATE' store 'PACK A'
+if rc\=0 then do
+ say 'M172 RETAINED PACK MISSING'
+ exit 8
+end
+'STATE' store 'META A'
+if rc\=0 then do
+ say 'M172 RETAINED META MISSING'
+ exit 8
+end
+
+drop m.
+'EXECIO 1 DISKR' store 'META A 1 (STEM M. FINIS'
+if rc\=0 | m.0\=1 then do
+ say 'M172 META READ FAIL'
+ exit 8
+end
+parse var m.1 tag moid mbytes mver mobs extra
+if tag\='META' | extra\='' | datatype(mbytes,'W')\=1 |,
+   datatype(mver,'W')\=1 | datatype(mobs,'W')\=1 then do
+ say 'M172 META FORMAT FAIL'
+ exit 8
+end
+say 'M172 META' moid mbytes mver mobs
+
+'FILEDEF PACKIN DISK' store 'PACK A'
+if rc\=0 then do
+ say 'M172 PACKIN FILEDEF FAIL'
+ exit 8
+end
+
+drop v.
+v.0=0
+'PIPE CMS GITPCHK | STEM v.'
+vrc=rc
+if vrc\=0 then do
+ do i=1 to v.0
+  say v.i
+ end
+ 'FILEDEF PACKIN CLEAR'
+ say 'M172 PACK VERIFY FAIL RC' vrc
+ exit 8
+end
+vbytes=''
+vver=''
+vobjs=''
+vpass=0
+do i=1 to v.0
+ say v.i
+ if word(v.i,1)='PACK' & word(v.i,2)='VERIFY' &,
+    word(v.i,3)='BYTES' & words(v.i)=4 then,
+    vbytes=word(v.i,4)
+ if word(v.i,1)='PACK' & word(v.i,2)='VERIFY' &,
+    word(v.i,3)='VERSION' & word(v.i,5)='OBJECTS' &,
+    words(v.i)=6 then do
+  vver=word(v.i,4)
+  vobjs=word(v.i,6)
+ end
+ if v.i='M171 PACK VERIFY PASS' then vpass=vpass+1
+end
+if vbytes\=mbytes | vver\=mver | vobjs\=mobs | vpass\=1 then do
+ 'FILEDEF PACKIN CLEAR'
+ say 'M172 PACK VERIFY CROSSCHECK FAIL'
+ exit 8
+end
+say 'M172 PACK VERIFY CROSSCHECK PASS'
+
+drop c.
+c.0=0
+'PIPE CMS GIT PACK-CENSUS | STEM c.'
+crc=rc
+'FILEDEF PACKIN CLEAR'
+if crc\=0 then do
+ do i=1 to c.0
+  say c.i
+ end
+ say 'M172 CENSUS FAIL RC' crc
+ exit 8
+end
+cbytes=''
+cver=''
+cobjs=''
+ordinary=''
+ofs=''
+ref=''
+cpass=0
+do i=1 to c.0
+ say c.i
+ if word(c.i,1)='CENSUS' & word(c.i,2)='PACK' &,
+    word(c.i,3)='BYTES' & words(c.i)=8 then do
+  cbytes=word(c.i,4)
+  if word(c.i,5)='VERSION' then cver=word(c.i,6)
+  if word(c.i,7)='OBJECTS' then cobjs=word(c.i,8)
+ end
+ if word(c.i,1)='CENSUS' & word(c.i,2)='ORDINARY' &,
+    word(c.i,4)='OFS' & word(c.i,6)='REF' & words(c.i)=7 then do
+  ordinary=word(c.i,3)
+  ofs=word(c.i,5)
+  ref=word(c.i,7)
+ end
+ if c.i='M172 PACK CENSUS PASS' then cpass=cpass+1
+end
+if cbytes\=mbytes | cver\=mver | cobjs\=mobs | cpass\=1 then do
+ say 'M172 CENSUS META CROSSCHECK FAIL'
+ exit 8
+end
+if datatype(ordinary,'W')\=1 | datatype(ofs,'W')\=1 |,
+   datatype(ref,'W')\=1 then do
+ say 'M172 CENSUS COUNTER FORMAT FAIL'
+ exit 8
+end
+if ordinary+ofs+ref\=mobs then do
+ say 'M172 CENSUS COUNT SUM FAIL' ordinary ofs ref mobs
+ exit 8
+end
+say 'M172 CENSUS CROSSCHECK PASS'
+say 'M172 RETAINED PACK UNCHANGED' store 'PACK A'
+say 'M172 GENERALIZED PACK CENSUS TARGET GATE PASS'
+exit 0
