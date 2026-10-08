@@ -574,4 +574,22 @@ assert "15:49 — M173DCHK heading-count RC8" in (
     root / "CHAT_STATE.md"
 ).read_text()
 
+
+# 15:56 checker rejection must not be promoted to PASS.
+for proof in (
+    "Gate 3 first-difference check failed",
+    "15:56:14",
+    "M173 DIR INSERTED RECORD INVALID",
+    "does **not** establish",
+    "M173 DIR APPROVED LINE COUNT",
+    "M173 DIR MDISK 0600 PREFIX COUNT",
+    "M173 DIR OTHER CHANGE AT RECORD",
+    "Leave all three directory files unchanged",
+    "do **not** try XEDIT edits by guesswork",
+):
+    assert proof.lower() in plan.lower(), proof
+assert "15:56 — M173DCHK approved-line mismatch" in (
+    root / "CHAT_STATE.md"
+).read_text()
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
