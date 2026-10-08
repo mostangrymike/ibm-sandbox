@@ -66,6 +66,10 @@ on:
       - 'src/M172CHK.EXEC'
       - 'tests/m172_gitcapi_host.c'
       - 'tests/test-m172-pack-census.py'
+      - 'src/GITPIMP.C'
+      - 'src/M173CHK.EXEC'
+      - 'tests/test-m173-pack-import.py'
+      - 'docs/M173.md'
       - 'docs/M172.md'
       - 'docs/M171.md'
       - 'docs/M170.md'
@@ -154,6 +158,10 @@ on:
       - 'src/M172CHK.EXEC'
       - 'tests/m172_gitcapi_host.c'
       - 'tests/test-m172-pack-census.py'
+      - 'src/GITPIMP.C'
+      - 'src/M173CHK.EXEC'
+      - 'tests/test-m173-pack-import.py'
+      - 'docs/M173.md'
       - 'docs/M172.md'
       - 'docs/M171.md'
       - 'docs/M170.md'
@@ -229,6 +237,8 @@ jobs:
         run: python3 tests/test-m171-pack-store.py
       - name: Check M172 generalized PACK census
         run: python3 tests/test-m172-pack-census.py
+      - name: Check M173 generalized OFS PACK import
+        run: python3 tests/test-m173-pack-import.py
       - name: Check combined compact M157 target gate
         run: sh tests/check-m157-gate.sh
       - name: Check neutral compiler EXEC source and F-disk setup
