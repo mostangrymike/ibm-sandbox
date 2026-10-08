@@ -8399,3 +8399,21 @@ in `ibm-sandbox/src`. Next CMS:
 Do not rerun COPYFILE/XEDIT, and no DIRECTXA,
 DIRMAP, activation, LINK/ACCESS, FORMAT or
 M173 import before verified exact-delta PASS.
+
+
+## 2026-10-08 — M173DCHK verifier repair CI PASS
+
+GitHub Actions native-stage run **37842910759 SUCCESS** at commit
+`6bf3d3d09326f37ba0c508acae534aeba7632af4`:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/37842910759
+
+Host checks for `src/M173DCHK.EXEC`, test model, and M173
+runbook passed. CMS target remains **PENDING** after the
+15:49 heading-count error. Revised checker uses actual insertion
+alignment; no directory records were changed to fix it.
+
+Next on Mac in ibm-sandbox/src: `git pull`, then
+`./cms-upload.sh M173DCHK.EXEC`. Next on CMS:
+`M173DCHK`. Require RC0 and
+`M173 DIR DELTA CHECK PASS`. Do not edit source/backup/
+candidate or activate/format any device at this gate.
