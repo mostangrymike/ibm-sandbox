@@ -55,6 +55,7 @@ end
 expected='MDISK 0600 3390 6000 1600 VMCOM1 W'
 matches=0
 prefix=0
+prefixat=0
 added=0
 do i=1 to n.0
  if translate(strip(n.i))=expected then do
@@ -62,11 +63,46 @@ do i=1 to n.0
   added=i
  end
  if translate(word(n.i,1))='MDISK' &,
-    translate(word(n.i,2))='0600' then prefix=prefix+1
+    translate(word(n.i,2))='0600' then do
+  prefix=prefix+1
+  prefixat=i
+ end
 end
 if matches\=1 then do
  say 'M173 DIR APPROVED LINE COUNT' matches
  say 'M173 DIR MDISK 0600 PREFIX COUNT' prefix
+ if prefix=1 then do
+  say 'M173 DIR 0600 RECORD NUMBER' prefixat
+  say 'M173 DIR 0600 FIELD COUNT' words(n.prefixat)
+  do w=1 to 7
+   flag='DIFF'
+   if translate(word(n.prefixat,w))=word(expected,w) then,
+      flag='MATCH'
+   say 'M173 DIR 0600 FIELD' w flag
+  end
+  if space(translate(strip(n.prefixat)),1)=expected then,
+     say 'M173 DIR 0600 SPACING ONLY YES'
+  else say 'M173 DIR 0600 SPACING ONLY NO'
+  prev=prefixat-1
+  head='NO'
+  if prev>=1 then do
+   if translate(word(u.prev,1))='USER' &,
+      translate(word(u.prev,2))='MAINT' then head='YES'
+  end
+  say 'M173 DIR PRECEDING SOURCE MAINT' head
+  other=0
+  first=0
+  do ix=1 to u.0
+   j=ix
+   if ix>=prefixat then j=ix+1
+   if u.ix\==n.j then do
+    other=other+1
+    if first=0 then first=ix
+   end
+  end
+  say 'M173 DIR OUTSIDE INSERT DIFFERENCES' other
+  if other>0 then say 'M173 DIR FIRST OUTSIDE CHANGE' first
+ end
  say 'M173 DIR INSERTED RECORD INVALID'
  exit 8
 end
