@@ -456,3 +456,82 @@ Source: IBM z/VM CMS `DIRMAP` utility specifies
 be overridden; IBM z/VM `DISKMAP` writes its output
 to A and flags unbounded END MDISK statements
 unless DOENDS is used.
+
+
+## 2026-10-08 13:18 — DIRMAP generated on C; full volume still unseen
+
+The operator confirmed `QUERY DISK C`: MNT2CC on virtual
+2CC, C R/W, ten 3390 cylinders, BLKSZ 4096, four files,
+106 used blocks, **1694 free** of 1800. `STATE USER
+MDISKMAP C` returned RC28: absent. The actual command
+
+    DIRMAP USER DIRECT C C
+
+succeeded with
+
+    DMSCYD2231I USER DIRECT C1 read.
+    DMSCYD2232I USER MDISKMAP C1 written - no errors.
+
+`STATE USER MDISKMAP C` then returned RC0, and
+`LISTFILE USER MDISKMAP C (ALLOC` showed F100,
+**392 records and ten allocated 4K blocks**, on C1.
+Thus C-only mapping was target-verified; USER DIRECT
+was not activated with DIRECTXA. No new G minidisk
+has been allocated or formatted.
+
+The operator ran:
+
+    PIPE < USER MDISKMAP C | LOCATE /M01RES/ | CONSOLE
+
+This returned ONLY three physical report rows:
+
+    M01RES 3390 MAINT   0123 MR   000   10016  10017 MAINT-1 *
+    M01RES 3390 VMSERVR 0301 WR  3438    3439    002 VMSRVR-1 *
+    M01RES 3390 OSASF   0200 MR  7973    7987    015 OSASF-1  *
+
+**These three lines are NOT the entire M01RES
+allocation list**. IBM DIRMAP output suppresses
+repeating volser/devtype on continuation rows;
+the volser reappears at section/page boundaries.
+As a result, LOCATE /M01RES/ omits other
+M01RES minidisks and all unlabelled GAP rows.
+The first MAINT 0123 is a special full-pack mapping,
+not necessarily exclusive use of every cylinder.
+The DIRMAP full-pack ending cylinder 10016 implies
+a 10017-cylinder inferred model, whereas live
+`CP QUERY VIRTUAL DASD` reports 11000 cylinders
+for virtual 0123. IBM documents model-size estimation
+and FULLPACK DEFINES overrides. Do not infer
+that cylinders beyond 10016 are free, or that
+the three filtered lines imply few actual
+minidisks. Correctness also requires matching
+current CP directory, SSI/subconfig context and
+CP-allocated DRCT 1-20.
+
+Real CP location cross-checks (read only):
+
+    MAINT 0190 M01RES real0123 start280 size214 (280-493)
+    MAINT 0191 M01RES real0123 start494 size175 (494-668)
+    MAINT 0193 M01RES real0123 start669 size500 (669-1168)
+    MAINT 0401 M01RES real0123 start1961 size292 (1961-2252)
+
+Next read-only target commands to display **all**
+392 records in ordered chunks, including unlabelled
+continuation rows and GAP markers:
+
+    PIPE < USER MDISKMAP C | TAKE 100 | CONSOLE
+    PIPE < USER MDISKMAP C | DROP 100 | TAKE 100 | CONSOLE
+    PIPE < USER MDISKMAP C | DROP 200 | TAKE 100 | CONSOLE
+    PIPE < USER MDISKMAP C | DROP 300 | CONSOLE
+
+These commands DO NOT create or replace map files
+and never expose the password-bearing USER DIRECT.
+Return the relevant M01RES pages including headings,
+blank-volser rows, GAP and OVERLAP entries, then
+reconcile all minidisk extent rows with CP real
+locations and live model before proposing a new
+permanent 1600-cylinder allocation. Do NOT treat
+DIRMAP gap estimates as automatically validated
+unallocated physical cylinders, particularly
+because DIRMAP excludes special full-pack overlaps
+and can assume a different device geometry.
