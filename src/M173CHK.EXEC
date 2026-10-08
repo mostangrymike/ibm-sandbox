@@ -128,7 +128,7 @@ if irc\=0 then do
  do i=1 to q.0
   say q.i
  end
- 'ERASE' stage 'STAGE' datafm
+ say 'M173 FAILED OUTPUT RETAINED FOR DIAGNOSIS' stage 'STAGE' datafm
  say 'M173 IMPORT FAIL RC' irc
  exit 8
 end
@@ -162,18 +162,18 @@ end
 
 if ibytes\=mbytes | iver\=mver | iobjs\=mobs | staged\=mobs |,
    ipass\=1 then do
- 'ERASE' stage 'STAGE' datafm
+ say 'M173 FAILED OUTPUT RETAINED FOR DIAGNOSIS' stage 'STAGE' datafm
  say 'M173 IMPORT META CROSSCHECK FAIL'
  exit 8
 end
 if datatype(ordinary,'W')\=1 | datatype(ofs,'W')\=1 |,
    datatype(ref,'W')\=1 then do
- 'ERASE' stage 'STAGE' datafm
+ say 'M173 FAILED OUTPUT RETAINED FOR DIAGNOSIS' stage 'STAGE' datafm
  say 'M173 IMPORT COUNTER FORMAT FAIL'
  exit 8
 end
 if ordinary+ofs+ref\=mobs | ref\=0 then do
- 'ERASE' stage 'STAGE' datafm
+ say 'M173 FAILED OUTPUT RETAINED FOR DIAGNOSIS' stage 'STAGE' datafm
  say 'M173 IMPORT COUNT FAIL' ordinary ofs ref mobs
  exit 8
 end
@@ -186,7 +186,7 @@ if rc\=0 then do
 end
 'FILEDEF STGIN DISK' stage 'STAGE' datafm
 if rc\=0 then do
- 'ERASE' stage 'STAGE' datafm
+ say 'M173 FAILED OUTPUT RETAINED FOR DIAGNOSIS' stage 'STAGE' datafm
  say 'M173 STGIN FILEDEF FAIL'
  exit 8
 end
@@ -200,7 +200,7 @@ if vrc\=0 then do
  do i=1 to v.0
   say v.i
  end
- 'ERASE' stage 'STAGE' datafm
+ say 'M173 FAILED OUTPUT RETAINED FOR DIAGNOSIS' stage 'STAGE' datafm
  say 'M173 STAGE VERIFY FAIL RC' vrc
  exit 8
 end
@@ -214,7 +214,7 @@ do i=1 to v.0
  if v.i='M173 STAGE VERIFY PASS' then vpass=vpass+1
 end
 if vobjs\=mobs | vpass\=1 then do
- 'ERASE' stage 'STAGE' datafm
+ say 'M173 FAILED OUTPUT RETAINED FOR DIAGNOSIS' stage 'STAGE' datafm
  say 'M173 STAGE VERIFY CROSSCHECK FAIL'
  exit 8
 end
