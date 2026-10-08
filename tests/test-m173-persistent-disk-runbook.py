@@ -201,4 +201,36 @@ for evidence in (
     "Do not add an MDISK statement",
 ):
     assert evidence.lower() in runbook.lower(),evidence
+# The EBS root disk is positively identified, but *no* snapshot exists yet.
+# Public GitHub documentation must not contain identifying AWS EBS IDs.
+import re
+snapshot = (root / "docs" / "M173_EBS_RECOVERY_CHECKLIST.md").read_text()
+for evidence in (
+    "Amazon Elastic Block",
+    "AWS EBS root volume positively identified",
+    "docs/M173_EBS_RECOVERY_CHECKLIST.md",
+    "public repository",
+    "new public IPv4 address",
+    "No snapshot has been",
+):
+    assert evidence.lower() in runbook.lower(),evidence
+for evidence in (
+    "NO SNAPSHOT RECORDED",
+    "NO NEW CMS DISK CREATED",
+    "VMCOM1 real 0127, cylinders 6000–7599",
+    "snapshot enters",
+    "State: Completed",
+    "Stop instance",
+    "public IPv4 address",
+    "create a new test volume",
+    "aws ec2 describe-volumes",
+    "aws ec2 describe-snapshots",
+    "No `USER DIRECT`",
+):
+    # The documents sometimes render markers as inline code.
+    if evidence == "No `USER DIRECT`":
+        assert "USER DIRECT" in snapshot
+    else:
+        assert evidence.lower() in snapshot.lower(),evidence
+assert not re.search(r"vol-[0-9a-f]{17}", snapshot+runbook), "No public concrete EBS ID"
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
