@@ -129,6 +129,14 @@ with tempfile.TemporaryDirectory() as td:
     assert "INDEX OUTPUT EXISTS" in again.stdout
     assert (td / "dd:IDXOUT").read_text() == index
 
+    (td / "dd:IDXOUT").unlink()
+    checked = subprocess.run(
+        [str(exe), "BUILD", "CHECKED"], cwd=td,
+        text=True, capture_output=True
+    )
+    assert checked.returncode == 0, checked.stdout + checked.stderr
+    assert (td / "dd:IDXOUT").read_text() == index
+
     lines = original_stage.splitlines()
     lines[1] = ("0" if lines[1][0] != "0" else "1") + lines[1][1:]
     (td / "dd:STGIN").write_text("\n".join(lines) + "\n")
