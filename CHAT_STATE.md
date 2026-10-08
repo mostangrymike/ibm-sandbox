@@ -7245,3 +7245,21 @@ CMS: QUERY DISK G, M173CHK G, and only on full M173
 PASS proceed to native M174 index and M175/176 closure gates.
 Do not repeat M171 network PACK fetch; input
 M171NET PACK/META A remains retained.
+
+
+## 2026-10-08 HOST CI 1361 PASSED AFTER M173 DATA-DISK HARDENING
+
+GitHub Actions Native staging host checks run **1361** at commit
+c3b3d56a1b4c25ff723f32f85782f5ed81a33e2b
+completed with conclusion **success**. This covers the
+M173/M174 source changes removing automatic ERASE of
+failed STAGE/INDEX data, the existing M173–M176 tests and
+the new tests/test-m173-persistent-disk-runbook.py.
+The two preceding runs 1359/1360 failed due to static
+test assertion string mismatches only (META EXECIO form
+and comma in 22841); these test assertions were corrected
+and the full workflow now passes. This does NOT prove
+that an additional physical minidisk has been created.
+The next real target step remains authorized read-only
+CP/Hercules extent inventory as in
+docs/M173_PERSISTENT_DISK_RUNBOOK.md.
