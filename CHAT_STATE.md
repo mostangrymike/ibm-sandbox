@@ -7412,3 +7412,17 @@ Watch fullpack overlay flags and system DRCT 1-20.
 No MDISK extent has been chosen or formatted.
 Latest documentation docs/M173_PERSISTENT_DISK_RUNBOOK.md
 and test guard committed.
+
+
+## 2026-10-08 USER DIRECTORY C MAP HOST CI GREEN
+
+GitHub Actions native-stage run 1367 at commit
+ed239c020e94ab8ddef475c62b8b7697492c94ce
+completed SUCCESS, including the added assertions that
+MAINT USER DIRECT C (4282 records, 84 blocks) is an
+unverified candidate, DIRMAP must write only on C
+with output collision check, and ACTIVE CP directory
+is never changed with DIRECTXA. This is host-only
+source/doc testing; DIRMAP has not yet been run on
+the user's CMS target. Later CHAT_STATE commit records
+this result. No disk provisioning completed.
