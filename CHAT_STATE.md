@@ -8200,3 +8200,45 @@ data publicly. `DMSCMP209W` RC4 means not identical. Do
 not begin candidate XEDIT, DIRECTXA EDIT, directory activation,
 LINK/ACCESS, FORMAT or M173 import before both compare PASS
 and separately reviewed safe directory modification.
+
+
+## 2026-10-08 15:32 — M173 Gate 2b record-by-record PASS, Gate 3 planned
+
+On MAINT, both read-only CMS compares completed Ready/RC0 with
+only the DMSCMP179I announcement, no mismatch records:
+- `COMPARE USER DIRECT C M173BAK DIRECT C` PASS at 15:32:13.
+- `COMPARE USER DIRECT C M173NEW DIRECT C` PASS at 15:32:15.
+
+Thus original `USER DIRECT C`, untouched `M173BAK DIRECT C`,
+and candidate `M173NEW DIRECT C` are identical 4282-record
+F80 directory sources at this checkpoint. CMS C has 1513 free
+4K blocks. Neither the active CP directory nor any disk layout
+has changed; protected source/backup remain untouched.
+
+**New GitHub source:** `src/M173DCHK.EXEC`, read-only
+candidate verifier (no directory lines/passwords in output).
+It checks original vs backup contents and that edited M173NEW
+is exactly original plus ONE `MDISK 0600 3390 6000 1600
+VMCOM1 W` immediately after a unique `USER MAINT` record.
+Target CMS test is PENDING; host static/logic CI configured
+with `tests/test-m173-dir-delta.py`.
+
+**Next reviewed Gate 3** (only candidate, NOT original):
+On CMS MAINT `XEDIT M173NEW DIRECT C`, then in XEDIT
+`TOP`; `LOCATE /USER MAINT /` and privately verify the
+actual USER MAINT heading, not a comment/user lookalike.
+If correct, enter XEDIT subcommand
+`INPUT MDISK 0600 3390 6000 1600 VMCOM1 W` and visually
+check that single inserted record, then `FILE`. If anything
+wrong, `QQUIT` (discard unsaved changes). Source/backup must
+never be edited or printed. Expect candidate 4283 F80 rows.
+
+From Mac in `ibm-sandbox/src`: `git pull`, then
+`./cms-upload.sh M173DCHK.EXEC`. On CMS after candidate
+saved: `M173DCHK`. Success marker
+`M173 DIR DELTA CHECK PASS`; do NOT claim PASS until CMS
+actually reports it. Stop at this gate: NO `DIRECTXA`
+(including EDIT), `DIRMAP`, activation, LINK/ACCESS,
+FORMAT or M173 importer yet. Operator-supplied EBS
+snapshot provenance and restore procedure were confirmed,
+but isolated restore was not run.
