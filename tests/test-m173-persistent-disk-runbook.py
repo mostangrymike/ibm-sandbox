@@ -236,7 +236,7 @@ for proof in (
     'QUERY DISK A',
     'QUERY DISK C',
     'CP QUERY VIRTUAL 0600',
-    'CP QUERY MDISK MAINT 0600 DIRECTORY',
+    'CP QUERY MDISK 0600 DIRECTORY',
     'MDISK <VERIFIED_UNUSED_VDEV> 3390 6000 1600 VMCOM1 MR',
     'DIRECTXA',
     'without activating',
@@ -246,7 +246,7 @@ for proof in (
     'Operator update — snapshot completion reported',
     'no isolated restoration test',
     'CP QUERY VIRTUAL 0600',
-    'CP QUERY MDISK MAINT 0600 DIRECTORY',
+    'CP QUERY MDISK 0600 DIRECTORY',
     'MDISK <VERIFIED_UNUSED_VDEV> 3390 6000 1600 VMCOM1 MR',
     'independently checked here',
 ):
@@ -269,10 +269,18 @@ for proof in (
     'STATE M171NET META A',
     'STATE USER DIRECT C',
     'No new MAINT MDISK has yet been defined',
-    'CP QUERY MDISK MAINT 0600 DIRECTORY',
+    'CP QUERY MDISK 0600 DIRECTORY',
     'active CP directory',
     'NOT an end-to-end pack/directory checksum',
     'No additional',
 ):
     assert proof.lower() in runbook.lower(), proof
+# Read-only 0600 permanent-directory query must use valid CP syntax.
+# The explicit userid operand cannot be an unmarked positional token.
+assert "CP QUERY MDISK 0600 DIRECTORY" in runbook
+assert "CP QUERY MDISK 0600 DIRECTORY" in snapshot
+assert "CP QUERY MDISK MAINT 0600 DIRECTORY" not in runbook
+assert "CP QUERY MDISK MAINT 0600 DIRECTORY" not in snapshot
+assert "HCPQMD022E" in runbook
+assert "HCPQVD040E" in runbook
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
