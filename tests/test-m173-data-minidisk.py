@@ -42,4 +42,28 @@ assert "'FILEDEF IDXOUT DISK' idx 'INDEX' datafm" in m174
 assert "'PIPE CMS GITPIDX BUILD CHECKED | STEM b.'" in m174
 assert "'FILEDEF IDXOUT CLEAR'" in m174
 
+
+# The live milestone pages must describe the isolated G-disk contract.
+# Historical A-disk failures are retained only below explicit headings.
+m173 = (root / "docs" / "M173.md").read_text()
+current_m173 = m173.split("## Historical CMS attempt:", 1)[0]
+assert "M173CHK G" in current_m173
+assert "M173NET STAGE G" in current_m173
+assert "M173NET STAGE A" not in current_m173
+assert "retains any failed output" in current_m173
+m174 = (root / "docs" / "M174.md").read_text()
+current_m174 = m174.split("## Historical CMS output guard", 1)[0]
+assert "M174CHK G" in current_m174
+assert "M173NET STAGE G" in current_m174
+assert "M174NET INDEX G" in current_m174
+assert "M174NET INDEX A" not in current_m174
+assert "retained for diagnosis" in current_m174
+for milestone in ("M175", "M176"):
+    spec = (root / "docs" / f"{milestone}.md").read_text()
+    assert f"{milestone}CHK G" in spec
+    assert "M173NET STAGE G" in spec
+    assert "M174NET INDEX G" in spec
+    assert "M173NET STAGE A" not in spec
+    assert "M174NET INDEX A" not in spec
+
 print("M173-M176 SEPARATE CMS DATA MINIDISK SOURCE GATES PASSED")
