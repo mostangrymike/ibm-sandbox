@@ -62,4 +62,19 @@ for evidence in (
     assert evidence.lower() in runbook.lower(), evidence
 
 assert "MDISK <VDEV> 3390 <START> <CYLINDERS> <VOLSER> <MODE>" in runbook
+# The live DirMaint autolog did not remain running. Keep the
+# read-only 2CC source discovery ahead of any map-writing command.
+for evidence in (
+    "HCPCLS6056I",
+    "USER DSC LOGOFF AS DIRMAINT",
+    "STATE USER DIRECT C",
+    "LISTFILE * DIRECT C (ALLOC",
+    "LISTFILE ACCESS DATADVH *",
+    "LISTFILE CONFIG* DATADVH *",
+    "LISTFILE WHERETO DATADVH *",
+    "not fully read-only",
+    "current",
+    "CP directory",
+):
+    assert evidence.lower() in runbook.lower(), evidence
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
