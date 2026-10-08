@@ -7607,3 +7607,54 @@ real evidence and static tests checking exact
 11000-cylinder outputs and candidate bounds.
 
 Native-stage host CI run 1377 at commit d72b4f06f018636dfcd6b7c9a47603b84c4037db completed SUCCESS, including the 11,000-cylinder geometry and unallocated-gap regression tests. No CP directory activation or minidisk allocation performed. 
+
+
+## 2026-10-08 13:43 — VMCOM1 live links match and host has 6.1 GB available
+
+User ran read-only checks in z/VM CMS:
+CP QUERY MDISK 02CC LOCATION:
+MAINT virtual02CC, owner PMAINT 02CC, type3390, VOLSER
+VMCOM1, realRdev0127, start121 length10. EXACT match
+with USER MDISKMAP C source extent.
+CP QUERY MDISK 049E LOCATION:
+MAINT virtual049E, owner 6VMLEN20 049E, VMCOM1 real0127,
+start4104 length250. EXACT match with DIRMAP.
+CP QUERY MDISK 0551 LOCATION is not yet reported
+(last DIRMAP predicts PMAINT 0551 at VMCOM1 start572 len40).
+
+On actual Linux Hercules host ip-172-31-14-90:
+pgrep -af '[h]ercules' -> PID 7174, command
+'hercules -f hercules.cnf -r hercules.rc'.
+ls -lh /home/admin/vm630/dasd5 ->
+admin:admin ordinary file 1.9G, Oct 6 17:51.
+df -h /home/admin/vm630 ->
+root /dev/nvme0n1p1 total16G used8.8G, available6.1G
+(60% used). This is promising local headroom but NOT
+an independently verified backup/snapshot and not
+proof current Hercules PID has image dasd5 open.
+Root contains other shared critical images; avoid
+filling filesystem during M173.
+
+NEXT READ-ONLY host evidence:
+readlink -f /proc/7174/cwd
+grep -nE '^[[:space:]]*0127[[:space:]]+3390' /home/admin/vm630/hercules.cnf
+ls -l /proc/7174/fd | grep -F 'dasd5'
+du -h /home/admin/vm630/dasd5
+and optional repository mapping helper
+bash scripts/map-cms-minidisk.sh 0127 /home/admin/vm630/hercules.cnf /home/admin/vm630
+only if available on Linux host and cwd confirms.
+On CMS: CP QUERY MDISK 0551 LOCATION.
+Fullpack VMCOM1 real 0127 11000 cylinders verified
+earlier, and DIRMAP explicit free gap5936-10016;
+proposed new nonoverlap interval6000-7599 length1600
+still NOT physically allocated, accessed, formatted.
+Before any directory edit, need independently
+restorable snapshots/backup of both VMCOM1 and M01RES
+including directory source and overlays and verified
+site-specific procedure for updating active CP directory
+(DirMaint autologs then logs off). Same-root copy of
+live DASD file is NOT a valid safe independent backup.
+All protected M171NET PACK/META, A generations untouched.
+Updated docs/M173_PERSISTENT_DISK_RUNBOOK.md and
+tests/test-m173-persistent-disk-runbook.py with exact
+host and CP evidence and safety gates.
