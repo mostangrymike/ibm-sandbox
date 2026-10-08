@@ -7884,3 +7884,82 @@ with actual post-boot evidence and next exact
 safe queries; native-stage regression test extended.
 
 GitHub native-stage run 1389 at commit db73fbca25b116fc05e3d6ff7b7e508cc5f2a546 completed SUCCESS. The added regression asserts persisted CMS A/C/PACK/META/directory presence, updated Hercules PID, 0600 active-directory check and no FORMAT/DIRECTXA activation. Run 1388 at commit 00a2e7413b9232f561a560eca1a180f34e1601d1 also passed. No CMS G disk has been defined and no M173 importer executed yet.
+
+
+## NEW CHAT HANDOFF — 2026-10-08 snapshot and M173 G disk preflight
+
+**Checkpoint created at user's explicit request to save project state for a new chat.**
+Canonical repository: `mostangrymike/ibm-sandbox`, branch `main`.
+Resume the **z/VM CMS native Git client** from M173 physical
+storage provisioning without reopening completed source work.
+
+Latest operator-observed state **after EC2 snapshot/restart**:
+- EBS root-volume snapshot **reported complete by operator**, not
+  independently verified for source/region/state or test restoration.
+  Exact AWS identifiers are kept out of this public repository.
+- Hercules restarted under **PID 724** (old PID 7174 is stale);
+  config `hercules.cnf`, root `/home/admin/vm630`.
+  `dasd1` 769,571,364 bytes, `dasd5` 1,954,890,581
+  bytes; Linux root EBS filesystem 16G, 8.8G used, **6.1G free**.
+  Do not assume old PID 7174's FD16 observation applies to PID 724.
+- Live CP: `QUERY DASD DETAILS 0127` =
+  **VMCOM1, real 0127, 3390-0C, 11000 cylinders**.
+  Virtual DASD listing is stable; no 0600 currently attached.
+- CMS `A`: MNT191, MAINT 0191, 175 cylinders,
+  4096-byte blocks, 212 files, **8659 used / 22841 free**.
+  Essential `M171NET PACK A`, `M171NET META A`
+  each passed `STATE` RC0.
+- CMS `C`: MNT2CC, MAINT 02CC, 10 cylinders,
+  4096-byte blocks, 5 files, **117 used / 1683 free**.
+  `USER DIRECT C` passed `STATE` RC0.
+  `USER MDISKMAP C` was created successfully via
+  `DIRMAP USER DIRECT C C`, with 392 F100 records.
+- DIRMAP identified **VMCOM1 gap cylinders 5936–10016**,
+  4081 cylinders. Three live CP minidisk link locations
+  (MAINT 02CC, 049E, 0551) independently match the
+  corresponding USER DIRECT map. Proposed NEW dedicated
+  `G` MDISK: **VMCOM1, real Rdev 0127,
+  start cylinder 6000, size 1600, end 7599**.
+  Gross approximately 288000 CMS 4K blocks, above the
+  required M173 **180000 free 4K blocks**.
+- **No new 0600 MDISK defined, no USER DIRECT edit,
+  no non-EDIT DIRECTXA, no FORMAT, no G access, and
+  no rerun of M173 has happened.** DirMaint is still
+  not operational; it XAUTOLOGed but logged off and
+  lacks WHERETO DATADVH.
+- Latest host regression: **GitHub Actions run 1389
+  completed SUCCESS**; post-snapshot preflight gates
+  and protected file-presence regressions passed
+  (host CI, not target M173).
+
+**Exact next read-only CMS commands:**
+
+    CP QUERY VIRTUAL 0600
+    CP QUERY MDISK MAINT 0600 DIRECTORY
+
+`0600` is a *candidate hexadecimal virtual address*,
+not physical cylinder `6000` (decimal). Both
+queries must support unused status before proposing a
+new `MAINT` directory entry. Before any live change,
+verify the operator's completed EBS snapshot in AWS
+against the correct source volume/region, keep a
+credible recovery procedure, inspect the active
+new Hercules PID 724 backing images/overlays, and
+review a syntax-only change and rollback plan.
+Never format A, C, or any existing minidisk.
+Possible later directory-statement illustration
+ONLY, not a command to execute now:
+
+    MDISK <VERIFIED_UNUSED_VDEV> 3390 6000 1600 VMCOM1 MR
+
+Do not activate the directory until the change plan
+has been checked. After **independently confirmed**
+permanent new disk initialization, assign CMS G and
+check `QUERY DISK G` for R/W 4096 and >=180000 free
+blocks; then proceed with target `M173CHK G`
+followed by M174/M175/M176 according to the
+runbook. Protect `M171NET` and sealed 1808-object
+generations. Follow the project workflow and all
+rules in `CHAT_STATE.md` and
+`docs/M173_PERSISTENT_DISK_RUNBOOK.md`/
+`docs/M173_EBS_RECOVERY_CHECKLIST.md`.
