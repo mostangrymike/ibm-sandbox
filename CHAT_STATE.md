@@ -8058,3 +8058,32 @@ start 5756, length180, last allocation ends 5935 before
 reported gap 5936–10016). Do not infer PASS until real
 CMS output arrives. Independent EBS snapshot provenance
 and restorability are STILL REQUIRED before changes.
+
+
+## 2026-10-08 15:11 — M173 VMCOM1 leading-gap boundary TARGET PASS
+
+Actual read-only MAINT command:
+`CP QUERY MDISK USERID 6VMHCD20 0300 LOCATION DIRECTORY`
+returned TargetID 6VMHCD20/Tdev0300 OwnerID6VMHCD20/Odev0300,
+3390 VMCOM1 real0127 StartLoc5756 Size180,
+`Ready; T=0.01/0.01 15:11:52`. **Exact `USER MDISKMAP C`
+match.** Inclusive disk end5935; map gap begins5936
+and runs through10016. Planned NEW permanent MAINT
+VDEV0600 -> VMCOM1 real0127 start6000 length1600 end7599
+is fully within that mapped gap. MAINT 0600 was previously
+verified absent from virtual configuration AND active directory;
+four separate M01RES MAINT permanent entries matched
+`USER DIRECT C` source map. Host Hercules PID724 has
+dasd1 (FD12, real0123) and dasd5 (FD16, real0127)
+mapped as expected.
+
+**Remaining operator-owned hard gate:** EBS snapshot was reported
+complete but its source volume/region/`completed` metadata
+and usable recovery path have NOT been independently
+attested here. Existing source-current comparisons are strong
+samples, not exhaustive identity proof. No live directory
+edit or activation, LINK/ACCESS/FORMAT, G disk or M173 import.
+Next is private AWS snapshot provenance/recovery check, then
+review directory backup/minimal edit/rollback/syntax-only EDIT
+procedure before any destructive action. Preserve protected
+A/C/M171NET and sealed 1808-object stages/selectors.
