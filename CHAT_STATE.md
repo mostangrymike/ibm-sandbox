@@ -7800,7 +7800,7 @@ STATE M171NET META A; STATE USER DIRECT C.
 Candidate for new MAINT hexadecimal virtual device:
 0600 (UNVERIFIED, do NOT assume free). Read-only probes:
 CP QUERY VIRTUAL 0600
-CP QUERY MDISK MAINT 0600 DIRECTORY
+CP QUERY MDISK 0600 DIRECTORY
 Need absence from both virtual and actual active CP
 directory, and review USER MAINT stanza without
 exposing directory passwords. Physical real Rdev 0127
@@ -7864,7 +7864,7 @@ and quiescence/restoration not independently checked.
 Do not request an unnecessary second snapshot.
 Critical next read-only CMS checks:
   CP QUERY VIRTUAL 0600
-  CP QUERY MDISK MAINT 0600 DIRECTORY
+  CP QUERY MDISK 0600 DIRECTORY
 These test candidate **hex virtual address 0600**
 for a possible permanent G minidisk; no device
 0600 in current Q V DASD, but directory must
@@ -7935,7 +7935,7 @@ Latest operator-observed state **after EC2 snapshot/restart**:
 **Exact next read-only CMS commands:**
 
     CP QUERY VIRTUAL 0600
-    CP QUERY MDISK MAINT 0600 DIRECTORY
+    CP QUERY MDISK 0600 DIRECTORY
 
 `0600` is a *candidate hexadecimal virtual address*,
 not physical cylinder `6000` (decimal). Both
@@ -7963,3 +7963,19 @@ generations. Follow the project workflow and all
 rules in `CHAT_STATE.md` and
 `docs/M173_PERSISTENT_DISK_RUNBOOK.md`/
 `docs/M173_EBS_RECOVERY_CHECKLIST.md`.
+
+
+## 2026-10-08 live preflight update — 0600 command correction
+
+Operator confirms `CP QUERY VIRTUAL 0600` -> `HCPQVD040E` (no
+currently configured virtual device), and Hercules PID 724 cwd
+`/home/admin/vm630`, FD12->dasd1/real0123, FD16->dasd5/real0127,
+with the matching two hercules.cnf entries. The previously recorded
+`CP QUERY MDISK MAINT 0600 DIRECTORY` returned `HCPQMD022E`
+because it was **invalid syntax**, not a directory-absence finding.
+On logged-on MAINT the correct, IBM-documented read-only query is
+`CP QUERY MDISK 0600 DIRECTORY`. Await its actual output before
+declaring the virtual address unused in the permanent directory.
+No new disk or directory activation has occurred. The EBS snapshot
+is operator-reported completed but not independently provenance/restore
+verified here; protected A/C/M171 files remain untouched.
