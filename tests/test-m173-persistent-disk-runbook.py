@@ -592,4 +592,24 @@ assert "15:56 — M173DCHK approved-line mismatch" in (
     root / "CHAT_STATE.md"
 ).read_text()
 
+
+# 16:00 target result: one MDISK 0600 prefix but zero exact
+# approved lines; diagnostics may reveal field positions only.
+for proof in (
+    "16:00 — Exact candidate line absent",
+    "16:00:11",
+    "M173 DIR APPROVED LINE COUNT 0",
+    "M173 DIR MDISK 0600 PREFIX COUNT 1",
+    "GATE 3 FAIL",
+    "FIELD <number> MATCH/DIFF",
+    "SPACING ONLY YES/NO",
+    "OUTSIDE INSERT DIFFERENCES",
+    "numeric",
+    "Do not apply a guessed XEDIT correction",
+):
+    assert proof.lower() in plan.lower(), proof
+assert "16:00 — Gate 3 exact MDISK missing" in (
+    root / "CHAT_STATE.md"
+).read_text()
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
