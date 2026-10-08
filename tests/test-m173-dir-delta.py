@@ -25,10 +25,17 @@ assert "if maint\\=1" in source
 
 expected = "MDISK 0600 3390 6000 1600 VMCOM1 W"
 assert f"expected='{expected}'" in source
-for target in ("USER DIRECT C", "M173BAK DIRECT C",
-               "M173NEW DIRECT C"):
+for target, stem in (("USER DIRECT C", "U."),
+                     ("M173BAK DIRECT C", "B."),
+                     ("M173NEW DIRECT C", "N.")):
     assert f"'STATE {target}'" in source
-    assert f"'EXECIO * DISKR {target} 1 (STEM" in source
+    assert f"'EXECIO * DISKR {target} 1 (STEM {stem} FINIS'" in source
+    assert f"(STEM {stem.lower()} FINIS" not in source
+# IBM EXECIO communicates with REXX through EXECCOMM: REXX stem
+# symbols must be UPPERCASE in the literal command, else rc8.
+assert "STEM U. FINIS" in source
+assert "STEM B. FINIS" in source
+assert "STEM N. FINIS" in source
 for forbidden in ("DISKW", "ERASE ", "COPYFILE ", "FILEDEF ",
                   "DIRECTXA ", "FORMAT ", "SAY U.", "SAY B.", "SAY N."):
     assert forbidden not in source.upper(), forbidden
