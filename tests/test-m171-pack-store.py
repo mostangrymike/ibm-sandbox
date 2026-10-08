@@ -67,7 +67,7 @@ with tempfile.TemporaryDirectory() as td:
     td = Path(td)
     exe = td / "gitpchk"
     subprocess.run(
-        ["gcc", "-std=c89", "-Wall", "-Wextra", "-Werror",
+        ["gcc", "-x", "c", "-std=c89", "-Wall", "-Wextra", "-Werror",
          str(check), "-o", str(exe)],
         check=True,
     )
