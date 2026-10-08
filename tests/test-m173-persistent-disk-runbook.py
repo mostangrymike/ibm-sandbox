@@ -225,12 +225,11 @@ for evidence in (
     "create a new test volume",
     "aws ec2 describe-volumes",
     "aws ec2 describe-snapshots",
-    "No `USER DIRECT`",
 ):
-    # The documents sometimes render markers as inline code.
-    if evidence == "No `USER DIRECT`":
-        assert "USER DIRECT" in snapshot
-    else:
-        assert evidence.lower() in snapshot.lower(),evidence
+    assert evidence.lower() in snapshot.lower(),evidence
+assert "USER DIRECT" in snapshot
 assert not re.search(r"vol-[0-9a-f]{17}", snapshot+runbook), "No public concrete EBS ID"
+assert not re.search(r"vol[0-9a-f]{17}", snapshot+runbook), "No public NVMe ID"
+assert "force/skip os shutdown" in snapshot.lower() or "force/skip" in snapshot.lower()
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
