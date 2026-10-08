@@ -1,3 +1,95 @@
+## CURRENT GATE — 2026-10-08 16:20:21: TARGET GATE 4 PASS
+
+Operator's real MAINT CMS syntax-only compilation completed:
+
+```text
+STATE DIRECTXA MODULE *
+Ready; T=0.01/0.01 16:20:11
+DIRECTXA M173NEW DIRECT C (EDIT
+z/VM USER DIRECTORY CREATION PROGRAM - VERSION 6 RELEASE 3.0
+EOJ DIRECTORY NOT UPDATED
+Ready; T=0.52/0.57 16:20:21
+```
+
+**GATE 4 RC0 PASS**. The installed-release DIRECTXA
+compiled the 4283-record candidate without errors and
+explicitly did NOT change the online CP directory.
+Prior Gate 3 target M173DCHK RC0 also passed.
+
+### Gate 5: CP allocation and rollback preflight (read-only)
+
+STOP: no activation is authorized yet. IBM DIRECTXA without
+EDIT writes an alternate CP object directory and updates
+the CP-owned DASD directory pointer, potentially taking
+the new directory online immediately. Source backups
+on CMS C do not by themselves guarantee an independently
+recoverable CP-owned directory. The EBS recovery snapshot
+was completed and operator-matched but not test-restored.
+
+Run the following **read-only** commands on MAINT:
+
+```text
+CP QUERY CPOWNED VOLID VMCOM1
+CP QUERY ALLOC MAP VMCOM1
+CP QUERY ALLOC DRCT ALL
+CP QUERY MDISK 0600 DIRECTORY
+M173DCHK
+```
+
+Expect VMCOM1 real 0127 and the proposed new physical
+extent 6000–7599 absent from every CP-owned page/spool/
+tdisk/directory allocation as well as existing MDISK map.
+`QUERY ALLOC MAP` checks **CP-owned areas**, not ordinary
+permanent or parameter areas, which must be checked
+separately against the prior USER MDISKMAP and direct
+permanent-directory boundary evidence. An unrecognized
+command or privilege denial is NOT evidence of safety.
+`QUERY ALLOC DRCT ALL` must identify the current ACTIVE
+directory allocation and show it has space for the alternate
+directory. Record the active directory VOLID and extent
+privately; do not post any password-bearing directory text.
+Repeat the permanent 0600 absence check to rule out a
+last-minute conflicting allocation. Any new or unknown
+extent overlap, change, or discrepancy: STOP.
+
+IBM QUERY ALLOC requires CP privilege class D for
+allocation reports; QUERY CPOWNED is class G. The
+active CP directory may be on M01RES, but this is
+not established by the 16:20 DIRECTXA EDIT output.
+
+IBM DIRECTXA update semantics: it writes a new alternate
+directory instead of overwriting the current one; changes
+the volume-label pointer, and brings an eligible current
+directory online. A rollback would require a separately
+authorized non-EDIT compile of the **retained, original**
+`M173BAK DIRECT C` from a usable recovery console.
+Do NOT issue such a command during preflight; first
+validate the backup candidate in its own `(EDIT` run and
+document access/relogon and restore procedure in a
+separate approved change window. Re-compilation may
+also overwrite the alternate slot, so do not describe the
+existing inactive slot as a permanent standalone backup.
+
+After eventual activation, the existing logged-on MAINT
+virtual configuration may still reflect the OLD directory.
+Expect an expressly planned logoff/logon or other IBM-
+supported refresh before verifying virtual 0600, and
+never FORMAT until owner, real-device 0127, VMCOM1,
+start6000, length1600, exclusive R/W mode, and new
+blank-disk identity are independently proven. Preserve
+`USER DIRECT C`, `M173BAK DIRECT C`, `M173NEW DIRECT C`
+and protected Git source/stage artifacts; a later
+separate task must reconcile authoritative USER DIRECT
+source with the activated directory after confirming
+success, without losing the rollback source.
+
+Official IBM references:
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-cpowned
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-alloc
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=dasds-displaying-list-cp-owned-volumes
+
+---
 ## CURRENT GATE — 2026-10-08 16:13:55: TARGET GATE 3 PASS
 
 Real MAINT CMS output:
