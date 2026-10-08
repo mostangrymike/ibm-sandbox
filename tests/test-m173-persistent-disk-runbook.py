@@ -28,9 +28,9 @@ for check, minimum in ((a,180000),(b,4096)):
     assert "word(d.di,7)='4096'" in check
     assert "FAILED OUTPUT RETAINED FOR DIAGNOSIS" in check
 assert "M171NET" in a and "'PACK A'" in a
-assert "M171NET" in b and "'META A'" in b
-assert "M171NET" in c and "'META A'" in c
-assert "M171NET" in d and "'META A'" in d
+assert "M171NET" in b and "META A 1 (STEM" in b
+assert "M171NET" in c and "META A 1 (STEM" in c
+assert "M171NET" in d and "META A 1 (STEM" in d
 for phrase in (
     "CP QUERY VIRTUAL DASD",
     "CP QUERY MDISK 191 LOCATION",
