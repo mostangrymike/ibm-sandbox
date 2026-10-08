@@ -777,3 +777,89 @@ the extra 983 physical cylinders is necessary.
 **Status: physical geometry confirmed, but new MDISK
 allocation, FORMAT, ACCESS and M173 target execution
 are all still pending.** No target has been changed.
+
+
+## 2026-10-08 13:43 — live VMCOM1 link corroboration and host capacity
+
+Operator-supplied read-only evidence on CMS:
+
+    CP QUERY MDISK 02CC LOCATION
+    MAINT 02CC PMAINT 02CC 3390 VMCOM1 real0127 start121 size10
+
+    CP QUERY MDISK 049E LOCATION
+    MAINT 049E 6VMLEN20 049E 3390 VMCOM1 real0127
+    start4104 size250
+
+Both locations independently **match** the actual
+`USER MDISKMAP C` DIRMAP definitions. The third expected
+link `CP QUERY MDISK 0551 LOCATION` has **not yet**
+been provided. Two matches support, but do not prove
+the complete currency of the source directory
+against the active CP directory.
+
+On the Hercules Linux host `ip-172-31-14-90`,
+the operator reported:
+
+    pgrep -af '[h]ercules'
+    7174 hercules -f hercules.cnf -r hercules.rc
+
+    ls -lh /home/admin/vm630/dasd5
+    -rw-r----- 1 admin admin 1.9G Oct 6 17:51
+    /home/admin/vm630/dasd5
+
+    df -h /home/admin/vm630
+    /dev/nvme0n1p1 16G total, 8.8G used, 6.1G
+    available, 60% utilized, mounted on /
+
+The candidate DASD backing file has a **1.9 GiB
+approximate apparent** size, and the shared root
+filesystem has **6.1 GiB available at this checkpoint**.
+An apparent compressed CKD image size is *not* a
+measure of guest disk free cylinders, import growth
+headroom, or independently backed-up storage.
+This is encouraging capacity evidence, not final
+permission to allocate or write the candidate.
+
+The current PID is **7174**, not the older historical
+PID 879. Its actual working directory, configuration
+record, live file descriptor and possible shadow
+files are still to be independently confirmed.
+Execute on the Hercules Linux host, read-only:
+
+    readlink -f /proc/7174/cwd
+    grep -nE '^[[:space:]]*0127[[:space:]]+3390' \
+      /home/admin/vm630/hercules.cnf
+    ls -l /proc/7174/fd | grep -F 'dasd5'
+    du -h /home/admin/vm630/dasd5
+
+If the runtime cwd proves `/home/admin/vm630`,
+the repository's read-only mapper can corroborate:
+
+    bash scripts/map-cms-minidisk.sh 0127 \
+      /home/admin/vm630/hercules.cnf /home/admin/vm630
+
+(The repository scripts must actually exist on this
+host to invoke them; otherwise the plain read-only
+commands above are sufficient.) A configured base
+image may have overlays or dynamically attached
+CKD definitions, so reconcile the emulator's
+open file handles and site setup before any backup.
+
+### Snapshot and mutation boundary
+
+A recoverable **independent** snapshot/backup
+covering active `VMCOM1` and `M01RES`, with all
+CKD overlays and active/source directory state,
+is still NOT established. A copy stored on
+the same 16 GiB root filesystem is not independent.
+Never ordinary-`cp` open `dasd5` or `dasd1` while
+Hercules is running; arrange a coordinated provider
+snapshot or a verified offline copy to separate
+storage. Account for snapshot and post-provisioning
+write growth and maintain restart/rollback steps.
+
+The proposed physical interval `VMCOM1 6000–7599`
+remains only a candidate despite the live CP matches.
+Do not initialize a disk or activate `USER DIRECT C`
+until both image identity and backup state are
+confirmed and a site-approved change plan exists.
