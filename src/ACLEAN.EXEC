@@ -4,8 +4,9 @@
 address cms
 parse upper arg verb batch extra
 if extra\='' | (verb\='PLAN' & verb\='APPLY') |,
-   (batch\='LISTINGS' & batch\='EXPERIMENTS') then do
- say 'Usage: ACLEAN PLAN|APPLY LISTINGS|EXPERIMENTS'
+   (batch\='LISTINGS' & batch\='EXPERIMENTS' &,
+    batch\='OLDTESTS') then do
+ say 'Usage: ACLEAN PLAN|APPLY LISTINGS|EXPERIMENTS|OLDTESTS'
  exit 4
 end
 drop f.
@@ -58,6 +59,38 @@ if batch='EXPERIMENTS' then do
  n=n+1; f.n='M12TLS3 TEXT'
  n=n+1; f.n='M12TLS4 MODULE'
  n=n+1; f.n='M12TLS4 TEXT'
+end
+if batch='OLDTESTS' then do
+ n=0
+ n=n+1; f.n='M9JSTRM EXEC'
+ n=n+1; f.n='M9JZLIB EXEC'
+ n=n+1; f.n='M9NSTRM EXEC'
+ n=n+1; f.n='M9O4096 EXEC'
+ n=n+1; f.n='M9PCHAIN EXEC'
+ n=n+1; f.n='M9PCONS EXEC'
+ n=n+1; f.n='M9PCTX EXEC'
+ n=n+1; f.n='M10AFEED EXEC'
+ n=n+1; f.n='M10BFRAG EXEC'
+ n=n+1; f.n='M10CRESP EXEC'
+ n=n+1; f.n='M10DREAL EXEC'
+ n=n+1; f.n='M10ESTRS EXEC'
+ n=n+1; f.n='M11ATCP EXEC'
+ n=n+1; f.n='M11BRAW EXEC'
+ n=n+1; f.n='M11CHTTP EXEC'
+ n=n+1; f.n='M11DGIT EXEC'
+ n=n+1; f.n='M11PROBE EXEC'
+ n=n+1; f.n='M12GDISC EXEC'
+ n=n+1; f.n='M12HADV EXEC'
+ n=n+1; f.n='M12ICHNK EXEC'
+ n=n+1; f.n='M12JPOST EXEC'
+ n=n+1; f.n='M12KPACK EXEC'
+ n=n+1; f.n='M12PRXY EXEC'
+ n=n+1; f.n='M13NTEST EXEC'
+ n=n+1; f.n='M13POUT EXEC'
+ n=n+1; f.n='M13PREP EXEC'
+ n=n+1; f.n='M13PSTG EXEC'
+ n=n+1; f.n='M13SFAIL EXEC'
+ n=n+1; f.n='M13WALK EXEC'
 end
 say 'ACLEAN' verb batch 'ITEMS' n
 selected=0
