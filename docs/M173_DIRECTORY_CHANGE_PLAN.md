@@ -548,3 +548,51 @@ do **not** try XEDIT edits by guesswork.
 Never invoke `DIRECTXA`, `DIRMAP`, CP directory
 activation, LINK/ACCESS, FORMAT or M173 import
 until complete target verification passes.
+
+
+## 2026-10-08 16:00 — Exact candidate line absent, MDISK 0600 exists
+
+The operator ran the latest read-only target checker:
+
+```text
+M173DCHK
+M173 DIR APPROVED LINE COUNT 0
+M173 DIR MDISK 0600 PREFIX COUNT 1
+M173 DIR INSERTED RECORD INVALID
+Ready(00008); T=0.85/0.87 16:00:11
+```
+
+**Gate 3 FAIL; do NOT run DIRECTXA**. All three source
+files were read, original/backup comparison and record
+count checks succeeded, but the existing candidate contains
+**zero exact approved MDISK lines and one line beginning
+`MDISK 0600`**. We must not infer whether this is a
+spacing-only issue, wrong field, extra text or another edit.
+
+A read-only diagnostic-only revision of `M173DCHK.EXEC`
+reports, for that unique candidate MDISK prefix:
+- candidate **record number** and **field count**;
+- seven `FIELD <number> MATCH/DIFF` indicators compared against
+  the fixed approved words, **never actual words**;
+- `SPACING ONLY YES/NO` after uppercase and whitespace
+  normalization (does not bypass exact-match validation);
+- whether the immediately preceding original record begins
+  with `USER MAINT`;
+- number of records differing outside the hypothesized
+  one-line insertion and index of the first difference, if any.
+
+All fields derived from the directory are kept confidential.
+The diagnostic only emits nonsecret status/position numbers and
+MATCH/DIFF indicators, never directory text or passwords.
+**The accept condition remains unchanged**: exactly the approved
+record, correct preceding MAINT record, complete shifted-file
+equality, RC0 and final PASS marker. The diagnostic does not edit
+anything, and even `SPACING ONLY YES` is NOT sufficient for PASS.
+
+After new GitHub CI completes, upload only the revised
+`M173DCHK.EXEC` from the Mac and run `M173DCHK` on MAINT.
+Stop and preserve `USER DIRECT C`, `M173BAK DIRECT C`,
+`M173NEW DIRECT C`. Do not apply a guessed XEDIT correction
+or run `DIRECTXA`, `DIRMAP`, directory activation,
+LINK/ACCESS, FORMAT or M173 import before reviewing the
+new safe diagnosis.
