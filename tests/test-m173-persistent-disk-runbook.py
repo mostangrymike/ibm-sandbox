@@ -77,4 +77,17 @@ for evidence in (
     "CP directory",
 ):
     assert evidence.lower() in runbook.lower(), evidence
+# A user directory was found on the known MAINT 2CC source disk.
+# Use DIRMAP's explicit C output filemode; DISKMAP would write to A.
+for evidence in (
+    "USER DIRECT C1 F 80, 4282 records",
+    "QUERY DISK C",
+    "STATE USER MDISKMAP C",
+    "DIRMAP USER DIRECT C C",
+    "not on A",
+    "DIRECTXA",
+    "PIPE < USER MDISKMAP C | LOCATE /M01RES/ | CONSOLE",
+    "not independently",
+):
+    assert evidence.lower() in runbook.lower(), evidence
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
