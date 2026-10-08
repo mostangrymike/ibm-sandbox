@@ -1276,3 +1276,41 @@ change with syntax-only `DIRECTXA ... (EDIT`. Do not execute a
 non-EDIT DIRECTXA command or initialize any device at this gate.
 IBM QUERY MDISK documentation:
 https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
+
+
+### Next source-directory currency sample — read-only, not full proof
+
+The `USER MDISKMAP C` report came from `USER DIRECT C` and
+previous live `QUERY MDISK ... LOCATION` checks matched selected
+source records. To compare the *permanent active CP directory*
+rather than only currently linked devices, run from MAINT:
+
+    CP QUERY MDISK 0190 LOCATION DIRECTORY
+    CP QUERY MDISK 0191 LOCATION DIRECTORY
+    CP QUERY MDISK 0193 LOCATION DIRECTORY
+    CP QUERY MDISK 0401 LOCATION DIRECTORY
+
+IBM QUERY MDISK permits LOCATION and DIRECTORY together in either
+operand order. The sample source-map expectations, which must be
+matched against the actual command results, are:
+
+| MAINT VDEV | VOLSER | Real Rdev | Source start | Source length |
+| --- | --- | --- | ---: | ---: |
+| 0190 | M01RES | 0123 | 280 | 214 |
+| 0191 | M01RES | 0123 | 494 | 175 |
+| 0193 | M01RES | 0123 | 669 | 500 |
+| 0401 | M01RES | 0123 | 1961 | 292 |
+
+These queries expose device locations, not USER DIRECT passwords.
+If any differ, **STOP** and investigate source currency/SSI context.
+Even perfect agreement for this sample does **not** prove every
+directory line matches the active binary directory or that the
+proposed VMCOM1 physical range is free of all unrepresented uses.
+
+The independent backup check is still required: in AWS
+EC2 **Snapshots**, privately verify snapshot source EBS volume,
+region, timestamp and `Completed` state, and retain a workable
+offline restoration path for the original images/overlays.
+No AWS identifiers or password-bearing directory text belong in
+this public repo or a pasted diagnostic transcript.
+IBM: https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
