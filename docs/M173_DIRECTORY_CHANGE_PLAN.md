@@ -1,3 +1,115 @@
+## CURRENT GATE — 2026-10-08 16:23:33: CP preactivation reads PASS
+
+Observed real z/VM 6.3 MAINT console results:
+
+```text
+CP QUERY CPOWNED VOLID VMCOM1
+Slot 5 VMCOM1 0127 Own Online and attached
+Ready; T=0.01/0.01 16:23:10
+CP QUERY ALLOC MAP VMCOM1
+VMCOM1 0127 - - 0 0 0 0% NOT FOUND
+Ready; T=0.01/0.01 16:23:10
+CP QUERY ALLOC DRCT ALL
+M01RES 0123 1 20 20 1 2 5% ACTIVE
+Ready; T=0.01/0.01 16:23:25
+CP QUERY MDISK 0600 DIRECTORY
+HCPQMD040E Device 0600 does not exist
+Ready(00040); T=0.01/0.01 16:23:25
+M173DCHK
+M173 DIR ORIGINAL/BACKUP VERIFIED 4282
+M173 DIR MAINT-1 SUBCONFIG VERIFIED
+M173 DIR SINGLE MDISK INSERT RECORD 213
+M173 DIR DELTA CHECK PASS
+Ready; T=0.82/0.84 16:23:33
+```
+
+**Gate 5 read-only allocation checks PASS as observed.** VMCOM1
+real 0127 is CP-owned and online. IBM QUERY ALLOC MAP
+`NOT FOUND` means no PAGE, SPOOL, TDISK, or DRCT extents
+are allocated on VMCOM1, not that the volume is blank.
+IBM explicitly warns that areas absent from this map
+are **PERM/PARM** allocations; it does not detect user
+minidisk overlap or full-pack/parameter overlays.
+The previously generated USER MDISKMAP C on
+the original 4282-line source maps VMCOM1 gap
+5936-10016, and an earlier live query verified
+6VMHCD20 0300 ends at cylinder 5935. Proposed
+start6000 size1600 covers 6000-7599, wholly within
+the reported gap but not proven against every possible
+outside-source/hidden allocation.
+
+**Directory system extent:** the active object directory
+is on M01RES real 0123, CKD cylinders 1-20;
+`TOTAL=20`, `IN USE=1`, `HIGH=2`, `USED=5%`, `ACTIVE`.
+These are reported allocation figures, not a guaranteed
+test of writing an alternate directory or rollback.
+Virtual 0600 is still absent in the active permanent
+directory; verified candidate M173NEW remains unchanged.
+
+### Gate 5b: prepare rollback source and prospective map
+
+These are **non-activating** operations on MAINT. Run in
+the order shown and STOP on an unexpected RC or collision.
+First syntax-check the saved untouched rollback source:
+
+```text
+DIRECTXA M173BAK DIRECT C (EDIT
+```
+
+Require installed z/VM 6.3 version, `EOJ DIRECTORY NOT
+UPDATED`, RC0, and no errors. In particular, do not omit
+the literal `(EDIT` or substitute `USER DIRECT C`.
+
+Next check the prospective report name is unoccupied:
+
+```text
+STATE M173NEW MDISKMAP C
+```
+
+Expected not-found RC28. **If the file exists or the
+RC is not 28, STOP without executing DIRMAP.**
+Only if absent and backup EDIT passed, generate a
+new CMS C report from the candidate using the
+previously target-proven standalone CMS DIRMAP syntax:
+
+```text
+DIRMAP M173NEW DIRECT C C
+LISTFILE M173NEW MDISKMAP C (ALLOC
+QUERY DISK C
+```
+
+This DIRMAP operation creates a report on C; it is
+not DirMaint, not a CP directory activation, and does
+not reassign any MDISK. Require normal RC0 and a
+newly created M173NEW MDISKMAP C file. The original
+USER MDISKMAP C is preserved.
+
+Privately inspect the report's VMCOM1 entries and
+record only nonsensitive extent summaries: exactly
+one new MAINT/MAINT-1 virtual 600/0600 with
+VMCOM1 start 6000 size1600 end7599; no reported
+overlaps; and the original free gap split around
+the new allocation. Expected open sub-gaps if
+there are no other mapped entries: 5936-5999
+and 7600-10016. Do not paste USER DIRECT
+records, passwords, or the entire report.
+
+**STOP after Gate 5b.** A new DIRMAP report is
+source-derived, not an exhaustive inventory of
+live full-volume minidisks, future allocations or
+CP-owned parameter space. Explicit activation
+permission, a credible source-based rollback
+operation, current console access, and guest-logon
+refresh planning remain separate gates. No
+`DIRECTXA` without `(EDIT`, no LINK/ACCESS/FORMAT
+of 0600, no G admission or Git M173 import yet.
+
+IBM references:
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-alloc
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=configuration-changes-maint-user-id
+
+---
 ## CURRENT GATE — 2026-10-08 16:20:21: TARGET GATE 4 PASS
 
 Operator's real MAINT CMS syntax-only compilation completed:
