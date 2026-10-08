@@ -8147,3 +8147,27 @@ remains non-exhaustive. **No live directory activation,
 G FORMAT or M173 importer yet.** Keep protected files
 and snapshot intact; require distinct approval before
 activating an altered directory.
+
+
+## 2026-10-08 15:25 — M173 Gate 1 read-only CMS PASS
+
+Operator supplied `QUERY DISK C`: MNT2CC virtual 2CC,
+C R/W, 10 cylinders, 3390 BLKSZ4096, 5 files,
+117 used, **1683 free of 1800 blocks**. `STATE USER DIRECT C`
+RC0 (present). `STATE M173BAK DIRECT C` RC28 absent,
+`STATE M173NEW DIRECT C` RC28 absent, `STATE M173NEW
+MDISKMAP C` RC28 absent. `CP QUERY MDISK 0600
+DIRECTORY` HCPQMD040E/RC40 absent at 15:25:15.
+**GATE 1 PASS**. Copy destinations unique and unoccupied.
+
+Next safe **Gate 2** on CMS MAINT, sequentially; stop if
+the first COPYFILE fails:
+`COPYFILE USER DIRECT C M173BAK DIRECT C (NEWFILE`
+`COPYFILE USER DIRECT C M173NEW DIRECT C (NEWFILE`.
+Then `LISTFILE USER DIRECT C (ALLOC`,
+`LISTFILE M173BAK DIRECT C (ALLOC`,
+`LISTFILE M173NEW DIRECT C (ALLOC`,
+`QUERY DISK C`. Expect 4282 F80 source records and
+matching copies. No USER DIRECT editing or DIRECTORY
+activation/FORMAT/import yet; source and copies are private
+and must not be displayed.
