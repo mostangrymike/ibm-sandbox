@@ -8087,3 +8087,29 @@ Next is private AWS snapshot provenance/recovery check, then
 review directory backup/minimal edit/rollback/syntax-only EDIT
 procedure before any destructive action. Preserve protected
 A/C/M171NET and sealed 1808-object stages/selectors.
+
+
+## 2026-10-08 — EBS Completed screenshot checkpoint (M173)
+
+Operator supplied AWS EC2 Snapshots screenshot: one owned snapshot,
+state **Completed**, progress **100%**, original volume size **16 GiB**,
+full snapshot size shown **10.66 GiB**, start **2026/10/08 14:10
+GMT-5**, storage tier Standard, encryption Not encrypted, and
+truncated description beginning `ibm-sandbox-pre-M173`.
+**Snapshot lifecycle completion is now visually confirmed**, not
+merely operator-reported. Screenshot did **not** show the source
+Volume ID, AWS Region/account, matched Hercules root attachment,
+or a tested restore. **KEEP THOSE GATES PENDING.** Never commit
+snapshot ID or AWS identifying values in this public repository.
+
+Already complete: MAINT 0600 absent from virtual and directory
+views; four MAINT M01RES permanent MDISK source/current matches;
+6VMHCD20/0300 VMCOM1 real0127 start5756 size180 end5935
+confirmed from active directory; target VMCOM1 6000–7599
+inside DIRMAP gap. Hercules PID724 maps active dasd1/dasd5.
+No new G disk, directory edit/activation, LINK/ACCESS, FORMAT or
+M173 importer rerun. NEXT: on AWS console inspect selected
+snapshot Details for its original source Volume ID and actual
+Region; compare privately with Hercules EC2 instance Storage
+root EBS volume ID and account. Establish workable restoration
+procedure before separate reviewed directory-source/rollback work.
