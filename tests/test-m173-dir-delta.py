@@ -23,7 +23,7 @@ assert "j=i+1" in source
 assert "added=i" in source
 assert "before=added-1" in source
 assert "do i=added to u.0" in source
-assert "if maint\\=1" in source
+assert "if heads<1" in source
 
 expected = "MDISK 0600 3390 6000 1600 VMCOM1 W"
 assert f"expected='{expected}'" in source
