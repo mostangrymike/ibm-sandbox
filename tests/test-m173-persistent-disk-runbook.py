@@ -414,4 +414,55 @@ assert not re.search(r"snap-[0-9a-f]{8,17}", snapshot+runbook), (
     "Do not commit a concrete AWS snapshot ID"
 )
 
+
+# Snapshot source/Region matching was independently affirmed by
+# the operator; it is NOT a completed isolated restoration test.
+for proof in (
+    "EBS source/Region match and recovery procedure attested",
+    "PROVENANCE: OPERATOR VERIFIED",
+    "isolated",
+    "docs/M173_DIRECTORY_CHANGE_PLAN.md",
+    "STATE M173BAK DIRECT C",
+    "STATE M173NEW DIRECT C",
+):
+    assert proof.lower() in runbook.lower(), proof
+for proof in (
+    "operator attests correct EBS source/Region",
+    "OPERATOR VERIFIED",
+    "does **not** assert an isolated restore test",
+    "docs/M173_DIRECTORY_CHANGE_PLAN.md",
+):
+    assert proof.lower() in snapshot.lower(), proof
+
+# A separate preparation document holds all potentially mutating
+# steps, behind collision checks and an explicit stop on activation.
+plan = (root / "docs" / "M173_DIRECTORY_CHANGE_PLAN.md").read_text()
+for proof in (
+    "PREPARE ONLY",
+    "QUERY DISK C",
+    "STATE USER DIRECT C",
+    "STATE M173BAK DIRECT C",
+    "STATE M173NEW DIRECT C",
+    "STATE M173NEW MDISKMAP C",
+    "CP QUERY MDISK 0600 DIRECTORY",
+    "COPYFILE USER DIRECT C M173BAK DIRECT C (NEWFILE",
+    "COPYFILE USER DIRECT C M173NEW DIRECT C (NEWFILE",
+    "LISTFILE M173BAK DIRECT C (ALLOC",
+    "LISTFILE M173NEW DIRECT C (ALLOC",
+    "MDISK 0600 3390 6000 1600 VMCOM1 W",
+    "DIRECTXA M173NEW DIRECT C (EDIT",
+    "DIRMAP M173NEW DIRECT C C",
+    "STOP AFTER TEST COMPILE / MAP REVIEW",
+    "No `DIRECTXA` without EDIT",
+):
+    assert proof.lower() in plan.lower(), proof
+assert plan.index("Gate 1: read-only") < plan.index("Gate 2: controlled")
+assert plan.index("Gate 2: controlled") < plan.index("Gate 3: candidate-only")
+assert plan.index("Gate 3: candidate-only") < plan.index("Gate 4: syntax")
+assert "No source copy, edit, DIRECTORY activation" in plan
+assert "No isolated restore" in plan
+assert not re.search(r"(?:snap|vol)-[0-9a-f]{8,17}", plan), (
+    "No concrete EBS identifiers in public plan"
+)
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
