@@ -36,6 +36,7 @@ call safepath repo
 if result\='OK' then exit 4
 if left(repo,1)='/' | right(repo,1)='/' | pos('..',repo)>0 then exit 4
 if length(oid)\=40 | verify(oid,'0123456789ABCDEF')\=0 then exit 4
+wantoid=translate(oid,'abcdef','ABCDEF')
 
 want='want '||wantoid||' side-band-64k ofs-delta'
 plen=4+length(want)+1
