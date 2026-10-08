@@ -689,3 +689,91 @@ an appropriate permanent `MDISK` statement
 under MAINT and validate it before CMS initializes
 that *new empty* minidisk. Retain existing A, C,
 M171NET PACK/META and all sealed generations.
+
+
+## 2026-10-08 13:31 — REAL CP DASD GEOMETRY VERIFIED
+
+The operator has now independently checked live z/VM CP, not
+just the MAINT source-directory map. Actual results:
+
+    CP QUERY DASD DETAILS 0123
+    0123 CUTYPE 3990-C2 DEVTYPE 3390-0C VOLSER M01RES CYLS 11000
+
+    CP QUERY DASD DETAILS 0126
+    0126 CUTYPE 3990-C2 DEVTYPE 3390-0C VOLSER M01W01 CYLS 11000
+
+    CP QUERY DASD DETAILS 0127
+    0127 CUTYPE 3990-C2 DEVTYPE 3390-0C VOLSER VMCOM1 CYLS 11000
+
+    CP QUERY MDISK 123 LOCATION
+    MAINT 0123 MAINT 0123 3390 M01RES 0123 start0 size11000
+
+    CP QUERY MDISK 124 LOCATION
+    MAINT 0124 MAINT 0124 3390 M01W01 0126 start0 size11000
+
+These facts resolve **real physical geometry**: the three
+existing volumes each present 11,000 cylinders. DIRMAP's
+smaller `0–10016` inferred full-pack interval is an
+inaccurate boundary for these emulated 3390s. It may
+reflect DIRMAP's default model/definitions; do not
+assume that absence of DIRMAP records above 10016
+is evidence of completely unused real cylinders.
+
+The preferred proposed M173 data allocation remains
+**VMCOM1 / real 0127 / cylinders 6000–7599 /
+length 1600**, which lies completely within DIRMAP's
+own explicit VMCOM1 gap 5936–10016. No reliance on
+the extra 983 physical cylinders is necessary.
+
+### What remains before **any** CP directory change
+
+1. Verify at least two live VMCOM1 minidisk locations
+   against source directory and verify that the
+   selected new MAINT virtual device number is unused.
+   On MAINT:
+
+       CP QUERY MDISK 02CC LOCATION
+       CP QUERY MDISK 049E LOCATION
+       CP QUERY MDISK 0551 LOCATION
+
+   For comparison, DIRMAP says MAINT 02CC is an
+   existing link to PMAINT 02CC at VMCOM1 start121,
+   length10; 049E is 6VMLEN20 start4104 length250;
+   0551 is PMAINT start572 length40. These are
+   expectations from source, not yet live confirmations.
+
+2. Reverify the ACTIVE Hercules instance's real
+   `0127` -> `dasd5` image mapping and its current
+   storage and available Linux filesystem space.
+   On the Hercules host (only after confirming actual
+   process and working directory):
+
+       pgrep -af '[h]ercules'
+       ls -lh /home/admin/vm630/dasd5
+       df -h /home/admin/vm630
+       bash scripts/inspect-hercules-config.sh /home/admin/vm630/hercules.cnf
+
+   The repo's `scripts/map-cms-minidisk.sh` also
+   verifies an unambiguous configuration record by
+   REAL RDEV and verified process cwd; run it against
+   real **0127**, not the MAINT virtual address.
+
+3. Establish an independently verified restorable
+   offline backup or coordinated provider-consistent
+   snapshot of both VMCOM1 (the future stage and
+   directory source volume) and M01RES (the active
+   CP directory volume), plus overlays/metadata.
+   Do not ordinary-`cp` a currently open Hercules
+   DASD backing file, and do not destroy retained
+   dump evidence.
+
+4. Confirm the site-specific CP directory update and
+   rollback procedure while DirMaint is not running.
+   `USER DIRECT C` alone is a candidate source and
+   must be proved current before it is used for any
+   `DIRECTXA` activation. Never format an existing
+   full-pack or minidisk to "test" the gap.
+
+**Status: physical geometry confirmed, but new MDISK
+allocation, FORMAT, ACCESS and M173 target execution
+are all still pending.** No target has been changed.
