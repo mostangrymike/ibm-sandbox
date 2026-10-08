@@ -8527,3 +8527,37 @@ the diagnostic; no DIRECTXA, DIRMAP, activation,
 LINK/ACCESS, FORMAT or M173 importer. Existing
 USER DIRECT C / M173BAK DIRECT C / M173NEW DIRECT C
 must remain unchanged and private.
+
+## 2026-10-08 16:04 — Critical MAINT SSI subconfiguration discovery
+
+Operator privately inspected the source-context directory
+around candidate record 213 (4283 F80 records). NONSECRET
+structural evidence only: `IDENTITY MAINT` at record 162,
+active `BUILD ON * USING SUBCONFIG MAINT-1`,
+`SUBCONFIG MAINT-1` at record 181, candidate `MDISK` record
+213 inside this subconfiguration, preceding its end comment.
+The previous verifier's assumption that the MDISK must be
+directly after a `USER MAINT` line was incorrect.
+
+The displayed candidate uses vdev hex `600`, same virtual
+address as hex `0600`; other six tokens were correct.
+REXX numeric `=` compares numeric-looking `600` and `0600`
+equal in per-field tests while full-line text comparison
+differs. **Candidate should NOT be re-edited or relocated.**
+No directory source excerpts are stored publicly because
+the private directory includes credential-related material.
+
+Updated read-only `src/M173DCHK.EXEC` now verifies one MDISK
+entry of seven fields, vdev `600` or `0600`, start 6000
+length 1600 VMCOM1 W; exact original/backup and shifted
+candidate equality; owner `SUBCONFIG MAINT-1` and its
+active BUILD reference from `IDENTITY MAINT`.
+`tests/test-m173-dir-delta.py` host model covers this
+SSI-ready format and rejects additional changes.
+
+Top of `docs/M173_DIRECTORY_CHANGE_PLAN.md` explicitly
+SUPERSEDES its old USER MAINT editing instructions.
+**CMS M173DCHK PASS not yet observed**. Await host CI,
+then Mac `git pull`, `./cms-upload.sh M173DCHK.EXEC`,
+then CMS `M173DCHK` only. No COPYFILE/XEDIT or
+DIRECTXA/DIRMAP/activation/LINK/ACCESS/FORMAT/import.
