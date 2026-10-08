@@ -40,6 +40,7 @@ for forbidden in (
     assert forbidden not in post
 
 for needle in (
+    "wantoid=translate(oid,'abcdef','ABCDEF')",
     "storemode=cmd='STORE'",
     "GITPOST STORE bridge port host repo oid fn",
     "storefn 'PACK A'",
