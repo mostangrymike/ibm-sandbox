@@ -6847,3 +6847,32 @@ census rerun, or access to sealed generations is required. If the
 M173NET STAGE A output already exists, do not erase without checking
 it first. If the M173 gate passes, proceed with M174 native generalized
 index using latest M174CHK.EXEC and GITPIDX.C.
+
+
+## 2026-10-08 CMS A-DISK FULL DURING M173 (POST-ABEND INVENTORY)
+
+Real CMS QUERY DISK: MNT191 virtual 191 A R/W, 175 cylinders, 4096-byte
+blocks, 299 files, 31500 used of 31500, zero free. Read-only LISTFILE
+M173NET * A (ALLOC reports M173NET STAGE A1, V LRECL 64, 1193994
+records, 19213 blocks (approximately 75 MiB). The two PROTECTED
+stages GITFIX STAGE A and M15NEW STAGE A each use 2008 blocks. C R/W
+virtual 2CC has 1694 free 4K blocks; F R/W virtual 29D has 2052 free;
+all other accessed letter disks are read-only. C/F lack sufficient
+capacity to hold the M173 stage.
+
+M173NET STAGE is an output of the failed abend 001 import, and its
+completion/validity has NOT been established. DO NOT automatically erase
+or overwrite it. GITPIMP's existing VERIFY 7736 path is strictly
+read-only (STGIN FILEDEF), checks exactly 7736 sequential staged objects,
+rehashes each Git object and rejects trailing records; use:
+FILEDEF STGIN DISK M173NET STAGE A
+GITPIMP VERIFY 7736
+FILEDEF STGIN CLEAR
+If it passes, preserve the stage and adapt downstream M174 index to a
+distinct writable CMS disk, or add a larger new minidisk, rather than
+rerunning import. If it fails, document the failed object and consider
+deleting only the proven disposable M173NET STAGE A after safeguarding
+the disk and accounting for the known September 27 TRKDE 4 allocation
+map issue. ERASE is not authorized blindly. Fresh M173 import to the
+same A disk is not viable without additional headroom. No current
+evidence proves a verified backup of the affected dasd1 backing image.
