@@ -90,6 +90,7 @@ with tempfile.TemporaryDirectory() as td:
             entry(100644, b"big.bin", bigoid),
             entry(160000, b"ext", gitlink),
             entry(120000, b"link", loid),
+            entry(100755, b"run.sh", aoid),
             entry(40000, b"sub", suboid),
         )
     )
@@ -117,7 +118,7 @@ with tempfile.TemporaryDirectory() as td:
     assert walked.returncode == 0, walked.stdout + walked.stderr
     assert f"TREE CLOSURE ROOT {rootoid}" in walked.stdout
     assert "TREE CLOSURE TREES 2 BLOBS 4 GITLINKS 1" in walked.stdout
-    assert "TREE CLOSURE ENTRIES 6 VERIFIED 6" in walked.stdout
+    assert "TREE CLOSURE ENTRIES 7 VERIFIED 6" in walked.stdout
     assert "TREE CLOSURE MAX OBJECT 70000" in walked.stdout
     assert "M176 TREE CLOSURE PASS" in walked.stdout
 
