@@ -459,7 +459,8 @@ for proof in (
 assert plan.index("Gate 1: read-only") < plan.index("Gate 2: controlled")
 assert plan.index("Gate 2: controlled") < plan.index("Gate 3: candidate-only")
 assert plan.index("Gate 3: candidate-only") < plan.index("Gate 4: syntax")
-assert "No source copy, edit, DIRECTORY activation" in plan
+assert "Gate 2b PASS (2026-10-08)" in plan
+assert "NO CP directory activation" in plan
 assert "No isolated restore" in plan
 assert not re.search(r"(?:snap|vol)-[0-9a-f]{8,17}", plan), (
     "No concrete EBS identifiers in public plan"
@@ -513,5 +514,23 @@ assert plan.index("Gate 2 actual CMS copies") < (
 assert "Full contents\nnot yet independently COMPAREd" in (
     root / "CHAT_STATE.md"
 ).read_text()
+
+
+# Gate 2b real CMS COMPLETE: both files matched, candidate untouched.
+for proof in (
+    "Gate 2b record identity: target PASS",
+    "15:32:13",
+    "15:32:15",
+    "GATE 2b CONTENT EQUALITY PASS",
+    "XEDIT M173NEW DIRECT C",
+    "LOCATE /USER MAINT /",
+    "INPUT MDISK 0600 3390 6000 1600 VMCOM1 W",
+    "M173DCHK",
+    "M173 DIR DELTA CHECK PASS",
+    "STOP after XEDIT and M173DCHK",
+    "NO CP directory activation",
+):
+    assert proof.lower() in plan.lower(), proof
+assert "15:32 — M173 Gate 2b" in (root / "CHAT_STATE.md").read_text()
 
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
