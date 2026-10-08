@@ -222,3 +222,21 @@ There is still no new G minidisk and no directory activation,
 LINK/ACCESS, FORMAT or M173 execution. Perform AWS snapshot
 provenance/recovery checks and source-directory/rollback review
 before any privileged disk change.
+
+
+## 2026-10-08 15:07 — post-snapshot permanent-directory comparison
+
+Four MAINT `QUERY MDISK ... LOCATION DIRECTORY` live results
+matched `USER MDISKMAP C` exactly: M01RES real 0123;
+VDEV 0190 start280 size214; 0191 start494 size175;
+0193 start669 size500; 0401 start1961 size292.
+All returned Ready. This strengthens, but does not fully prove,
+the currency of the `USER DIRECT C` directory source.
+The new MAINT virtual 0600 remains absent from active and permanent
+views. **No new G disk or changed directory**.
+
+The EBS snapshot remains **operator-reported complete**, not
+independently validated against region/source volume/completed state
+or a credible restoration path in this conversation. These checks
+are still a HARD STOP before live directory activation or FORMAT.
+Do not place private AWS IDs or unredacted USER DIRECT records here.
