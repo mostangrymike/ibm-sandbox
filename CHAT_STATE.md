@@ -7263,3 +7263,51 @@ that an additional physical minidisk has been created.
 The next real target step remains authorized read-only
 CP/Hercules extent inventory as in
 docs/M173_PERSISTENT_DISK_RUNBOOK.md.
+
+
+## 2026-10-08 CP REAL DASD INVENTORY — DIRMAINT GATE BLOCKED
+
+Operator ran CP QUERY VIRTUAL DASD on MAINT. Significant evidence:
+- Virtual 0122 M01S01 R/W full 11000 cylinders maps real 0124.
+- Virtual 0123 M01RES R/W full 11000 cylinders maps real 0123.
+- Virtual 0124 M01W01 R/W full 11000 cylinders maps real 0126.
+  These are EXISTING CP system/full pack mappings, NOT available free disks.
+- MAINT virtual 0191 M01RES R/W 175 cylinders real 0123
+  is A (last known 212 files / 8659 used / 22841 free 4K blocks).
+  Other minidisks, including MAINT 0193/019D/019E,
+  0401/0402, share M01RES.
+- Real CP QUERY DASD ALL lists 0123 M01RES 158,
+  0124 M01S01 1, 0125 M01P01 0, 0126 M01W01 1,
+  0127 VMCOM1 15, 0128 630RL1 32; terminal values
+  are LINK COUNTS per IBM, NOT free cylinders.
+  CP said no free or offline DASD found.
+- CP QUERY ALLOC MAP ALL: M01RES DRCT ACTIVE extent
+  cylinders 1-20; M01S01 SPOOL 1-10999;
+  M01P01 PAGE 1-10999. Even if PAGE/SPOOL %IN USE
+  is low, these whole allocated extents are NOT
+  available for permanent user MDISK.
+- DIRM USEDEXT V=M01RES returned
+  DVHDIR1002T FILE NOT FOUND WHERETO DATADVH * RC28,
+  DVHDIR1001T 1 required files not found, RC1001;
+  no valid used extent report was generated.
+IBM documentation (https://www.ibm.com/docs/en/zvm/7.2.0?topic=1929e-1001t)
+states WHERETO DATADVH absent is likely DIRMAINT service machine
+not initialized/running or missing/misaccessed interface config;
+restart XAUTOLOG DIRMAINT if not logged on, or address interface
+from authorized console/DVHBEGIN if already running. Do not
+assume DirMaint can allocate disk space until fixed.
+
+Main repo docs/M173_PERSISTENT_DISK_RUNBOOK.md now records full
+evidence and read-only next probes:
+CP QUERY DIRMAINT
+Then, only if it is NOT logged on and authorized:
+CP XAUTOLOG DIRMAINT
+Then DIRM USEDEXT V=M01RES, DIRM FREEXT V=M01RES,
+check CMS reader queue for returned reports. If
+DirMaint cannot run, use verified active directory
+MDISK mapping via DISKMAP/DIRMAP, not guessed
+extent or generic QUERY ALLOC CP-only map.
+Host storage inventory pgrep/ls/df still PENDING.
+No physical disk allocated/formatted/created, and
+no M173 real target retest. An existing full-pack
+virtual disk is NOT spare space; never FORMAT it.
