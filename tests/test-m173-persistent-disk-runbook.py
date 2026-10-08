@@ -441,7 +441,7 @@ for proof in (
 # steps, behind collision checks and an explicit stop on activation.
 plan = (root / "docs" / "M173_DIRECTORY_CHANGE_PLAN.md").read_text()
 for proof in (
-    "Gate 2b PASS (2026-10-08)",
+    "Gate 2b PASS;",
     "QUERY DISK C",
     "STATE USER DIRECT C",
     "STATE M173BAK DIRECT C",
