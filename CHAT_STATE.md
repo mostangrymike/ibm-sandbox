@@ -8277,3 +8277,41 @@ run `M173DCHK` read-only and demand terminal marker
 backup/source/candidate verification differs. No `DIRECTXA`
 (including EDIT), `DIRMAP`, activation, LINK/ACCESS, FORMAT
 or M173 import before reviewing the target result.
+
+
+## 2026-10-08 15:44 — M173DCHK first target run RC8, not a delta failure
+
+The CMS operator showed that the candidate file was saved successfully:
+
+```text
+LISTFILE M173NEW DIRECT C (ALLOC
+M173NEW DIRECT C1 F 80 4283 84
+Ready; T=0.01/0.01 15:44:40
+M173DCHK
+DMSEIO632E I/O error in EXECIO; rc=8 from EXECCOMM command
+M173 DIR ORIGINAL READ FAIL
+Ready(00008); T=0.01/0.01 15:44:42
+```
+
+**GATE 3 DELTA VERIFICATION STILL PENDING, NOT PASS.** Failure was
+at the first `EXECIO ... DISKR`, before any candidate delta check.
+IBM's EXECCOMM return code **8** denotes an **invalid variable name**;
+IBM's EXECIO documentation requires uppercase REXX stem names in the
+literal `STEM` operand. Previous `M173DCHK EXEC` had lowercase
+`(STEM u. FINIS`, `(STEM b. FINIS`, and `(STEM n. FINIS`.
+These were changed in GitHub to `U.`, `B.`, and `N.` without
+changing the read-only comparison logic; the host guard now checks
+the exact uppercase commands. This is the strongly supported
+cause of the EXECCOMM rc8; actual corrected CMS validation remains
+necessary. IBM references:
+- https://www.ibm.com/docs/en/zvm/7.2?topic=commands-execio
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=macros-execcomm
+
+**No new copy, file edits, directory activation, LINK/ACCESS,
+FORMAT or M173 import is required or authorized for this fix.**
+Preserve original `USER DIRECT C`, backup `M173BAK DIRECT C`,
+and saved candidate `M173NEW DIRECT C` (4283 F80 records).
+Only upload corrected `M173DCHK.EXEC` from GitHub to CMS and
+rerun `M173DCHK`. The upload replaces the verifier EXEC only,
+not any directory source. Require terminal
+`M173 DIR DELTA CHECK PASS` and RC0 before Gate 4.
