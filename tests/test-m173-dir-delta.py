@@ -56,6 +56,8 @@ def audit(original, backup, candidate):
     if len(inds) != 1:
         return False
     i = inds[0]
+    if i < 1 or i >= len(original):
+        return False
     fields = candidate[i].upper().split()
     if len(fields) != 7 or fields[0] != "MDISK":
         return False
