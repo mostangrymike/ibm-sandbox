@@ -15,8 +15,8 @@ g = (root / "src" / "GIT.EXEC").read_text()
 v = (root / "src" / "GITVREF.EXEC").read_text()
 chk = (root / "src" / "M173CHK.EXEC").read_text()
 
-gm = re.search(r"GIT EXEC LEVEL M(\\d+)", g)
-vm = re.search(r"GITVREF EXEC LEVEL M(\\d+)", v)
+gm = re.search(r"GIT EXEC LEVEL M(\d+)", g)
+vm = re.search(r"GITVREF EXEC LEVEL M(\d+)", v)
 assert gm and vm and gm.group(1) == vm.group(1)
 assert int(gm.group(1)) >= 173
 assert "if command = 'PACK-IMPORT' then do" in g
@@ -104,7 +104,7 @@ def good_pack():
 def ref_pack():
     delta = bytes((3, 4, 0x90, 3, 1, ord("d")))
     one = objhdr(3, 3) + zlib.compress(b"abc")
-    base = hashlib.sha1(b"blob 3\\0abc").digest()
+    base = hashlib.sha1(b"blob 3\0abc").digest()
     two = objhdr(7, len(delta)) + base + zlib.compress(delta)
     return finish((one, two))
 
@@ -112,7 +112,7 @@ def ref_pack():
 def write_hex(path, data):
     h = data.hex().upper()
     path.write_text(
-        "\\n".join(h[i:i + 128] for i in range(0, len(h), 128)) + "\\n"
+        "\n".join(h[i:i + 128] for i in range(0, len(h), 128)) + "\n"
     )
 
 
