@@ -8049,3 +8049,12 @@ snapshot against correct root volume/region and workable restore
 plan, then source backup/change/rollback review and syntax-only
 DIRECTXA (EDIT) on reviewed copy. No source edits, no directory
 activation, LINK/ACCESS, FORMAT, or M173 G test performed.
+
+
+**Next read-only CMS boundary query after 4/4 M01RES match:**
+`CP QUERY MDISK USERID 6VMHCD20 0300 LOCATION DIRECTORY`
+(expected active permanent directory VMCOM1 real 0127,
+start 5756, length180, last allocation ends 5935 before
+reported gap 5936–10016). Do not infer PASS until real
+CMS output arrives. Independent EBS snapshot provenance
+and restorability are STILL REQUIRED before changes.
