@@ -1464,3 +1464,25 @@ links, SSI/subconfig implications and any full-pack interactions
 in the privileged change review. Regardless of mode, the real
 CMS admission gate is R/W, block size 4096, >=180000 free blocks.
 IBM: https://www.ibm.com/docs/en/zvm/7.2.0?topic=directory-mdisk-statement
+
+
+## 2026-10-08 — snapshot Completed/100% screenshot proof
+
+AWS EC2 Snapshots console screenshot from operator visibly showed
+one owned snapshot marked **Completed**, **100%**, original volume
+**16 GiB**, displayed full snapshot size **10.66 GiB**, started
+**2026/10/08 14:10 GMT-5**. Description begins with
+`ibm-sandbox-pre-M173` but was truncated. This **upgrades the
+snapshot completion-status evidence from operator report to
+VISUALLY CONFIRMED**. Do not disclose its snapshot ID in this
+public repository.
+
+The screenshot does **NOT** show snapshot source Volume ID, Region,
+account or root-device attachment, and no isolated restoration
+or recovery test has been performed. These remain unverified,
+so the privileged directory activation / G FORMAT hard stop
+**remains**. The operator's next action is read-only AWS console
+verification of the snapshot's source Volume ID and Region versus
+the Hercules EC2 instance's attached root EBS volume, followed by
+review of the recovery path. No additional CMS CP commands are
+required for this AWS identity step. No new 0600 minidisk exists.
