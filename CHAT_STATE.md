@@ -6876,3 +6876,54 @@ the disk and accounting for the known September 27 TRKDE 4 allocation
 map issue. ERASE is not authorized blindly. Fresh M173 import to the
 same A disk is not viable without additional headroom. No current
 evidence proves a verified backup of the affected dasd1 backing image.
+
+
+## 2026-10-08 M173 READBACK FAIL AT OBJECT 2625 / DISK-CAPACITY GATE
+
+On real CMS, QUERY DISK showed A MNT191 3390 R/W with all 31500
+4096-byte blocks allocated and zero available. LISTFILE showed
+M173NET STAGE A1 as 1193994 variable records, 19213 blocks
+(~75 MiB); protected GITFIX STAGE A and M15NEW STAGE A both occupy
+2008 blocks each. C R/W has 1694 blocks free and F R/W 2052,
+neither enough for a generalized full-stage copy.
+
+A read-only target validation was run on the partial stage:
+GITPIMP VERIFY 7736
+IMPORT VERIFY 1 OF 7736
+IMPORT VERIFY 1000 OF 7736
+IMPORT VERIFY 2000 OF 7736
+IMPORT VERIFY FAIL OBJ 2625
+Ready(00008); T=216.69/218.16 10:30:09
+
+Hence ONLY objects 1-2624 passed rehash; the M173 stage is not a
+verified complete generation and cannot be used for M174. Full disk
+exhaustion is the likely explanation but the verifier does not
+distinguish truncated input from corruption at the failing object.
+Never claim M173 passed. Clearing STGIN FILEDEF is appropriate after
+the read-only check.
+
+The exact disposal candidate is ONLY M173NET STAGE A. Reclaim of
+19213 blocks (~75 MiB) can be done with targeted CMS
+ERASE M173NET STAGE A ONLY AFTER an independently verified backup or
+properly coordinated durable snapshot of the affected MAINT 191
+minidisk / real volume 0123 backing dasd1 (including dependencies).
+The earlier DMSDKD1307T TRKDE 4 on an unrelated ERASE means another
+erase has a material filesystem-integrity risk. Existing
+docs/CMS_DASD_RECOVERY.md had no verified backup. Preserve original
+GITPBUF PACK and GITFIX/M15NEW STAGE/INDEX/SEEK/GEN,
+selectors, original M171NET PACK and META. Do not erase anything
+with a wildcard.
+
+Reclaiming the 19213 blocks brings A back to only ~75 MiB free,
+and the stage failed at object 2625 of 7736, so repeating M173
+to A is inappropriate. A new dedicated sufficiently large
+persistent writable minidisk (e.g. target >= 1 GiB after
+checking real available CKD extents and host capacity) is the
+preferred design. C and F are too small; the other accessed disks
+are read-only. Provisioning must use verified free physical extents,
+the correct CP user directory entry and IBM minidisk procedure;
+do not invent an MDISK starting cylinder or FORMAT an existing disk.
+Then modify M173/M174 checker destinations/File Mode
+without touching sealed artifacts, run host regressions and real
+CMS gates. A temporary V-disk must not contain the sole persistent
+verified generation.
