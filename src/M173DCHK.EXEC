@@ -76,13 +76,16 @@ if matches\=1 then do
   say 'M173 DIR 0600 FIELD COUNT' words(n.prefixat)
   do w=1 to 7
    flag='DIFF'
-   if translate(word(n.prefixat,w))=word(expected,w) then,
-      flag='MATCH'
+   if translate(word(n.prefixat,w))=word(expected,w) then do
+    flag='MATCH'
+   end
    say 'M173 DIR 0600 FIELD' w flag
   end
-  if space(translate(strip(n.prefixat)),1)=expected then,
-     say 'M173 DIR 0600 SPACING ONLY YES'
-  else say 'M173 DIR 0600 SPACING ONLY NO'
+  spacing='NO'
+  if space(translate(strip(n.prefixat)),1)=expected then do
+   spacing='YES'
+  end
+  say 'M173 DIR 0600 SPACING ONLY' spacing
   prev=prefixat-1
   head='NO'
   if prev>=1 then do
