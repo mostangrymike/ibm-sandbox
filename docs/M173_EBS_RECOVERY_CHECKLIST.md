@@ -240,3 +240,44 @@ independently validated against region/source volume/completed state
 or a credible restoration path in this conversation. These checks
 are still a HARD STOP before live directory activation or FORMAT.
 Do not place private AWS IDs or unredacted USER DIRECT records here.
+
+
+## 2026-10-08 15:11 — LIVE VMCOM1 preceding boundary matches source
+
+Actual MAINT read-only `CP QUERY MDISK USERID 6VMHCD20 0300 LOCATION
+DIRECTORY` returned `6VMHCD20 0300 6VMHCD20 0300 3390 VMCOM1
+0127 5756 180` with `Ready` at 15:11:52. Exact match against
+`USER MDISKMAP C`; occupied cylinders end at 5935 and the
+reported physical gap begins at 5936. Candidate VMCOM1 real
+0127 cylinders 6000–7599 remains completely inside that
+reported gap. The 0600 virtual/directory absence checks and
+four M01RES permanent-directory matches previously passed.
+
+**No G disk, source edit, directory activation, LINK, ACCESS,
+FORMAT or M173 execution.** The existing EBS snapshot is still
+reported complete by the operator but not independently
+verified for *the correct original root volume, region, completed
+state and recoverability*. Keep that gate closed.
+
+Optional AWS CLI **read-only** confirmation (run only with
+already-configured AWS credentials and with IDs kept private):
+
+```sh
+# Populate these locally from the verified AWS console; do not post them.
+# AWS_REGION=...
+# EBS_SNAPSHOT_ID=...
+aws ec2 describe-snapshots --region "$AWS_REGION" \
+  --snapshot-ids "$EBS_SNAPSHOT_ID" \
+  --query 'Snapshots[0].{State:State,SourceVolume:VolumeId,Created:StartTime,SizeGiB:VolumeSize,Progress:Progress}' \
+  --output json
+```
+
+The operator must **compare SourceVolume privately** against
+the previously verified Hercules host root EBS volume, and
+establish how to create/attach a recovery volume in the proper
+Availability Zone. A `completed` state alone is not a
+tested guest-level recovery. If metadata or restoration
+procedure is uncertain, stop; do not create another snapshot
+or overwrite the source merely to advance this checkpoint.
+Official AWS documentation:
+https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-snapshots.html
