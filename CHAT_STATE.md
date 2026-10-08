@@ -6570,3 +6570,42 @@ M170 is REAL CMS TARGET-PROVEN.
 NEXT: persist a fresh generalized live PACK into a new buffer/file set that
 does not overwrite preserved GITPBUF PACK A or the M11/M12 capture artifacts,
 then run the existing native PACK verifier/walker against that fresh capture.
+
+
+## 2026-10-07 M171 HOST PASS / CMS PACK STORE GATE NEXT
+
+M170 is REAL CMS TARGET-PROVEN.
+
+M171 adds generalized live PACK persistence without modifying the historical
+GITPBUF PACK A / GITPMETA PACK A fixture. Public FETCH-STORE routes to
+GITPOST STORE and writes a new caller-selected CMS filename as PACK A plus
+META A. STORE refuses preexisting destinations, persists only side-band
+channel 1 PACK bytes as 64-byte/128-hex records, batches writes, removes
+partial files on failure, and records wanted OID, byte count, PACK version,
+and object count in META.
+
+M171 also adds native C89 GITPCHK. It streams PACK hex records through FILEDEF
+PACKIN, validates signature/version/object count, computes the PACK SHA-1 while
+retaining only the final 20-byte trailer, and does not load the entire PACK
+into memory. This deliberately avoids changing GITCWALK's sealed
+340027-byte/1808-object fixture assumptions in M171.
+
+M171CHK discovers the live main OID, stores a fresh fetch as M171NET PACK A /
+M171NET META A, cross-checks POST output against META, FILEDEFs PACKIN to the
+fresh file, runs GITPCHK, cross-checks byte count/version/object count/SHA1,
+and retains successful M171NET files for the next integration milestone.
+Failures after storage erase the disposable M171NET files.
+
+A STORE refactor temporarily dropped the lowercase wire want OID assignment;
+commit ed444140e57db9930206a0c76089cacdd1c239a5 restored it and M171 host
+coverage now guards it. Host test issues were also fixed: level-regex escaping
+and forcing uppercase .C through gcc as C with -x c.
+
+GIT/GITVREF are M171/M171. GitHub Actions run 1295 completed SUCCESS on head
+b81d3ce7bac08420bf7db862e93f82fb3968ddc0, including M171, M170, M169,
+complete tree recovery, and native PACK/index staging.
+
+NEXT REAL CMS GATE: upload GIT.EXEC, GITVREF.EXEC, GITPOST.EXEC,
+GITPCHK.C, and M171CHK.EXEC. Build GITPCHK with CMSCLNK GITPCHK PLAIN.
+Then run GIT LEVEL and M171CHK with stunnel listening on 192.168.200.1:8443.
+GITFETCH.EXEC is already current from M170 and need not be re-uploaded.
