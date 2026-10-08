@@ -1,5 +1,11 @@
 /* M173: generalized retained OFS PACK import gate. */
 address cms
+parse upper arg datafm extra
+if length(datafm)\=1 | extra\='' |,
+   verify(datafm,'BCDEFGHIJKLMNOPQRSTUVWXYZ')\=0 then do
+ say 'Usage: M173CHK new-data-filemode'
+ exit 4
+end
 store='M171NET'
 stage='M173NET'
 
@@ -13,9 +19,9 @@ if rc\=0 then do
  say 'M173 RETAINED META MISSING'
  exit 8
 end
-'STATE' stage 'STAGE A'
+'STATE' stage 'STAGE' datafm
 if rc=0 then do
- say 'M173 OUTPUT ALREADY EXISTS' stage 'STAGE A'
+ say 'M173 OUTPUT ALREADY EXISTS' stage 'STAGE' datafm
  exit 8
 end
 if rc=28 then nop
@@ -80,7 +86,7 @@ if pbytes\=mbytes | pver\=mver | pobjs\=mobs | ppass\=1 then do
 end
 say 'M173 PACK VERIFY CROSSCHECK PASS'
 
-'FILEDEF OBJOUT DISK' stage 'STAGE A (RECFM V LRECL 80'
+'FILEDEF OBJOUT DISK' stage 'STAGE' datafm '(RECFM V LRECL 80'
 if rc\=0 then do
  'FILEDEF PACKIN CLEAR'
  say 'M173 OBJOUT FILEDEF FAIL'
@@ -97,7 +103,7 @@ if irc\=0 then do
  do i=1 to q.0
   say q.i
  end
- 'ERASE' stage 'STAGE A'
+ 'ERASE' stage 'STAGE' datafm
  say 'M173 IMPORT FAIL RC' irc
  exit 8
 end
@@ -131,31 +137,31 @@ end
 
 if ibytes\=mbytes | iver\=mver | iobjs\=mobs | staged\=mobs |,
    ipass\=1 then do
- 'ERASE' stage 'STAGE A'
+ 'ERASE' stage 'STAGE' datafm
  say 'M173 IMPORT META CROSSCHECK FAIL'
  exit 8
 end
 if datatype(ordinary,'W')\=1 | datatype(ofs,'W')\=1 |,
    datatype(ref,'W')\=1 then do
- 'ERASE' stage 'STAGE A'
+ 'ERASE' stage 'STAGE' datafm
  say 'M173 IMPORT COUNTER FORMAT FAIL'
  exit 8
 end
 if ordinary+ofs+ref\=mobs | ref\=0 then do
- 'ERASE' stage 'STAGE A'
+ 'ERASE' stage 'STAGE' datafm
  say 'M173 IMPORT COUNT FAIL' ordinary ofs ref mobs
  exit 8
 end
 say 'M173 IMPORT CROSSCHECK PASS'
 
-'STATE' stage 'STAGE A'
+'STATE' stage 'STAGE' datafm
 if rc\=0 then do
  say 'M173 STAGE MISSING AFTER IMPORT'
  exit 8
 end
-'FILEDEF STGIN DISK' stage 'STAGE A'
+'FILEDEF STGIN DISK' stage 'STAGE' datafm
 if rc\=0 then do
- 'ERASE' stage 'STAGE A'
+ 'ERASE' stage 'STAGE' datafm
  say 'M173 STGIN FILEDEF FAIL'
  exit 8
 end
@@ -169,7 +175,7 @@ if vrc\=0 then do
  do i=1 to v.0
   say v.i
  end
- 'ERASE' stage 'STAGE A'
+ 'ERASE' stage 'STAGE' datafm
  say 'M173 STAGE VERIFY FAIL RC' vrc
  exit 8
 end
@@ -183,11 +189,11 @@ do i=1 to v.0
  if v.i='M173 STAGE VERIFY PASS' then vpass=vpass+1
 end
 if vobjs\=mobs | vpass\=1 then do
- 'ERASE' stage 'STAGE A'
+ 'ERASE' stage 'STAGE' datafm
  say 'M173 STAGE VERIFY CROSSCHECK FAIL'
  exit 8
 end
 say 'M173 STAGE READBACK PASS'
-say 'M173 RETAINED STAGE' stage 'STAGE A'
+say 'M173 RETAINED STAGE' stage 'STAGE' datafm
 say 'M173 GENERALIZED OFS PACK IMPORT TARGET GATE PASS'
 exit 0
