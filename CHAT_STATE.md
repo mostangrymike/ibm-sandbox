@@ -8448,3 +8448,29 @@ Next once CI passes: Mac `git pull` then
 `./cms-upload.sh M173DCHK.EXEC`; MAINT `M173DCHK`.
 Do not re-edit/re-copy blindly, DIRECTXA EDIT/activation,
 DIRMAP, LINK/ACCESS, FORMAT, or run M173 import.
+
+
+## 2026-10-08 — M173DCHK safe diagnostic revision CI GREEN
+
+Latest full GitHub Actions native-stage run **37843456901 SUCCESS**
+at commit `0a1cc7a682941aba6189e80152213877f1769613`:
+https://github.com/mostangrymike/ibm-sandbox/actions/runs/37843456901
+M173 source guard, persistent-disk runbook and all other
+native-stage job steps passed. HOST TESTS only, not CMS PASS.
+
+The last actual CMS run at 15:56:14 stopped with
+`M173 DIR INSERTED RECORD INVALID`, RC8, after
+reading all 3 F80 directory files. The candidate
+remains 4283 records; source and backup each 4282.
+Current `src/M173DCHK.EXEC` now counts exact approved
+MDISK records, counts MDISK/0600-prefixed records and
+checks a complete record-for-record shifted alignment.
+On failure it prints numeric counts or record location,
+never USER DIRECT contents or passwords.
+
+NEXT Mac from ibm-sandbox/src: `git pull`, then
+`./cms-upload.sh M173DCHK.EXEC`.
+NEXT CMS MAINT: `M173DCHK` and return stdout/RC.
+Do not re-edit M173NEW without diagnostic evidence.
+DO NOT run DIRECTXA, DIRMAP, activate, LINK/ACCESS,
+FORMAT or M173 importer while Gate 3 blocked.
