@@ -201,8 +201,8 @@ for evidence in (
     "Do not add an MDISK statement",
 ):
     assert evidence.lower() in runbook.lower(),evidence
-# The EBS root disk is positively identified, but *no* snapshot exists yet.
-# Public GitHub documentation must not contain identifying AWS EBS IDs.
+# The operator reports a completed snapshot, but its origin and restore
+# have not yet been independently checked. Do not leak cloud IDs in docs.
 import re
 snapshot = (root / "docs" / "M173_EBS_RECOVERY_CHECKLIST.md").read_text()
 for evidence in (
@@ -215,7 +215,7 @@ for evidence in (
 ):
     assert evidence.lower() in runbook.lower(),evidence
 for evidence in (
-    "NO SNAPSHOT RECORDED",
+    "SNAPSHOT COMPLETION REPORTED",
     "NO NEW CMS DISK CREATED",
     "VMCOM1 real 0127, cylinders 6000–7599",
     "snapshot enters",
@@ -227,6 +227,30 @@ for evidence in (
     "aws ec2 describe-snapshots",
 ):
     assert evidence.lower() in snapshot.lower(),evidence
+# Snapshot completion must not silently authorize directory activation.
+for proof in (
+    'snapshot completion reported by operator',
+    'operator-reported completed',
+    'actual',
+    'not yet',
+    'QUERY DISK A',
+    'QUERY DISK C',
+    'CP QUERY VIRTUAL 0600',
+    'CP QUERY MDISK MAINT 0600 DIRECTORY',
+    'MDISK <VERIFIED_UNUSED_VDEV> 3390 6000 1600 VMCOM1 MR',
+    'DIRECTXA',
+    'without activating',
+):
+    assert proof.lower() in runbook.lower(), proof
+for proof in (
+    'Operator update — snapshot completion reported',
+    'no isolated restoration test',
+    'CP QUERY VIRTUAL 0600',
+    'CP QUERY MDISK MAINT 0600 DIRECTORY',
+    'MDISK <VERIFIED_UNUSED_VDEV> 3390 6000 1600 VMCOM1 MR',
+    'not yet independently checked',
+):
+    assert proof.lower() in snapshot.lower(), proof
 assert "USER DIRECT" in snapshot
 assert not re.search(r"vol-[0-9a-f]{17}", snapshot+runbook), "No public concrete EBS ID"
 assert not re.search(r"vol[0-9a-f]{17}", snapshot+runbook), "No public NVMe ID"
