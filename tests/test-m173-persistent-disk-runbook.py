@@ -603,8 +603,8 @@ for proof in (
     "GATE 3 FAIL",
     "FIELD <number> MATCH/DIFF",
     "SPACING ONLY YES/NO",
-    "OUTSIDE INSERT DIFFERENCES",
-    "numeric",
+    "records differing outside",
+    "nonsecret status/position numbers",
     "Do not apply a guessed XEDIT correction",
 ):
     assert proof.lower() in plan.lower(), proof
