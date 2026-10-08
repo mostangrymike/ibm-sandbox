@@ -863,3 +863,109 @@ remains only a candidate despite the live CP matches.
 Do not initialize a disk or activate `USER DIRECT C`
 until both image identity and backup state are
 confirmed and a site-approved change plan exists.
+
+
+## 2026-10-08 13:48 — live 0127 image and third minidisk VERIFIED
+
+The operator supplied the full host/CP identity chain:
+
+    readlink -f /proc/7174/cwd
+    /home/admin/vm630
+
+    grep -nE '^[[:space:]]*0127[[:space:]]+3390' \
+        /home/admin/vm630/hercules.cnf
+    37:0127 3390 dasd5
+
+    ls -l /proc/7174/fd | grep -F 'dasd5'
+    16 -> /home/admin/vm630/dasd5
+
+    du -h /home/admin/vm630/dasd5
+    1.9G /home/admin/vm630/dasd5
+
+    CP QUERY MDISK 0551 LOCATION
+    MAINT 0551 PMAINT 0551 3390 VMCOM1 real0127 start572 size40
+
+The last of the three live VMCOM1 minidisk links matches the
+DIRMAP source. The other two were MAINT 02CC PMAINT 02CC
+VMCOM1 start121 size10 and MAINT 049E 6VMLEN20
+VMCOM1 start4104 size250. Therefore all **three**
+targeted real extent corroboration checks passed.
+PID 7174's verified working directory, Hercules
+configuration line 37, and live FD16 establish that
+`/home/admin/vm630/dasd5` is the **currently open
+base backing image** for Hercules real device 0127.
+This still does not independently rule out shadow/
+overlay files, hot device changes, or invisible host
+filesystem damage. Recheck before any system change.
+
+No new MDISK was defined, no CMS FORMAT or ACCESS was
+run, and no M173 import was attempted. The preferred
+candidate is still VMCOM1 real 0127 cylinders 6000–7599,
+1600 contiguous cylinders inside the independently
+generated DIRMAP gap 5936–10016 and live 11000-cylinder
+volume geometry. At 180 CMS 4K blocks per cylinder,
+gross capacity is 288000 blocks. Actual free space
+must pass M173's guard after initialization.
+
+### Next gate: identify the EC2 backing volume, then preserve it
+
+Existing Linux `df -h /home/admin/vm630` showed
+`/dev/nvme0n1p1` mounted at `/`, total 16G,
+used 8.8G and 6.1G available. AWS EBS volumes
+can have independent point-in-time snapshots;
+however the filesystem device path is NOT by
+itself proof that the backing block device is EBS
+or identifies its AWS volume ID.
+
+Safe read-only identification on the Linux host:
+
+    findmnt -no SOURCE,TARGET,FSTYPE /
+    lsblk -o NAME,SIZE,TYPE,MOUNTPOINTS,SERIAL
+    cat /sys/block/nvme0n1/device/serial
+    ls -l /dev/disk/by-id/ | grep -E 'Elastic_Block_Store|nvme'
+
+If a corresponding EBS volume ID is established,
+choose a reliable restoration approach and snapshot
+that volume (and any other EBS volume containing
+a required DASD overlay) through the EC2 console or
+authorized AWS tooling. A snapshot of a **running**
+Hercules process is *not* necessarily guest-
+or application-consistent because the emulator
+and guest may have unwritten caches. AWS recommends
+pausing writes/unmounting when possible and recommends
+stopping an EC2 instance before snapshotting its
+root EBS volume. The operator must plan the
+downtime and avoid unplanned guest I/O during
+quiescence. Preserve full original snapshots and
+record snapshot ID, region, account, originating
+volume, creation time, and completion state.
+Before considering the backup verified/restorable,
+validate its recovery procedure, ideally by
+restoring a test volume and examining the backing
+files on an isolated host. An EBS snapshot normally
+covers the entire selected EBS block volume, not
+just `dasd1` and `dasd5`; if both are under the
+same root filesystem and there are no separate
+overlays elsewhere, this one EBS volume can
+preserve both backing images together.
+
+References:
+- AWS EBS create snapshots:
+  https://docs.aws.amazon.com/ebs/latest/userguide/ebs-creating-snapshot.html
+- AWS EBS snapshots and restoration:
+  https://docs.aws.amazon.com/ebs/latest/userguide/ebs-snapshots.html
+- IBM DIRECTXA EDIT syntax verification and non-EDIT
+  directory activation:
+  https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
+
+### Do not cross the provisioning boundary yet
+
+Even with all three corroborations passing, the
+recovery point remains **NOT established**.
+Do not add an MDISK statement to the live USER
+DIRECT, run non-EDIT DIRECTXA, change CP
+directory pointers, define permanent new space,
+or FORMAT any disk without a recorded independent
+backup and a reviewed fallback/restore procedure.
+Existing A, C, all sealed GITFIX/M15NEW generations,
+and retained M171NET PACK/META must be preserved.
