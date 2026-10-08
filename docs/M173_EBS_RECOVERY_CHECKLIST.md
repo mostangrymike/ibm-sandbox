@@ -1,6 +1,6 @@
 # M173 EC2 / EBS recovery checkpoint and safe change boundary
 
-Status as of 2026-10-08 (operator report): **SNAPSHOT COMPLETION REPORTED; source-volume metadata and a restoration test not yet independently verified. NO NEW CMS DISK CREATED.**
+Status as of 2026-10-08 (AWS console screenshot): **SNAPSHOT COMPLETION REPORTED AND STATUS COMPLETED/100% VISUALLY CONFIRMED; source-volume match, account/Region and a restoration test not yet independently verified. NO NEW CMS DISK CREATED.**
 
 This document records a human-controlled recovery-point procedure for the Hercules / z/VM environment before any `DIRECTXA`, `MDISK`, or `FORMAT` affecting the proposed M173 stage disk. It does **not** authorize automatic cloud, directory, or disk changes.
 
@@ -281,3 +281,52 @@ procedure is uncertain, stop; do not create another snapshot
 or overwrite the source merely to advance this checkpoint.
 Official AWS documentation:
 https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-snapshots.html
+
+
+## 2026-10-08 — AWS screenshot independently confirms snapshot completion
+
+The operator supplied a screenshot of AWS EC2 **Snapshots** with
+snapshot scope **Owned by me** and one listed snapshot. The visible
+fields establish the following **snapshot lifecycle facts**:
+
+| Field | Screenshot observation |
+| --- | --- |
+| Snapshot status | **Completed** |
+| Progress | **100%** |
+| Snapshot storage tier | Standard |
+| Original volume size | **16 GiB** |
+| Full snapshot size (AWS display) | **10.66 GiB** |
+| Started (console display) | **2026/10/08 14:10 GMT-5** |
+| Encryption | Not encrypted |
+| Description | Begins with `ibm-sandbox-pre-M173` (truncated in view) |
+
+**SNAPSHOT COMPLETION UI GATE PASS.** A screenshot confirms the
+listed snapshot's status, not the source EBS volume or recovery
+correctness. **The snapshot's Volume ID, AWS Region, account
+identity, root-volume attachment, and restoration test are NOT
+visible in the supplied screenshot.** The account/region/source
+match is therefore **PENDING**, not PASS. Keep the snapshot ID
+and any AWS identifiers out of this public document and do not
+commit the screenshot itself.
+
+### Next read-only console checks, no guest operations
+
+1. In **EC2 → Snapshots**, select the completed snapshot and open
+   the snapshot **Details** area. Read the **Volume ID** for the
+   original source and confirm the actual Region in the console
+   Region selector; do not infer either from the snapshot's name.
+2. Under **EC2 → Instances**, select the Hercules instance and
+   inspect its **Storage** tab to identify the current root EBS
+   volume (or follow that attachment under **EC2 → Volumes**).
+   Privately compare the root volume ID with the snapshot source
+   Volume ID, and confirm the correct account and Region.
+3. Retain an actual recovery procedure: create an EBS volume **from
+   this snapshot** in the same Availability Zone as a separate
+   recovery instance, attach and inspect it without touching the
+   running Hercules host. Actual restore verification is **not
+   yet performed**. AWS notes the volume and receiving instance
+   must share an Availability Zone. See
+   https://docs.aws.amazon.com/ebs/latest/userguide/ebs-creating-volume.html
+
+**NO new G disk, USER DIRECT edit, DIRECTXA activation, LINK,
+ACCESS, FORMAT or M173 run is authorized by this screenshot.**
