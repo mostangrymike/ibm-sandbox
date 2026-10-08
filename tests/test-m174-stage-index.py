@@ -20,6 +20,10 @@ assert int(gm.group(1)) >= 174
 assert "command = 'PACK-INDEX' then do" in g
 assert "'GITPIDX BUILD'" in g
 assert "'GITPIDX BUILD CHECKED'" in g
+assert "'PIPE CMS GITPIDX BUILD CHECKED | STEM b.'" in chk
+assert "'FILEDEF IDXOUT DISK' idx" in chk
+assert "'FILEDEF IDXOUT CLEAR'" in chk
+assert "'PIPE CMS GIT PACK-INDEX' idx" not in chk
 
 for needle in (
     "M174 INDEX BUILD CROSSCHECK PASS",
