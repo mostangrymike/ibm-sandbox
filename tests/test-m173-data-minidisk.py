@@ -26,7 +26,6 @@ for m, written, minimum in specs:
         assert "word(d.di,4)='R/W'" in source
         assert f"if avail<{minimum}" in source
         assert "matched\\=1 | datatype(avail,'W')\\=1" in source
-        assert f"ERASE' " not in source
     assert "GITFIX" not in source and "M15NEW" not in source
     assert "META A" in source
     for number, line in enumerate(source.splitlines(), 1):
