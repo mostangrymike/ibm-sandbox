@@ -1,0 +1,188 @@
+/* M173: generalized retained OFS PACK import gate. */
+address cms
+store='M171NET'
+stage='M173NET'
+
+'STATE' store 'PACK A'
+if rc\=0 then do
+ say 'M173 RETAINED PACK MISSING'
+ exit 8
+end
+'STATE' store 'META A'
+if rc\=0 then do
+ say 'M173 RETAINED META MISSING'
+ exit 8
+end
+'STATE' stage 'STAGE A'
+if rc=0 then do
+ say 'M173 OUTPUT ALREADY EXISTS' stage 'STAGE A'
+ exit 8
+end
+
+drop m.
+'EXECIO 1 DISKR' store 'META A 1 (STEM M. FINIS'
+if rc\=0 | m.0\=1 then do
+ say 'M173 META READ FAIL'
+ exit 8
+end
+parse var m.1 tag moid mbytes mver mobs extra
+if tag\='META' | extra\='' | datatype(mbytes,'W')\=1 |,
+   datatype(mver,'W')\=1 | datatype(mobs,'W')\=1 then do
+ say 'M173 META FORMAT FAIL'
+ exit 8
+end
+say 'M173 META' moid mbytes mver mobs
+
+'FILEDEF PACKIN DISK' store 'PACK A'
+if rc\=0 then do
+ say 'M173 PACKIN FILEDEF FAIL'
+ exit 8
+end
+
+drop p.
+p.0=0
+'PIPE CMS GITPCHK | STEM p.'
+prc=rc
+if prc\=0 then do
+ do i=1 to p.0
+  say p.i
+ end
+ 'FILEDEF PACKIN CLEAR'
+ say 'M173 PACK VERIFY FAIL RC' prc
+ exit 8
+end
+pbytes=''
+pver=''
+pobjs=''
+ppass=0
+do i=1 to p.0
+ say p.i
+ if word(p.i,1)='PACK' & word(p.i,2)='VERIFY' &,
+    word(p.i,3)='BYTES' & words(p.i)=4 then,
+    pbytes=word(p.i,4)
+ if word(p.i,1)='PACK' & word(p.i,2)='VERIFY' &,
+    word(p.i,3)='VERSION' & word(p.i,5)='OBJECTS' &,
+    words(p.i)=6 then do
+  pver=word(p.i,4)
+  pobjs=word(p.i,6)
+ end
+ if p.i='M171 PACK VERIFY PASS' then ppass=ppass+1
+end
+if pbytes\=mbytes | pver\=mver | pobjs\=mobs | ppass\=1 then do
+ 'FILEDEF PACKIN CLEAR'
+ say 'M173 PACK VERIFY CROSSCHECK FAIL'
+ exit 8
+end
+say 'M173 PACK VERIFY CROSSCHECK PASS'
+
+'FILEDEF OBJOUT DISK' stage 'STAGE A (RECFM V LRECL 80'
+if rc\=0 then do
+ 'FILEDEF PACKIN CLEAR'
+ say 'M173 OBJOUT FILEDEF FAIL'
+ exit 8
+end
+
+drop q.
+q.0=0
+'PIPE CMS GIT PACK-IMPORT | STEM q.'
+irc=rc
+'FILEDEF OBJOUT CLEAR'
+'FILEDEF PACKIN CLEAR'
+if irc\=0 then do
+ do i=1 to q.0
+  say q.i
+ end
+ 'ERASE' stage 'STAGE A'
+ say 'M173 IMPORT FAIL RC' irc
+ exit 8
+end
+
+ibytes=''
+iver=''
+iobjs=''
+ordinary=''
+ofs=''
+ref=''
+staged=''
+ipass=0
+do i=1 to q.0
+ say q.i
+ if word(q.i,1)='IMPORT' & word(q.i,2)='PACK' &,
+    word(q.i,3)='BYTES' & words(q.i)=8 then do
+  ibytes=word(q.i,4)
+  if word(q.i,5)='VERSION' then iver=word(q.i,6)
+  if word(q.i,7)='OBJECTS' then iobjs=word(q.i,8)
+ end
+ if word(q.i,1)='IMPORT' & word(q.i,2)='ORDINARY' &,
+    word(q.i,4)='OFS' & word(q.i,6)='REF' & words(q.i)=7 then do
+  ordinary=word(q.i,3)
+  ofs=word(q.i,5)
+  ref=word(q.i,7)
+ end
+ if word(q.i,1)='IMPORT' & word(q.i,2)='STAGED' &,
+    words(q.i)=3 then staged=word(q.i,3)
+ if q.i='M173 PACK IMPORT PASS' then ipass=ipass+1
+end
+
+if ibytes\=mbytes | iver\=mver | iobjs\=mobs | staged\=mobs |,
+   ipass\=1 then do
+ 'ERASE' stage 'STAGE A'
+ say 'M173 IMPORT META CROSSCHECK FAIL'
+ exit 8
+end
+if datatype(ordinary,'W')\=1 | datatype(ofs,'W')\=1 |,
+   datatype(ref,'W')\=1 then do
+ 'ERASE' stage 'STAGE A'
+ say 'M173 IMPORT COUNTER FORMAT FAIL'
+ exit 8
+end
+if ordinary+ofs+ref\=mobs | ref\=0 then do
+ 'ERASE' stage 'STAGE A'
+ say 'M173 IMPORT COUNT FAIL' ordinary ofs ref mobs
+ exit 8
+end
+say 'M173 IMPORT CROSSCHECK PASS'
+
+'STATE' stage 'STAGE A'
+if rc\=0 then do
+ say 'M173 STAGE MISSING AFTER IMPORT'
+ exit 8
+end
+'FILEDEF STGIN DISK' stage 'STAGE A'
+if rc\=0 then do
+ 'ERASE' stage 'STAGE A'
+ say 'M173 STGIN FILEDEF FAIL'
+ exit 8
+end
+
+drop v.
+v.0=0
+'PIPE CMS GITPIMP VERIFY' mobs '| STEM v.'
+vrc=rc
+'FILEDEF STGIN CLEAR'
+if vrc\=0 then do
+ do i=1 to v.0
+  say v.i
+ end
+ 'ERASE' stage 'STAGE A'
+ say 'M173 STAGE VERIFY FAIL RC' vrc
+ exit 8
+end
+vpass=0
+vobjs=''
+do i=1 to v.0
+ say v.i
+ if word(v.i,1)='IMPORT' & word(v.i,2)='VERIFY' &,
+    word(v.i,3)='OBJECTS' & words(v.i)=4 then,
+    vobjs=word(v.i,4)
+ if v.i='M173 STAGE VERIFY PASS' then vpass=vpass+1
+end
+if vobjs\=mobs | vpass\=1 then do
+ 'ERASE' stage 'STAGE A'
+ say 'M173 STAGE VERIFY CROSSCHECK FAIL'
+ exit 8
+end
+say 'M173 STAGE READBACK PASS'
+say 'M173 RETAINED STAGE' stage 'STAGE A'
+say 'M173 GENERALIZED OFS PACK IMPORT TARGET GATE PASS'
+exit 0
