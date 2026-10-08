@@ -6702,3 +6702,98 @@ NEXT REAL CMS GATE: upload GIT.EXEC, GITVREF.EXEC, GITPCENS.C, and
 M172CHK.EXEC. Build GITPCENS with CMSCLNK GITPCENS NAPI. Existing GITPCHK
 MODULE and retained M171NET PACK/META are reused. Then run GIT LEVEL and
 M172CHK. No network/stunnel activity is required for M172.
+
+
+## 2026-10-08 M171 REAL CMS TARGET PASS
+
+Real CMS built GITPCHK successfully with:
+CMSCLNK GITPCHK PLAIN
+Build result:
+CMSCLNK: built GITPCHK MODULE mode PLAIN
+
+Public levels on target:
+GIT EXEC LEVEL M171
+GITVREF EXEC LEVEL M171
+
+M171CHK completed RC0 through the restored EC2 stunnel bridge. Initial
+M171NET PACK A and M171NET META A were absent as required.
+
+Live generalized discovery returned current refs/heads/main OID
+ADA83FF3B3813961CEF2A9FFC50A453540039E0B, with 252 advertised refs,
+side-band-64k and ofs-delta capability proof, and 19011 HTTP wire bytes.
+
+FETCH-STORE then used that exact live OID and returned:
+FETCH POST WANT ADA83FF3B3813961CEF2A9FFC50A453540039E0B
+FETCH POST PACK VERSION 2 OBJECTS 7736
+FETCH POST PACK BYTES 2171129
+FETCH POST PROGRESS BYTES 7416
+FETCH POST HTTP BYTES 2181334
+FETCH POST STORED M171NET PACK A
+FETCH POST META M171NET META A
+M171 FETCH STORE PASS
+M170 FETCH POST PASS
+
+M171 checker cross-checks passed:
+M171 STORE RESULT 2171129 2 7736
+M171 META CROSSCHECK PASS
+
+Independent native GITPCHK verification of the freshly stored PACK passed:
+PACK VERIFY BYTES 2171129
+PACK VERIFY VERSION 2 OBJECTS 7736
+PACK VERIFY SHA1 A705122BC39A3383BC05ABC6C888A1F788B1D067
+M171 PACK VERIFY PASS
+M171 PACK CROSSCHECK PASS
+
+Successful fresh-fetch artifacts are intentionally retained:
+M171NET PACK A
+M171NET META A
+
+Final target line:
+M171 GENERALIZED PACK STORE TARGET GATE PASS
+
+M171 is REAL CMS TARGET-PROVEN.
+
+CURRENT NETWORK REQUIREMENT
+The practical HTTPS path still depends on EC2 tap0 carrying
+192.168.200.1/24 and stunnel listening on 192.168.200.1:8443. A prior target
+failure confirmed tap0 can survive while losing its IPv4 address; issue #5
+tracks restoring both tap0 IPv4 configuration and stunnel automatically after
+reboot. Known recovery:
+sudo ip link set tap0 up
+sudo ip addr add 192.168.200.1/24 dev tap0
+sudo stunnel /etc/stunnel/github.conf
+sudo ss -ltnp | grep 8443
+
+CURRENT RETAINED LIVE FETCH
+Wanted/main OID:
+ADA83FF3B3813961CEF2A9FFC50A453540039E0B
+PACK file:
+M171NET PACK A
+META file:
+M171NET META A
+PACK bytes:
+2171129
+PACK version:
+2
+PACK objects:
+7736
+PACK SHA1:
+A705122BC39A3383BC05ABC6C888A1F788B1D067
+
+SEALED FIXTURE REMAINS UNCHANGED
+The historical verified native fixture is still GITPBUF PACK A,
+340027 bytes / 1808 objects, with its existing GITFIX/M15NEW generations.
+M171 deliberately did not overwrite or repurpose those files.
+
+NEXT INTEGRATION BOUNDARY
+Use the freshly verified M171NET PACK A as input to a generalized native object
+pipeline without modifying the sealed 1808-object generations. The next work
+should decide the smallest safe path to make arbitrary-size live PACK input
+usable by native walk/index/stage generation. GITCWALK currently remains tied
+to historical fixture ceilings such as 340027-byte PACK capacity and 1808
+object arrays/count checks, so do not simply redirect PACKIN to M171NET until
+those limits/allocations and downstream generation assumptions are generalized
+with explicit bounds and regressions.
+
+Standing user preference remains maximum work per turn and no pause unless
+real CMS validation is the only remaining boundary.
