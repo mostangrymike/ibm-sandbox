@@ -110,3 +110,54 @@ This cleanup reduces A-disk clutter but does **not** solve
 M173's capacity problem: the new generalized live-PACK STAGE and
 INDEX belong on a larger, separate persistent writable
 minidisk, with the verified 2,171,129-byte input PACK retained on A.
+
+
+## Follow-up A inventory after the 75-item cleanup
+
+The operator reported CMS QUERY DISK: 221 A files, 9,620 blocks used,
+21,880 blocks free, 31% utilized. This represents net 74 fewer files
+and 741 additional blocks free since the 295-file baseline; a
+newly installed ACLEAN EXEC accounts for the file-count difference.
+
+The next operator inventory listed 26 ASSEMBLE files and many
+remaining EXECs. These are **not** all expendable: handwritten
+GITCAPI/GITINFA/GITNCALL/GITNDRV/GITNHEX/GITCORE/GITSTRM
+and M12* diagnostic assembler inputs are sources rather than
+compiler outputs; retain them. M12ATLS ASSEMBLE is specifically
+excluded because its attempted removal previously triggered a
+TRKDE 4 deallocation-map error.
+
+The new optional `BUILDDECK` batch contains exactly nine
+GCCCMS-generated intermediary ASSEMBLE files, each corresponding
+to a retained original `.C` source in GitHub and a built MODULE
+on CMS: GITCABI, GITCINF, GITCPARS, GITCPROB,
+GITC2, GITREC, GITCIDX, GITCWALK, GITSEL.
+Individual CMS LISTFILE allocations total **952 blocks**,
+about 3.72 MiB. These files are not required to *run*
+the existing native modules. When rebuilding any one of
+them later, use `CMSCLNK NAME NAPI` or `CMSCLNK NAME PLAIN`
+as appropriate; the compiler regenerates the ASSEMBLE.
+Deleting a generated deck removes convenient direct
+reassembly until recompilation. The target is a reduction
+of nine more files (221 to roughly 212 after updating
+ACLEAN itself), but count and blocks must be verified
+through QUERY DISK rather than claimed in advance.
+
+The existing source-backed M155-M173 checkers, GIT EXEC/GITVREF,
+GITFETCH/GITPOST, GITWT, GITIMP, PROFILE, GITTEST,
+native bridge EXECs, and old potentially unique diagnostics
+are retained. Some orphan-looking M13* EXECs do not have
+matching files in the current GitHub source tree and must not
+be erased as though they were already backed up.
+
+After preserving an independently verified DASD image/snapshot,
+upload the updated `ACLEAN.EXEC` on CMS A and run:
+
+    ACLEAN PLAN BUILDDECK
+    ACLEAN APPLY BUILDDECK
+    QUERY DISK
+
+Do not include wildcard targets or run the new batch
+without first inspecting PLAN. This only tidies A;
+a distinct large persistent minidisk is still required
+for the generalized live 7736-object stage.
