@@ -159,6 +159,28 @@ with tempfile.TemporaryDirectory() as td:
     assert (td / "dd:OBJOUT").read_text() == stage
 
     (td / "dd:OBJOUT").unlink()
+    (td / "dd:STGIN").unlink()
+    big = b"0123456789ABCDEF" * 4375
+    assert len(big) == 70000
+    big_entry = objhdr(3, len(big)) + zlib.compress(big)
+    big_pack = finish((big_entry,))
+    write_hex(td / "dd:PACKIN", big_pack)
+    large = subprocess.run(
+        [str(exe), "IMPORT"], cwd=td, text=True, capture_output=True
+    )
+    assert large.returncode == 0, large.stdout + large.stderr
+    assert "IMPORT MAX RESULT 70000" in large.stdout
+    want = hashlib.sha1(b"blob 70000\0" + big).hexdigest().upper()
+    assert want in (td / "dd:OBJOUT").read_text()
+    shutil.copy(td / "dd:OBJOUT", td / "dd:STGIN")
+    large_verify = subprocess.run(
+        [str(exe), "VERIFY", "1"], cwd=td, text=True, capture_output=True
+    )
+    assert large_verify.returncode == 0
+    assert "M173 STAGE VERIFY PASS" in large_verify.stdout
+
+    (td / "dd:OBJOUT").unlink()
+    (td / "dd:STGIN").unlink()
     write_hex(td / "dd:PACKIN", ref_pack())
     no = subprocess.run(
         [str(exe), "IMPORT"], cwd=td, text=True, capture_output=True
