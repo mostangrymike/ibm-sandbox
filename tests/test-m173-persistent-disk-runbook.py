@@ -90,4 +90,19 @@ for evidence in (
     "not independently",
 ):
     assert evidence.lower() in runbook.lower(), evidence
+# The first real M01RES filter omitted all blank-volser continuation
+# rows and most minidisks. Require entire C-only map to be inspected.
+for evidence in (
+    "USER MDISKMAP C1 written - no errors",
+    "392 records and ten allocated 4K blocks",
+    "10017-cylinder inferred model",
+    "11000 cylinders",
+    "omits other",
+    "PIPE < USER MDISKMAP C | TAKE 100 | CONSOLE",
+    "PIPE < USER MDISKMAP C | DROP 100 | TAKE 100 | CONSOLE",
+    "PIPE < USER MDISKMAP C | DROP 200 | TAKE 100 | CONSOLE",
+    "PIPE < USER MDISKMAP C | DROP 300 | CONSOLE",
+    "NOT the entire M01RES",
+):
+    assert evidence.lower() in runbook.lower(), evidence
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
