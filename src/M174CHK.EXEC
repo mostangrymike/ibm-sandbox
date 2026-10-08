@@ -6,6 +6,31 @@ if length(datafm)\=1 | extra\='' |,
  say 'Usage: M174 new-data-filemode'
  exit 4
 end
+/* Require an accessed R/W data disk with sufficient free blocks. */
+drop d.
+d.0=0
+'PIPE CMS QUERY DISK' datafm '| STEM d.'
+diskrc=rc
+avail=''
+matched=0
+if diskrc=0 then do
+ do di=1 to d.0
+  if word(d.di,3)=datafm & word(d.di,4)='R/W' &,
+     words(d.di)>=11 then do
+   avail=word(d.di,10)
+   matched=matched+1
+  end
+ end
+end
+if matched\=1 | datatype(avail,'W')\=1 then do
+ say 'M174 DATA DISK NOT READY' datafm
+ exit 8
+end
+if avail<4096 then do
+ say 'M174 DATA DISK SPACE LOW' datafm 'BLOCKS LEFT' avail
+ exit 8
+end
+say 'M174 DATA DISK' datafm 'BLOCKS LEFT' avail
 stage='M173NET'
 idx='M174NET'
 meta='M171NET'
