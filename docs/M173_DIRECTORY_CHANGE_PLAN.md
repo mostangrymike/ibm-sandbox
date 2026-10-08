@@ -1,3 +1,40 @@
+## IMPORTANT 2026-10-08 16:04 — SSI-ready MAINT-1 correction
+
+**Earlier Gate 3 directions that require a USER MAINT heading
+immediately before the new MDISK are SUPERSEDED. DO NOT rerun
+XEDIT, COPYFILE, DIRECTXA, DIRMAP, LINK, ACCESS or FORMAT.**
+
+Operator inspection established this nonsecret structure:
+`IDENTITY MAINT` at record 162, its active
+`BUILD ON * USING SUBCONFIG MAINT-1` mapping,
+`SUBCONFIG MAINT-1` at record 181, and the one added
+`MDISK` at record 213 inside that section immediately before
+its end comment. This is a valid location for a minidisk
+statement of a multiconfiguration MAINT identity.
+
+The displayed virtual address `600` is the same hexadecimal
+device number as `0600`. In REXX, numeric-looking operands
+compared with `=` may compare equal, explaining why the
+earlier seven-field diagnostic reported MATCH while
+whole-line text comparison rejected the inserted record.
+Do not rewrite the candidate merely to add a leading zero.
+
+IBM confirms that an IDENTITY's BUILD statement associates
+the appropriate SUBCONFIG and that minidisks belong inside
+the SUBCONFIG:
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=directory-build-statement
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=directory-subconfig-statement
+
+The new read-only `M173DCHK.EXEC` requires exactly one added
+MDISK with address `600` or `0600`, seven approved fields,
+full equality of original/backup, full shifted-record equality
+of candidate, enclosing `SUBCONFIG MAINT-1`, and exactly one
+active `BUILD ON * USING SUBCONFIG MAINT-1` under
+`IDENTITY MAINT`. It must PASS on CMS before a separate
+syntax-only DIRECTXA EDIT review. Do not publish unredacted
+directory records: the original source contains credentials.
+
+---
 # M173 dedicated CMS G: controlled MAINT directory change plan
 
 Status: **Gate 2b PASS; candidate M173NEW now has 4283 F80 records.
