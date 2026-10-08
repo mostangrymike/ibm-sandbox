@@ -1378,3 +1378,28 @@ Official references:
 - https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
 - https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
 - https://www.ibm.com/docs/en/zvm/7.2.0?topic=directory-mdisk-statement
+
+
+### Next targeted read-only VMCOM1 boundary comparison
+
+To corroborate the source directory's **last allocated physical
+minidisk immediately before** the candidate gap, from the
+privileged MAINT CMS session query:
+
+    CP QUERY MDISK USERID 6VMHCD20 0300 LOCATION DIRECTORY
+
+Expected from the prior `USER MDISKMAP C`: owner
+`6VMHCD20`, virtual `0300`, `3390 VMCOM1`, real
+`0127`, `StartLoc 5756`, `Size 180`
+(ending cylinder 5935). The map's next reported gap begins
+at cylinder 5936 and runs through cylinder 10016.
+A live active-directory mismatch, invalid syntax, or privilege
+denial is **not** proof of nonoverlap; stop and reassess.
+This is read-only and does **not** allocate, activate, link
+or format the future 0600 MDISK. IBM confirms QUERY MDISK
+supports the `USERID userid`, `LOCATION`, and
+`DIRECTORY` operands:
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
+
+This does **not** replace independently validating the correct
+EBS snapshot/restore plan or final complete extent safety.
