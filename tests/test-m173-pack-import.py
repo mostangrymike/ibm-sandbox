@@ -23,7 +23,10 @@ assert "if command = 'PACK-IMPORT' then do" in g
 assert "'GITPIMP IMPORT'" in g
 assert "'GITPIMP IMPORT CHECKED'" in g
 assert "'STATE' target ftype 'A'" in g
-assert "'PIPE CMS GIT PACK-IMPORT' stage" in chk
+assert "'PIPE CMS GITPIMP IMPORT CHECKED | STEM q.'" in chk
+assert "'FILEDEF OBJOUT DISK' stage" in chk
+assert "'FILEDEF OBJOUT CLEAR'" in chk
+assert "'PIPE CMS GIT PACK-IMPORT' stage" not in chk
 
 for needle in (
     "M173 PACK VERIFY CROSSCHECK PASS",
