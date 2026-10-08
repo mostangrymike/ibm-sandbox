@@ -1,0 +1,91 @@
+/* ACLEAN: exact-file, two-step cleanup for MAINT CMS A. */
+/* PLAN is read-only. APPLY needs explicit batch argument. */
+/* Never targets source, live modules, generations or PACK data. */
+address cms
+parse upper arg verb batch extra
+if extra\='' | (verb\='PLAN' & verb\='APPLY') |,
+   (batch\='LISTINGS' & batch\='EXPERIMENTS') then do
+ say 'Usage: ACLEAN PLAN|APPLY LISTINGS|EXPERIMENTS'
+ exit 4
+end
+drop f.
+n=0
+n=n+1; f.n='CCTEST1 LISTING'
+n=n+1; f.n='GITCABI LISTING'
+n=n+1; f.n='GITCINF LISTING'
+n=n+1; f.n='GITCORE LISTING'
+n=n+1; f.n='GITCPARS LISTING'
+n=n+1; f.n='GITCPROB LISTING'
+n=n+1; f.n='GITC2 LISTING'
+n=n+1; f.n='GITCAPI LISTING'
+n=n+1; f.n='GITNCALL LISTING'
+n=n+1; f.n='GITNDRV LISTING'
+n=n+1; f.n='GITNHEX LISTING'
+n=n+1; f.n='GITSEL LISTING'
+n=n+1; f.n='GITSTRM LISTING'
+n=n+1; f.n='GIT12Q LISTING'
+n=n+1; f.n='HELLO LISTING'
+n=n+1; f.n='M12ABEG LISTING'
+n=n+1; f.n='M12BOPN LISTING'
+n=n+1; f.n='M12TLS2 LISTING'
+n=n+1; f.n='M12TLS3 LISTING'
+n=n+1; f.n='M12TLS4 LISTING'
+if batch='EXPERIMENTS' then do
+ n=0
+ n=n+1; f.n='CCTEST1 MODULE'
+ n=n+1; f.n='CCTEST1 TEXT'
+ n=n+1; f.n='HELLO MODULE'
+ n=n+1; f.n='HELLO TEXT'
+ n=n+1; f.n='GITCABI MODULE'
+ n=n+1; f.n='GITCABI TEXT'
+ n=n+1; f.n='GITCINF MODULE'
+ n=n+1; f.n='GITCINF TEXT'
+ n=n+1; f.n='GITCPARS MODULE'
+ n=n+1; f.n='GITCPARS TEXT'
+ n=n+1; f.n='GITCPROB MODULE'
+ n=n+1; f.n='GITCPROB TEXT'
+ n=n+1; f.n='GITC2 MODULE'
+ n=n+1; f.n='GITC2 TEXT'
+ n=n+1; f.n='GIT12Q MODULE'
+ n=n+1; f.n='GIT12Q TEXT'
+ n=n+1; f.n='M12ABEG MODULE'
+ n=n+1; f.n='M12ABEG TEXT'
+ n=n+1; f.n='M12BOPN MODULE'
+ n=n+1; f.n='M12BOPN TEXT'
+ n=n+1; f.n='M12TLS2 MODULE'
+ n=n+1; f.n='M12TLS2 TEXT'
+ n=n+1; f.n='M12TLS3 MODULE'
+ n=n+1; f.n='M12TLS3 TEXT'
+ n=n+1; f.n='M12TLS4 MODULE'
+ n=n+1; f.n='M12TLS4 TEXT'
+end
+say 'ACLEAN' verb batch 'ITEMS' n
+selected=0
+removed=0
+do i=1 to n
+ parse var f.i fn ft extra
+ if extra\='' then do
+  say 'ACLEAN BAD MANIFEST'
+  exit 8
+ end
+ 'STATE' fn ft 'A'
+ statecode=rc
+ if statecode=28 then iterate
+ if statecode\=0 then do
+  say 'ACLEAN STATE FAIL' fn ft 'RC' statecode
+  exit 8
+ end
+ selected=selected+1
+ say 'ACLEAN FOUND' fn ft 'A'
+ if verb='APPLY' then do
+  'ERASE' fn ft 'A'
+  if rc\=0 then do
+   say 'ACLEAN ERASE FAILED' fn ft 'RC' rc
+   exit 8
+  end
+  removed=removed+1
+ end
+end
+say 'ACLEAN' verb batch 'FOUND' selected 'REMOVED' removed
+if verb='APPLY' then 'QUERY DISK A'
+exit 0
