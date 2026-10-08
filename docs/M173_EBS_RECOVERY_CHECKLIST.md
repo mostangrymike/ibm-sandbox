@@ -8,9 +8,9 @@ This document records a human-controlled recovery-point procedure for the Hercul
 
 | Item | Verified observation |
 | --- | --- |
-| Linux EC2 host | `the verified EC2 host` |
+| Linux EC2 host | Verified EC2 host (private identifier omitted) |
 | Host root block device | `/dev/nvme0n1p1` |
-| EBS volume serial | `<NVMe-serial-mapped-volume-ID>` |
+| EBS volume serial | Observed NVMe EBS volume serial; identifier omitted from public documentation |
 | AWS volume ID | **Privately verified from live NVMe serial and EBS by-id link** |
 | Volume size | 16 GiB |
 | Host filesystem availability (last observation) | 6.1 GiB |
@@ -24,7 +24,7 @@ This document records a human-controlled recovery-point procedure for the Hercul
 | Source CP directory | `USER DIRECT C` on MAINT's 02CC; 4282 F80 records; full active-directory equivalence still not established |
 | DirMaint | Not operational: `XAUTOLOG DIRMAINT` logged off immediately; DIRM USEDEXT/FREEXT lacked WHERETO DATADVH |
 
-The NVMe serial, `lsblk SERIAL`, and `/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_<NVMe-serial-mapped-volume-ID>` corroborate EBS identity. The hyphen in the AWS ID is required when using AWS console/API. Do not infer the AWS **Region** or **instance ID** from the hostname or volume serial.
+The NVMe serial, `lsblk SERIAL`, and `/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_<SERIAL>` corroborate EBS identity. The hyphen in the AWS ID is required when using AWS console/API. Do not infer the AWS **Region** or **instance ID** from the hostname or volume serial.
 
 ## 1. Identify AWS region, instance, and attachments (read-only)
 
@@ -34,6 +34,8 @@ If AWS CLI is already installed, authorized and correctly configured in the oper
 
 ```sh
 aws sts get-caller-identity
+# Set EBS_VOLUME_ID privately from the verified NVMe serial (format vol-...)
+# Set REGION privately from the AWS EC2 console or CLI configuration
 aws ec2 describe-volumes --region REGION --volume-ids "$EBS_VOLUME_ID" \
   --query 'Volumes[0].{ID:VolumeId,AZ:AvailabilityZone,Size:Size,State:State,Encrypted:Encrypted,Attachments:Attachments}' --output json
 ```
@@ -56,7 +58,7 @@ PID `7174` is historical observation as soon as Hercules restarts: re-obtain act
 1. Preserve the current CMS console work: complete commands, close active transfers, log off guest users as appropriate, and follow the site-approved z/VM orderly shutdown procedure. Do not improvise a CP system shutdown or interrupt active guest writes.
 2. Stop Hercules cleanly and confirm its process and writable CKD images are closed. Record the means to restart Hercules and its guest IPL and terminal access after EC2 resumes.
 3. In **EC2 → Instances**, select the verified instance and choose **Instance state → Stop instance** with normal OS shutdown; **do not** select Force/Skip OS shutdown. Wait for the **stopped** state. Stopping the EC2 instance can change its automatically assigned **public IPv4 address** unless an Elastic IP is in use; the private IP and EBS volume persist. Ensure an access/reconnect route before proceeding.
-4. In **EC2 → Elastic Block Store → Volumes**, select **`<verified-EBS-volume-ID>`** and choose **Actions → Create snapshot** (or **Snapshots → Create snapshot**, resource type **Volume**, correct volume ID). Give it a descriptive name/description, e.g. `ibm-sandbox-pre-M173-2026-10-08`. This is a billable AWS storage operation.
+4. In **EC2 → Elastic Block Store → Volumes**, select the privately verified EBS root volume and choose **Actions → Create snapshot** (or **Snapshots → Create snapshot**, resource type **Volume**, correct volume ID). Give it a descriptive name/description, e.g. `ibm-sandbox-pre-M173-2026-10-08`. This is a billable AWS storage operation.
 5. Record the returned `snap-...` ID, verified **account**, **region**, **source volume**, snapshot **start time**, and any snapshot tags. Wait for **State: Completed** and check for errors. AWS documents that snapshot creation is asynchronous; a pending snapshot is not yet a verified completed recovery artifact.
 6. Verify the intended restoration path: from the snapshot, **Create volume** in the required EC2 Availability Zone, and test mount/read access on a separate recovery instance when practicable. Record image paths, CKD metadata dependencies, and their versions. A snapshot state of `completed` alone is **not** a demonstrated guest-level restore test.
 7. Only after snapshot completion and a credible restoration test/procedure, start the original instance and verify SSH connectivity, the possibly changed public address, Hercules process/cwd/CKD FDs, CMS IPL, and retained M171NET PACK/META and sealed generations. Re-evaluate gap safety before activating any modified CP directory.
