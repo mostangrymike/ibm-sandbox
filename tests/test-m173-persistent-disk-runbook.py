@@ -346,4 +346,27 @@ for proof in (
 ):
     assert proof.lower() in runbook.lower(), proof
 
+# Live 15:11 VMCOM1 leading boundary checked in permanent directory.
+for proof in (
+    "VMCOM1 final preceding MDISK: live directory PASS",
+    "CP QUERY MDISK USERID 6VMHCD20 0300 LOCATION DIRECTORY",
+    "6VMHCD20 0300 6VMHCD20 0300 3390  VMCOM1 0127       5756        180",
+    "15:11:52",
+    "inclusive end `5935`",
+    "LIVE LEADING-BOUNDARY MATCH PASS",
+    "Hard stop unchanged",
+    "No new G",
+):
+    assert proof.lower() in runbook.lower(), proof
+for proof in (
+    "LIVE VMCOM1 preceding boundary matches source",
+    "15:11:52",
+    "occupied cylinders end at 5935",
+    "reported physical gap begins at 5936",
+    "correct original root volume",
+    "describe-snapshots",
+    "a tested guest-level recovery",
+):
+    assert proof.lower() in snapshot.lower(), proof
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
