@@ -296,6 +296,10 @@ if command = 'FETCH-POST' then do
    'EXEC GITPOST POST' rest
    exit rc
 end
+if command = 'FETCH-STORE' then do
+   'EXEC GITPOST STORE' rest
+   exit rc
+end
 if command = 'CHECKOUT-FILE' then do
    'EXEC GITWT CHECKOUT' rest
    exit rc
