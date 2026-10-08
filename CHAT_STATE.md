@@ -7565,3 +7565,5 @@ initialize, so do not rely on DIRM AMDISK.
 Updated docs/M173_PERSISTENT_DISK_RUNBOOK.md and
 tests/test-m173-persistent-disk-runbook.py with
 gap bounds and crosschecks.
+
+Host CI native-stage run 1375 at 46be24055defb7ba3b8e331bc22a1466b809782b completed SUCCESS, verifying candidate starts/ends within the VMCOM1 reported gap and recording backup scope of both VMCOM1 and M01RES. No real minidisk definition has been made.
