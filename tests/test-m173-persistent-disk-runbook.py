@@ -41,7 +41,7 @@ for phrase in (
     "Never infer usable cylinder gaps",
     "1600",
     "180,000",
-    "22,841",
+    "22841",
 ):
     assert phrase.lower() in runbook.lower(),phrase
 assert "FORMAT" in runbook
