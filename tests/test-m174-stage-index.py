@@ -23,6 +23,8 @@ assert "'GITPIDX BUILD CHECKED'" in g
 assert "'PIPE CMS GITPIDX BUILD CHECKED | STEM b.'" in chk
 assert "'FILEDEF IDXOUT DISK' idx" in chk
 assert "'FILEDEF IDXOUT CLEAR'" in chk
+assert "'ERASE'" not in chk, "M174 must retain failed output for inspection"
+assert "M174 FAILED OUTPUT RETAINED FOR DIAGNOSIS" in chk
 assert "'PIPE CMS GIT PACK-INDEX' idx" not in chk
 
 for needle in (
