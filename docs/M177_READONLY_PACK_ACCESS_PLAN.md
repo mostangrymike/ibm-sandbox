@@ -1,5 +1,55 @@
 # M177 — explicit, read-only PACK access to verified CMS G repository
 
+## 2026-10-09 15:51:13 CDT — M177 INFO, TREE, FILEDEF and M175 standalone ALL LIVE PASS
+
+Actual CMS MAINT:
+`QUERY FILEDEF` before M177 INFO at 15:46:33:
+`No user defined FILEDEF in effect`.
+`GITPVIEW INFO G ADA83FF3B3813961CEF2A9FFC50A453540039E0B`
+returned `PACKOBJ OBJ 7000 TYPE 1 SIZE 265`,
+root `CCB18BEC067E7886D70B82EF138EE56A8B899A61`,
+parent `B81D3CE7BAC08420BF7DB862E93F82FB3968DDC0`,
+`PACKOBJ INDEX TOTAL 7736 UNIQUE 7736`,
+`M175 PACK INFO PASS`, and
+`M177 PACK VIEW INFO PASS
+ADA83FF3B3813961CEF2A9FFC50A453540039E0B G`,
+Ready RC0 T=40.39/41.52 at 15:47:16.
+Follow-up `QUERY FILEDEF` at 15:48:54:
+`No user defined FILEDEF in effect`, exactly
+matching the initial query. This proves the
+positive path does not leak STGIN/IDXIN DDs
+on actual CMS. It does **not** test the
+already-defined DD conflict negative path.
+
+Standalone `M175CHK G` completed at 15:51:13:
+`M175 MAIN COMMIT VERIFIED` at tip OID,
+`M175 ROOT TREE VERIFIED` at root OID
+(OBJ7197 TYPE2 SIZE291),
+`M175 PARENT VERIFIED 1` at parent OID
+(OBJ7001 TYPE1 SIZE264), and
+`M175 LIVE COMMIT TREE CLOSURE PASS`,
+`M175 VERIFIED RANDOM ACCESS TARGET GATE PASS`,
+Ready RC0 T=121.27/124.65.
+The parent has its own tree
+`8B7134918D12ED07D60E3CB28A1803EBCA7DB65B`
+and parent `550C982759DC6685A13B59AE2D91D3A54F6D8496`.
+
+**M177 positive-path INFO and TREE, plus M175 full
+standalone checker, are now real CMS verified.**
+M177 TREE was already verified at 15:32:00
+with 8 trees, 272 blobs, 0 gitlinks, 279 entries,
+280 verified and 7736 unique index. No repeated
+index builds or PACK reimports necessary.
+
+Next feature development M178 read-only performance
+improvement described in
+`docs/M178_PACK_TREE_PERFORMANCE_PLAN.md`.
+Do not overwrite G stage/index or change working
+GITPTRE/GITPCAT/GITPVIEW as part of experimentation.
+
+---
+
+
 ## 2026-10-09 15:32 CDT — M177 TREE ACTUAL z/VM 6.3 TARGET PASS
 
 The user ran the isolated `GITPVIEW TREE G`
@@ -139,7 +189,7 @@ https://www.ibm.com/docs/en/zvm/7.2?topic=commands-filedef
 ---
 
 
-**Status: M177 TREE target-proven on CMS; INFO and FILEDEF hygiene pending.**
+**Status: M177 INFO + TREE live CMS PASS; FILEDEF positive-path hygiene verified.**
 Prepared October 9, 2026 after actual M173, M174 and
 M176 G-stage/index target PASS (`M176 LIVE ROOT TREE CLOSURE TARGET GATE PASS`). The standalone M175CHK G
 terminal result was not supplied with the M176 output.

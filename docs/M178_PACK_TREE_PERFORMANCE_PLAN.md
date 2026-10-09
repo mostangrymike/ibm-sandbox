@@ -1,5 +1,25 @@
 # M178 — speed up read-only tree closure without regenerating the PACK
 
+## October 9, 2026, 15:51 CDT — prerequisite native gate closure
+
+Subsequent to writing this plan, the operator confirmed
+**full M175CHK G PASS**, **M177 GITPVIEW INFO G PASS**
+and **identical empty before/after QUERY FILEDEF**
+at 15:46:33 / 15:48:54. INFO runtime was
+41.52s elapsed; standalone M175 runtime 124.65s.
+Together with previously verified M177 TREE,
+M173–M177 positive-path CMS validation is
+complete. The below section titled *Immediate remaining
+M177/M175 checks* is now historical and should
+not be rerun before engineering M178.
+
+No production C code has been changed, and the
+unmeasured random-seek performance hypothesis
+remains an engineering investigation, not fact.
+
+---
+
+
 **Status: analysis and implementation plan, not coded or target-proven.**
 Prepared October 9, 2026 after full real-CMS M176 and M177 TREE
 closure success using the 7,736-object stage/index on GIT600.

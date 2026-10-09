@@ -69,11 +69,11 @@ trees, blobs, links, entries, verified = 8, 272, 0, 279, 280
 assert verified == trees + blobs
 assert entries == blobs + trees - 1 + links
 assert "M176 LIVE ROOT TREE CLOSURE TARGET GATE PASS" in plan
-assert "TREE target-proven on CMS" in plan
+assert "M177 INFO + TREE live CMS PASS" in plan
 assert "GITPVIEW INFO G" in plan
 assert "GITPVIEW TREE G" in plan
 
-# Real target 2026-10-09 proves TREE mode, not the separate INFO mode.
+# Real CMS now proves BOTH INFO and TREE; retain fixed-80 source guards.
 state = (root / "CHAT_STATE.md").read_text()
 readme = (root / "README.md").read_text()
 for note in (plan, state, readme):
@@ -86,11 +86,31 @@ for note in (plan, state):
     assert "7736" in note and "M175CHK G" in note
     assert "T=*.**/*.**" in note
 assert "INFO" in plan and "FILEDEF" in plan
-assert "TREE target-proven on CMS" in plan
+assert "M177 INFO + TREE live CMS PASS" in plan
 assert "INFO" in readme and "FILEDEF" in readme
 # The original stage and index are source-only references; any
 # expensive M173/M174 rebuild remains outside the M177 interface.
 assert "M173NET STAGE G" in plan
 assert "M174NET INDEX G" in plan
+
+
+# Independent real CMS INFO + FILEDEF-state restoration checkpoint.
+for note in (plan, state, readme):
+    for marker in (
+        "M177 PACK VIEW INFO PASS",
+        "M175 VERIFIED RANDOM ACCESS TARGET GATE PASS",
+        "41.52",
+        "124.65",
+    ):
+        assert marker in note, marker
+for note in (plan, state):
+    assert "15:47:16" in note
+    assert "15:51:13" in note
+    assert "No user defined FILEDEF in effect" in note
+    assert "B81D3CE7BAC08420BF7DB862E93F82FB3968DDC0" in note
+    assert "8B7134918D12ED07D60E3CB28A1803EBCA7DB65B" in note
+assert "full M175CHK G PASS" in (
+    root / "docs/M178_PACK_TREE_PERFORMANCE_PLAN.md"
+).read_text()
 
 print("M177 READONLY G STAGE/INDEX VIEW SOURCE GUARD PASS")

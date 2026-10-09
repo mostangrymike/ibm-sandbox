@@ -10014,3 +10014,70 @@ standalone M175 checks still pending.
 Preserve GIT600 G, M173NET STAGE G,
 M174NET INDEX G, original PACK/META A
 and PMAINT0141 no-write restriction.
+
+## 2026-10-09 15:51:13 CDT — M175 FULL and M177 INFO REAL CMS PASS; FILEDEF SAFE
+
+User supplied real CMS MAINT output:
+`QUERY FILEDEF` at 15:46:33:
+`No user defined FILEDEF in effect`.
+`GITPVIEW INFO G ADA83FF3B3813961CEF2A9FFC50A453540039E0B`
+queried OID, OBJ7000 TYPE1 SIZE265, root
+CCB18BEC067E7886D70B82EF138EE56A8B899A61,
+parent B81D3CE7BAC08420BF7DB862E93F82FB3968DDC0,
+one parent, index 7736 total/unique,
+then `M175 PACK INFO PASS`,
+`M177 PACK VIEW INFO PASS
+ADA83FF3B3813961CEF2A9FFC50A453540039E0B G`,
+Ready RC0 T=40.39/41.52 15:47:16.
+Second `QUERY FILEDEF` 15:48:54:
+`No user defined FILEDEF in effect`, exactly
+matching the precheck. **M177 INFO and FILEDEF
+hygiene positive path now actual CMS PASS**.
+Existing M177 TREE CMS PASS reported at 15:32,
+closure eight trees, 272 blobs, 280 verified,
+279 entries and global 7736 unique index.
+Do not conflate positive FILEDEF state with
+proof of negative existing-STGIN binding case.
+
+Standalone `M175CHK G` ALSO ACTUAL CMS PASS:
+tip commit ADA83FF3B3813961CEF2A9FFC50A453540039E0B
+OBJ7000 TYPE1 SIZE265, one parent.
+Root tree
+CCB18BEC067E7886D70B82EF138EE56A8B899A61
+OBJ7197 TYPE2 SIZE291,
+`M175 ROOT TREE VERIFIED`.
+Parent B81D3CE7BAC08420BF7DB862E93F82FB3968DDC0
+OBJ7001 TYPE1 SIZE264; its own tree
+8B7134918D12ED07D60E3CB28A1803EBCA7DB65B,
+parent 550C982759DC6685A13B59AE2D91D3A54F6D8496.
+`M175 PARENT VERIFIED 1`,
+`M175 LIVE COMMIT TREE CLOSURE PASS`,
+`M175 VERIFIED RANDOM ACCESS TARGET GATE PASS`;
+Ready RC0 T=121.27/124.65 15:51:13.
+Actual CMS M175 object readback 124.65s elapsed.
+No writes to stage/index are performed by
+M175 or M177 INFO.
+
+**ALL M173, M174, M175, M176, and
+M177 INFO/TREE positive target gates
+have now PASSED on real z/VM 6.3 CMS.**
+M173NET STAGE G and M174NET INDEX G
+remain verified and protected; original
+M171NET PACK/META A still retained.
+GIT600 G 4KB CMS is operational and
+PMAINT0141 VMCOM1 fullpack no-write
+constraint remains. The pending
+M175 and M177 INFO commands from
+previous checkpoints are completed,
+not to be rerun as prerequisites.
+
+NEXT development M178:
+performance optimization of native read-only
+PACK tree closure, separate new module,
+host corruption/equivalence tests against
+GITPTRE, then live G smoke compare, no
+rebuild/erasure of G stage/index. Existing
+docs/M178_PACK_TREE_PERFORMANCE_PLAN.md
+describes safe route; performance cause
+not measured yet. User says do not pause
+and prefers maximum work per turn.
