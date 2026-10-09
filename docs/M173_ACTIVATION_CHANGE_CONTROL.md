@@ -117,9 +117,11 @@ IBM:
 ---
 
 
-**STATE: DRAFT FOR OPERATOR REVIEW. NOT APPROVED TO EXECUTE.**
-Updated October 9, 2026 after completed 09:33:55 CDT CMS Gate 6.
-This document is not a license to issue a non-EDIT DIRECTXA or FORMAT.
+**Historical preactivation policy (now superseded by the 09:49 online activation above).**
+Written after the 09:33:55 CDT preactivation Gate 6. The non-EDIT
+DIRECTXA update subsequently succeeded at 09:49:23. This historical
+section does not authorize any further directory update, LINK to an
+unverified device, or destructive FORMAT.
 
 ## Desired outcome and immutable constraints
 
