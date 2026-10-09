@@ -1,3 +1,94 @@
+## CURRENT GATE — 2026-10-09 08:55 CDT: active full-pack confirmed; M173VQ compile RC8 fixed in source, CMS RETEST REQUIRED
+
+**Real CMS MAINT read-only results (October 9, 08:54):**
+
+```text
+CP QUERY MDISK USERID PMAINT 0141 LOCATION DIRECTORY
+PMAINT 0141 PMAINT 0141 3390 VMCOM1 0127 0 11000
+Ready; T=0.01/0.01 08:54:45
+CP QUERY SYSTEM 0127
+DASD 0127 ATTACHED CPVOL 0015 VMCOM1
+MAINT 0551 R/O, MAINT 02CC R/W, MAINT 049E R/O
+VMSERVP 0311/0310/0309/0308/0307/0306/0305/0304
+VMSERVP 0303/0301/0302/0191 R/W
+Ready; T=0.01/0.01 08:54:45
+ASSEMBLE M173VQ
+ASSEMBLER (XF) DONE
+11 DIAG 2,4,X'25C'
+IFO078 UNDEFINED OP CODE
+NUMBER OF STATEMENTS FLAGGED IN THIS ASSEMBLY = 1
+Ready(00008); T=0.09/0.11 08:55:00
+```
+
+**Full-pack physical extent LIVE CONFIRMED:** The active CP
+directory defines `PMAINT 0141` on VMCOM1 real 0127,
+start 0, size **11000** cylinders. That spans the
+entire real device 0–10999 and overlaps proposed 0600
+6000–7599. The earlier candidate DIRMAP's full-pack
+0–10016/10017 is its model-size inference, NOT
+the active CP full-pack capacity. `QUERY SYSTEM 0127`
+showed **15 linked devices**, and no PMAINT 0141
+active link in that instant. This does NOT prevent a
+future PMAINT 0141 link or its overlapping access.
+A single-writer `W` on 0600 cannot alone isolate
+against full-pack read/write access. Full inventory
+and access-controls decision remain mandatory.
+
+**Initial M173VQ assembler gate FAILED RC8.** This was
+not a CP DIAG error. IBM explicitly states that
+DIAGNOSE has *no assembler mnemonic*. `DIAG` is
+a macro provided on supported macro paths and was
+not expanded by the installed XF assembly. The
+host GitHub source replaces only the offending line:
+
+```asm
+* IBM opcode X'83'; Rx=2 Ry=4 base=0, code X'25C'.
+         DC    X'83',X'24',XL2'025C'
+```
+
+The four emitted bytes are `83 24 02 5C`,
+and the surrounding CP condition-code, return-code
+and 60-byte bounded record checks are unchanged.
+This is the IBM-documented machine instruction
+encoding, not an invented assembler alias. A new
+host regression parses the bytes and tests opcode,
+both register fields, base=0, and X'25C' code.
+
+**NEXT ACTUAL CMS GATE — COMPILE ONLY.** From Mac's
+`ibm-sandbox/src` working directory, after new
+GitHub CI passed:
+
+```bash
+git pull
+./cms-upload.sh M173VQ.ASSEMBLE
+```
+
+On CMS MAINT:
+
+```text
+ASSEMBLE M173VQ
+```
+
+Do not LOAD, GENMOD or execute M173VQ/DIAG until
+the actual assembler status and new listing are
+evaluated, including correct return/error handling.
+No target proof for fixed source exists yet.
+The earlier RC8 source must not be used again.
+
+**HARD STOP:** No non-EDIT DIRECTXA, active CP directory
+activation, LINK, ACCESS, FORMAT, importer, or
+overwriting USER DIRECT C, M173BAK DIRECT C, M173NEW
+DIRECT C, PACK, or verified generations. PMAINT full-pack
+access and complete live directory definitions still
+need a separately approved mitigation/rollback plan.
+
+IBM:
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=machine-instruction-format
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=machine-macro-format
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=codes-diagnose-code-x25c-directory-query
+
+---
+
 ## CURRENT GATE — 2026-10-09 08:37 CDT: Gate 5e full-pack discovery PASS
 
 Real MAINT `CP QUERY PRIVCLASS` at 08:36:37 returned Currently
