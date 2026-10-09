@@ -1,3 +1,52 @@
+## CURRENT GATE — 2026-10-09 08:16:20 CDT: Gate 5c boundaries LIVE PASS, VOLSER context pending
+
+**Real CMS MAINT results, read-only candidate DIRMAP report**:
+```text
+PIPE < M173NEW MDISKMAP C | LOCATE /6000/ | CONSOLE
+                 MAINT     0600 W         6000       7599       1600              MAINT-1   *
+Ready; T=0.01/0.01 08:15:58
+PIPE < M173NEW MDISKMAP C | LOCATE /7599/ | CONSOLE
+                 MAINT     0600 W         6000       7599       1600              MAINT-1   *
+Ready; T=0.01/0.01 08:15:59
+PIPE < M173NEW MDISKMAP C | LOCATE /5936/ | CONSOLE
+                                          5936       5999        064     Gap
+Ready; T=0.01/0.01 08:16:19
+PIPE < M173NEW MDISKMAP C | LOCATE /7600/ | CONSOLE
+                                          7600      10016       2417     Gap
+Ready; T=0.01/0.01 08:16:20
+```
+
+**Four boundary filters LIVE PASS (RC0).** MAINT-1 MDISK
+0600 W spans cylinders 6000-7599 (1600 cylinders). Adjacent
+candidate-map gaps are 5936-5999 (64) and 7600-10016
+(2417); endpoint arithmetic independently agrees.
+
+**FULL GATE 5c PENDING:** DIRMAP continuation rows omit their
+VOLSER; the four matches do not establish the enclosing
+VMCOM1 report section or rule out additional allocations.
+Next **read-only** command on CMS MAINT:
+
+```text
+PIPE < M173NEW MDISKMAP C | DROP 200 | TAKE 100 | CONSOLE
+```
+
+Review the contiguous VMCOM1 section privately. Report only
+nonsecret VOLSER/extent summaries, not password-bearing
+USER DIRECT source. If context is absent or ambiguous, STOP,
+do not infer VMCOM1 solely from the numeric filters.
+
+Even a clean contextual DIRMAP is source-derived, **not an
+independent CP allocation census**. IBM specifies that DIRMAP
+ignores fullpack MDISKs for overlap detection; hidden PERM/PARM
+reservations and current live fullpack allocation must be
+considered separately before any activation authorization.
+Neither the CP directory nor new G device has changed.
+HARD STOP: no non-EDIT DIRECTXA, LINK, ACCESS, FORMAT,
+M173CHK/import or replacement of protected directory sources.
+IBM: https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-dirmap
+
+---
+
 ## CURRENT GATE — 2026-10-08 16:32:22: Gate 5b CMS PASS
 
 Operator completed every Gate 5b command in sequence:
