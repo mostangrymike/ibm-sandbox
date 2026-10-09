@@ -204,6 +204,64 @@ with tempfile.TemporaryDirectory() as td:
 
 
 
+
+    # Second fixture: two identical blobs in the PACK, an empty tree,
+    # and repeated links to one distinct blob. Check unique<total.
+    (td / "dd:IDXOUT").unlink()
+    empty_tree = b""
+    empty_oid = oid("tree", empty_tree)
+    repeated = b"identical content"
+    repeated_oid = oid("blob", repeated)
+    small_root = (
+        entry(40000, b"empty", empty_oid)
+        + entry(100644, b"one.txt", repeated_oid)
+        + entry(100644, b"two.txt", repeated_oid)
+    )
+    small_oid = oid("tree", small_root)
+    second_objects = [
+        ("blob", 3, b""),
+        ("blob", 3, repeated),
+        ("blob", 3, repeated),
+        ("tree", 2, empty_tree),
+        ("tree", 2, small_root),
+    ]
+    (td / "dd:STGIN").write_text(stage_text(second_objects))
+    rebuilt2 = subprocess.run(
+        [str(idxexe), "BUILD"], cwd=td, text=True,
+        capture_output=True,
+    )
+    assert rebuilt2.returncode == 0, rebuilt2.stdout+rebuilt2.stderr
+    shutil.copy(td / "dd:IDXOUT", td / "dd:IDXIN")
+    assert "INDEX WRITTEN 5 UNIQUE 4" in rebuilt2.stdout
+    original2 = subprocess.run(
+        [str(treeexe), "WALK", small_oid],
+        cwd=td, text=True, capture_output=True,
+    )
+    assert original2.returncode == 0, original2.stdout+original2.stderr
+    fast2 = subprocess.run(
+        [str(fastexe), "WALK", small_oid],
+        cwd=td, text=True, capture_output=True,
+    )
+    assert fast2.returncode == 0, fast2.stdout+fast2.stderr
+    for count in (
+        "TREE CLOSURE TREES 2 BLOBS 1 GITLINKS 0",
+        "TREE CLOSURE ENTRIES 3 VERIFIED 3",
+        "TREE CLOSURE INDEX TOTAL 5 UNIQUE 4",
+    ):
+        assert count in original2.stdout and count in fast2.stdout
+    assert "M178 AUTHENTICATED BLOBS 1" in fast2.stdout
+
+    # Truncated index must fail without claiming a partial closure.
+    saved = (td / "dd:IDXIN").read_text()
+    (td / "dd:IDXIN").write_text("\n".join(saved.splitlines()[:-1]) + "\n")
+    truncated = subprocess.run(
+        [str(fastexe), "WALK", small_oid],
+        cwd=td, text=True, capture_output=True,
+    )
+    assert truncated.returncode == 8
+    assert "M178 TREE CLOSURE PASS" not in truncated.stdout
+    (td / "dd:IDXIN").write_text(saved)
+
 text = fastsrc.read_text()
 assert max(map(len,text.splitlines())) <= 80
 assert "fseek(" not in text
