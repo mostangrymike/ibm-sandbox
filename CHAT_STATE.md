@@ -9196,3 +9196,49 @@ including proposed 0600 6000–7599;
 no active fullpack link was displayed
 on last CP QUERY SYSTEM 0127, but
 future access remains an integrity risk.
+
+## 2026-10-09 09:17:04 CDT — guarded M173VQ target assembly PASS, C toolchain reminder
+
+Live CMS MAINT `ASSEMBLE M173VQ`:
+`ASSEMBLER (XF) DONE`;
+`NO STATEMENTS FLAGGED IN THIS ASSEMBLY`;
+`Ready; T=0.07/0.09 09:17:04`.
+This is the newly guarded version, with
+hand-encoded DIAGNOSE 83 24 02 5C and
+prequery <=4048 page-offset check for the
+aligned 48-byte parameter list. The old
+IFO078 is resolved. Still **NO VMUDQ
+EXECUTION OR COMPLETE CP INVENTORY**.
+
+User reminds us installed GCCCMS C compiler
+is available. Acknowledge and use GCCCMS
+(`CMSCLNK` on F) for analysis, extent
+comparisons and future maintainable Git/
+VMUDQ parsing rather than ever-growing
+assembler. The current already-assembled
+IBM-specific low-level probe is an isolated
+read-only bridge; no need to rewrite
+it before first query.
+
+NEXT CMS MAINT: use just-generated
+M173VQ TEXT in memory; if LOAD returns
+RC0 only:
+`LOAD M173VQ (NOAUTO NOMAP`
+`START`
+No Mac transfer for that probe. VMUDQ
+is a read-only class B LSTMDISK query,
+all owners/vdevs on VMCOM1; output is
+60-byte records plus `QUERY COMPLETE
+NOT ACTIVATION APPROVAL`; fail closed
+on missing marker/error/program check.
+This does NOT clear the active CP
+fullpack PMAINT 0141 VMCOM1 start0
+length11000 (0-10999), which covers
+the proposed new MAINT 0600 start6000
+length1600. Reconcile with CP active
+links, preserve original source/backup,
+all Git PACK/verified generations;
+no non-EDIT DIRECTXA, LINK/ACCESS,
+FORMAT, M173 import or alteration of
+live directory before separate safety
+and rollback review.
