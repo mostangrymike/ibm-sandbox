@@ -46,7 +46,7 @@ for marker in (
 # of CP directory source validation or directory activation.
 assert "Formatting is a separate destructive gate" in control
 assert "DO NOT activate" in control or "do not activate" in control.lower()
-assert "no non-EDIT DIRECTXA" in plan.lower()
+assert "no non-edit directxa" in plan.lower()
 assert "No activation, LINK" in plan
 assert "not-authorized" not in control.lower() or "not approved" in control.lower()
 
