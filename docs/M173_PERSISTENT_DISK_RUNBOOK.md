@@ -1,5 +1,92 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## CURRENT — 2026-10-09 11:27:15 CDT: M174 LIVE 7736-OBJECT INDEX PASS
+
+**Real CMS MAINT M174CHK G target result:**
+
+```text
+M174 DATA DISK G BLOCKS LEFT 225602
+M174 META OID ADA83FF3B3813961CEF2A9FFC50A453540039E0B OBJECTS 7736
+INDEX WRITTEN 7736 UNIQUE 7736
+M174 INDEX BUILD PASS
+M174 INDEX BUILD CROSSCHECK PASS
+INDEX VERIFIED 7736 UNIQUE 7736
+M174 INDEX CHECK PASS
+M174 INDEX CHECK CROSSCHECK PASS
+INDEX AUDIT VERIFIED 7736 UNIQUE 7736
+M174 INDEX AUDIT PASS
+M174 INDEX AUDIT CROSSCHECK PASS
+INDEX OID ADA83FF3B3813961CEF2A9FFC50A453540039E0B OBJ 7000 TYPE 1 SIZE 265 OFFS
+M174 INDEX GET PASS
+M174 TIP COMMIT LOOKUP PASS
+M174 RETAINED INDEX M174NET INDEX G
+M174 GENERALIZED STAGE INDEX TARGET GATE PASS
+Ready; T=1451.38/1459.65 11:27:15
+```
+
+**M174 FULL LIVE TARGET PASS**. Stage `M173NET STAGE G`
+remains retained, and the *new*
+`M174NET INDEX G` contains **7736 indexed objects
+with 7736 unique OIDs**. The independent checker
+verified 7736 and the stage audit verified 7736.
+Indexed GET confirmed Git tip
+`ADA83FF3B3813961CEF2A9FFC50A453540039E0B`
+is commit type 1, size 265, entry OBJ7000.
+Elapsed 1459.65 seconds = 24m19.65s.
+This output proves all M174 target subgates.
+Do **not** rebuild, reindex or erase either
+G stage/index, and do not reformat G.
+
+### Next actual CMS gates — M175 random access, M176 recursive tree closure
+
+Github main includes both proven host-test sources
+`src/GITPCAT.C`, `src/GITPTRE.C` plus
+`src/M175CHK.EXEC`, `src/M176CHK.EXEC`.
+Use the canonical Mac upload (DFT fixed 80):
+```bash
+git pull
+./cms-upload.sh GITPCAT.C GITPTRE.C M175CHK.EXEC M176CHK.EXEC
+```
+
+On MAINT, C compiler is GCCCMS, build mode PLAIN:
+```text
+STATE GITPCAT C A
+STATE GITPTRE C A
+STATE M173NET STAGE G
+STATE M174NET INDEX G
+CMSCLNK GITPCAT PLAIN
+```
+
+**Only if** build finishes with normal
+`CMSCLNK: built GITPCAT MODULE mode PLAIN`
+and RC0:
+```text
+M175CHK G
+```
+Expected final `M175 VERIFIED RANDOM ACCESS TARGET
+GATE PASS` with verified tip commit, root
+tree and all declared parents, using existing
+stage/index only; no new stage/index writes.
+
+**Only after M175 target PASS**, build and run M176:
+```text
+CMSCLNK GITPTRE PLAIN
+M176CHK G
+```
+M176 resolves the live tip tree and walks its
+recursive tree/blob/gitlink closure using the
+verified G index. Expected terminal
+`M176 LIVE ROOT TREE CLOSURE TARGET GATE PASS`.
+No M175/M176 success is established yet;
+all host fixture checks must not be confused
+with real CMS PASS. On unexpected compiler
+diagnostic or failed query, retain original
+index/stage and inspect output, do not rerun
+M173/M174.
+
+---
+
+
 ## CURRENT — 2026-10-09 11:00:01 CDT: GITPIDX C PLAIN build PASS
 
 The Mac transfer of canonical GitHub
