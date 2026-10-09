@@ -135,4 +135,26 @@ assert "         BNZ   DFAIL\n         LTR   5,5" in src
 assert "         C     2,=F'65520'" in src
 assert "         BH    DFAIL" in src
 
+
+# Final page-guarded version compiled on real CMS; querying remains untested.
+for marker in (
+    "2026-10-09 09:17:04 CDT",
+    "NO STATEMENTS FLAGGED IN THIS ASSEMBLY",
+    "LOAD M173VQ (NOAUTO NOMAP",
+    "START",
+    "GCCCMS",
+    "CMSCLNK",
+    "QUERY COMPLETE NOT ACTIVATION APPROVAL",
+    "NO VMUDQ",
+    "HARD STOP",
+):
+    assert marker.lower() in plan.lower() + state.lower(), marker
+assert "FINAL GUARDED SOURCE" in runbook.upper()
+assert "no DIAG execution yet" in runbook
+assert "user reminds us installed GCCCMS C compiler" in state.lower()
+assert "No non-EDIT DIRECTXA" in plan
+# Host source checks cannot be counted as CP LSTMDISK target proof.
+assert "NO VMUDQ" in state
+assert "NO DIAG execution" in runbook.upper()
+
 print("M173 VMUDQ READONLY SOURCE AND HOST MODEL PASS")
