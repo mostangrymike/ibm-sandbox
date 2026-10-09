@@ -1,0 +1,138 @@
+/* M179: isolated fast read-only native stage tree verification. */
+address cms
+parse upper arg datafm oid extra
+oid=translate(strip(oid))
+if datafm='' | oid='' | extra\='' then do
+ say 'Usage: GITPPROF data-filemode 40-hex-tree-oid'
+ exit 4
+end
+if length(datafm)\=1 |,
+   verify(datafm,'BCDEFGHIJKLMNOPQRSTUVWXYZ')\=0 then do
+ say 'M179 FILEMODE INVALID'
+ exit 4
+end
+if length(oid)\=40 |,
+   verify(oid,'0123456789ABCDEF')\=0 then do
+ say 'M179 OID INVALID'
+ exit 4
+end
+drop d.
+d.0=0
+'PIPE CMS QUERY DISK' datafm '| STEM d.'
+if rc\=0 then do
+ say 'M179 QUERY DISK FAILED'
+ exit 8
+end
+matched=0
+do i=1 to d.0
+ if word(d.i,3)=datafm & word(d.i,7)='4096' then,
+   matched=matched+1
+end
+if matched\=1 then do
+ say 'M179 DATA DISK NOT ACCESSED 4K' datafm
+ exit 8
+end
+'STATE M173NET STAGE' datafm
+if rc\=0 then do
+ say 'M179 STAGE MISSING' datafm
+ exit 8
+end
+'STATE M174NET INDEX' datafm
+if rc\=0 then do
+ say 'M179 INDEX MISSING' datafm
+ exit 8
+end
+'STATE GITPPRF MODULE A'
+if rc\=0 then do
+ say 'M179 MODULE MISSING'
+ exit 8
+end
+
+/* An existing caller FILEDEF is never overwritten or cleared. */
+drop f.
+f.0=0
+'PIPE CMS QUERY FILEDEF | STEM f.'
+if rc\=0 then do
+ say 'M179 FILEDEF QUERY FAILED'
+ exit 8
+end
+do i=1 to f.0
+ dd=translate(word(f.i,1))
+ if dd='STGIN' | dd='IDXIN' then do
+  say 'M179 DD ALREADY DEFINED' dd
+  exit 8
+ end
+end
+'FILEDEF STGIN DISK M173NET STAGE' datafm
+if rc\=0 then do
+ say 'M179 STGIN FILEDEF FAILED'
+ exit 8
+end
+'FILEDEF IDXIN DISK M174NET INDEX' datafm
+if rc\=0 then do
+ 'FILEDEF STGIN CLEAR'
+ say 'M179 IDXIN FILEDEF FAILED'
+ exit 8
+end
+
+drop o.
+o.0=0
+'PIPE CMS GITPPRF WALK' oid '| STEM o.'
+workrc=rc
+'FILEDEF IDXIN CLEAR'
+idxrc=rc
+'FILEDEF STGIN CLEAR'
+stgrc=rc
+do i=1 to o.0
+ say o.i
+end
+if workrc\=0 | idxrc\=0 | stgrc\=0 then do
+ say 'M179 FAST TREE FAIL RC' workrc idxrc stgrc
+ exit 8
+end
+
+/* Cross-check exact requested root, aggregate counts and native PASS. */
+pass=0
+found=0
+scans=0
+statok=0
+trees=''
+blobs=''
+entries=''
+verified=''
+do i=1 to o.0
+ if o.i='M179 TREE CLOSURE PASS' then pass=pass+1
+ if word(o.i,1)='TREE' & word(o.i,2)='CLOSURE' then do
+  if word(o.i,3)='ROOT' & words(o.i)=4 &,
+     word(o.i,4)=oid then found=found+1
+  if word(o.i,3)='TREES' & word(o.i,5)='BLOBS' &,
+     words(o.i)=8 then do
+   trees=word(o.i,4)
+   blobs=word(o.i,6)
+  end
+  if word(o.i,3)='ENTRIES' & word(o.i,5)='VERIFIED' &,
+     words(o.i)=6 then do
+   entries=word(o.i,4)
+   verified=word(o.i,6)
+  end
+ end
+ if word(o.i,1)='M179' & word(o.i,2)='FORWARD' &,
+    word(o.i,3)='SCANS' & word(o.i,4)='2' &,
+    word(o.i,7)='SEEKS' & word(o.i,8)='0' &,
+    words(o.i)=8 then scans=scans+1
+ if word(o.i,1)='M179' & word(o.i,2)='AUTHENTICATED' &,
+    word(o.i,3)='BLOBS' & words(o.i)=4 &,
+    word(o.i,4)=blobs then statok=statok+1
+end
+if pass\=1 | found\=1 | scans\=1 | statok\=1 |,
+   datatype(trees,'W')\=1 | datatype(blobs,'W')\=1 |,
+   datatype(entries,'W')\=1 | datatype(verified,'W')\=1 then do
+ say 'M179 FAST TREE CROSSCHECK FAIL'
+ exit 8
+end
+if trees<1 | verified\=trees+blobs | entries<blobs+trees-1 then do
+ say 'M179 FAST TREE COUNT FAIL'
+ exit 8
+end
+say 'M179 VERIFIED FAST TREE TARGET GATE PASS' oid datafm
+exit 0
