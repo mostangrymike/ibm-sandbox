@@ -202,4 +202,23 @@ for doc in (runbook, handoff):
 assert "No index created yet" in runbook
 assert "not been target-run yet" in handoff
 
+
+# The actual M174 checker completed index build, independent CHECK,
+# full AUDIT and indexed tip GET on z/VM 6.3 on October 9.
+for doc in (runbook, handoff):
+    for token in (
+        "11:27:15",
+        "INDEX WRITTEN 7736 UNIQUE 7736",
+        "INDEX VERIFIED 7736 UNIQUE 7736",
+        "INDEX AUDIT VERIFIED 7736 UNIQUE 7736",
+        "M174 GENERALIZED STAGE INDEX TARGET GATE PASS",
+        "M174NET INDEX G",
+        "M175CHK G",
+        "M176CHK G",
+        "1451.38/1459.65",
+    ):
+        assert token in doc, ("M174 target pass missing", token)
+assert "7736 unique" in runbook
+assert "ADA83FF3B3813961CEF2A9FFC50A453540039E0B" in handoff
+
 print("M174 GENERALIZED STAGE INDEX HOST MODEL PASSED")
