@@ -37,10 +37,19 @@ verified the same root closure of 8 trees, 272 blobs,
 279 entries and 280 objects using the retained G stage/index,
 and printed `M177 PACK VIEW TREE PASS` on real CMS.
 The CMS time field overflowed and no exact duration is known.
-Remaining checks: the independent `GITPVIEW INFO G <tip>`
-terminal PASS, standalone `M175CHK G` terminal PASS if not
-already run, and identical before/after `QUERY FILEDEF`
-state. See `docs/M177_READONLY_PACK_ACCESS_PLAN.md`.
+**M177 INFO and standalone M175 are now also live CMS PASS.**
+At 15:47 the `GITPVIEW INFO G <tip>` returned the
+correct tip commit, root tree, parent and 7736 unique
+indexed objects, with a `M177 PACK VIEW INFO PASS` marker;
+CMS elapsed 41.52 seconds. Identical before/after
+`QUERY FILEDEF` responses were `No user defined FILEDEF
+in effect`. At 15:51 the full `M175CHK G` verified the
+commit, root and parent and ended in
+`M175 VERIFIED RANDOM ACCESS TARGET GATE PASS`;
+elapsed 124.65 seconds. **M173–M177 positive-path CMS
+target gates are complete**. Next: isolated, non-mutating
+M178 tree-closure performance research.
+See `docs/M177_READONLY_PACK_ACCESS_PLAN.md`.
 Do not reformat G or overwrite `M173NET STAGE G`,
 `M174NET INDEX G`, original PACK A, or earlier
 sealed generations. An overlapping fullpack
