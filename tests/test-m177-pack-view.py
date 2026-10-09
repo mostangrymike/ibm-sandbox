@@ -72,4 +72,25 @@ assert "M176 LIVE ROOT TREE CLOSURE TARGET GATE PASS" in plan
 assert "not target-proven" in plan.lower()
 assert "GITPVIEW INFO G" in plan
 assert "GITPVIEW TREE G" in plan
+
+# Real target 2026-10-09 proves TREE mode, not the separate INFO mode.
+state = (root / "CHAT_STATE.md").read_text()
+readme = (root / "README.md").read_text()
+for note in (plan, state, readme):
+    assert "M177 PACK VIEW TREE PASS" in note
+    assert "CCB18BEC067E7886D70B82EF138EE56A8B899A61" in note
+    assert "280" in note and "272" in note
+for note in (plan, state):
+    assert "15:32:00" in note
+    assert "393767" in note and "394058" in note
+    assert "7736" in note and "M175CHK G" in note
+    assert "T=*.**/*.**" in note
+assert "INFO" in plan and "FILEDEF" in plan
+assert "TREE target-proven on CMS" in plan
+assert "INFO" in readme and "FILEDEF" in readme
+# The original stage and index are source-only references; any
+# expensive M173/M174 rebuild remains outside the M177 interface.
+assert "M173NET STAGE G" in plan
+assert "M174NET INDEX G" in plan
+
 print("M177 READONLY G STAGE/INDEX VIEW SOURCE GUARD PASS")
