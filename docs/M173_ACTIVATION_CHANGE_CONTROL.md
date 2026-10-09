@@ -1,5 +1,29 @@
 # M173 0600/G CP directory activation — controlled change plan
 
+## LIVE CHECKPOINT 2026-10-09 10:06 CDT — G disk provisioned
+
+Actual MAINT `CP QUERY MDISK 0600 LOCATION`: VMCOM1/
+RDEV0127, start6000 size1600, RC0 at 10:04:55.
+`CP QUERY SYSTEM 0127`: 16 links including new
+MAINT0600 R/W; no PMAINT0141 fullpack link at 10:04:56.
+
+Operator completed CMS initialization of only
+`G(600)`: 1600 cylinders, 4096-byte blocks,
+disk label GIT600. `DMSFOR732I` success RC0
+at 10:05:35. `QUERY DISK G` returned
+`GIT600 600 G R/W 1600 3390 4096
+0 25-00 287975 288000`, RC0 at 10:06:06.
+
+**G initialization is complete; never reformat G
+as part of the importer.** The final 287975 free
+blocks exceed the M173 threshold by 107975.
+The next controlled step is M173CHK G, sourcing
+retained M171NET PACK/META A and writing only
+M173NET STAGE G. Do not use PMAINT0141 fullpack
+for writes while it overlaps G. Historical
+not-yet-formatted plans below are superseded.
+
+
 ## 2026-10-09 09:58:25 CDT — current MAINT successfully SELF-LINKED 0600
 
 Actual CMS MAINT read-only checks **before** adding the
