@@ -1,5 +1,122 @@
 # M173 0600/G CP directory activation — controlled change plan
 
+## 2026-10-09 09:50:09 CDT — ACTUAL CP ACTIVATION AND LIVE DIRECTORY VERIFICATION PASS
+
+**The operator has executed the privileged directory update.** The
+previous draft-only activation warning is now historical; the
+**DIRECTORY ACTIVATION SUCCEEDED on real CMS MAINT**, but disk
+access and CMS FORMAT have **NOT** happened. Keep rollback protection.
+
+```text
+DIRECTXA M173NEW DIRECT C
+z/VM USER DIRECTORY CREATION PROGRAM - VERSION 6 RELEASE 3.0
+EOJ DIRECTORY UPDATED AND ON LINE
+HCPDIR494I User directory occupies 58 disk pages
+Ready; T=0.18/0.21 09:49:23
+CP QUERY MDISK USERID MAINT 0600 LOCATION DIRECTORY
+MAINT 0600 MAINT 0600 3390 VMCOM1 0127 6000 1600
+Ready; T=0.01/0.01 09:49:38
+CP QUERY ALLOC DRCT ALL
+M01RES 0123 1 20 20 1 1 5% ACTIVE
+Ready; T=0.01/0.01 09:50:01
+CP QUERY SYSTEM 0127
+DASD 0127 ATTACHED CPVOL 0015 VMCOM1
+MAINT 0551 R/O, MAINT 02CC R/W, MAINT 049E R/O
+VMSERVP 0311/0310/0309/0308/0307/0306/0305/0304
+VMSERVP 0303/0301/0302/0191 R/W
+Ready; T=0.01/0.01 09:50:09
+```
+
+**Directory update PASSED:** explicit UPDATED AND ON LINE,
+RC0; active directory is still on M01RES/0123 cylinders
+1–20; active MAINT/0600 directory entry is
+VMCOM1 RDEV0127 cylinder6000 size1600 (end7599);
+15 current VMCOM1 links unchanged, with no linked
+PMAINT0141 fullpack in this snapshot. Nothing in
+this evidence says the already logged-on MAINT has
+new vdev0600 **in its virtual machine** or that
+the disk has a CMS filesystem. No format is proven.
+Do not change USER DIRECT C or the original/backup
+directory source until recovery is fully settled.
+`M173NEW DIRECT C` remains the activated source.
+
+### Phase 7A — live virtual-device admission (low risk)
+
+CMS MAINT may have been logged on before the
+online directory update and therefore may not yet
+have virtual 0600. Rather than logging off blindly,
+first issue read-only:
+
+```text
+CP QUERY VIRTUAL DASD
+CP QUERY MDISK 0600 LOCATION
+QUERY DISK
+```
+
+Confirm no virtual device at 0600 (or, if
+already present, demand exact 3390/1600-cylinder
+real VMCOM1/0127 6000 mapping and exclusive R/W).
+Also verify that CMS G is **not currently
+accessed** for an unrelated filesystem and
+that A/C and source directory files are
+available. The MDISK LOCATION command can
+return expected missing-device diagnostics if
+the new MDISK has not been instantiated
+in the logged-on VM; distinguish it from
+the successful ACTIVE DIRECTORY query above.
+
+Only when virtual0600 is confirmed **absent**
+and the active-directory physical extent
+remains exactly as validated is it appropriate
+to consider the IBM supported own-minidisk
+self LINK, without MAINT relogon:
+
+```text
+CP LINK * 0600 0600 W
+```
+
+This is a **non-formatting, VM configuration action**,
+not a directory edit, and must not be attempted if
+any other virtual 0600 is defined, if the command
+cannot be authorized as a link to MAINT's exact
+new disk, or if another fullpack writer appears.
+After any successful self-link, use the same
+read-only CP QUERY VIRTUAL/MDISK LOCATION and
+QUERY DISK checks. Stop on read-only,
+unexpected geometry, access conflict or
+nonzero LINK RC. Do not guess that `ACCESS`
+can mount an unformatted device; do not
+release or overwrite an unrelated current G.
+
+### Phase 7B — separately guarded **destructive** FORMAT
+
+Only after a live, virtual `0600` is demonstrated
+to map the new real VMCOM1 / 0127 / 6000–7599
+disk in exclusive R/W mode, the existing fullpack
+PMAINT0141 is confirmed not currently linked
+for write, G is unused, and the backup/rollback
+cautions are accepted, may a separately
+authorized CMS FORMAT initialize **that new
+virtual 0600 alone** with 4K blocks and a
+distinct, ≤6-character label. It erases disk
+contents within that virtual minidisk.
+Do **not** invoke FORMAT during Phase 7A.
+
+The native M173 importer has an independent
+admission guard: G R/W, CMS 4K blocks and
+at least 180,000 *free* 4K blocks. After
+FORMAT and CMS access, verify via `QUERY DISK G`
+before starting M173; gross 1600×180=288000
+blocks is not by itself a measured free count.
+
+IBM:
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=dasds-linking-sharing-minidisks
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-virtual-all
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-format
+
+---
+
+
 **STATE: DRAFT FOR OPERATOR REVIEW. NOT APPROVED TO EXECUTE.**
 Updated October 9, 2026 after completed 09:33:55 CDT CMS Gate 6.
 This document is not a license to issue a non-EDIT DIRECTXA or FORMAT.
