@@ -8964,3 +8964,39 @@ exclude fullpack, PERM/PARM or unmapped live allocations.
 Keep CP directory unchanged, USER DIRECT C,
 M173BAK DIRECT C, M173NEW DIRECT C protected.
 No unqualified DIRECTXA, LINK, ACCESS, FORMAT, or M173 import.
+
+## 2026-10-09 — M173 Gate 5c complete source-map context LIVE PASS
+
+Real CMS MAINT `PIPE < M173NEW MDISKMAP C | DROP 200 |
+TAKE 100 | CONSOLE` displayed page-5 VMCOM1 3390
+section, including 6VMHCD20 0300 MR 5756-5935 (180),
+gap5936-5999 (64), MAINT 0600 W 6000-7599 (1600)
+MAINT-1 *, and gap7600-10016 (2417).
+All previously verified numeric filters now have
+unambiguous volume context; **Gate 5c PASS on actual
+CMS as a candidate source-map validation**.
+No other mapped extent overlaps 6000-7599 in that
+section. The next header `630RL1 3390` has
+MAINT630 0131 MR 000-10016 (fullpack-like row)
+but that is a DIFFERENT volser, not a VMCOM1 overlay.
+
+**IMPORTANT**: the candidate DIRMAP does not
+independently enumerate current active CP fullpack,
+PERM/PARM or any source-invisible overlays. No 0600
+disk/G, activation, LINK, ACCESS, FORMAT or import
+has occurred. Keep backup and original directory
+sources, the PACK, and all sealed data protected.
+
+Next Gate 5d on CMS MAINT, READ-ONLY only:
+`CP QUERY DASD DETAILS 0127`
+`CP QUERY MDISK USERID 6VMHCD20 0300 LOCATION DIRECTORY`
+`CP QUERY MDISK 0600 DIRECTORY`
+`CP QUERY ALLOC MAP VMCOM1`
+`M173DCHK`
+Expect VMCOM1/0127/11000, preceding extent
+5756 size180, new virtual 0600 still absent RC40,
+CP-owned allocation map NOT FOUND, checker RC0.
+Unexpected results fail closed; none authorize
+non-EDIT DIRECTXA or disk formatting.
+Fullpack/PERM/PARM and rollback review remains
+a separate prerequisite before explicit approval.
