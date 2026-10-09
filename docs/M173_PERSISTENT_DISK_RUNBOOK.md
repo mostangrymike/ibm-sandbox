@@ -1,5 +1,42 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## 2026-10-09 09:33:55 CDT — Gate 6 preactivation read-only PASS
+
+CMS MAINT `CP QUERY SYSTEM 0127` showed
+VMCOM1 15 links unchanged, no PMAINT0141
+fullpack currently linked; `CP QUERY ALLOC
+DRCT ALL` showed M01RES real0123 cylinders
+1–20, ACTIVE; `CP QUERY MDISK 0600
+DIRECTORY` reported absent HCPQMD040E
+RC40 **as expected**; `M173DCHK`
+verified 4282 original/backup directory
+records equal, one MAINT-1 MDISK insertion
+at candidate record213 and DELTA CHECK
+PASS RC0 at 09:33:55.
+
+**Gate 6 PASS. New 0600/G still does not exist.**
+The full active VMUDQ list confirms only
+PMAINT0141 fullpack overlays the proposed
+6000–7599 range. A fullpack writer must
+be prevented for the lifetime of G data;
+a 15-link read-only snapshot alone does
+not enforce that. The recovery EBS
+snapshot was completed and operator
+matched source/Region but not test-restored.
+
+See `docs/M173_ACTIVATION_CHANGE_CONTROL.md`
+for the separately authorized directory
+activation/rollback decision, IBM DIRECTXA
+outcome branches UPDATED AND ON LINE
+versus UPDATED-only and NOT UPDATED,
+postactivation directory/physical queries,
+relogon planning, and the later
+**separately authorized** CMS new-G
+FORMAT gate. Absolutely no non-EDIT
+DIRECTXA, LINK/ACCESS, FORMAT or importer
+is authorized by this checkpoint.
+
+
 ## 2026-10-09 09:26:50 CDT — M173VQ REAL VMCOM1 inventory PASS
 
 CMS MAINT successfully ran the final guarded `M173VQ`

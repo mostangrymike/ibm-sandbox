@@ -1,3 +1,82 @@
+## CURRENT GATE — 2026-10-09 09:33:55 CDT: Gate 6 read-only PASS; activation NOT authorized
+
+**Actual CMS MAINT results:**
+
+```text
+CP QUERY SYSTEM 0127
+DASD 0127 ATTACHED CPVOL 0015 VMCOM1
+MAINT 0551 R/O, MAINT 02CC R/W, MAINT 049E R/O
+VMSERVP 0311/0310/0309/0308/0307/0306/0305/0304
+VMSERVP 0303/0301/0302/0191 R/W
+Ready; T=0.01/0.01 09:33:40
+CP QUERY ALLOC DRCT ALL
+M01RES 0123 1 20 20 1 2 5% ACTIVE
+Ready; T=0.01/0.01 09:33:41
+CP QUERY MDISK 0600 DIRECTORY
+HCPQMD040E Device 0600 does not exist
+Ready(00040); T=0.01/0.01 09:33:53
+M173DCHK
+M173 DIR ORIGINAL/BACKUP VERIFIED 4282
+M173 DIR MAINT-1 SUBCONFIG VERIFIED
+M173 DIR SINGLE MDISK INSERT RECORD 213
+M173 DIR DELTA CHECK PASS
+Ready; T=0.81/0.83 09:33:55
+```
+
+**Gate 6 READ-ONLY PASS on actual CMS:** 15 VMCOM1
+current links unchanged, no PMAINT 0141 full-pack
+link shown, CP ACTIVE directory allocation on
+M01RES/0123 cylinders 1–20, planned virtual
+0600 not currently in the online directory (RC40
+is the **expected negative**), and M173DCHK
+re-verifies byte-identical original 4282-record
+`USER DIRECT C` / `M173BAK DIRECT C` and exactly
+one `MAINT-1` MDISK insertion at candidate
+record 213. The real VMUDQ active-directory
+inventory Gate 5f already showed no ordinary
+MDISK intersecting VMCOM1 6000–7599; special
+full-pack PMAINT 0141 is the declared exception.
+
+**NEW dedicated operator change document:**
+`docs/M173_ACTIVATION_CHANGE_CONTROL.md`
+specifies full-pack access policy, snapshot recovery
+limitations, controlled non-EDIT DIRECTXA activation
+**for separately authorized change windows only**,
+exact response distinctions, postactivation CP
+owner/VDEV/VOLSER/RDEV/extent verification,
+SSI-relogon precautions, conditional rollback,
+and later independent **destructive** CMS FORMAT
+gate. IBM's DIRECTXA docs distinguish
+`EOJ DIRECTORY UPDATED AND ON LINE` from merely
+`EOJ DIRECTORY UPDATED` and `EOJ DIRECTORY NOT
+UPDATED`. The former is required to claim online
+success. Do not infer updated from syntax
+`(EDIT` or from a directory source file.
+
+**HARD STOP:** Gate 6 success is not authorization
+to activate or format. PMAINT 0141 real full-pack
+0–10999 overlaps planned new G, although no
+currently linked full-pack was displayed.
+A full-pack write can bypass ordinary W-mode
+protection; its use must be controlled before
+adding irreplaceable data to G. The completed
+EBS snapshot's source/Region were attested
+by operator; an isolated restore is untested.
+Original PACK A and all validated generations
+must remain protected. No activation, LINK,
+ACCESS, FORMAT, `M173CHK` or Git import yet.
+
+**No further redundant CMS read-only checks are
+required at this moment**; re-run the known Gate 6
+batch immediately before any independently
+approved activation to avoid stale results.
+
+IBM:
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-link
+
+---
+
 ## CURRENT GATE — 2026-10-09 09:26:50 CDT: Gate 5f CP VMUDQ LIVE PASS
 
 **Real CMS MAINT executed `START` after loading target-assembled
