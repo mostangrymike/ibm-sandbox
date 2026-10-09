@@ -1,3 +1,93 @@
+## CURRENT GATE — 2026-10-09 09:05:28 CDT: M173VQ assembler PASS; execution safety review
+
+**Real CMS MAINT (09:05:28):**
+
+```text
+ASSEMBLE M173VQ
+ASSEMBLER (XF) DONE
+NO STATEMENTS FLAGGED IN THIS ASSEMBLY
+Ready; T=0.08/0.10 09:05:28
+```
+
+The IBM-documented raw `DIAGNOSE X'25C'` machine bytes
+`83 24 02 5C` **now assemble on actual z/VM 6.3 CMS XF**
+(no flagged statements, RC0). The previous IFO078 RC8
+compiler error is resolved. This is not a successful
+DIAG invocation or a complete active-directory inventory.
+
+### Preexecution validation against IBM DIAG X'25C'
+
+- MAINT has CP privilege **B** within ABCDEFG.
+- `Rx=R2`: address of the 48-byte parameter list,
+  subsequently the number of bytes returned.
+- `Ry=R4`: address of the fixed record output buffer.
+- `Ry+1=R5`: on entry buffer capacity, on exit
+  the DIAG return code; zero indicates success
+  when condition code is zero. The 65520-byte
+  buffer fits exactly 1092 records of 60 bytes.
+- Zero/nonzero condition code, zero/nonzero R5,
+  zero-length result, over-capacity and incomplete
+  60-byte records all fail closed.
+- `LSTMDISK` selects all owners, all virtual devices,
+  volume `VMCOM1`, and all SSI systems (`*`);
+  output consists of MDISK owner/VDEV/volume/device/
+  start/size/system fields, not passwords.
+- The parameter list must be doubleword aligned
+  AND **must not cross a 4K page boundary**. The
+  earlier program used `DS 0D` but did not check
+  whether runtime LOAD relocation placed its 48
+  bytes across pages. The current host correction
+  adds an **explicit nonmutating fail-closed guard**
+  before DIAG: it calculates `R2 & X'FFF'` and
+  exits RC8 if the offset exceeds 4048, so the
+  complete 48 bytes cannot cross the page.
+  This extra guard has **NOT yet been target-compiled**.
+- IBM `DIAG X'25C'` reports buffer-too-small as R5
+  status X'08' and bytes required via R2. M173VQ
+  refuses such a partial inventory; no results may
+  be considered complete.
+- The result is read-only and does **not** authorize
+  changes to the CP directory or protection of
+  the overlapping PMAINT/0141 fullpack (live
+  VMCOM1 real0127 start0 length11000).
+
+**NEXT TARGET — RECOMPILE FINAL GUARDED SOURCE ONLY.**
+
+Mac, in `ibm-sandbox/src`:
+
+```bash
+git pull
+./cms-upload.sh M173VQ.ASSEMBLE
+```
+
+On CMS MAINT:
+
+```text
+ASSEMBLE M173VQ
+```
+
+Do **not** run `M173VQ`, `LOAD`, or `GENMOD` until
+the actual output verifies the new guard assembles
+cleanly. Once it does, code/return-path review is
+complete and the next gate can generate and execute
+this single read-only CP query, with explicit review
+of all printed VMCOM1 owners and full-pack definitions.
+
+**HARD STOP:** No `DIRECTXA` without `(EDIT`,
+no activation/formatting or linking of proposed
+new virtual 0600/G, no import or overwrite of
+the 4282-record original/backup directories,
+candidate, M171NET PACK/META, generations or selectors.
+Full-pack mitigation and rollback approval remain
+independent safety requirements.
+
+References:
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=codes-diagnose-code-x25c-directory-query
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=query-responses
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-genmod
+
+---
+
 ## CURRENT GATE — 2026-10-09 08:55 CDT: active full-pack confirmed; M173VQ compile RC8 fixed in source, CMS RETEST REQUIRED
 
 **Real CMS MAINT read-only results (October 9, 08:54):**
