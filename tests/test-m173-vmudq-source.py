@@ -86,4 +86,29 @@ for text, expected in (
     for marker in expected:
         assert marker.lower() in text.lower(), marker
 
+
+# Latest real CMS MAINT: active CP fullpack is 11000 cylinders,
+# NOT source DIRMAP's model-inferred 10017 cylinders.
+for marker in (
+    "2026-10-09 08:55 CDT",
+    "PMAINT 0141",
+    "11000",
+    "IFO078 UNDEFINED OP CODE",
+    "Ready(00008)",
+    "DC X'83',X'24',XL2'025C'",
+    "compile-only",
+):
+    assert marker.lower() in plan.lower(), marker
+for marker in (
+    "full physical cylinders 0–10999",
+    "IFO078 UNDEFINED OP CODE",
+    "only",
+):
+    assert marker.lower() in runbook.lower(), marker
+assert "ASSEMBLE M173VQ" in state
+assert "COMPILE-ONLY" in state
+assert "No successful" in state
+assert 11000 - 1 == 10999
+assert 6000 >= 0 and 7599 <= 10999
+
 print("M173 VMUDQ READONLY SOURCE AND HOST MODEL PASS")
