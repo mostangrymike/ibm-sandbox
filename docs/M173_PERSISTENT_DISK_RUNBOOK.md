@@ -1,5 +1,24 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## 2026-10-09 08:16:20 CDT — Gate 5c boundary filters LIVE PASS
+
+Four read-only CMS `PIPE < M173NEW MDISKMAP C | LOCATE`
+commands returned normal RC0 on MAINT. The source-derived
+report shows MAINT-1 0600 W, 6000-7599 length 1600,
+gap 5936-5999 size64 and gap 7600-10016 size2417.
+All endpoint calculations match. But the VOLSER field is
+blank on the returned continuation rows, so **full Gate 5c
+and volume context remain pending**, not proven.
+
+Next read-only check: `PIPE < M173NEW MDISKMAP C |
+DROP 200 | TAKE 100 | CONSOLE`. Inspect the contiguous
+VMCOM1 section; publish only nonsecret extent summaries.
+No CP directory activation, LINK, ACCESS, FORMAT,
+or M173 import. DIRMAP is not proof against fullpack
+and hidden PERM/PARM overlaps. Original USER DIRECT C
+and backup M173BAK DIRECT C remain protected.
+
+
 Status: **the new data minidisk has NOT been provisioned**.
 This document separates read-only discovery, privileged allocation,
 initialization of a NEW empty minidisk, and the actual Git importer.
