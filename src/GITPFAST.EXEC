@@ -100,7 +100,7 @@ trees=''
 blobs=''
 entries=''
 verified=''
-for i=1 to o.0
+do i=1 to o.0
  if o.i='M178 TREE CLOSURE PASS' then pass=pass+1
  if word(o.i,1)='TREE' & word(o.i,2)='CLOSURE' then do
   if word(o.i,3)='ROOT' & words(o.i)=4 &,
