@@ -1,5 +1,51 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## CURRENT — 2026-10-09 15:32:00 CDT: M177 GITPVIEW TREE CMS PASS
+
+Real target `GITPVIEW TREE G
+CCB18BEC067E7886D70B82EF138EE56A8B899A61`
+returned full native `TREE CLOSURE`: 8 trees,
+272 blobs, no gitlinks, 279 entries and
+280 verified objects; max object393767 bytes,
+resident peak394058, stage/index population
+7736 unique. Terminal markers:
+`M176 TREE CLOSURE PASS` and
+`M177 PACK VIEW TREE PASS
+CCB18BEC067E7886D70B82EF138EE56A8B899A61 G`,
+Ready `T=*.**/*.**` at 15:32:00.
+
+**M177 TREE actual CMS successful**, reusing
+unchanged G stage and index without re-import.
+The command's elapsed runtime is not available
+from overflowed CMS counters. Previous Ready
+at 13:28:51 is roughly two hours earlier;
+this is not a definitive command duration.
+
+Still not shown: M177 `GITPVIEW INFO G`
+terminal success, standalone `M175CHK G`
+terminal success, and before/after
+`QUERY FILEDEF` state equivalence.
+Current minimal CMS continuation:
+
+```text
+QUERY FILEDEF
+GITPVIEW INFO G ADA83FF3B3813961CEF2A9FFC50A453540039E0B
+QUERY FILEDEF
+M175CHK G
+```
+
+Full next non-destructive performance analysis:
+`docs/M178_PACK_TREE_PERFORMANCE_PLAN.md`.
+Current `GITPTRE.C` performs a byte-offset
+`fseek` into the large CMS STGIN file
+per reached object; random-access cost is
+a plausible but unmeasured bottleneck.
+Keep original GITPTRE and GITPVIEW modules
+as proven baselines. Never reformat G,
+rebuild M173/M174, erase stage/index or
+use PMAINT0141 fullpack for writes.
+
+
 
 ## CURRENT — October 9, 2026, 12:51:40 CDT: M176 NATIVE ROOT CLOSURE LIVE PASS
 

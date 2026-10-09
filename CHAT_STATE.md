@@ -9912,3 +9912,105 @@ not enough to claim full M175 checker.
 Protect GIT600 G, M173NET STAGE G,
 M174NET INDEX G, M171NET PACK/META A
 and overlapping PMAINT0141 no-write policy.
+
+## 2026-10-09 15:32 CDT — M177 GITPVIEW TREE G ACTUAL CMS TARGET PASS
+
+Operator ran the new isolated native REXX
+`GITPVIEW TREE G CCB18BEC067E7886D70B82EF138EE56A8B899A61`.
+CMS returned:
+
+```text
+TREE CLOSURE ROOT CCB18BEC067E7886D70B82EF138EE56A8B899A61
+TREE CLOSURE TREES 8 BLOBS 272 GITLINKS 0
+TREE CLOSURE ENTRIES 279 VERIFIED 280
+TREE CLOSURE MAX OBJECT 393767 RESIDENT PEAK 394058
+TREE CLOSURE INDEX TOTAL 7736 UNIQUE 7736
+M176 TREE CLOSURE PASS
+M177 PACK VIEW TREE PASS CCB18BEC067E7886D70B82EF138EE56A8B899A61 G
+Ready; T=*.**/*.** 15:32:00
+```
+
+**M177 TREE target-proven PASS on actual z/VM 6.3
+CMS** with the protected `M173NET STAGE G` /
+`M174NET INDEX G` and root OID from M176.
+Reported closure matches previous M176:
+8 trees + 272 blobs = 280 verified,
+279 entries, 0 gitlinks, largest
+393767, resident peak 394058,
+global index total/unique 7736.
+
+User's previous CMS Ready line was at
+13:28:51 and M177 TREE completion Ready
+at 15:32:00, separated by ~2h03m09s;
+this is an observation of reported
+clock timestamps, NOT a certified
+execution duration. CMS counters
+overflowed `T=*.**/*.**`.
+Current `GITPTRE.C` scans index into
+RAM and for each reached object uses
+`fseek(stage,ix[pos].offset,SEEK_SET)`
+on `dd:STGIN`. The large number of
+random seeks on CMS stage is a plausible
+slow path, not yet profiled/proven.
+Potential next engineering M178: optimize
+verified read-only tree closure using
+sequential/seek-minimized access; retain
+existing M176 and M177 functioning
+modules as comparison baseline.
+Do not falsely claim elapsed perf fix.
+
+**Still outstanding (not shown in this
+message):** M177 INFO target PASS,
+standalone M175CHK G full terminal
+PASS and before/after QUERY FILEDEF
+session restoration comparison. The
+M177 TREE operation alone proves
+TREE command and its successful
+native backend, not these other tests.
+NEXT CMS, without rebuilding stage or
+index:
+`QUERY FILEDEF`,
+`GITPVIEW INFO G ADA83FF3B3813961CEF2A9FFC50A453540039E0B`,
+`QUERY FILEDEF`, and if not already
+validated `M175CHK G`.
+The INFO expected marker is
+`M177 PACK VIEW INFO PASS
+ADA83FF3B3813961CEF2A9FFC50A453540039E0B G`.
+Protect GIT600, stage/index,
+original M171NET PACK/META A, other
+sealed datasets and PMAINT0141
+fullpack no-writes policy.
+
+## 2026-10-09 — M178 nonmutating tree-performance engineering plan
+
+New `docs/M178_PACK_TREE_PERFORMANCE_PLAN.md`
+prepared after the actual CMS M177 TREE PASS.
+The current `src/GITPTRE.C` fetch routine
+does per-reachable-object `fseek(stage,
+ix[pos].offset,SEEK_SET)` and readback
+SHA1. With 280 reachable objects and the
+large 7,736-object CMS STAGE G this
+may be expensive, but **no profiler
+measurement confirms the bottleneck**.
+The two Ready timestamps from previous
+command 13:28:51 to M177 TREE completion
+15:32:00 imply 2h03m09s between displayed
+Ready lines, NOT verified elapsed time
+for GITPVIEW TREE; CMS `T=*.**/*.**`
+is overflowed and cannot be interpreted
+as numeric time.
+
+Plan proposes independent M178 native
+module with a forward scan and bounded
+tree-edge cache, separate host parity
+and corruption tests, target comparison
+against 8-tree/272-blob/280-verified
+root closure, plus runtime measurement
+without replacing proven GITPTRE or
+GITPVIEW. No optimized native code has
+been written or target-proven yet.
+Immediate read-only M177 INFO and
+standalone M175 checks still pending.
+Preserve GIT600 G, M173NET STAGE G,
+M174NET INDEX G, original PACK/META A
+and PMAINT0141 no-write restriction.

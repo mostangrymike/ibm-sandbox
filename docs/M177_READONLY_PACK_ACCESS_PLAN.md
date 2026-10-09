@@ -1,5 +1,72 @@
 # M177 — explicit, read-only PACK access to verified CMS G repository
 
+## 2026-10-09 15:32 CDT — M177 TREE ACTUAL z/VM 6.3 TARGET PASS
+
+The user ran the isolated `GITPVIEW TREE G`
+command against the retained G stage and index.
+Actual CMS output:
+
+```text
+GITPVIEW TREE G CCB18BEC067E7886D70B82EF138EE56A8B899A61
+TREE CLOSURE ROOT CCB18BEC067E7886D70B82EF138EE56A8B899A61
+TREE CLOSURE TREES 8 BLOBS 272 GITLINKS 0
+TREE CLOSURE ENTRIES 279 VERIFIED 280
+TREE CLOSURE MAX OBJECT 393767 RESIDENT PEAK 394058
+TREE CLOSURE INDEX TOTAL 7736 UNIQUE 7736
+M176 TREE CLOSURE PASS
+M177 PACK VIEW TREE PASS CCB18BEC067E7886D70B82EF138EE56A8B899A61 G
+Ready; T=*.**/*.** 15:32:00
+```
+
+**TREE mode is now LIVE TARGET VERIFIED**: the
+new wrapper used the existing native GITPTRE
+to authenticate the same 8-tree/272-blob root
+closure as M176, indexed across 7736 objects,
+with all expected output markers.
+
+**Do not yet label the entire M177 suite
+target verified.** No separate M177 `INFO`
+terminal output, full standalone M175CHK G
+result, or before/after CMS `QUERY FILEDEF`
+state comparison has been supplied. The
+source wrapper attempts to safeguard existing
+DD bindings; the successful TREE query does
+not by itself demonstrate every negative
+branch or unchanged preexisting FILEDEFs.
+
+Immediately useful remaining read-only checks:
+
+```text
+QUERY FILEDEF
+GITPVIEW INFO G ADA83FF3B3813961CEF2A9FFC50A453540039E0B
+QUERY FILEDEF
+M175CHK G
+```
+
+Run M175 only if its full terminal PASS has
+not already been observed. Expect `M177 PACK
+VIEW INFO PASS` and `M175 VERIFIED RANDOM
+ACCESS TARGET GATE PASS` respectively.
+Never rerun M173/M174 or reformat G.
+
+**Performance warning:** Prior CMS Ready
+was shown at 13:28:51; TREE Ready
+at 15:32:00. The gap is about 2h03m09s
+between displayed terminal timestamps,
+not a certified CPU or elapsed time for
+the TREE command. `T=*.**/*.**`
+overflowed. The current native GITPTRE
+uses per-object file seeks into a very
+large variable-record CMS G stage.
+A sequential scan could reduce costly
+random access, but no performance
+diagnosis or optimization has been
+measured yet; do not present this as
+a proven bottleneck.
+
+---
+
+
 ## Implemented source checkpoint — October 9, 2026
 
 Added `src/GITPVIEW.EXEC`, a new 8-character CMS name,
@@ -72,7 +139,7 @@ https://www.ibm.com/docs/en/zvm/7.2?topic=commands-filedef
 ---
 
 
-**Status: isolated source prototype implemented on GitHub; not target-proven.**
+**Status: M177 TREE target-proven on CMS; INFO and FILEDEF hygiene pending.**
 Prepared October 9, 2026 after actual M173, M174 and
 M176 G-stage/index target PASS (`M176 LIVE ROOT TREE CLOSURE TARGET GATE PASS`). The standalone M175CHK G
 terminal result was not supplied with the M176 output.
