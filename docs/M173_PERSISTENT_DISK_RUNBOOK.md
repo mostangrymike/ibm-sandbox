@@ -1,5 +1,111 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+
+## CURRENT — October 9, 2026, 12:51:40 CDT: M176 NATIVE ROOT CLOSURE LIVE PASS
+
+**Real z/VM 6.3 CMS MAINT, `M176CHK G`:**
+
+```text
+PACKOBJ OID ADA83FF3B3813961CEF2A9FFC50A453540039E0B
+PACKOBJ OBJ 7000 TYPE 1 SIZE 265
+PACKOBJ COMMIT TREE CCB18BEC067E7886D70B82EF138EE56A8B899A61
+PACKOBJ COMMIT PARENT B81D3CE7BAC08420BF7DB862E93F82FB3968DDC0
+PACKOBJ COMMIT PARENTS 1
+PACKOBJ INDEX TOTAL 7736 UNIQUE 7736
+M175 PACK INFO PASS
+M176 ROOT TREE CCB18BEC067E7886D70B82EF138EE56A8B899A61
+TREE CLOSURE ROOT CCB18BEC067E7886D70B82EF138EE56A8B899A61
+TREE CLOSURE TREES 8 BLOBS 272 GITLINKS 0
+TREE CLOSURE ENTRIES 279 VERIFIED 280
+TREE CLOSURE MAX OBJECT 393767 RESIDENT PEAK 394058
+TREE CLOSURE INDEX TOTAL 7736 UNIQUE 7736
+M176 TREE CLOSURE PASS
+M176 TREE CLOSURE CROSSCHECK PASS
+M176 TREES 8 BLOBS 272 GITLINKS 0
+M176 ENTRIES 279 VERIFIED 280
+M176 LIVE ROOT TREE CLOSURE TARGET GATE PASS
+Ready; T=*.**/*.** 12:51:40
+```
+
+**M176 FULL LIVE TARGET PASS** for root-tree verification:
+8 tree objects + 272 blob objects = **280 verified**
+and **279 entries**, with **zero gitlinks**. The 279
+entries also account for 7 non-root tree nodes
+and 272 blobs, consistent with a rooted acyclic
+tree without gitlinks in the reported walk.
+Largest decoded object: **393767 bytes**; peak
+resident reported **394058 bytes**. The stage/index
+global population remains **7736** and the
+commit's indexed object is **OBJ7000, type1,
+265 bytes**. Verified main commit
+`ADA83FF3B3813961CEF2A9FFC50A453540039E0B`
+references root tree
+`CCB18BEC067E7886D70B82EF138EE56A8B899A61`
+and parent
+`B81D3CE7BAC08420BF7DB862E93F82FB3968DDC0`.
+
+**Elapsed time unknown**: real CMS Ready prints
+`T=*.**/*.**`, not numerical timing; do
+not infer a duration. The pasted output joins
+`M176 TREE CLOSURE PASS` and
+`M176 TREE CLOSURE CROSSCHECK PASS` on one
+line but the final explicit M176 target PASS,
+the successful checker sequence and Ready line
+support milestone completion.
+
+The output includes **`M175 PACK INFO PASS`**
+from the shared GITPCAT primitive called by
+M176; no standalone `M175CHK G` completion
+was provided here, so do **not** claim the
+complete M175 target gate has independently
+passed on this evidence.
+
+**NEXT minimal direct CMS verification (read-only,
+no 24-minute index rebuild):**
+
+```text
+M175CHK G
+```
+
+This verifies indexed tip commit, its root
+tree and every parent using the retained
+`M173NET STAGE G` and
+`M174NET INDEX G`, and should finish with
+`M175 VERIFIED RANDOM ACCESS TARGET GATE PASS`
+only if the complete gate succeeds.
+No C rebuild is required: M176 successfully
+called `GITPCAT INFO` on the live stage/index.
+If M175 independently passed already, don't
+needlessly rerun; retain the prior result.
+
+**Next development direction M177:** make
+reusable Git-facing, read-only queries against
+the existing verified G stage/index without
+rebuilding/re-importing. Existing native
+`GIT PACK-CAT oid` and
+`GIT PACK-TREE oid` dispatchers currently
+expect `STGIN`/`IDXIN` FILEDEFs supplied
+by the caller. A future audited wrapper
+should require an explicit non-A filemode,
+validate 4K accessible CMS disk,
+confirm stage+index presence and preserve
+any pre-existing FILEDEF session state
+before routing native commands. Do not
+silently redirect production Git commands,
+touch A/C or overwrite stage/index.
+Treat this as an engineering plan, not
+claimed target-proven M177 functionality.
+
+**Preserve** `M171NET PACK/META A`, the
+7,736-object `M173NET STAGE G`,
+`M174NET INDEX G`, earlier sealed Git
+generations, directory backup and GIT600.
+No reformat, no M173 or M174 regeneration,
+no writable PMAINT 0141 fullpack access.
+
+---
+
+
 ## CURRENT — 2026-10-09 11:27:15 CDT: M174 LIVE 7736-OBJECT INDEX PASS
 
 **Real CMS MAINT M174CHK G target result:**
