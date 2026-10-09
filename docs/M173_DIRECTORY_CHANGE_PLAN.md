@@ -1,3 +1,87 @@
+## CURRENT GATE — 2026-10-09 09:58:25 CDT: MAINT 0600 VIRTUAL SELF-LINK PASS
+
+MAINT's pre-link `CP QUERY VIRTUAL DASD`
+did not contain 0600; `CP QUERY MDISK
+0600 LOCATION` returned expected
+`HCPQMD040E` RC40; `QUERY DISK`
+showed filemode G unused. At 09:57:38:
+`CP LINK * 0600 0600 W` returned
+normal Ready RC0. At 09:58:09,
+the re-query displayed:
+
+```text
+DASD 0600 3390 VMCOM1 R/W 1600 CYL ON DASD 0127 SUBCHANNEL = 0024
+```
+
+At 09:58:25 CMS `Q DISK` again
+showed only preexisting A/B/C/D/E/F/
+S/T/Y/S, no G, as expected before
+the new 0600 is CMS-formatted.
+The online permanent CP directory
+already proved owner MAINT virtual0600,
+VMCOM1 real0127, start6000
+size1600 end7599 at 09:49:38.
+
+**Phase 7A target PASS:** 0600 is
+now attached writable in the actual
+logged-on MAINT VM. No logout/relogin
+was necessary. The disk is NOT
+formatted and must not yet be
+treated as an accessible G filesystem.
+Original PACK, sealed generations and
+USER DIRECT/backup remain protected.
+
+**Next, read-only CURRENT virtual location:**
+
+```text
+CP QUERY MDISK 0600 LOCATION
+```
+
+If and **only if** this confirms
+owner MAINT, VMCOM1, real0127,
+physical start6000, length1600,
+with virtual R/W already verified,
+and the PMAINT0141 fullpack is not
+actively linked for write, the
+separate intentionally destructive
+CMS initialization may target only
+this specific 0600, using IBM's
+documented FORMAT syntax:
+
+```text
+FORMAT 600 G 1600 (BLKSIZE 4096
+```
+
+Check confirmation actually says
+`G(600)` and identifies a
+FORMAT erase of **that** device;
+if the target differs or any
+uncertainty exists, answer `NO`
+and do not format anything.
+If exact, answer `YES`;
+then at the disk-label prompt
+enter exactly `GIT600`.
+Require **1600 cylinders formatted**
+and normal RC0. Verify with
+`QUERY DISK G` that G is
+R/W, virtual600, 3390/1600,
+4KB blocks, >=180000 free blocks.
+Do not repeat FORMAT on error
+or format another disk. The
+PMAINT0141 full-pack definition
+still overlaps 0600, even if
+it is not actively linked; protect
+against any future fullpack write.
+
+**No M173 importer before a
+verified writable G filesystem.**
+Canonical plan:
+`docs/M173_ACTIVATION_CHANGE_CONTROL.md`.
+IBM reference:
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-format
+
+---
+
 ## CURRENT GATE — 2026-10-09 09:50:09 CDT: M173 candidate ACTUAL ONLINE CP DIRECTORY SUCCESS
 
 Real CMS MAINT performed `DIRECTXA M173NEW DIRECT C`
