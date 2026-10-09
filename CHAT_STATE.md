@@ -9677,3 +9677,48 @@ must not be write-linked.
 
 GitHub canonical; max work per
 turn; M173 stage on new G succeeds.
+
+## 2026-10-09 10:57:31 CDT — M174 G stage present, missing GITPIDX C A
+
+Real CMS MAINT at 10:57:
+`QUERY DISK G`: GIT600 600 G R/W
+1600 3390 4096, 1 file, 62398
+used, **225602 free** of 288000.
+`STATE M173NET STAGE G` RC0:
+the verified M173 7736-object stage
+remains on G. `STATE M174NET INDEX G`
+expected RC28 absent. `STATE GITPIDX
+MODULE A` RC28 absent.
+`CMSCLNK GITPIDX PLAIN` correctly
+failed RC12 at GCCCMS compile stage:
+`SOURCE FILE ' GITPIDX C A ' NOT FOUND`.
+This is a missing C source transfer,
+not M173 stage corruption or native
+C compiler defect. M174 was NOT run
+and no G index was written.
+
+Confirmed from GitHub source:
+`src/GITPIDX.C` exists, 13119 chars,
+max source line67, fixed LRECL80
+compatible. `src/cms-upload.sh`
+accepts `.C` and sends target
+`GITPIDX C A`. Canonical CMSCLNK
+uses `EXEC GCCE GITPIDX C A`.
+
+**NEXT MAC in ibm-sandbox/src:**
+`git pull`
+`./cms-upload.sh GITPIDX.C`
+**NEXT CMS MAINT:**
+`STATE GITPIDX C A`
+`CMSCLNK GITPIDX PLAIN`
+only on build success:
+`STATE GITPIDX MODULE A`
+`M174CHK G`.
+Success marker:
+`M174 GENERALIZED STAGE INDEX TARGET
+GATE PASS`.
+Protect M173NET STAGE G and M171NET
+PACK/META A. Do not rerun M173,
+FORMAT G or remove any failed output.
+M174 output target M174NET INDEX G
+is still absent as of 10:57:19.

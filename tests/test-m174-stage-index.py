@@ -163,4 +163,27 @@ with tempfile.TemporaryDirectory() as td:
     assert truncated.returncode == 8
     assert "INDEX RECORD FAIL" in truncated.stdout
 
+
+# Real CMS M174 preflight passed G/stage/index checks. The C
+# build was blocked only by absent GITPIDX C A. Transfer source
+# using the supported .C uploader; do not touch M173 stage.
+runbook = (root / "docs/M173_PERSISTENT_DISK_RUNBOOK.md").read_text()
+handoff = (root / "CHAT_STATE.md").read_text()
+uploader = (root / "src/cms-upload.sh").read_text()
+for doc in (runbook, handoff):
+    for marker in (
+        "10:57:31",
+        "225602",
+        "SOURCE FILE ' GITPIDX C A ' NOT FOUND",
+        "M173NET STAGE G",
+        "M174NET INDEX G",
+        "./cms-upload.sh GITPIDX.C",
+        "CMSCLNK GITPIDX PLAIN",
+        "M174CHK G",
+    ):
+        assert marker in doc, (marker, "M174 recovery handoff")
+assert "Recfm=fixed,Lrecl=80" in uploader
+assert "Example: $0 GITSEL.C GITREC.C GITCIDX.C" in uploader
+assert max(map(len, text.splitlines())) <= 80
+
 print("M174 GENERALIZED STAGE INDEX HOST MODEL PASSED")

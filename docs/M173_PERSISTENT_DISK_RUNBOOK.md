@@ -1,5 +1,66 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## CURRENT — 2026-10-09 10:57:31 CDT: M174 source absent, G and stage intact
+
+Real CMS MAINT results:
+
+```text
+QUERY DISK G
+GIT600 600 G R/W 1600 3390 4096 1 62398-22 225602 288000
+Ready; T=0.01/0.01 10:57:02
+STATE M173NET STAGE G
+Ready; T=0.01/0.01 10:57:04
+STATE M174NET INDEX G
+DMSSTT002E File M174NET INDEX G not found
+Ready(00028); T=0.01/0.01 10:57:19
+STATE GITPIDX MODULE A
+DMSSTT002E File GITPIDX MODULE A not found
+Ready(00028); T=0.01/0.01 10:57:20
+CMSCLNK GITPIDX PLAIN
+SOURCE FILE ' GITPIDX C A ' NOT FOUND
+CMSCLNK: C compile failed
+Ready(00012); T=0.01/0.01 10:57:31
+```
+
+**M174 NOT YET RUN.** This is a missing source
+file on CMS A, not evidence of an invalid M173
+stage or a compiler-language failure. Existing
+`src/GITPIDX.C` is in GitHub, 13119 characters,
+lines max67 (<80), and `src/cms-upload.sh`
+accepts NAME.C, sending `GITPIDX C A` via
+the proven DFT 80-column transfer. Do not
+change GCCCMS or reimport the M173 stage.
+
+On the **Mac**, from `ibm-sandbox/src`:
+```bash
+git pull
+./cms-upload.sh GITPIDX.C
+```
+
+On **CMS MAINT**:
+```text
+STATE GITPIDX C A
+CMSCLNK GITPIDX PLAIN
+```
+
+Only after both commands succeed, and the
+new GITPIDX MODULE exists, run:
+```text
+STATE GITPIDX MODULE A
+M174CHK G
+```
+
+Expect `M174 GENERALIZED STAGE INDEX TARGET
+GATE PASS` only if real index build/check,
+stage audit and indexed metadata-tip GET pass.
+Retain `M173NET STAGE G`, `M171NET PACK/META A`
+and any partial `M174NET INDEX G` on error;
+the stage is expensive to regenerate.
+No need to rerun M173 or FORMAT G.
+
+---
+
+
 ## CURRENT — 2026-10-09 10:48:28 CDT: M173 LIVE IMPORT + READBACK PASS
 
 **Real z/VM 6.3 CMS MAINT operator output after `M173CHK G`:**
