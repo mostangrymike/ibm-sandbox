@@ -1,5 +1,68 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## 2026-10-09 09:26:50 CDT — M173VQ REAL VMCOM1 inventory PASS
+
+CMS MAINT successfully ran the final guarded `M173VQ`
+via `START`: the active CP VMUDQ LSTMDISK function
+printed the VMCOM1 minidisk records and the exact
+`M173VQ VMCOM1 QUERY COMPLETE NOT ACTIVATION
+APPROVAL` marker with normal Ready RC0 at 09:26:50.
+
+Every finite ordinary VMCOM1 minidisk in the
+operator-provided rows ends at or below cylinder
+**5935**. The latest physical end is
+`6VMHCD20 0300 VMCOM1 3390 0000005756
+0000000180` = 5756–5935.
+The unallocated **ordinary** interval includes
+planned MAINT 0600, 6000–7599; no ordinary CP
+directory MDISK overlaps it. The CP VMUDQ
+`PMAINT 0141 VMCOM1 3390 0000000000 END`
+record is a true full-pack **overlap**, not
+spare capacity. Independent CP location
+query proves PMAINT0141 size11000 (0–10999).
+Although `CP QUERY SYSTEM 0127` did not
+show PMAINT0141 linked earlier, fullpack
+access can be requested later and can bypass
+ordinary write-link conflict checking.
+`$DIRECT$ 0B01` at 131–230 is disjoint
+from 0600; treat reserved/CP space separately.
+
+**Gate 5f: target-proven, read-only inventory.**
+Only ordinary-minidisk collision-free status
+is established. New G disk is still absent,
+no CP directory activation/formatting has
+occurred, and fullpack access/rollback
+policy remains an explicit requirement.
+
+Next CMS MAINT Gate 6 **read-only** preflight:
+```text
+CP QUERY SYSTEM 0127
+CP QUERY ALLOC DRCT ALL
+CP QUERY MDISK 0600 DIRECTORY
+M173DCHK
+```
+Expect 15 prior linked devices with no new
+fullpack links, active DRCT on M01RES real
+0123, virtual 0600 absent RC40, and
+M173DCHK original/backup integrity and
+one-line candidate PASS RC0.
+These checks do not themselves authorize
+non-EDIT DIRECTXA. Complete the separate
+controlled directory activation, backup
+recovery, SSI logon-refresh and rollback
+plan first. The root EBS snapshot was
+completed/source-matched by the operator,
+but an isolated restore was not tested.
+No LINK, ACCESS, FORMAT or Git import.
+
+The native GCCCMS C compiler is available
+for future machine-readable extent audits;
+retain M173VQ as the already-target-proven
+read-only assembler bridge to the active
+CP directory. Do not add another dependency
+before safely provisioning G.
+
+
 ## 2026-10-09 09:17:04 CDT — guarded M173VQ passed real XF
 
 Real MAINT `ASSEMBLE M173VQ`: ASSEMBLER (XF)
