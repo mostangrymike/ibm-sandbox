@@ -9334,3 +9334,77 @@ work per turn, follow official IBM docs
 and existing installed GCCCMS C compiler
 for maintainable future overlap analysis,
 keep assembler small and IBM-specific.
+
+## 2026-10-09 09:33:55 CDT — final Gate 6 read-only CMS PASS; activation held
+
+Real CMS MAINT:
+`CP QUERY SYSTEM 0127`: 15 VMCOM1
+linked minidisks (MAINT0551 R/O,
+02CC R/W, 049E R/O; VMSERVP0311,
+0310,0309,0308,0307,0306,0305,
+0304,0303,0301,0302,0191 R/W),
+no active PMAINT0141 fullpack link
+displayed. Ready RC0 09:33:40.
+`CP QUERY ALLOC DRCT ALL`: M01RES/
+RDEV0123 start1 end20 total20,
+in-use1 high2 used5% ACTIVE;
+Ready RC0 09:33:41.
+`CP QUERY MDISK 0600 DIRECTORY`:
+HCPQMD040E absent RC40 at 09:33:53
+(EXPECTED negative; no 0600 yet).
+`M173DCHK`: original/backup
+4282 records identical; MAINT-1
+one inserted MDISK candidate record213;
+DELTA CHECK PASS RC0 at 09:33:55.
+
+**Gate 6 live read-only PASS.** Gates 5c,
+5d, 5e, 5f previously established:
+VMCOM1 physical real0127 CYLS11000,
+source candidate MAINT0600 W start6000
+size1600 end7599, last active ordinary
+VMCOM1 MDISK 6VMHCD20/0300
+5756–5935, no ordinary overlap in
+live CP VMUDQ inventory, successful
+full active directory query RC0.
+The **PMAINT0141 full-pack** definition
+on VMCOM1/0127 covers 0–10999 and
+overlaps new G. It was NOT currently
+linked in the last CP QUERY SYSTEM,
+but may be linked/write-accessed later.
+Ordinary W mode alone cannot prevent
+that special fullpack overlay.
+
+New standalone
+`docs/M173_ACTIVATION_CHANGE_CONTROL.md`
+is the NOT-APPROVED operator decision
+document. Covers complete change
+gate, enforced no-fullpack-writer policy,
+EBS root snapshot source/Region
+operator-matched and Completed but
+not restore-tested, original
+M173BAK DIRECT C backup, live
+console and SSI relogon, IBM
+DIRECTXA online response distinctions,
+immediate post-update user MDISK
+location check, independent
+destructive new-G FORMAT approval
+and tested/accepted rollback path.
+Fullpack policy/restore risks require
+separate explicit operator authorization.
+
+**STOP**: no non-EDIT DIRECTXA,
+CP activation, LINK, ACCESS, FORMAT,
+`M173CHK`, PACK import, source
+or original Git data edits yet.
+New G data disk remains absent.
+There is no need to keep rerunning
+the same read-only commands until
+just before an authorized activation.
+
+Project: mostangrymike/ibm-sandbox
+main, GitHub edits first; use native
+GCCCMS C for higher-level operations,
+small assembler only for IBM DIAG.
+Do maximum independent preparation
+per turn, never destroy original
+A/C disks or expose passwords.
