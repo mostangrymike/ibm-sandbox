@@ -1,5 +1,114 @@
 # M178 — speed up read-only tree closure without regenerating the PACK
 
+## October 9, 2026 — independent two-pass native C prototype
+
+**IMPLEMENTED SOURCE ONLY; NO REAL CMS TARGET RESULT AND NO
+PERFORMANCE IMPROVEMENT CLAIMED.** A new `src/GITPFST.C`
+reuses the original GITPTRE SHA-1/index parsing and
+tree-format validation, but changes the access strategy:
+
+1. Read `M174NET INDEX G` read-only, validate PIDX1,
+   monotonic OID order, every offset, and build an
+   in-memory object-number-to-index map.
+2. **Forward scan 1** over `M173NET STAGE G`:
+   sequentially validate object headers and records,
+   cache and SHA1-verify tree objects using a strict
+   64MiB resident budget. It matches each selected
+   tree's identity and file position against the index.
+   No random stage seeks.
+3. Traverse cached trees with bounded depth 256,
+   mode/name/type, missing-child, external-gitlink and
+   cycle rules. Mark distinct reachable blobs without
+   accepting their contents yet.
+4. **Forward scan 2** over the stage: SHA1-verify only
+   marked reachable blob bodies and compare their OID,
+   type, length, record number and byte offset against
+   the original index. Count authenticated reachable
+   blobs. The module does not use `fseek`.
+5. Require all reached blobs authenticated, no memory
+   leak, and output validated TREE CLOSURE counters,
+   `M178 FORWARD SCANS 2 RECORDS ... SEEKS 0`,
+   `M178 AUTHENTICATED BLOBS ...`, and
+   `M178 TREE CLOSURE PASS`. Fail closed otherwise.
+
+This approach holds more tree bodies temporarily than
+the original walk and rereads the stage twice. That
+is an explicit bounded-memory tradeoff, not an
+established faster implementation on CMS. An unusual
+repository with more than 64MiB cumulative tree
+data may fail this prototype while the original
+walker succeeds; keep the original as baseline.
+All previous M176/M177 modules and G stage/index
+are unchanged.
+
+Added the independent `GITPFAST EXEC` wrapper:
+it requires an explicit non-A 4096-byte CMS
+disk and 40-hex tree OID; checks the existing
+stage/index and new GITPFST module, refuses
+caller-bound STGIN or IDXIN DDs, establishes
+temporary input FILEDEFs, runs the native
+walker and cleans only its own DDnames.
+It independently crosschecks counts, native
+PASS, authenticated blob count, zero-seek
+diagnostic, requested root, and cleanup RC.
+No ERASE, FORMAT, stage/index OUTPUT or
+directory command is present.
+
+Host model: `tests/test-m178-forward-tree.py`
+compiles both old/new modules with GCC
+C89 `-Wall -Wextra -Werror`, compares
+output for a tree/blob/gitlink fixture
+including a 70,000B blob and verifies
+failure on malformed OID, corrupted
+blob body and missing child. Actions
+native-stage runs the test for relevant
+source changes. **Host testing cannot
+establish z/VM 6.3 FILEDEF or large-stage
+runtime behavior.**
+
+### Exact eventual CMS target validation (after host CI)
+
+Mac, from existing `ibm-sandbox/src`:
+
+```sh
+git pull
+./cms-upload.sh GITPFST.C GITPFAST.EXEC
+```
+
+CMS MAINT, ensure previous stage/index remain
+protected and no DD definitions exist:
+
+```text
+QUERY DISK G
+STATE M173NET STAGE G
+STATE M174NET INDEX G
+QUERY FILEDEF
+STATE GITPFST C A
+CMSCLNK GITPFST PLAIN
+STATE GITPFST MODULE A
+GITPFAST G CCB18BEC067E7886D70B82EF138EE56A8B899A61
+QUERY FILEDEF
+```
+
+Only run GITPFAST if the new C compiler/module
+build succeeds. Check expected root closure:
+8 trees, 272 blobs, zero gitlinks, 279 entries,
+280 verified objects, global index 7736/7736.
+Require `M178 TREE CLOSURE PASS`, the
+two-pass/zero-seek counter, and final
+`M178 VERIFIED FAST TREE TARGET GATE PASS`.
+The FILEDEF state must be identical before/
+after. Measure wall time externally and
+compare with the old result only if the
+measurement methods are genuinely comparable.
+Never run `M173CHK G`, `M174CHK G` or
+FORMAT as part of this experiment.
+Retain the existing GITPTRE and GITPVIEW
+as fallback under all circumstances.
+
+---
+
+
 ## October 9, 2026, 15:51 CDT — prerequisite native gate closure
 
 Subsequent to writing this plan, the operator confirmed
@@ -20,7 +129,7 @@ remains an engineering investigation, not fact.
 ---
 
 
-**Status: analysis and implementation plan, not coded or target-proven.**
+**Status: isolated prototype source and host tests; not CMS target-proven.**
 Prepared October 9, 2026 after full real-CMS M176 and M177 TREE
 closure success using the 7,736-object stage/index on GIT600.
 

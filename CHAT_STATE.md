@@ -10081,3 +10081,86 @@ docs/M178_PACK_TREE_PERFORMANCE_PLAN.md
 describes safe route; performance cause
 not measured yet. User says do not pause
 and prefers maximum work per turn.
+
+## 2026-10-09 — M178 isolated native forward-scan TREE prototype HOST CI PASS
+
+After M173/M174/M175/M176/M177 INFO/TREE actual
+target success, and after prior M177 G TREE
+CMS Ready at 15:32:00 with elapsed counters
+overflowing, added a completely separate
+M178 experimental native tree walker.
+
+Files: `src/GITPFST.C` and
+`src/GITPFAST.EXEC`; host test
+`tests/test-m178-forward-tree.py`, native-stage
+CI hook, updated
+`docs/M178_PACK_TREE_PERFORMANCE_PLAN.md`.
+**Neither GITPTRE nor GITPVIEW nor old
+GIT.EXEC/GITVREF.EXEC nor any G STAGE/INDEX
+has been changed.**
+
+GITPFST is C89 based on the proven GITPTRE
+SHA1 and PIDX1/OID parsers. It makes two
+forward-only record scans through existing
+M173NET STAGE: first caches/shas all selected
+tree objects under a 64MB cap; walks
+authenticated tree edges with original
+mode/type/child/cycle/depth/gitlink checks;
+second scan verifies SHA/identity for
+only reachable blobs. Index byte offsets
+match sequential ftell at selected objects.
+No per-object fseek. End marker
+`M178 TREE CLOSURE PASS`, plus
+`M178 FORWARD SCANS 2 RECORDS ... SEEKS 0`.
+Unrelated extra trees cached may exceed 64MB
+despite old algorithm succeeding—allowed
+isolation/fail-closed, NOT a drop-in replacement.
+
+GITPFAST EXEC parses filemode and root OID,
+ensures explicit non-A CMS 4096-byte disk,
+input stage/index present and GITPFST MODULE A,
+refuses preexisting STGIN/IDXIN FILEDEFs,
+temporarily binds only own two DDs,
+runs GITPFST, clears own DDs, checks root,
+native terminal PASS, output verified counts
+and blobs authenticated, zero seeks.
+Does no ERASE/FORMAT/CP, or stage/index writes.
+Host C89 `-Wall -Wextra -Werror` compiles
+original and fast module, checks fixture
+parity 2 trees+4 blobs+gitlink, 70KB body,
+SHA-corrupt blob rejected, malformed OID,
+missing child, 5 objects/4 unique with
+duplicate blobs and empty subtree, and
+truncated index fail-closed. The added
+host run `37991031235` PASSED at
+commit `f89f73f136a6fb695da1e1367bf8189746acb5fd`
+before this CHAT_STATE update.
+
+**M178 is NOT YET CMS target-tested and
+NO SPEEDUP IS CLAIMED.** Exact next steps
+on Mac in ibm-sandbox/src:
+`git pull`;
+`./cms-upload.sh GITPFST.C GITPFAST.EXEC`.
+CMS MAINT read-only preflight
+`QUERY DISK G`,
+`STATE M173NET STAGE G`,
+`STATE M174NET INDEX G`,
+`QUERY FILEDEF`,
+`STATE GITPFST C A`;
+build new isolated
+`CMSCLNK GITPFST PLAIN` and only
+on RC0 run
+`STATE GITPFST MODULE A`,
+`GITPFAST G CCB18BEC067E7886D70B82EF138EE56A8B899A61`,
+then `QUERY FILEDEF` to ensure unchanged
+DD state. Require M178 TREE CLOSURE PASS,
+M178 FORWARD SCANS 2, authenticated blobs
+272, trees8, blobs272, entries279,
+verified280, index7736 unique7736,
+`M178 VERIFIED FAST TREE TARGET GATE PASS`.
+Time externally, compare old M177 only with
+comparable measurement. On failure preserve
+original modules and G stage/index and
+diagnose, no reimport or reformat.
+PMAINT0141 physical fullpack overlaps G,
+must never be write-linked.
