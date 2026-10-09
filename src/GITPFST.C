@@ -24,7 +24,6 @@ static struct idxent *ix;
 static unsigned long ixtotal,ixunique;
 static unsigned long trees,blobs,gitlinks,entries,verified;
 static unsigned long largest,resident,peak;
-static FILE *stage;
 static unsigned long sh[5];
 
 static int nib(int c) {
