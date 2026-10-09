@@ -1,3 +1,47 @@
+## CURRENT GATE — 2026-10-09 08:37 CDT: Gate 5e full-pack discovery PASS
+
+Real MAINT `CP QUERY PRIVCLASS` at 08:36:37 returned Currently
+ABCDEFG and Directory ABCDEFG, establishing CP class B.
+`PIPE < M173NEW MDISKMAP C | DROP 100 | TAKE 100 | CONSOLE`
+at 08:37:07 revealed `VMCOM1 3390 PMAINT 0141 MR
+000-10016 length10017`: a full-pack definition overlapping
+the proposed MAINT-1 0600 cylinders 6000-7599.
+A nearby `$DIRECT$ 0B01 R 131-230` is outside that extent.
+This is candidate source-map data, not yet an active-directory
+inventory. IBM warns that full-pack minidisks may overlap
+other minidisks and bypass normal link-mode conflict checking.
+Thus W on 0600 is not independent protection from full-pack
+access. The discovery is an explicit safety hold, not a
+failure of the prior Gates 5c and 5d geometry checks.
+
+A host source-guarded prototype `M173VQ.ASSEMBLE` makes a
+read-only CP DIAG X'25C' LSTMDISK request for VMCOM1
+(all owners and virtual devices, all systems), with a 48-byte
+doubleword-aligned parameter list, flags zero, and a bounded
+65520-byte output (1092 fixed 60-byte records). The 6.4
+SUBCONFIG output flag is not available on z/VM 6.3. The
+prototype rejects nonzero CP return, missing, overflow and
+partial data. **It has not yet run or compiled on CMS.**
+Its console marker is QUERY COMPLETE NOT ACTIVATION APPROVAL.
+
+NEXT read-only CP commands on CMS MAINT:
+
+```text
+CP QUERY MDISK USERID PMAINT 0141 LOCATION DIRECTORY
+CP QUERY SYSTEM 0127
+```
+
+After host CI succeeds, separate CMS **compile-only**
+verification: on Mac in ibm-sandbox/src run `git pull` and
+`./cms-upload.sh M173VQ.ASSEMBLE`; on CMS run
+`ASSEMBLE M173VQ`. No LOAD, GENMOD or execution of the
+new DIAG program until actual assembler results are
+reviewed. Those steps are distinct from CP directory
+activation, LINK, ACCESS, FORMAT and M173 import,
+which remain on hold pending complete live directory
+inventory and controlled rollback authorization.
+
+---
 ## CURRENT GATE — 2026-10-09 08:28:36 CDT: M173 Gate 5d LIVE PASS
 
 Real MAINT z/VM 6.3 CP and CMS read-only results:
