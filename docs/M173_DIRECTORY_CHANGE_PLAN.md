@@ -1,3 +1,77 @@
+## CURRENT GATE — 2026-10-09 09:50:09 CDT: M173 candidate ACTUAL ONLINE CP DIRECTORY SUCCESS
+
+Real CMS MAINT performed `DIRECTXA M173NEW DIRECT C`
+**without** `(EDIT` after earlier nonmutating gates, and
+received explicit `EOJ DIRECTORY UPDATED AND ON LINE`
+and `HCPDIR494I User directory occupies 58 disk pages`,
+RC0 at 09:49:23. This was an **actual CP directory update**.
+
+Read-only postactivation:
+`CP QUERY MDISK USERID MAINT 0600 LOCATION DIRECTORY`
+= `MAINT 0600 MAINT 0600 3390 VMCOM1 0127 6000 1600`,
+RC0 at 09:49:38 (physical end 7599).
+`CP QUERY ALLOC DRCT ALL` = M01RES RDEV0123,
+cylinders 1–20 ACTIVE, RC0 at 09:50:01.
+`CP QUERY SYSTEM 0127` = unchanged VMCOM1
+15 current links (MAINT 0551 R/O, 02CC R/W, 049E
+R/O and 12 VMSERVP links R/W), no PMAINT0141
+fullpack attached as of 09:50:09.
+
+**Directory activation and first verification PASSED.**
+This does NOT yet mean the current logged-on MAINT
+has virtual0600; the change may apply automatically
+only on a future login or when CP LINK establishes
+a virtual attachment. `PMAINT 0141` fullpack
+still exists, spans 0–10999, and can bypass
+ordinary W-link conflict checks if used for writes.
+A/C source, rollback backup, original M171NET PACK
+and verified generations remain protected.
+No new CMS G filesystem has been initialized.
+
+**NEXT, READ-ONLY on CMS MAINT:**
+
+```text
+CP QUERY VIRTUAL DASD
+CP QUERY MDISK 0600 LOCATION
+QUERY DISK
+```
+
+Verify 0600's existence or absence **in the CURRENT
+virtual machine** (different question from
+`QUERY MDISK USERID MAINT ... DIRECTORY`),
+compare location if attached, and ensure filemode
+G is not occupied by another disk. A missing
+virtual 0600 diagnostic is expected if the
+logged-on MAINT has not been refreshed.
+Avoid disrupting the existing CMS session.
+
+If virtual 0600 is absent, IBM permits linking
+an owner's own minidisk by `CP LINK * ...`.
+The possible next action, after inspection, is
+`CP LINK * 0600 0600 W` to add the exact active
+MAINT directory MDISK as virtual0600, without
+logging off or formatting. This action must
+not run before verifying no virtual0600 collision
+and no new conflicting/fullpack writer. Immediately
+check the physical virtual mapping and access
+mode after any link attempt.
+
+**FORMAT IS NOT YET AUTHORIZED** by the successful
+DIRECTXA. A format is destructive, and must only
+target a verified new MAINT 0600, VMCOM1
+real0127, cylinders6000–7599 in R/W with 4K
+CMS blocks, a free filemode G and no fullpack
+writer. Its execution and post-format G capacity
+check are a separate target gate. Never format
+A, C, 0141 fullpack, or existing VMCOM1 disks.
+
+Canonical detailed rollback/phase plan:
+`docs/M173_ACTIVATION_CHANGE_CONTROL.md`.
+IBM reference: https://www.ibm.com/docs/en/zvm/7.2.0?topic=dasds-linking-sharing-minidisks
+IBM CMS FORMAT: https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-format
+
+---
+
 ## CURRENT GATE — 2026-10-09 09:33:55 CDT: Gate 6 read-only PASS; activation NOT authorized
 
 **Actual CMS MAINT results:**
