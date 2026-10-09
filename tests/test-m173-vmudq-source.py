@@ -151,7 +151,7 @@ for marker in (
     assert marker.lower() in plan.lower() + state.lower(), marker
 assert "FINAL GUARDED SOURCE" in runbook.upper()
 assert "no diag execution yet" in runbook.lower()
-assert "user reminds us installed GCCCMS C compiler" in state.lower()
+assert "user reminds us installed gcccms c compiler" in state.lower()
 assert "No non-EDIT DIRECTXA" in plan
 # Host source checks cannot be counted as CP LSTMDISK target proof.
 assert "NO VMUDQ" in state
