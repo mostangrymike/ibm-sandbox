@@ -1,3 +1,54 @@
+## CURRENT — 2026-10-09 10:06:06 CDT: MAINT 0600/G CMS FORMAT PASSED
+
+Target CMS MAINT reconfirmed the current
+`MAINT 0600 3390 VMCOM1 real0127
+StartLoc6000 Size1600` (RC0, 10:04:55).
+`CP QUERY SYSTEM 0127` displayed
+16 current VMCOM1 links including MAINT
+0600 R/W, with no PMAINT0141 fullpack
+currently linked (10:04:56).
+The operator deliberately issued
+`FORMAT 600 G 1600 (BLKSIZE 4096`,
+received the G(600) erase warning,
+entered 1 and label GIT600. Completion:
+`DMSFOR732I 1600 cylinders formatted
+on G(600)`, Ready RC0 10:05:35.
+`QUERY DISK G` at 10:06:06:
+
+```text
+GIT600 600 G R/W 1600 3390 4096 0 25-00 287975 288000
+```
+
+**G filesystem successfully created, accessible and
+R/W, 4096B blocks, 287975 free/288000 total.**
+M173's requirement ≥180000 free blocks passes by
+107975 blocks. Do not FORMAT again. Original A/C,
+directory source/backup, original M171NET PACK/META
+and validated Git generations remain protected.
+
+**NEXT:** transfer canonical M173CHK/M174–M176 EXECs
+using the standard Mac git pull/cms-upload workflow,
+then `GIT LEVEL`, `QUERY DISK G`,
+`STATE M171NET PACK A`, `STATE M171NET META A`,
+`STATE M173NET STAGE G` (expected absent RC28).
+Only with preserved A inputs and no existing
+stage, run **`M173CHK G`**, writing a new
+`M173NET STAGE G`. M173CHK self-checks the
+destination R/W 4K capacity and performs a
+separate PACK and stage readback verification.
+Never run M173 on A and never ERASE a partial
+G stage without inspecting it. On real target
+M173 PASS, then build/verify M174 index on G.
+The overlapping PMAINT0141 fullpack must
+remain unwritten while G stores data.
+
+Detailed current procedure at TOP of
+`docs/M173_PERSISTENT_DISK_RUNBOOK.md`.
+All earlier claims of pending FORMAT/activation
+in historical sections are superseded.
+
+---
+
 ## CURRENT GATE — 2026-10-09 09:58:25 CDT: MAINT 0600 VIRTUAL SELF-LINK PASS
 
 MAINT's pre-link `CP QUERY VIRTUAL DASD`
