@@ -124,4 +124,20 @@ assert "180,000" in control
 assert "current logged-on MAINT" in plan
 assert "NO" in state
 
+
+# Live Phase 7A proves link, but not formatted G.
+for marker in (
+    "2026-10-09 09:58:25 CDT",
+    "CP LINK * 0600 0600 W",
+    "SUBCHANNEL = 0024",
+    "GIT600",
+    "BLKS LEFT",
+):
+    assert marker.lower() in control.lower(), marker
+assert "Phase 7A target PASS" in plan
+assert "CURRENT virtual" in plan
+assert "no G" in runbook
+assert "LIVE VIRTUAL LINK PASS" in state
+assert "not yet target-proven" in state.lower()
+
 print("M173 POSTACTIVATION CHANGE-CONTROL HOST SAFETY PASS")
