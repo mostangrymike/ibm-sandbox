@@ -1,5 +1,130 @@
 # M173 0600/G CP directory activation — controlled change plan
 
+## 2026-10-09 09:58:25 CDT — current MAINT successfully SELF-LINKED 0600
+
+Actual CMS MAINT read-only checks **before** adding the
+new virtual device: `CP QUERY VIRTUAL DASD` had no 0600;
+`CP QUERY MDISK 0600 LOCATION` returned
+`HCPQMD040E Device 0600 does not exist`, expected
+RC40 at 09:57:14. `QUERY DISK` showed A/B/C/D/
+E/F/S/T/Y/S but **no G** filemode.
+
+The operator executed `CP LINK * 0600 0600 W`
+with normal Ready RC0 at **09:57:38**. A follow-up
+`CP QUERY VIRTUAL DASD` returned:
+
+```text
+DASD 0600 3390 VMCOM1 R/W 1600 CYL ON DASD 0127 SUBCHANNEL = 0024
+Ready; T=0.01/0.01 09:58:09
+```
+
+Follow-up `Q DISK` again showed no G at
+09:58:25, as expected for a new **unformatted**
+CMS disk. Existing A, C and all accessed
+filemodes remain intact and unchanged.
+The successful live CP directory query at
+09:49:38 had already independently established
+MAINT/0600 real0127 VMCOM1 **start6000,
+length1600, end7599**.
+
+**Phase 7A PASS:** virtual 0600 was absent,
+and an unambiguous owner self-link attached
+it as writable 3390/1600 on VMCOM1/0127.
+The current CMS virtual environment and
+active CP permanent directory now agree
+on volume and cylinder length. FORMAT
+has **NOT** yet occurred.
+
+### Phase 7B — exact live location and controlled CMS initialization
+
+Before the first destructive operation, on
+CMS MAINT use this **read-only** CP query:
+
+```text
+CP QUERY MDISK 0600 LOCATION
+```
+
+Require `MAINT 0600`, `VMCOM1`, real
+`0127`, `StartLoc 6000`, `Size 1600`.
+The corresponding currently linked
+virtual device is already proven
+R/W 3390/1600, and G is unassigned.
+Any different owner/start/RDEV/size,
+missing device or new overlapping
+full-pack PMAINT/0141 writer **aborts**
+initialization. The last system query
+at 09:50:09 showed no active full-pack
+link; if there is any reason to suspect
+a changed linked-device state, re-query
+`CP QUERY SYSTEM 0127`.
+
+Once that **current virtual** location
+check passes, the next deliberately
+destructive operation can be
+authorized **only for 0600**:
+
+```text
+FORMAT 600 G 1600 (BLKSIZE 4096
+```
+
+IBM FORMAT can initialize a 3390
+CMS minidisk with an explicit count
+of 1600 cylinders and a 4096-byte
+block size. It erases any existing
+content within **that virtual
+minidisk**. At the
+`DMSFOR603R FORMAT will erase...`
+prompt, the device must say
+`G(600)` (or `G(0600)`); otherwise
+enter `NO`, never `YES`. At the
+`DMSFOR605R Enter disk label:`
+prompt use the unique
+6-character label `GIT600`.
+Only if the format-target prompt
+matches the verified 0600/G and
+all preceding checks pass, enter
+`YES` and the label. Do not
+issue FORMAT against A, C,
+PMAINT0141 fullpack or any other
+virtual device.
+
+After `DMSFOR732I` states **1600
+cylinders formatted** and a normal
+Ready RC0, use:
+
+```text
+QUERY DISK G
+```
+
+Demand `VDEV 600`, `mode G`,
+`R/W`, `3390`, `CYL1600`,
+`BLKSZ4096`, and >=180000
+`BLKS LEFT` (gross 288000
+4KB blocks). No imported data
+on A/C. If G does not appear
+automatically after FORMAT,
+STOP and inspect official CMS
+ACCESS guidance rather than
+guessing/unconditionally
+reformatting.
+
+Protect `USER DIRECT C`,
+`M173BAK DIRECT C`,
+`M173NEW DIRECT C`,
+`M171NET PACK/META A`, old
+sealed Git generations, and
+the operator backup. The
+PMAINT0141 overlapping fullpack
+must never be used for writes
+while G contains data.
+
+IBM references:
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-format
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=defined-formatting-minidisks
+
+---
+
+
 ## 2026-10-09 09:50:09 CDT — ACTUAL CP ACTIVATION AND LIVE DIRECTORY VERIFICATION PASS
 
 **The operator has executed the privileged directory update.** The
