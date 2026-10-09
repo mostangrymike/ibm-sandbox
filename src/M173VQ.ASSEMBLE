@@ -1,0 +1,60 @@
+M173VQ   CSECT
+         USING M173VQ,12
+         LR    12,15
+         ST    14,RETADR
+* Read-only CP directory DIAG X'25C' LSTMDISK.
+* Installed 6.3: do not request the 6.4 SUBCONFIG flag.
+* Bounded 65520-byte buffer holds up to 1092 records of 60 bytes.
+         LA    2,PARMS
+         LA    4,RECS
+         L     5,=F'65520'
+         DIAG  2,4,X'25C'
+         BNZ   DFAIL
+         LTR   5,5
+         BNZ   DFAIL
+* Only accept complete nonempty fixed 60-byte records.
+         LTR   2,2
+         BZ    DFAIL
+         C     2,=F'65520'
+         BH    DFAIL
+         ST    2,REMAIN
+         LR    7,2
+CKLEN    C     7,=F'60'
+         BL    DFAIL
+         S     7,=F'60'
+         BNZ   CKLEN
+* Print the unmodified records from the ACTIVE CP directory.
+         L     7,REMAIN
+         LA    8,RECS
+OUTLP    STM   2,12,SAVREG
+         LINEWRT DATA=((8),60),ERROR=OUTERR
+         LM    2,12,SAVREG
+         LA    8,60(8)
+         S     7,=F'60'
+         BNZ   OUTLP
+         LINEWRT DATA=(OKMSG,L'OKMSG),ERROR=DFAIL
+         SR    15,15
+         L     14,RETADR
+         BR    14
+OUTERR   LM    2,12,SAVREG
+DFAIL    LINEWRT DATA=(ERRMSG,L'ERRMSG)
+         LA    15,8
+         L     14,RETADR
+         BR    14
+         LTORG
+RETADR   DS    F
+REMAIN   DS    F
+SAVREG   DS    11F
+         DS    0D
+PARMS    DC    F'48'
+         DC    F'0'
+         DC    CL8'LSTMDISK'
+         DC    CL8'*'
+         DC    CL8'*'
+         DC    CL8'VMCOM1'
+         DC    CL8'*'
+OKMSG    DC    C'M173VQ VMCOM1 QUERY COMPLETE NOT ACTIVATION APPROVAL'
+ERRMSG   DC    C'M173VQ QUERY FAILED NO COMPLETE INVENTORY'
+         DS    0D
+RECS     DS    CL65520
+         END   M173VQ
