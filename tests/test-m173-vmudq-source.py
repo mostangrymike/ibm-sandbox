@@ -155,6 +155,6 @@ assert "user reminds us installed gcccms c compiler" in state.lower()
 assert "No non-EDIT DIRECTXA" in plan
 # Host source checks cannot be counted as CP LSTMDISK target proof.
 assert "NO VMUDQ" in state
-assert "NO DIAG execution" in runbook.upper()
+assert "NO DIAG EXECUTION" in runbook.upper()
 
 print("M173 VMUDQ READONLY SOURCE AND HOST MODEL PASS")
