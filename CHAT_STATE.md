@@ -9000,3 +9000,42 @@ Unexpected results fail closed; none authorize
 non-EDIT DIRECTXA or disk formatting.
 Fullpack/PERM/PARM and rollback review remains
 a separate prerequisite before explicit approval.
+
+## 2026-10-09 08:28:36 CDT — M173 Gate 5d REAL CMS PASS
+
+MAINT read-only transcript: CP QUERY DASD DETAILS 0127
+VMCOM1 3390-0C CYLS11000 RC0; CP QUERY MDISK USERID
+6VMHCD20 0300 LOCATION DIRECTORY = VMCOM1/0127,
+start5756 length180 ending5935 RC0; CP QUERY MDISK
+0600 DIRECTORY = HCPQMD040E absent RC40 as expected;
+CP QUERY ALLOC MAP VMCOM1 = NOT FOUND, no CP-owned
+PAGE/SPOOL/TDISK/DRCT extents; M173DCHK full
+USER DIRECT C/M173BAK DIRECT C equal 4282 records,
+candidate MAINT-1 added MDISK record213 and final
+DELTA CHECK PASS RC0 at 08:28:36.
+
+**LIVE target Gates 5c+5d PASSED** for candidate map
+VMCOM1 0600 W 6000-7599 length1600 and live geometry.
+No CP directory activation; G disk remains absent.
+CP ALLOC does NOT prove no PERM/PARM; DIRMAP does
+NOT detect fullpack overlap, and only targeted existing
+minidisks have been checked against CP. Cannot claim
+complete active-directory physical inventory.
+
+**NEXT Gate 5e CMS MAINT read-only, no Mac transfer:**
+`CP QUERY PRIVCLASS`
+`PIPE < M173NEW MDISKMAP C | DROP 100 | TAKE 100 | CONSOLE`
+Class B (in **Currently**) is IBM's prerequisite
+for a possible CP VMUDQ LSTMDISK read-only inventory,
+filtered for all owners and VDEV on volser VMCOM1.
+Availability of VMUDQ on installed 6.3 not yet validated.
+Never change privilege settings to bypass failed preflight.
+The PIPE shows earlier source map rows/fullpack context
+that the page-5 output did not display.
+If privilege absent/unknown report it; no guesswork.
+Use fullpack+PERM/PARM independent CP inventory and
+confirmed rollback approval before non-EDIT DIRECTXA.
+No FORMAT, LINK/ACCESS or importer yet.
+Keep USER DIRECT C, M173BAK DIRECT C,
+M173NEW DIRECT C, original M171NET PACK A and all
+validated Git generations protected.
