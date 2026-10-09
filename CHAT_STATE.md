@@ -9039,3 +9039,53 @@ No FORMAT, LINK/ACCESS or importer yet.
 Keep USER DIRECT C, M173BAK DIRECT C,
 M173NEW DIRECT C, original M171NET PACK A and all
 validated Git generations protected.
+
+## 2026-10-09 08:37 CDT — Gate 5e privilege and VMCOM1 full-pack
+
+Actual CMS MAINT:
+`CP QUERY PRIVCLASS` => Currently ABCDEFG,
+Directory ABCDEFG, RC0 (08:36:37), class B is present.
+Read-only `PIPE < M173NEW MDISKMAP C | DROP 100 |
+TAKE 100 | CONSOLE` (08:37:07) shows the
+VMCOM1 3390 heading and source-defined
+`PMAINT 0141 MR 000-10016 10017` full-pack.
+This *covers* MAINT proposed 0600 physical
+cylinders 6000-7599. The same report shows
+`$DIRECT$ 0B01 R 131-230`, outside the new extent.
+CP QUERY ALLOC MAP VMCOM1 previously showed
+no CP-owned extent; do not treat this source
+PERM-like row as a CP-owned DRCT allocation.
+
+IBM says full-pack access bypasses ordinary
+minidisk overlap link-mode protections. The
+candidate map Gate 5c and CP geometry Gate 5d
+are still passed, but full-pack integrity and
+all active CP directory MDISK definitions
+must be checked independently before activation.
+
+New isolated `src/M173VQ.ASSEMBLE` prototype:
+read-only privileged CP DIAG X'25C' LSTMDISK,
+all owners/vdevs, volser VMCOM1, all SSI systems;
+fixed 48-byte doubleword-aligned list, flags0
+to avoid post-6.3 SUBCONFIG output enhancement,
+bounded 65520 bytes (1092 x 60-byte rows),
+fail closed on insufficient/incomplete data.
+`tests/test-m173-vmudq-source.py` adds host guards.
+M173VQ is NOT target-tested or compiled on CMS.
+It may print raw MDISK owner/device/extent
+rows, not directory passwords, and never alters
+CP or CMS storage.
+
+NEXT MAINT read-only:
+`CP QUERY MDISK USERID PMAINT 0141 LOCATION DIRECTORY`
+`CP QUERY SYSTEM 0127`.
+After GitHub CI, Mac from ibm-sandbox/src:
+`git pull`
+`./cms-upload.sh M173VQ.ASSEMBLE`
+then CMS: `ASSEMBLE M173VQ` ONLY.
+Do not LOAD, GENMOD, invoke the DIAG routine or
+make any CP activation decision until compiling
+is target-verified and exact return handling reviewed.
+Preserve USER DIRECT C, M173BAK DIRECT C,
+M173NEW DIRECT C, all Git generation files,
+M171NET PACK/META A and the unformatted G proposal.
