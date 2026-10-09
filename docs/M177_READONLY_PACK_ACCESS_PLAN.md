@@ -1,6 +1,78 @@
 # M177 — explicit, read-only PACK access to verified CMS G repository
 
-**Status: proposed design, not implemented or target-proven.**
+## Implemented source checkpoint — October 9, 2026
+
+Added `src/GITPVIEW.EXEC`, a new 8-character CMS name,
+without changing existing `GIT.EXEC`, `GITVREF.EXEC`
+or native C modules. A corresponding
+`tests/test-m177-pack-view.py` source guard runs in
+the native-stage GitHub workflow. **Host proof is
+not actual CMS validation.**
+
+The EXEC checks an explicit non-A filemode
+accessed with 4096-byte blocks, both retained
+M173 stage/M174 index files, and the needed
+existing native GITPCAT/GITPTRE module on A.
+It checks the complete CMS `QUERY FILEDEF`
+listing before binding inputs: any preexisting
+STGIN or IDXIN causes refusal, with **no
+replacement** of the caller's DD assignment.
+The wrapper binds only its own two read-only
+inputs and clears only its own definitions
+after the native call. It requires both
+native terminal PASS and exact request-OID
+match. It performs no import, build,
+directory update, CMS FORMAT or ERASE.
+The z/VM 6.3 details of `QUERY FILEDEF`
+remain to be proven at the actual target.
+
+**Next target smoke-check**, only after
+confirming the existing 7,736-object stage
+and index remain intact and there is no
+session FILEDEF conflict. On the Mac from
+`ibm-sandbox/src`:
+
+```sh
+git pull
+./cms-upload.sh GITPVIEW.EXEC
+```
+
+On CMS MAINT:
+
+```text
+QUERY DISK G
+STATE M173NET STAGE G
+STATE M174NET INDEX G
+STATE GITPVIEW EXEC A
+QUERY FILEDEF
+GITPVIEW INFO G ADA83FF3B3813961CEF2A9FFC50A453540039E0B
+GITPVIEW TREE G CCB18BEC067E7886D70B82EF138EE56A8B899A61
+QUERY FILEDEF
+```
+
+The before/after FILEDEF queries must have
+identical state. If either DD was defined
+beforehand, **do not clear it**; wrapper is
+designed to fail closed. INFO should print
+`M175 PACK INFO PASS` and
+`M177 PACK VIEW INFO PASS`; TREE should
+print `M176 TREE CLOSURE PASS` and
+`M177 PACK VIEW TREE PASS`, verifying
+the same 8-tree/272-blob/280-verified
+closure as the live M176 run. Stop on
+unexpected RC or mismatched output, and
+preserve the stage/index. A standalone
+`M175CHK G` full PASS is still a distinct
+milestone check if not already performed.
+
+Official IBM CMS:
+https://www.ibm.com/docs/en/zvm/7.3.0?topic=gc-query-filedef
+https://www.ibm.com/docs/en/zvm/7.2?topic=commands-filedef
+
+---
+
+
+**Status: isolated source prototype implemented on GitHub; not target-proven.**
 Prepared October 9, 2026 after actual M173, M174 and
 M176 G-stage/index target PASS. The standalone M175CHK G
 terminal result was not supplied with the M176 output.
