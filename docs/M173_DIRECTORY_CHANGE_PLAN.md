@@ -1,3 +1,109 @@
+## CURRENT GATE — 2026-10-09 08:28:36 CDT: M173 Gate 5d LIVE PASS
+
+Real MAINT z/VM 6.3 CP and CMS read-only results:
+
+```text
+CP QUERY DASD DETAILS 0127
+0127  CUTYPE = 3990-C2, DEVTYPE = 3390-0C, VOLSER = VMCOM1, CYLS = 11000
+Ready; T=0.01/0.01 08:28:13
+CP QUERY MDISK USERID 6VMHCD20 0300 LOCATION DIRECTORY
+6VMHCD20 0300 6VMHCD20 0300 3390  VMCOM1 0127       5756        180
+Ready; T=0.01/0.01 08:28:15
+CP QUERY MDISK 0600 DIRECTORY
+HCPQMD040E Device 0600 does not exist
+Ready(00040); T=0.01/0.01 08:28:26
+CP QUERY ALLOC MAP VMCOM1
+VMCOM1 0127          -          -      0      0      0   0% NOT FOUND
+Ready; T=0.01/0.01 08:28:26
+M173DCHK
+M173 DIR ORIGINAL/BACKUP VERIFIED 4282
+M173 DIR MAINT-1 SUBCONFIG VERIFIED
+M173 DIR SINGLE MDISK INSERT RECORD 213
+M173 DIR DELTA CHECK PASS
+Ready; T=0.83/0.85 08:28:36
+```
+
+**Gate 5d LIVE PASS:** Real DASD VMCOM1 = RDEV 0127, 11,000
+cylinders; the existing permanent 6VMHCD20/0300 occupies
+5756-5935 (180); MAINT virtual 0600 is still absent RC40
+(expected negative gate); no CP-use PAGE/SPOOL/TDISK/DRCT
+extents are reported by QUERY ALLOC MAP on VMCOM1;
+M173DCHK target PASS RC0 proves original USER DIRECT C
+and protected M173BAK DIRECT C (4,282 records) are equal
+and M173NEW DIRECT C has only one MAINT-1 MDISK at 213.
+Gate 5c already independently confirmed the candidate-map
+`VMCOM1 3390` context, 0600 W 6000-7599 length1600,
+and surrounding gaps 5936-5999, 7600-10016.
+
+**This PASS is NOT approval to activate.** IBM says
+QUERY ALLOC MAP excludes PERM/PARM extents, and CP can
+permit full-pack minidisks to overlap ordinary ones;
+DIRMAP ignores fullpack MDISKs in overlap detection.
+Candidate-source mapping plus two targeted CP queries
+do not enumerate every active VMCOM1 directory definition.
+
+### Gate 5e: safely qualify a complete active-directory inventory
+
+Two **read-only** commands on CMS MAINT; no new code, build,
+FILEDEF, directory edit, or disk access is required:
+
+```text
+CP QUERY PRIVCLASS
+PIPE < M173NEW MDISKMAP C | DROP 100 | TAKE 100 | CONSOLE
+```
+
+The first identifies MAINT's current privilege classes.
+**Only** if the `Currently:` response contains B can
+a later separately engineered *read-only* CP
+`VMUDQ LSTMDISK` directory query be considered;
+IBM's supported VMUDQ interface can select all owners,
+all virtual addresses and the **VMCOM1** volser.
+Its availability and exact macro interface on the
+installed z/VM 6.3 level remain UNTESTED. Do not
+grant privileges, change CP state or guess a CMS
+assembler command. If class B is absent, stop this
+approach and find an authorized, nonmutating inventory
+alternative.
+
+The second command displays the earlier (previously
+unseen in the recent output) candidate-map rows
+before the confirmed page-5 VMCOM1 section, including
+any full-pack definitions within the source map. Inspect
+privately and share only nonsensitive map data.
+An apparent VMCOM1 full-pack definition needs special
+review; it does not automatically mean 0600 is unusable
+but could defeat overlap/access protections. This
+source inspection by itself is NOT independent CP proof.
+
+Following those two read-only outputs, design and
+host-test an authorized independent, **complete**
+active-directory inventory of VMCOM1 before deciding
+whether controlled activation is acceptable. Require
+evidence accounting for VMCOM1 full-pack/END overlays,
+SSI local vs global entries, all PERM/PARM and CP-owned
+areas, and an explicit rollback operator plan. Any
+unresolved case fails closed. IBM `MDISK` cautions that
+overlaps can compromise integrity; do not rely only
+on a clean candidate map.
+
+**HARD STOP**: No non-EDIT DIRECTXA, CP directory activation,
+LINK, ACCESS, FORMAT, M173CHK/import, disk erase,
+source overwrite or gratuitous privilege change. The
+new virtual 0600/G does not exist in the online CP directory;
+the original PACK, generations and saved directory
+sources are protected. The completed EBS snapshot's
+source/Region were operator-matched; isolated restore
+is **not** proven. A final separately authorized change
+and rollback procedure remains required.
+
+Official IBM:
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-privclass
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=macros-vmudq-vm-user-directory-query
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=directory-mdisk-statement
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-alloc
+
+---
+
 ## CURRENT GATE — 2026-10-09: M173 Gate 5c LIVE PASS; CP independent hold
 
 **Gate 5c now PASSED on real CMS.** On October 9,

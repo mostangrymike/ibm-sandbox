@@ -1,5 +1,50 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## 2026-10-09 08:28:36 CDT — M173 Gate 5d live CP PASS
+
+Actual MAINT commands succeeded except the **expected**
+RC40 negative permanent-directory query:
+`CP QUERY DASD DETAILS 0127` = VMCOM1, 3390-0C,
+CYLS11000; `CP QUERY MDISK USERID 6VMHCD20 0300
+LOCATION DIRECTORY` = VMCOM1 RDEV0127 start5756
+size180 (ending5935); `CP QUERY MDISK 0600
+DIRECTORY` = HCPQMD040E, RC40, new device absent;
+`CP QUERY ALLOC MAP VMCOM1` = NOT FOUND for
+CP-use extents; `M173DCHK` = original/backup
+4282 identical, candidate MAINT-1 single insertion
+record213, DELTA CHECK PASS RC0.
+
+**Gates 5c and 5d pass.** No activation has occurred.
+IBM's QUERY ALLOC MAP does not enumerate PERM/PARM,
+and DIRMAP ignores fullpack minidisk overlaps.
+No complete independent enumeration of active
+VMCOM1 directory MDISK definitions exists yet.
+
+### Gate 5e — class-B and earlier candidate-map read-only probe
+
+On CMS MAINT:
+```text
+CP QUERY PRIVCLASS
+PIPE < M173NEW MDISKMAP C | DROP 100 | TAKE 100 | CONSOLE
+```
+CP QUERY PRIVCLASS identifies the **current** classes.
+IBM VMUDQ LSTMDISK (privilege class B) supports selecting
+all current CP-directory MDISK definitions on a given
+volser; installed 6.3 interface/module availability
+is still unverified, and no executable has been added.
+If B is unavailable, do not modify privilege classes.
+The PIPE displays earlier report rows that could
+contain candidate-source full-pack/END definitions;
+it is not independent CP enumeration.
+Keep volume-wide full-pack risk and rollback gating
+separate from observed 5d success.
+
+Do not run DIRECTXA without EDIT, LINK, ACCESS, FORMAT,
+M173CHK or importer. Retain USER DIRECT C,
+M173BAK DIRECT C, M173NEW DIRECT C, all PACK
+and sealed original Git objects unchanged.
+
+
 ## 2026-10-09 — Gate 5c contextual VMCOM1 map LIVE PASS
 
 Actual CMS `DROP 200 | TAKE 100` read from
