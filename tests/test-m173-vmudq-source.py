@@ -57,7 +57,7 @@ assert rows[1][9:13] == "0300"
 assert rows[1][14:20].strip() == "VMCOM1"
 # An END/fullpack entry is not a disjoint allocation, nor
 # permission to ignore all other ordinary physical conflicts.
-assert "END" in rows[0][42:52] and "END" not in rows[1][42:52]
+assert "END" in rows[0][41:51] and "END" not in rows[1][41:51]
 
 for text, expected in (
     (plan, ("Gate 5e", "PMAINT 0141", "M173VQ", "CP QUERY PRIVCLASS",
