@@ -1,4 +1,45 @@
-# M178 — speed up read-only tree closure without regenerating the PACK
+# M178 — forward-only authenticated tree closure (live CMS proven)
+
+## October 9, 2026, 16:24 CDT — ACTUAL z/VM 6.3 M178 CMS PASS
+
+**TARGET-PROVEN.** The operator uploaded the previously host-tested
+`GITPFST.C` and `GITPFAST.EXEC`, checked that the existing G disk and
+stage/index were accessible, and compiled the new module without any
+flagged assembly statements. This proof supersedes the earlier
+"not CMS target-proven" provisional status below; that text is retained
+as historical design/validation context.
+
+- `QUERY DISK G`: `GIT600 600 G R/W 1600 3390 4096`, 2 files,
+  62526 blocks used (22%), 225474 free of 288000 total.
+- `STATE M173NET STAGE G` and `STATE M174NET INDEX G`: RC 0.
+- `QUERY FILEDEF` before: `No user defined FILEDEF in effect`.
+- `STATE GITPFST C A`: RC 0; `CMSCLNK GITPFST PLAIN`:
+  `ASSEMBLER (XF) DONE`, `NO STATEMENTS FLAGGED IN THIS ASSEMBLY`,
+  `CMSCLNK: built GITPFST MODULE mode PLAIN` (2.01s elapsed).
+  `STATE GITPFST MODULE A`: RC 0.
+- Real run: `GITPFAST G CCB18BEC067E7886D70B82EF138EE56A8B899A61`
+  returned RC 0, CPU 455.95s, elapsed **460.66s** at 16:24:00 CDT.
+- Exact closure: **8 trees, 272 blobs, 0 gitlinks, 279 entries,
+  280 verified objects**, largest 393767 bytes; peak resident
+  **6546851 bytes** (approximately 6.24 MiB).
+- Existing index: **7736 total and 7736 unique**. Forward scans **2**,
+  stage records **15472**, seeks **0**, authenticated blobs **272**.
+- Native markers: `M178 TREE CLOSURE PASS` and
+  `M178 VERIFIED FAST TREE TARGET GATE PASS
+  CCB18BEC067E7886D70B82EF138EE56A8B899A61 G`.
+- `QUERY FILEDEF` after at 16:25:37:
+  `No user defined FILEDEF in effect`, matching before.
+
+This is **positive-path native functional verification**, not proof
+of comparative speed. Prior M177 TREE output had overflowed elapsed
+counters, so the raw earlier wall-clock gap is not a valid timing
+baseline. No original M173 stage, M174 index, M171 input PACK,
+GITPTRE, GITPVIEW, directory or selector was altered by M178.
+Keep these protected; especially never write-link overlapping
+`PMAINT 0141`. Any next optimization must be isolated, host-tested,
+and measured against comparable CMS runs without reimport or format.
+
+---
 
 ## October 9, 2026 — independent two-pass native C prototype
 

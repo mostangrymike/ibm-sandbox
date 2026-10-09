@@ -1,35 +1,26 @@
 # IBM Sandbox
 
-## M178 experimental forward-scan tree reader (host CI)
+## M178 — native CMS tree reader TARGET PASS (October 9, 2026)
 
-Building on real z/VM 6.3 M173–M177 positive-path
-success, `src/GITPFST.C` is an independent,
-read-only two-pass native C89 implementation
-of authenticated tree closure using the
-existing retained `M173NET STAGE G` and
-`M174NET INDEX G`. It avoids per-object
-random stage seeks by forward-scanning
-stage records twice, caching tree bodies
-under a 64MiB cap, then authenticating
-reachable blobs. New `GITPFAST.EXEC`
-provides strict filemode/root arguments
-and the proven temporary FILEDEF-hygiene
-pattern. The original GITPTRE and GITPVIEW
-modules are untouched.
+M178's isolated C89 forward-only, two-pass authenticated tree walker
+(`src/GITPFST.C` through `src/GITPFAST.EXEC`) passed host CI and a
+**real z/VM 6.3/CMS** run on the retained `GIT600` G disk.
+The clean native module build was followed by a positive `GITPFAST G`
+tree-closure verification of **8 trees, 272 blobs, 279 entries,
+280 authenticated objects, 0 gitlinks**, against the verified
+**7736/7736** stage index. The instrumented reader reported
+**2 forward scans, 15472 stage records, 0 seeks** and authenticated
+272 reached blobs. Largest object: 393767 bytes; peak resident:
+6546851 bytes. CMS CPU **455.95s**, elapsed **460.66s**.
 
-Its host regression verifies counts/OIDs
-against the original on real-format
-fixtures, negative SHA corruption, missing
-child, malformed root, duplicate objects,
-empty tree and truncated index.
-**Host tests are not actual CMS proof:
-M178 has not run on the target, and no
-performance improvement is claimed.**
-Next target commands and safety preflight
-are documented at
-`docs/M178_PACK_TREE_PERFORMANCE_PLAN.md`.
-Never regenerate, erase, or reformat
-the existing verified G stage/index.
+Both before and after `QUERY FILEDEF` returned no user-defined
+FILEDEFs. Terminal markers: `M178 TREE CLOSURE PASS` and
+`M178 VERIFIED FAST TREE TARGET GATE PASS`. The original M176/M177
+code and G stage/index were not changed. **No comparative speedup
+has been established**, because the M177 TREE elapsed counter
+previously overflowed. The next step is independent measurement and
+bounded performance analysis, not any rebuild/reformat of the
+verified G stage/index. Details: `docs/M178_PACK_TREE_PERFORMANCE_PLAN.md`.
 
 ---
 
