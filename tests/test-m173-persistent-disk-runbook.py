@@ -753,4 +753,40 @@ assert plan.index("CURRENT GATE — 2026-10-08 16:32:22") < (
     plan.index("CURRENT GATE — 2026-10-08 16:23:33")
 )
 
+
+# Oct 9 live MAINT map geometry is not equivalent to CP activation approval.
+for marker in (
+    "2026-10-09 08:16:20 CDT: Gate 5c boundaries LIVE PASS",
+    "MAINT     0600 W         6000       7599       1600",
+    "5936       5999        064     Gap",
+    "7600      10016       2417     Gap",
+    "FULL GATE 5c PENDING",
+    "PIPE < M173NEW MDISKMAP C | DROP 200 | TAKE 100 | CONSOLE",
+    "no non-EDIT DIRECTXA",
+    "ignores fullpack MDISKs",
+):
+    assert marker.lower() in plan.lower(), marker
+for marker in (
+    "2026-10-09 08:16:20 CDT",
+    "full Gate 5c",
+    "volume context remain pending",
+    "No CP directory activation",
+):
+    assert marker.lower() in runbook.lower(), marker
+for marker in (
+    "2026-10-09 08:16:20 CDT — Gate 5c four CMS filters PASS",
+    "full Gate 5c is NOT",
+    "No unqualified DIRECTXA",
+):
+    assert marker.lower() in state.lower(), marker
+# Independently check every displayed inclusive range and adjacency.
+start, end, count = 6000, 7599, 1600
+left, left_end, left_count = 5936, 5999, 64
+right, right_end, right_count = 7600, 10016, 2417
+assert end - start + 1 == count
+assert left_end - left + 1 == left_count
+assert right_end - right + 1 == right_count
+assert left_end + 1 == start
+assert end + 1 == right
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
