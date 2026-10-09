@@ -9493,3 +9493,52 @@ turn, user said "do not pause"; give
 conditional next CMS batch rather than
 repeating passed gates, but be safe
 with FORMAT.
+
+## 2026-10-09 09:58:25 CDT — NEW MAINT 0600 LIVE VIRTUAL LINK PASS
+
+CMS MAINT pre-link `CP QUERY VIRTUAL DASD`
+had no 0600, `CP QUERY MDISK 0600 LOCATION`
+was absent expected RC40 at 09:57:14,
+and `QUERY DISK` had no G.
+`CP LINK * 0600 0600 W` returned
+Ready RC0 at 09:57:38. New virtual
+device immediately verified via
+`CP QUERY VIRTUAL DASD`:
+`DASD 0600 3390 VMCOM1 R/W
+1600 CYL ON DASD 0127
+SUBCHANNEL = 0024`, Ready RC0
+09:58:09. Follow-up `Q DISK`
+still has no G at 09:58:25,
+because not yet CMS formatted.
+
+Online permanent directory already
+verified MAINT/0600 physical
+VMCOM1/0127 start6000 size1600.
+Original A/C data, rollback sources
+and Git PACK/generations untouched.
+PMAINT0141 fullpack overlaps 0600
+but was not linked at last CP
+QUERY SYSTEM; never attach/use
+fullpack for write while G has data.
+
+NEXT CMS MAINT READ-ONLY:
+`CP QUERY MDISK 0600 LOCATION`.
+Require actual CURRENT virtual
+MAINT/0600, VMCOM1/0127
+start6000 size1600, R/W.
+If and only if exact, new
+disk can be initialized with
+CMS `FORMAT 600 G 1600
+(BLKSIZE 4096`; destructive,
+check warning explicitly says
+G(600), answer YES only then,
+label GIT600 (6 characters).
+After 1600 cylinders complete,
+`QUERY DISK G` must show
+R/W, 3390, CYL1600,
+BLKSZ4096, >=180000
+BLKS LEFT before M173 import.
+Never format A, C or the
+fullpack and do not run PACK
+import on A. The format stage
+is not yet target-proven.
