@@ -9242,3 +9242,95 @@ no non-EDIT DIRECTXA, LINK/ACCESS,
 FORMAT, M173 import or alteration of
 live directory before separate safety
 and rollback review.
+
+## 2026-10-09 09:26:50 CDT — M173 Gate 5f LIVE CP VMUDQ PASS
+
+CMS MAINT `START` ran the real target-built
+`M173VQ TEXT`, DIAG X'25C' LSTMDISK,
+and printed a complete VMCOM1
+volume-filtered active CP directory
+inventory; user provided returned
+nonsensitive owner/VDEV/volume/type/
+start/size rows, followed by:
+`M173VQ VMCOM1 QUERY COMPLETE NOT ACTIVATION APPROVAL`
+`Ready; T=0.01/0.07 09:26:50`
+No error/overflow/program check.
+
+All finite ordinary VMCOM1 MDISK rows
+in the returned inventory end no later
+than cylinder **5935**.
+The nearest ordinary device is
+`6VMHCD20 0300 VMCOM1 3390
+0000005756 0000000180`
+(end = 5756+180-1 =5935).
+No ordinary VMCOM1 MDISK is allocated
+anywhere in the planned G interval
+6000–7599, or beyond 5935 in this
+active directory snapshot. `MAINT 0600`
+does NOT yet exist in the VMUDQ result.
+
+**Critical full-pack exception:**
+`PMAINT 0141 VMCOM1 3390 0000000000 END`.
+Independent live CP location previously
+reported PMAINT0141 real0127 VMCOM1
+start0 size11000. This virtual
+full-pack overlaps proposed 6000–7599.
+Earlier CP QUERY SYSTEM 0127 did not
+show PMAINT0141 as actively linked;
+the fact it can be linked later makes
+ordinary W access insufficient to
+protect data from that full-pack.
+IBM treats fullpack overlays as an
+exception to normal overlap checks.
+`$DIRECT$ 0B01 VMCOM1 131 size100`
+(131–230) is outside the proposed
+new allocation. Read-only M173VQ
+is successful inventory, not blanket
+allocation or authorization.
+
+**Gate 5f PASS on target** for
+complete active CP volume/MDISK
+enumeration and disjoint ordinary
+extent. Earlier Gates 5c/5d passed
+the candidate map and physical CP
+geometry. M173 remains blocked
+on provisioning the NEW dedicated
+R/W CMS G minidisk MAINT virtual0600
+VMCOM1 real0127 start6000 len1600,
+then formatting ONLY G and resuming
+7,736-object M171NET PACK/META import
+with >=180000 free 4K CMS blocks.
+Protected PACK retained; no import on A.
+
+**NEXT CMS MAINT Gate 6, read-only ONLY:**
+`CP QUERY SYSTEM 0127`
+`CP QUERY ALLOC DRCT ALL`
+`CP QUERY MDISK 0600 DIRECTORY`
+`M173DCHK`.
+Expected last active users unless
+changed, active CP DRCT on M01RES/
+0123, new 0600 absent RC40, protected
+USER DIRECT C = M173BAK DIRECT C
+4282 records, exactly one MAINT-1
+MDISK candidate insertion record213,
+M173DCHK PASS. Fail closed on changes
+or new PMAINT fullpack links.
+Before any separate controlled non-EDIT
+DIRECTXA activation, explicitly plan
+operator recovery from saved source and
+EBS snapshot (operator verified source
+and Region, snapshot complete but no
+isolated restore test), working console,
+SSI relogon, and strict physical checks.
+Fullpack PMAINT0141 must not be written
+while 0600 holds data. Never claim
+0600 W prevents a fullpack overlay.
+NO activation, LINK/ACCESS/FORMAT,
+M173CHK/import or source overwrites
+has yet occurred.
+
+GitHub source edits first, maximum
+work per turn, follow official IBM docs
+and existing installed GCCCMS C compiler
+for maintainable future overlap analysis,
+keep assembler small and IBM-specific.

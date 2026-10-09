@@ -157,4 +157,55 @@ assert "No non-EDIT DIRECTXA" in plan
 assert "NO VMUDQ" in state
 assert "NO DIAG EXECUTION" in runbook.upper()
 
+
+# October 9 real CP DIAG X'25C' completed a full VMCOM1
+# enumeration. Validate the recorded bounds and exception
+# without treating the full-pack as ordinary free space.
+for marker in (
+    "2026-10-09 09:26:50 CDT: Gate 5f CP VMUDQ LIVE PASS",
+    "M173VQ VMCOM1 QUERY COMPLETE NOT ACTIVATION APPROVAL",
+    "6VMHCD20 0300",
+    "PMAINT 0141",
+    "size **11000**",
+    "Gate 5f PASSED",
+    "No non-EDIT DIRECTXA yet",
+    "CP QUERY ALLOC DRCT ALL",
+    "CP QUERY MDISK 0600 DIRECTORY",
+    "M173DCHK",
+):
+    assert marker.lower() in plan.lower(), marker
+for marker in (
+    "Gate 5f: target-proven, read-only inventory",
+    "no ordinary CP",
+    "full-pack",
+    "CP QUERY SYSTEM 0127",
+    "The native GCCCMS C compiler is available",
+):
+    assert marker.lower() in runbook.lower(), marker
+for marker in (
+    "2026-10-09 09:26:50 CDT — M173 Gate 5f LIVE CP VMUDQ PASS",
+    "PMAINT 0141 VMCOM1 3390 0000000000 END",
+    "Gate 5f PASS on target",
+    "6000–7599",
+    "NO activation",
+):
+    assert marker.lower() in state.lower(), marker
+
+# Live CP independent location and active-directory LSTMDISK agree.
+prior_start, prior_cylinders = 5756, 180
+proposed_start, proposed_cylinders = 6000, 1600
+vol_cylinders = 11000
+assert prior_start + prior_cylinders - 1 == 5935
+assert proposed_start + proposed_cylinders - 1 == 7599
+assert 5935 < proposed_start
+assert proposed_start - 5935 - 1 == 64
+assert 7599 < vol_cylinders
+# FULLPACK PMAINT/0141 explicitly contains all planned G cylinders.
+assert 0 <= proposed_start and 7599 <= vol_cylinders - 1
+# A live, nonempty list without a DIAG failure is still not a
+# grant of physical/data integrity or new minidisk format permission.
+assert "not activation approval" in plan.lower()
+assert "full-pack" in plan.lower()
+assert "HARD STOP" in plan
+
 print("M173 VMUDQ READONLY SOURCE AND HOST MODEL PASS")
