@@ -72,6 +72,8 @@ on:
       - 'src/GITPIMP.C'
       - 'src/M173CHK.EXEC'
       - 'src/M173DCHK.EXEC'
+      - 'src/M173VQ.ASSEMBLE'
+      - 'tests/test-m173-vmudq-source.py'
       - 'tests/test-m173-dir-delta.py'
       - 'docs/M173_DIRECTORY_CHANGE_PLAN.md'
       - 'docs/M173_PERSISTENT_DISK_RUNBOOK.md'
@@ -184,6 +186,8 @@ on:
       - 'src/GITPIMP.C'
       - 'src/M173CHK.EXEC'
       - 'src/M173DCHK.EXEC'
+      - 'src/M173VQ.ASSEMBLE'
+      - 'tests/test-m173-vmudq-source.py'
       - 'tests/test-m173-dir-delta.py'
       - 'docs/M173_DIRECTORY_CHANGE_PLAN.md'
       - 'docs/M173_PERSISTENT_DISK_RUNBOOK.md'
@@ -287,6 +291,8 @@ jobs:
         run: python3 tests/test-m176-tree-closure.py
       - name: Cross-check permanent CMS data disk safety runbook
         run: python3 tests/test-m173-persistent-disk-runbook.py
+      - name: Check read-only VMUDQ 6.3 source and fixed record model
+        run: python3 tests/test-m173-vmudq-source.py
       - name: Guard M173 single-MDISK directory delta verifier
         run: python3 tests/test-m173-dir-delta.py
       - name: Guard CMS storage mode for live PACK artifacts
