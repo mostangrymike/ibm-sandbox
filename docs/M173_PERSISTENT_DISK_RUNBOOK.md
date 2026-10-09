@@ -1,5 +1,40 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## CURRENT — 2026-10-09 11:00:01 CDT: GITPIDX C PLAIN build PASS
+
+The Mac transfer of canonical GitHub
+`src/GITPIDX.C` to `GITPIDX C A` succeeded:
+real CMS `STATE GITPIDX C A` returned RC0 at
+10:59:57. CMS `CMSCLNK GITPIDX PLAIN` returned
+XF done/no statements flagged and
+`CMSCLNK: built GITPIDX MODULE mode PLAIN`,
+Ready RC0 at 11:00:01 (2.09s elapsed).
+Earlier missing C source/compiler RC12 resolved.
+
+The M173 imported and verified
+`M173NET STAGE G` remains retained.
+Previous M174 preflight: `M174NET INDEX G`
+absent RC28 and GIT600 R/W 4K
+225602 blocks left. No index created yet.
+Do not repeat M173 or erase its stage.
+
+**NEXT CMS MAINT:**
+```text
+STATE GITPIDX MODULE A
+M174CHK G
+```
+
+Require independent M174 BUILD/CHECK/AUDIT
+crosschecks, tip commit lookup and
+`M174 GENERALIZED STAGE INDEX TARGET
+GATE PASS`, all RC0. On error retain
+`M174NET INDEX G` and original stage.
+After actual M174 success proceed to
+M175/M176, using existing GCCCMS C and
+canonical sources. Do not claim M174
+has passed from build output alone.
+
+
 ## CURRENT — 2026-10-09 10:57:31 CDT: M174 source absent, G and stage intact
 
 Real CMS MAINT results:
