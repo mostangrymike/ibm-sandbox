@@ -14,7 +14,7 @@ assert src.startswith("M173VQ   CSECT")
 # The CMS XF assembler rejects an unresolved DIAG macro as IFO078.
 # Parse the exact encoded S-format instruction that IBM documents.
 import re
-m = re.search(r"DC\\s+X'([0-9A-F]{2})',X'([0-9A-F]{2})',"
+m = re.search(r"DC\s+X'([0-9A-F]{2})',X'([0-9A-F]{2})',"
               r"XL2'([0-9A-F]{4})'", src)
 assert m is not None
 machine = bytes.fromhex("".join(m.groups()))
