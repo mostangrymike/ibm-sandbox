@@ -1,5 +1,42 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## 2026-10-09 09:17:04 CDT — guarded M173VQ passed real XF
+
+Real MAINT `ASSEMBLE M173VQ`: ASSEMBLER (XF)
+DONE; NO STATEMENTS FLAGGED; Ready RC0
+09:17:04. This is the **final guarded source**:
+DIAG X'25C' opcode 8324025C and a prequery
+48-byte page-boundary check both compiled on
+actual target. No DIAG execution yet.
+
+The native Git client also has the installed
+GCCCMS C compiler and `CMSCLNK EXEC` builder.
+Use C for any nontrivial directory-inventory
+parsing, comparisons and policy checks; retain
+assembler only as needed for CP's low-level
+DIAGNOSE register interface. There is no
+reason to rewrite the proven thin test before
+obtaining its first actual output.
+
+Next CMS MAINT (read-only directory query;
+`START` only after `LOAD` RC0):
+```text
+LOAD M173VQ (NOAUTO NOMAP
+START
+```
+Report raw nonsecret 60-byte MDISK records
+and the program status. `QUERY COMPLETE NOT
+ACTIVATION APPROVAL` marks all records
+delivered; errors, no marker, partial data
+or nonzero return are failures. Do not
+activate CP directory or LINK/FORMAT new G
+from this output. Existing PMAINT 0141
+on VMCOM1 is defined as fullpack 0–10999
+even though earlier QUERY SYSTEM showed no
+active fullpack link. Further access
+safety/rollback review required.
+
+
 ## 2026-10-09 09:05:28 CDT — M173VQ CMS assembly PASS; extra guard
 
 Actual CMS MAINT `ASSEMBLE M173VQ` after
