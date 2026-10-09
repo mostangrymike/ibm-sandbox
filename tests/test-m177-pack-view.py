@@ -69,5 +69,7 @@ trees, blobs, links, entries, verified = 8, 272, 0, 279, 280
 assert verified == trees + blobs
 assert entries == blobs + trees - 1 + links
 assert "M176 LIVE ROOT TREE CLOSURE TARGET GATE PASS" in plan
-assert "not implemented or target-proven" in plan.lower()
+assert "not target-proven" in plan.lower()
+assert "GITPVIEW INFO G" in plan
+assert "GITPVIEW TREE G" in plan
 print("M177 READONLY G STAGE/INDEX VIEW SOURCE GUARD PASS")
