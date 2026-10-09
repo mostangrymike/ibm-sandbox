@@ -20,7 +20,7 @@ for s in (control, plan, runbook, state):
     assert "FULL" in s.upper() and "FORMAT" in s.upper()
 
 for marker in (
-    "STATE: DRAFT FOR OPERATOR REVIEW. NOT APPROVED TO EXECUTE",
+    "Historical preactivation policy", "ACTUAL CP ACTIVATION", "Ready; T=0.18/0.21 09:49:23", "HCPDIR494I User directory occupies 58 disk pages",
     "CP QUERY SYSTEM 0127",
     "CP QUERY ALLOC DRCT ALL",
     "CP QUERY MDISK 0600 DIRECTORY",
@@ -45,9 +45,13 @@ for marker in (
 # Materializing the initial disk is never a side effect
 # of CP directory source validation or directory activation.
 assert "Formatting is a separate destructive gate" in control
-assert "DO NOT activate" in control or "do not activate" in control.lower()
-assert "no non-edit directxa" in plan.lower()
-assert "No activation, LINK" in plan
+assert "DIRECTORY ACTIVATION SUCCEEDED" in control
+assert "FORMAT have **NOT** happened" in control
+assert "Directory activation and first verification PASSED" in plan
+assert "FORMAT IS NOT YET AUTHORIZED" in plan
+assert "CP QUERY VIRTUAL DASD" in plan
+assert "CP QUERY MDISK 0600 LOCATION" in plan
+assert "CP LINK * 0600 0600 W" in plan
 assert "not-authorized" not in control.lower() or "not approved" in control.lower()
 
 # Geometry from the independent live CP MDISK location check and
@@ -94,7 +98,30 @@ assert online_status("UNEXPECTED") == "fail"
 # source-map proof is not an active fullpack access restriction.
 assert "not test-restored" in control.lower()
 assert "M173VQ" in control
-assert "no cp directory activation" in state.lower() or (
-    "No activation" in state and "STOP" in state
-)
-print("M173 GATE6 ACTIVATION CHANGE-CONTROL HOST SAFETY PASS")
+assert "ONLINE CP DIRECTORY M173NEW ACTIVATION TARGET-PROVEN PASS" in state
+assert "EOJ DIRECTORY UPDATED AND ON LINE" in state
+assert "Do not FORMAT yet" in state
+
+# Postactivation definition is NOT the same as a device
+# currently attached to the MAINT virtual machine.
+for marker in (
+    "DIRECTORY ACTIVATION SUCCEEDED",
+    "EOJ DIRECTORY UPDATED AND ON LINE",
+    "MAINT 0600 MAINT 0600 3390 VMCOM1 0127 6000 1600",
+    "M01RES 0123 1 20",
+    "CP QUERY VIRTUAL DASD",
+    "CP QUERY MDISK 0600 LOCATION",
+    "QUERY DISK",
+    "CP LINK * 0600 0600 W",
+    "FORMAT have **NOT** happened",
+    "after any successful self-link",
+    "cannot be authorized",
+):
+    assert marker.lower() in control.lower(), marker
+assert "DO NOT" in control.upper()
+assert "4K blocks" in control
+assert "180,000" in control
+assert "current logged-on MAINT" in plan
+assert "NO" in state
+
+print("M173 POSTACTIVATION CHANGE-CONTROL HOST SAFETY PASS")

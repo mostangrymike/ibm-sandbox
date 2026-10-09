@@ -1,5 +1,64 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## 2026-10-09 09:50:09 CDT — new MAINT 0600 ACTIVE IN CP DIRECTORY
+
+Actual CMS MAINT `DIRECTXA M173NEW DIRECT C`
+returned `EOJ DIRECTORY UPDATED AND ON LINE`,
+`HCPDIR494I User directory occupies 58 disk
+pages`, Ready RC0 09:49:23. The active
+`CP QUERY MDISK USERID MAINT 0600 LOCATION
+DIRECTORY` now reports MAINT 0600 3390
+VMCOM1 RDEV0127 start6000 size1600 (end7599),
+RC0 at 09:49:38. `CP QUERY ALLOC DRCT ALL`
+still reports M01RES/0123 1–20 ACTIVE,
+and VMCOM1 has its unchanged 15 linked
+minidisks, without active PMAINT0141
+full-pack link at 09:50:09.
+
+**The live CP directory has been updated;
+the new minidisk is defined, not formatted.**
+The MAINT guest was already logged on,
+so virtual 0600 may not yet be present
+in its in-memory virtual hardware.
+Do not logoff blindly or assume that
+new physical definition equals CMS G.
+
+Immediate read-only CMS MAINT commands:
+```text
+CP QUERY VIRTUAL DASD
+CP QUERY MDISK 0600 LOCATION
+QUERY DISK
+```
+If virtual 0600 absent, only after confirming
+no device collision or fullpack writer,
+IBM allows a user's own directory minidisk
+to be dynamically added through
+`CP LINK * 0600 0600 W`. This changes
+only the virtual attachment, **not**
+the real CP directory nor disk contents;
+after linking, reverify exact virtual
+identity / 3390/1600 cylinder R/W
+and real VMCOM1/0127 start6000.
+Never issue LINK if virtual0600 is
+already present or identity ambiguous.
+
+A later, distinct operator-authorized
+`FORMAT` is destructive to the addressed
+minidisk. Its use is conditioned on
+confirmed exclusive writable physical
+identity, an empty G filemode,
+nonlinked overlapping PMAINT0141
+fullpack, and rollback readiness.
+Use CMS 4K blocks (3390 default,
+but verify explicitly), and check
+`QUERY DISK G` free blocks >=180000
+after initialization before M173
+import. Gross capacity ~288000 4K
+blocks before filesystem overhead.
+A and C disks and original PACK
+remain protected.
+
+
 ## 2026-10-09 09:33:55 CDT — Gate 6 preactivation read-only PASS
 
 CMS MAINT `CP QUERY SYSTEM 0127` showed
