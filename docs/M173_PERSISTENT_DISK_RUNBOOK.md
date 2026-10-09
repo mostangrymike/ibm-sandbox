@@ -1,5 +1,43 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## 2026-10-09 08:55 CDT — full VMCOM1 overlap CP-proven; compile fix pending target
+
+`CP QUERY MDISK USERID PMAINT 0141 LOCATION DIRECTORY`
+returned active-definition VMCOM1/0127, start0,
+**size11000** (full physical cylinders 0–10999).
+That is wider than DIRMAP's model-inferred
+0–10016 fullpack and intersects 0600/6000–7599.
+`CP QUERY SYSTEM 0127` reported VMCOM1 attached
+CPVOL with 15 currently linked minidisks (MAINT
+0551 R/O, 02CC R/W, 049E R/O, VMSERVP 12 R/W);
+PMAINT 0141 was not actively linked in that
+snapshot. Full-pack access can still change.
+A separate policy and read-only CP directory
+inventory is required before allocation activation.
+
+First `ASSEMBLE M173VQ` on real CMS MAINT
+returned RC8, XF IFO078 UNDEFINED OP CODE on
+`DIAG 2,4,X'25C'` (08:55:00). IBM confirms
+DIAGNOSE has no assembler mnemonic; the macro
+was not present/resolved in this assembly.
+The updated source encodes the exact four-byte
+instruction with:
+`DC X'83',X'24',XL2'025C'`.
+Opcode83, register nibble 24, base0, displacement25C.
+Host static tests verify that encoding. No
+change to CP query function/parameters; no
+target compilation success yet.
+
+After green GitHub CI, Mac `git pull`,
+`./cms-upload.sh M173VQ.ASSEMBLE`;
+CMS MAINT `ASSEMBLE M173VQ` **ONLY**.
+Do not LOAD/GENMOD, execute privileged
+DIAG X'25C', activate 0600, LINK/ACCESS,
+FORMAT or start importer until separate review.
+Keep protected 4282-record original/backup
+source, candidate and M171NET PACK unchanged.
+
+
 ## 2026-10-09 08:37 CDT — full-pack VMCOM1 hazard confirmed
 
 Real CMS MAINT: `CP QUERY PRIVCLASS` returned
