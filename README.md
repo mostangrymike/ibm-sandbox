@@ -26,7 +26,7 @@ The clean native module build was followed by a positive `GITPFAST G`
 tree-closure verification of **8 trees, 272 blobs, 279 entries,
 280 authenticated objects, 0 gitlinks**, against the verified
 **7736/7736** stage index. The instrumented reader reported
-**2 forward scans, 15472 stage records, 0 seeks** and authenticated
+**2 forward scans, 15472 object-header visits, 0 seeks** and authenticated
 272 reached blobs. Largest object: 393767 bytes; peak resident:
 6546851 bytes. CMS CPU **455.95s**, elapsed **460.66s**.
 
