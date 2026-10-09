@@ -789,4 +789,53 @@ assert right_end - right + 1 == right_count
 assert left_end + 1 == start
 assert end + 1 == right
 
+
+# October 9 full Gate 5c PASS is only source-map validation.
+for marker in (
+    "2026-10-09: M173 Gate 5c LIVE PASS",
+    "VMCOM1 3390     6VMDIR30  02B1 MR",
+    "6VMHCD20  0300 MR        5756       5935        180",
+    "MAINT     0600 W         6000       7599       1600",
+    "7600      10016       2417     Gap",
+    "630RL1 3390     MAINT630  0131 MR",
+    "another",
+    "source-derived candidate map proof",
+    "Gate 5d",
+    "CP QUERY DASD DETAILS 0127",
+    "CP QUERY MDISK USERID 6VMHCD20 0300 LOCATION DIRECTORY",
+    "CP QUERY MDISK 0600 DIRECTORY",
+    "CP QUERY ALLOC MAP VMCOM1",
+    "M173DCHK",
+    "HCPQMD040E",
+    "HARD STOP",
+    "no non-EDIT DIRECTXA",
+):
+    assert marker.lower() in plan.lower(), marker
+for marker in (
+    "Gate 5c contextual VMCOM1 map LIVE PASS",
+    "Full Gate 5c source-map context PASS",
+    "separate volume",
+    "not been activated",
+    "Gate 5d",
+):
+    assert marker.lower() in runbook.lower(), marker
+for marker in (
+    "M173 Gate 5c complete source-map context LIVE PASS",
+    "DIFFERENT volser",
+    "READ-ONLY only",
+    "Fullpack/PERM/PARM",
+):
+    assert marker.lower() in state.lower(), marker
+# Geometry and accounting for observed source-map adjacency.
+assert 5935 - 5756 + 1 == 180
+assert 5999 - 5936 + 1 == 64
+assert 7599 - 6000 + 1 == 1600
+assert 10016 - 7600 + 1 == 2417
+assert 5935 + 1 == 5936
+assert 5999 + 1 == 6000
+assert 7599 + 1 == 7600
+# Explicitly keep actual active-CP proof and activation separate.
+assert "does not\nindependently enumerate current active CP" in state
+assert "fullpack" in plan.lower() and "perm/parm" in plan.lower()
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")

@@ -1,5 +1,34 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## 2026-10-09 — Gate 5c contextual VMCOM1 map LIVE PASS
+
+Actual CMS `DROP 200 | TAKE 100` read from
+`M173NEW MDISKMAP C` includes the `VMCOM1 3390`
+header and consecutive entries: 6VMHCD20/0300
+5756-5935 size180, gap5936-5999 size64, MAINT-1
+0600 exclusive W 6000-7599 size1600, and gap
+7600-10016 size2417. No overlap is shown within the
+**source-derived candidate map**. The displayed
+`630RL1 3390 MAINT630 0131 MR 000-10016`
+is a separate volume, not a VMCOM1 overlay.
+
+**Full Gate 5c source-map context PASS.** A new 0600/G
+device has NOT been activated, linked, accessed or
+formatted. A clean DIRMAP does not establish complete
+active-CP PERM/PARM/full-pack safety.
+
+**Next Gate 5d is independent read-only CP revalidation**:
+`CP QUERY DASD DETAILS 0127`,
+`CP QUERY MDISK USERID 6VMHCD20 0300 LOCATION DIRECTORY`,
+`CP QUERY MDISK 0600 DIRECTORY`,
+`CP QUERY ALLOC MAP VMCOM1`,
+and `M173DCHK`. See the current-gate banner in
+`docs/M173_DIRECTORY_CHANGE_PLAN.md` for expected
+results and fail-closed policy. No directory activation,
+LINK, ACCESS, FORMAT or import before a separately
+authorized rollback and fullpack/PERM/PARM review.
+
+
 ## 2026-10-09 08:16:20 CDT — Gate 5c boundary filters LIVE PASS
 
 Four read-only CMS `PIPE < M173NEW MDISKMAP C | LOCATE`
