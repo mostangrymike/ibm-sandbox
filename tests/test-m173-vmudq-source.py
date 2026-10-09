@@ -111,4 +111,28 @@ assert "No successful" in state
 assert 11000 - 1 == 10999
 assert 6000 >= 0 and 7599 <= 10999
 
+
+# CP DIAG X'25C' allows a 48-byte 8-aligned parameter list only if
+# it resides entirely inside one 4096-byte page. Host-model every
+# possible 8-byte aligned offset, including the last safe position.
+for offset in range(0, 4096, 8):
+    accepted = offset <= 4048
+    in_one_page = (offset + 48 <= 4096)
+    assert accepted == in_one_page
+assert "         LA    2,PARMS" in src
+assert "         LR    3,2" in src
+assert "         N     3,=X'00000FFF'" in src
+assert "         C     3,=F'4048'" in src
+assert "         BH    DFAIL" in src
+assert src.index("         LR    3,2") < src.index(
+    "         DC    X'83',X'24',XL2'025C'")
+assert "         DS    0D\nPARMS" in src
+# CP documented raw DIAG interface: Rx=2 receives bytes moved,
+# Ry+1=5 receives a status code, and nonzero CC must fail.
+assert "         BNZ   DFAIL" in src
+assert "         LTR   5,5" in src
+assert "         BNZ   DFAIL\n         LTR   5,5" in src
+assert "         C     2,=F'65520'" in src
+assert "         BH    DFAIL" in src
+
 print("M173 VMUDQ READONLY SOURCE AND HOST MODEL PASS")

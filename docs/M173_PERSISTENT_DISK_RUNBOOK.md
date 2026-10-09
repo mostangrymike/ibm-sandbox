@@ -1,5 +1,47 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## 2026-10-09 09:05:28 CDT — M173VQ CMS assembly PASS; extra guard
+
+Actual CMS MAINT `ASSEMBLE M173VQ` after
+the 83 24 02 5C opcode fix returned:
+`ASSEMBLER (XF) DONE`,
+`NO STATEMENTS FLAGGED IN THIS ASSEMBLY`,
+Ready RC0 at 09:05:28. Only compile behavior
+is proven; privileged CP DIAG X'25C' has
+not executed.
+
+IBM's DIAG X'25C' register interface was
+checked against source: R2 input parameter
+address/output bytes moved, R4 buffer address,
+R5 input buffer length/output return code,
+plus the DIAG condition code. The program
+refuses nonzero condition or return status,
+empty or over-capacity responses, and
+non-multiple-of-60-byte results. CP's
+48-byte parameter list must not straddle
+a 4096-byte page. `DS 0D` supplies 8-byte
+alignment but cannot guarantee the latter
+at arbitrary CMS LOAD addresses. Before
+the query the new isolated source now masks
+R2's 12-bit page offset and rejects offsets
+greater than 4048 with RC8. This safety
+guard is host-tested over every 8-byte
+aligned position but **not yet compiled
+on z/VM 6.3 CMS**.
+
+Next Mac `git pull` plus
+`./cms-upload.sh M173VQ.ASSEMBLE`;
+CMS `ASSEMBLE M173VQ` **only**.
+The subsequent LOAD/GENMOD/execution gate
+is separately held until the current
+guard's target assembler output is reviewed.
+Even a complete active-directory
+inventory will not remove overlapping
+PMAINT 0141 full-pack risk or authorize
+any change/format of 0600 or original
+VMCOM1 devices.
+
+
 ## 2026-10-09 08:55 CDT — full VMCOM1 overlap CP-proven; compile fix pending target
 
 `CP QUERY MDISK USERID PMAINT 0141 LOCATION DIRECTORY`
