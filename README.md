@@ -1,5 +1,54 @@
 # IBM Sandbox
 
+## Current live CMS native-Git checkpoint — October 9, 2026
+
+The native CMS Git client now has a verified **7,736-object**
+GitHub PACK stored on an independently provisioned
+1600-cylinder, 4KB-block **GIT600** CMS G disk,
+rather than overrunning A. The retained original
+`M171NET PACK/META A` input is preserved.
+
+- **M173 LIVE PASS:** native OFS-capable import,
+  `M173NET STAGE G`, with independent readback
+  (elapsed **1396.22 seconds**, October 9, 10:48:28).
+- **M174 LIVE PASS:** index `M174NET INDEX G`
+  with **7736 unique OIDs**, full index check and
+  stage audit and lookup of Git tip commit
+  `ADA83FF3B3813961CEF2A9FFC50A453540039E0B`
+  (elapsed **1459.65 seconds**, October 9, 11:27:15).
+- **M176 LIVE PASS:** recursive closure of the
+  tip's root `CCB18BEC067E7886D70B82EF138EE56A8B899A61`.
+  **8 trees, 272 blobs, 0 gitlinks, 279 entries,
+  280 verified objects**, largest object
+  **393767 bytes**, peak resident **394058 bytes**;
+  `M176 LIVE ROOT TREE CLOSURE TARGET GATE PASS`,
+  October 9, 12:51:40. The CMS timing field
+  overflowed (`T=*.**/*.**`), so do not attribute
+  an elapsed time.
+- The M176 output includes `M175 PACK INFO PASS`
+  from its internal object-information call.
+  **Standalone M175CHK G terminal success has
+  not been provided** with that output; keep
+  the distinction.
+
+**Next:** validate `M175CHK G` if not yet
+independently run, then deliver native Git-facing
+read-only access to the retained G stage/index,
+without repeating the expensive M173/M174 writes.
+Do not reformat G or overwrite `M173NET STAGE G`,
+`M174NET INDEX G`, original PACK A, or earlier
+sealed generations. An overlapping fullpack
+`PMAINT 0141` exists on VMCOM1; do not write
+through it while G holds data.
+
+Detailed current checkpoints and instructions:
+`docs/M173_PERSISTENT_DISK_RUNBOOK.md` and
+`CHAT_STATE.md`. Historical status farther down
+is retained as chronological context.
+
+---
+
+
 Native IBM platform development experiments.
 
 ## CMS Git client

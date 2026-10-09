@@ -9790,3 +9790,63 @@ Source/code canonical GitHub main, GCCCMS.
 M175/M176 not yet target-run. Preserve original
 M171NET PACK/META A, G stage/index, fullpack
 PMAINT0141 no-write constraint.
+
+## 2026-10-09 12:51:40 CDT — M176 REAL CMS TREE CLOSURE TARGET PASS
+
+User ran `M176CHK G` on z/VM 6.3 CMS MAINT.
+**Success**: `M176 TREE CLOSURE PASS`,
+`M176 TREE CLOSURE CROSSCHECK PASS`,
+`M176 LIVE ROOT TREE CLOSURE TARGET GATE PASS`,
+Ready at 12:51:40. The output joined the first
+two markers without intervening whitespace, but
+the final gate and counts are present.
+
+Commit OID ADA83FF3B3813961CEF2A9FFC50A453540039E0B,
+indexed OBJ7000 type1 size265, parent
+B81D3CE7BAC08420BF7DB862E93F82FB3968DDC0,
+root tree CCB18BEC067E7886D70B82EF138EE56A8B899A61,
+global index 7736 total and unique.
+Full recursive root closure: TREES 8,
+BLOBS 272, GITLINKS 0,
+ENTRIES 279, VERIFIED 280 (=8+272),
+largest object 393767 bytes,
+resident PEAK 394058 bytes. Tree entries
+equal 272 blob edges + 7 child tree edges,
+consistent with reported root closure.
+No output stage/index rewriting by M176.
+CMS timing was `T=*.**/*.**`, so duration
+cannot be inferred. M176 GITPCAT call
+printed `M175 PACK INFO PASS`;
+**this does not by itself prove standalone
+M175CHK G finished its full closure gate.**
+
+M173 and M174 already real-target passed:
+M173 stage 7736 objects in M173NET STAGE G,
+M174 indexed all 7736 unique and audited
+the stage to M174NET INDEX G;
+indexing tip resolved commit OBJ7000.
+Original M171NET PACK/META remain on A;
+G is new GIT600 1600-cylinder 4K CMS R/W.
+
+NEXT: if standalone M175 target PASS is
+not already recorded, on CMS MAINT run
+read-only `M175CHK G` with existing
+GITPCAT MODULE, stage/index present.
+Expected `M175 LIVE COMMIT TREE CLOSURE PASS`
+and `M175 VERIFIED RANDOM ACCESS TARGET
+GATE PASS`; no rebuild or index audit.
+User asks not to pause and to maximize
+independent development. M177 candidate:
+make read-only Git-facing operations
+over explicitly selected, verified G
+stage/index without hand-set FILEDEFs,
+strict no-overwrite/no-erase protections.
+Do not claim this M177 functionality
+until source and target validation.
+Never reformat G, rerun M173/M174,
+or allow writable overlapping fullpack
+PMAINT0141 (permanent VMCOM1 0–10999).
+PMAINT fullpack definition still exists
+although not previously linked in CP SYSTEM.
+Preserve directory rollback backup and
+all sealed earlier Git datasets.

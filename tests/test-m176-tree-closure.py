@@ -155,4 +155,29 @@ with tempfile.TemporaryDirectory() as td:
     assert missing.returncode == 8
     assert "TREE CLOSURE CHILD MISSING" in missing.stdout
 
+
+# Independently reconcile the user-supplied real CMS M176 output.
+# This is a documentation regression, not a simulated target run.
+runbook = (root / "docs/M173_PERSISTENT_DISK_RUNBOOK.md").read_text()
+handoff = (root / "CHAT_STATE.md").read_text()
+readme = (root / "README.md").read_text()
+for note in (runbook, handoff, readme):
+    assert "M176 LIVE ROOT TREE CLOSURE TARGET GATE PASS" in note
+    assert "CCB18BEC067E7886D70B82EF138EE56A8B899A61" in note
+    assert "ADA83FF3B3813961CEF2A9FFC50A453540039E0B" in note
+    assert "393767" in note and "394058" in note
+for note in (runbook, handoff):
+    assert "M175 PACK INFO PASS" in note
+    assert "12:51:40" in note
+    assert "T=*.**/*.**" in note
+    assert "M175CHK G" in note
+
+trees, blobs, gitlinks, entries, verified = 8, 272, 0, 279, 280
+assert trees + blobs == verified
+assert entries == (trees - 1) + blobs + gitlinks
+assert verified <= 7736
+assert 394058 >= 393767
+assert "M176 TREE CLOSURE CROSSCHECK PASS" in runbook
+assert "not been provided" in readme.lower()
+
 print("M176 VERIFIED TREE CLOSURE HOST MODEL PASSED")
