@@ -9089,3 +9089,57 @@ is target-verified and exact return handling reviewed.
 Preserve USER DIRECT C, M173BAK DIRECT C,
 M173NEW DIRECT C, all Git generation files,
 M171NET PACK/META A and the unformatted G proposal.
+
+## 2026-10-09 08:55 CDT — M173VQ first assembler RC8, IBM opcode fix in GitHub
+
+Latest real CMS MAINT:
+`CP QUERY MDISK USERID PMAINT 0141 LOCATION DIRECTORY`
+= PMAINT 0141 physical VMCOM1/0127 start0 size
+**11000** RC0. Fullpack active-directory
+definition covers 0–10999, including 0600
+proposal at 6000–7599. Candidate DIRMAP
+0–10016 is its own model inference and
+must not override real CP fullpack size.
+`CP QUERY SYSTEM 0127` = VMCOM1 15
+currently linked minidisks, MAINT 0551 R/O,
+02CC R/W, 049E R/O, VMSERVP 12 R/W.
+PMAINT 0141 was NOT among currently
+linked minidisks in the displayed list;
+the directory definition still exists
+and may be linked later. The overlap
+cannot be ignored due to W on 0600.
+
+`ASSEMBLE M173VQ` on CMS MAINT yielded XF
+`IFO078 UNDEFINED OP CODE` at
+`DIAG 2,4,X'25C'`, 1 statement flagged,
+Ready(00008) 08:55:00. No successful
+target compile or query execution.
+IBM explicitly says there is no
+DIAGNOSE machine-instruction mnemonic;
+DIAG is a macro not resolved in this
+installation. GitHub edited only
+the offending instruction line to
+`DC X'83',X'24',XL2'025C'`.
+The latter represents exact 4-byte
+instruction 83 24 02 5C, Rx2/Ry4,
+base0, displacement X'25C'.
+Dedicated Python host test now
+decodes opcode and operand fields;
+host tests do not prove CMS build.
+
+**NEXT after CI passes, Mac in ibm-sandbox/src:**
+`git pull`
+`./cms-upload.sh M173VQ.ASSEMBLE`
+**Then CMS MAINT:**
+`ASSEMBLE M173VQ`
+COMPILE-ONLY. Do not LOAD/GENMOD/run
+M173VQ/DIAG until returned assembler
+status and listing are evaluated.
+No non-EDIT DIRECTXA, activation of
+new 0600/G, LINK/ACCESS, FORMAT, M173
+import, or alteration of protected
+USER DIRECT C/M173BAK DIRECT C,
+M173NEW DIRECT C, PACK or generations.
+Complete independent active CP directory
+inventory plus fullpack access safeguards
+and explicit rollback remain hard gates.

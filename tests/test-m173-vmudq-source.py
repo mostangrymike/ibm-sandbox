@@ -10,7 +10,23 @@ state = (root / "CHAT_STATE.md").read_text()
 
 assert max(map(len, src.splitlines())) <= 71
 assert src.startswith("M173VQ   CSECT")
-assert "DIAG  2,4,X'25C'" in src
+# IBM z/VM CP Programming Services: DIAGNOSE has NO mnemonic.
+# The CMS XF assembler rejects an unresolved DIAG macro as IFO078.
+# Parse the exact encoded S-format instruction that IBM documents.
+import re
+m = re.search(r"DC\s+X'([0-9A-F]{2})',X'([0-9A-F]{2})',"
+              r"XL2'([0-9A-F]{4})'", src)
+assert m is not None
+machine = bytes.fromhex("".join(m.groups()))
+assert machine == bytes.fromhex("8324025C")
+assert machine[0] == 0x83
+assert (machine[1] >> 4) == 2       # Rx = parameter-list pointer
+assert (machine[1] & 0x0F) == 4     # Ry = data-buffer pointer
+base_disp = int.from_bytes(machine[2:], "big")
+assert (base_disp >> 12) == 0       # base=0, no register addition
+assert (base_disp & 0x0FFF) == 0x25C
+assert "         DIAG  " not in src
+assert "DIAGNOSE has no instruction mnemonic" in src
 assert "BNZ   DFAIL" in src
 assert "LTR   5,5" in src
 assert "L     5,=F'65520'" in src
@@ -69,5 +85,30 @@ for text, expected in (
 ):
     for marker in expected:
         assert marker.lower() in text.lower(), marker
+
+
+# Latest real CMS MAINT: active CP fullpack is 11000 cylinders,
+# NOT source DIRMAP's model-inferred 10017 cylinders.
+for marker in (
+    "2026-10-09 08:55 CDT",
+    "PMAINT 0141",
+    "11000",
+    "IFO078 UNDEFINED OP CODE",
+    "Ready(00008)",
+    "X'83',X'24',XL2'025C'",
+    "compile-only",
+):
+    assert marker.lower() in plan.lower(), marker
+for marker in (
+    "full physical cylinders 0–10999",
+    "IFO078 UNDEFINED OP CODE",
+    "only",
+):
+    assert marker.lower() in runbook.lower(), marker
+assert "ASSEMBLE M173VQ" in state
+assert "COMPILE-ONLY" in state
+assert "No successful" in state
+assert 11000 - 1 == 10999
+assert 6000 >= 0 and 7599 <= 10999
 
 print("M173 VMUDQ READONLY SOURCE AND HOST MODEL PASS")
