@@ -1,3 +1,87 @@
+## CURRENT GATE — 2026-10-09 09:17:04 CDT: final M173VQ CMS assembler PASS
+
+Real CMS MAINT after Mac git pull and source transfer:
+
+```text
+ASSEMBLE M173VQ
+ASSEMBLER (XF) DONE
+NO STATEMENTS FLAGGED IN THIS ASSEMBLY
+Ready; T=0.07/0.09 09:17:04
+```
+
+**The final 48-byte parameter-page guard and the DIAG
+X'25C' machine-byte instruction now assemble on actual
+z/VM 6.3 CMS.** This is the second successful compilation
+and supersedes the former compiler RC8. No VMUDQ has been
+executed and no live CP directory has been changed.
+
+### C compiler strategy (GCCCMS is already installed/proven)
+
+The project already uses GCCCMS and the native CMSCLNK
+builder for C code. Do not expand IBM-specific assembler
+beyond the minimum direct DIAGNOSE instruction/register
+interface. For analysis or reusable overlap checks,
+use C with the existing C toolchain and (only if useful)
+a minimal assembler call adapter. Do not rewrite
+a target-compiled single read-only diagnostic merely
+for language consistency; use its output to decide
+what higher-level C checks are required.
+
+### Next gate — execute the isolated read-only CP inventory
+
+The source has been reviewed against IBM CP DIAGNOSE
+X'25C': class B present, Rx=R2 48-byte aligned
+parameter list, Ry=R4 output buffer, Ry+1=R5
+buffer capacity/return code, CC0 + R5 zero required
+for success, <=65520 bytes of whole 60-byte rows,
+and an explicit pre-DIAG check preventing a 48-byte
+parameter list from crossing a 4K page.
+
+On **CMS MAINT**, load the just-assembled
+`M173VQ TEXT` without auto-resolving other modules,
+then execute this one deliberately read-only CP
+query **only if LOAD returns RC0**:
+
+```text
+LOAD M173VQ (NOAUTO NOMAP
+START
+```
+
+`LOAD` changes only guest virtual storage, while
+`START` executes the program's single VMUDQ
+LSTMDISK read against the active CP directory
+for every owner and virtual device on VMCOM1.
+Do not run `START` if LOAD prints warnings,
+missing/external symbol errors or a nonzero RC;
+report the diagnostics instead. Successful
+query output consists of 60-byte directory
+minidisk inventory rows and the explicit
+`QUERY COMPLETE NOT ACTIVATION APPROVAL` marker.
+Any `QUERY FAILED NO COMPLETE INVENTORY`, CP
+program check, truncated, empty or malformed output
+fails closed. Do not infer validity from a subset.
+
+The VMUDQ output identifies active CP directory
+**definitions**, not which fullpack devices are
+currently linked and writable, so reconcile against
+live `CP QUERY SYSTEM 0127`. In particular,
+active-directory `PMAINT 0141` spans
+VMCOM1/0127 start 0 length 11000 and physically
+overlaps proposed MAINT 0600 6000–7599.
+No link/format or CP directory activation is
+authorized by a successful read-only inventory.
+
+**HARD STOP**: no non-EDIT DIRECTXA, disk activation,
+LINK/ACCESS, FORMAT, G staging importer or edits to
+USER DIRECT C, M173BAK DIRECT C, M173NEW DIRECT C,
+M171NET PACK or prior verified Git generations.
+Protect operator backup and rollback provisions.
+
+Official IBM: https://www.ibm.com/docs/en/zvm/7.2.0?topic=codes-diagnose-code-x25c-directory-query
+IBM CMS LOAD/START: https://www.ibm.com/docs/en/zvm/7.2.0?topic=cms-running-program
+
+---
+
 ## CURRENT GATE — 2026-10-09 09:05:28 CDT: M173VQ assembler PASS; execution safety review
 
 **Real CMS MAINT (09:05:28):**
