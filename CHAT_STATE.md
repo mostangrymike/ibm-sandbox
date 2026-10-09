@@ -9755,3 +9755,38 @@ Do not rerun M173, FORMAT G, or erase
 `M173NET STAGE G` or partial G index.
 After true M174 PASS, proceed M175/M176 using
 GCCCMS C and canonical GitHub sources.
+
+## 2026-10-09 11:27:15 CDT — M174 full native index TARGET PASS
+
+CMS MAINT `M174CHK G` succeeded:
+`INDEX WRITTEN 7736 UNIQUE 7736`;
+`M174 INDEX BUILD CROSSCHECK PASS`;
+`INDEX VERIFIED 7736 UNIQUE 7736`;
+`M174 INDEX CHECK CROSSCHECK PASS`;
+`INDEX AUDIT VERIFIED 7736 UNIQUE 7736`;
+`M174 INDEX AUDIT CROSSCHECK PASS`.
+Tip OID ADA83FF3B3813961CEF2A9FFC50A453540039E0B,
+OBJ 7000 TYPE1 SIZE265; `M174 INDEX GET PASS`,
+`M174 TIP COMMIT LOOKUP PASS`.
+`M174 RETAINED INDEX M174NET INDEX G`;
+`M174 GENERALIZED STAGE INDEX TARGET GATE PASS`;
+Ready RC0 T=1451.38/1459.65 at 11:27:15,
+elapsed 24m19.65s.
+G contained 225602 free 4K blocks before index.
+M173NET STAGE G and M174NET INDEX G are
+both retained and verified; never overwrite.
+
+NEXT Mac in ibm-sandbox/src:
+`git pull`;
+`./cms-upload.sh GITPCAT.C GITPTRE.C M175CHK.EXEC M176CHK.EXEC`.
+CMS MAINT check stage/index G and new sources A,
+`CMSCLNK GITPCAT PLAIN`, then `M175CHK G`
+on successful build only. Require
+`M175 VERIFIED RANDOM ACCESS TARGET GATE PASS`.
+Only after this real PASS,
+`CMSCLNK GITPTRE PLAIN`, `M176CHK G`,
+expect `M176 LIVE ROOT TREE CLOSURE TARGET GATE PASS`.
+Source/code canonical GitHub main, GCCCMS.
+M175/M176 not yet target-run. Preserve original
+M171NET PACK/META A, G stage/index, fullpack
+PMAINT0141 no-write constraint.
