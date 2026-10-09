@@ -186,4 +186,20 @@ assert "Recfm=fixed,Lrecl=80" in uploader
 assert "Example: $0 GITSEL.C GITREC.C GITCIDX.C" in uploader
 assert max(map(len, text.splitlines())) <= 80
 
+
+# Actual target CMS native C build recovered after transferring missing
+# GITPIDX.C, but the G index target check has not yet been run.
+for doc in (runbook, handoff):
+    for marker in (
+        "11:00:01",
+        "STATE GITPIDX C A",
+        "CMSCLNK GITPIDX PLAIN",
+        "CMSCLNK: built GITPIDX MODULE mode PLAIN",
+        "STATE GITPIDX MODULE A",
+        "M174CHK G",
+    ):
+        assert marker in doc, (marker, "M174 native build status missing")
+assert "No index created yet" in runbook
+assert "not been target-run yet" in handoff
+
 print("M174 GENERALIZED STAGE INDEX HOST MODEL PASSED")
