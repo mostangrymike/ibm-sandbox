@@ -9408,3 +9408,88 @@ small assembler only for IBM DIAG.
 Do maximum independent preparation
 per turn, never destroy original
 A/C disks or expose passwords.
+
+## 2026-10-09 09:50:09 CDT — ONLINE CP DIRECTORY M173NEW ACTIVATION TARGET-PROVEN PASS
+
+**Major milestone:** operator actually executed on
+MAINT `DIRECTXA M173NEW DIRECT C`
+(non-EDIT privileged) and received
+`EOJ DIRECTORY UPDATED AND ON LINE`;
+`HCPDIR494I User directory occupies 58 disk pages`,
+Ready RC0 at 09:49:23. This changed the
+**actual online CP user directory**;
+do not tell the user activation remains pending.
+
+Postactivation CMS/CP actual results:
+`CP QUERY MDISK USERID MAINT 0600 LOCATION DIRECTORY`
+= MAINT/0600 3390 VMCOM1 RDEV0127
+start6000 cylinders1600 (end7599),
+RC0 at 09:49:38.
+`CP QUERY ALLOC DRCT ALL`: M01RES
+RDEV0123 cylinders1–20 ACTIVE, 1
+in use / high1 / 5%, RC0 at 09:50:01.
+`CP QUERY SYSTEM 0127`: VMCOM1 15
+previous links; MAINT0551 R/O,
+MAINT02CC R/W, MAINT049E R/O,
+VMSERVP0311/0310/0309/0308/0307/
+0306/0305/0304/0303/0301/0302/
+0191 R/W; no PMAINT0141 fullpack
+currently linked, RC0 at 09:50:09.
+Prior independent VMUDQ CP live
+directory inventory showed no
+ordinary MDISK overlap with 6000–7599.
+PMAINT0141 fullpack remains defined
+on same VMCOM1 real0127 0–10999;
+must never use it for write while
+G holds data (ordinary link modes
+do not protect against overlap).
+
+**NEXT CMS MAINT commands READ-ONLY**:
+`CP QUERY VIRTUAL DASD`
+`CP QUERY MDISK 0600 LOCATION`
+`QUERY DISK`
+These distinguish newly online
+permanent directory definition
+from virtual0600 present/absent in
+the already-logged-on MAINT VM,
+and ensure G filemode available.
+Do not FORMAT yet. If virtual0600
+is absent, IBM authorizes current
+user's own minidisk self LINK; after
+safe virtual vdev uniqueness check
+and active directory/physical match:
+`CP LINK * 0600 0600 W` (new virtual
+attachment; no filesystem write).
+Check success, exact virtual physical
+location and R/W before proceeding.
+Do not LOGOFF blindly or LINK if
+0600 already exists in MAINT.
+
+G must be initialized **only after**
+new virtual0600/VMCOM1/0127/start6000/
+size1600/end7599 verified, and G
+filemode unused; FORMAT is destructive
+and a separate gate. Target 4K CMS
+filesystem; gross 1600*180=288000
+4K blocks. After formatting require
+G R/W, 4096-byte block size,
+>=180000 FREE 4K blocks measured
+using QUERY DISK G; then stage M173
+7736-object PACK on G, never A.
+Protect USER DIRECT C, backup
+M173BAK DIRECT C, active candidate
+M173NEW DIRECT C, original M171NET
+PACK/META A and verified Git generations.
+Current CP directory is now ONLINE
+with extra MAINT/0600; maintain
+verified EBS backup recovery path
+(restore not isolated-test proven).
+Canonical next plan:
+docs/M173_ACTIVATION_CHANGE_CONTROL.md
+and docs/M173_DIRECTORY_CHANGE_PLAN.md.
+
+GitHub canonical, maximum work per
+turn, user said "do not pause"; give
+conditional next CMS batch rather than
+repeating passed gates, but be safe
+with FORMAT.
