@@ -9980,3 +9980,37 @@ Protect GIT600, stage/index,
 original M171NET PACK/META A, other
 sealed datasets and PMAINT0141
 fullpack no-writes policy.
+
+## 2026-10-09 — M178 nonmutating tree-performance engineering plan
+
+New `docs/M178_PACK_TREE_PERFORMANCE_PLAN.md`
+prepared after the actual CMS M177 TREE PASS.
+The current `src/GITPTRE.C` fetch routine
+does per-reachable-object `fseek(stage,
+ix[pos].offset,SEEK_SET)` and readback
+SHA1. With 280 reachable objects and the
+large 7,736-object CMS STAGE G this
+may be expensive, but **no profiler
+measurement confirms the bottleneck**.
+The two Ready timestamps from previous
+command 13:28:51 to M177 TREE completion
+15:32:00 imply 2h03m09s between displayed
+Ready lines, NOT verified elapsed time
+for GITPVIEW TREE; CMS `T=*.**/*.**`
+is overflowed and cannot be interpreted
+as numeric time.
+
+Plan proposes independent M178 native
+module with a forward scan and bounded
+tree-edge cache, separate host parity
+and corruption tests, target comparison
+against 8-tree/272-blob/280-verified
+root closure, plus runtime measurement
+without replacing proven GITPTRE or
+GITPVIEW. No optimized native code has
+been written or target-proven yet.
+Immediate read-only M177 INFO and
+standalone M175 checks still pending.
+Preserve GIT600 G, M173NET STAGE G,
+M174NET INDEX G, original PACK/META A
+and PMAINT0141 no-write restriction.
