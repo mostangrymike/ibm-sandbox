@@ -8945,3 +8945,22 @@ and `docs/M173_PERSISTENT_DISK_RUNBOOK.md`.
 Past comments/procedures below their latest headings
 can be obsolete. Proceed with max substantive work per
 turn, GitHub edits first, conservative explicit CMS gates.
+
+## 2026-10-09 08:16:20 CDT — Gate 5c four CMS filters PASS; hold activation
+
+CMS MAINT four candidate-map LOCATE filters all returned
+RC0: `MAINT 0600 W 6000 7599 1600 MAINT-1 *`;
+preceding gap 5936–5999 size64; following gap
+7600–10016 size2417. Live target verification proves
+only those four numeric boundaries. VOLSER is omitted
+on the resulting continuation lines; **full Gate 5c is NOT
+yet proved**. Do not claim the new G minidisk is online.
+
+Next CMS MAINT read-only command:
+`PIPE < M173NEW MDISKMAP C | DROP 200 | TAKE 100 | CONSOLE`
+Inspect VMCOM1 section context, no source/password output.
+A clean source-derived report does not independently
+exclude fullpack, PERM/PARM or unmapped live allocations.
+Keep CP directory unchanged, USER DIRECT C,
+M173BAK DIRECT C, M173NEW DIRECT C protected.
+No unqualified DIRECTXA, LINK, ACCESS, FORMAT, or M173 import.
