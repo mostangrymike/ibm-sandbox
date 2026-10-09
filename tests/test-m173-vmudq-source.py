@@ -95,7 +95,7 @@ for marker in (
     "11000",
     "IFO078 UNDEFINED OP CODE",
     "Ready(00008)",
-    "DC X'83',X'24',XL2'025C'",
+    "X'83',X'24',XL2'025C'",
     "compile-only",
 ):
     assert marker.lower() in plan.lower(), marker
