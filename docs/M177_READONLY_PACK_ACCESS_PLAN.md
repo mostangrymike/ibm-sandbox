@@ -139,7 +139,7 @@ https://www.ibm.com/docs/en/zvm/7.2?topic=commands-filedef
 ---
 
 
-**Status: isolated source prototype implemented on GitHub; not target-proven.**
+**Status: M177 TREE target-proven on CMS; INFO and FILEDEF hygiene pending.**
 Prepared October 9, 2026 after actual M173, M174 and
 M176 G-stage/index target PASS (`M176 LIVE ROOT TREE CLOSURE TARGET GATE PASS`). The standalone M175CHK G
 terminal result was not supplied with the M176 output.
