@@ -31,10 +31,12 @@ rather than overrunning A. The retained original
   not been provided** with that output; keep
   the distinction.
 
-**Next:** validate `M175CHK G` if not yet
-independently run, then deliver native Git-facing
-read-only access to the retained G stage/index,
-without repeating the expensive M173/M174 writes.
+**Next:** validate `M175CHK G` if not already run,
+then target-test the **new M177 `GITPVIEW EXEC` prototype**:
+read-only INFO/TREE commands against the explicit G
+stage/index. Source and host-level guards are in GitHub;
+no M177 real CMS target execution has yet occurred.
+See `docs/M177_READONLY_PACK_ACCESS_PLAN.md`.
 Do not reformat G or overwrite `M173NET STAGE G`,
 `M174NET INDEX G`, original PACK A, or earlier
 sealed generations. An overlapping fullpack

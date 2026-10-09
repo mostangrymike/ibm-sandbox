@@ -1,0 +1,127 @@
+/* M177: read-only native PACK object/tree view over an explicit CMS disk. */
+/* Uses existing verified M173 STAGE and M174 INDEX. Never writes them. */
+address cms
+parse upper arg op datafm oid extra
+oid=translate(strip(oid))
+if (op\='INFO' & op\='TREE') | extra\='' then do
+ say 'Usage: GITPVIEW INFO|TREE data-filemode 40-hex-oid'
+ exit 4
+end
+if length(datafm)\=1 |,
+   verify(datafm,'BCDEFGHIJKLMNOPQRSTUVWXYZ')\=0 then do
+ say 'M177 FILEMODE INVALID'
+ exit 4
+end
+if length(oid)\=40 |,
+   verify(oid,'0123456789ABCDEF')\=0 then do
+ say 'M177 OID INVALID'
+ exit 4
+end
+
+/* Verify the selected CMS disk is accessed with 4K blocks. */
+drop d.
+d.0=0
+'PIPE CMS QUERY DISK' datafm '| STEM d.'
+if rc\=0 then do
+ say 'M177 QUERY DISK FAILED'
+ exit 8
+end
+matched=0
+do i=1 to d.0
+ if word(d.i,3)=datafm & word(d.i,7)='4096' then,
+   matched=matched+1
+end
+if matched\=1 then do
+ say 'M177 DATA DISK NOT ACCESSED 4K' datafm
+ exit 8
+end
+
+'STATE M173NET STAGE' datafm
+if rc\=0 then do
+ say 'M177 STAGE MISSING' datafm
+ exit 8
+end
+'STATE M174NET INDEX' datafm
+if rc\=0 then do
+ say 'M177 INDEX MISSING' datafm
+ exit 8
+end
+if op='INFO' then 'STATE GITPCAT MODULE A'
+else 'STATE GITPTRE MODULE A'
+if rc\=0 then do
+ say 'M177 NATIVE MODULE MISSING' op
+ exit 8
+end
+
+/* Do not replace a caller's existing STGIN or IDXIN definition. */
+/* IBM QUERY FILEDEF lists all definitions in effect. */
+drop f.
+f.0=0
+'PIPE CMS QUERY FILEDEF | STEM f.'
+if rc\=0 then do
+ say 'M177 FILEDEF QUERY FAILED'
+ exit 8
+end
+do i=1 to f.0
+ dd=translate(word(f.i,1))
+ if dd='STGIN' | dd='IDXIN' then do
+  say 'M177 DD ALREADY DEFINED' dd
+  exit 8
+ end
+end
+
+/* Create exactly two temporary input DDs; clear only our DDs. */
+'FILEDEF STGIN DISK M173NET STAGE' datafm
+if rc\=0 then do
+ say 'M177 STGIN FILEDEF FAILED'
+ exit 8
+end
+'FILEDEF IDXIN DISK M174NET INDEX' datafm
+if rc\=0 then do
+ 'FILEDEF STGIN CLEAR'
+ say 'M177 IDXIN FILEDEF FAILED'
+ exit 8
+end
+drop o.
+o.0=0
+if op='INFO' then do
+ 'PIPE CMS GITPCAT INFO' oid '| STEM o.'
+end
+else do
+ 'PIPE CMS GITPTRE WALK' oid '| STEM o.'
+end
+workrc=rc
+'FILEDEF IDXIN CLEAR'
+idxrc=rc
+'FILEDEF STGIN CLEAR'
+stgrc=rc
+do i=1 to o.0
+ say o.i
+end
+if workrc\=0 | idxrc\=0 | stgrc\=0 then do
+ say 'M177 PACK VIEW FAIL RC' workrc idxrc stgrc
+ exit 8
+end
+
+/* Require the backend's authenticated terminal marker and exact OID. */
+pass=0
+found=0
+do i=1 to o.0
+ if op='INFO' then do
+  if o.i='M175 PACK INFO PASS' then pass=pass+1
+  if word(o.i,1)='PACKOBJ' & word(o.i,2)='OID' &,
+     word(o.i,3)=oid & words(o.i)=3 then found=found+1
+ end
+ else do
+  if o.i='M176 TREE CLOSURE PASS' then pass=pass+1
+  if word(o.i,1)='TREE' & word(o.i,2)='CLOSURE' &,
+     word(o.i,3)='ROOT' & word(o.i,4)=oid &,
+     words(o.i)=4 then found=found+1
+ end
+end
+if pass\=1 | found\=1 then do
+ say 'M177 PACK VIEW CROSSCHECK FAIL' op pass found
+ exit 8
+end
+say 'M177 PACK VIEW' op 'PASS' oid datafm
+exit 0

@@ -9850,3 +9850,65 @@ PMAINT fullpack definition still exists
 although not previously linked in CP SYSTEM.
 Preserve directory rollback backup and
 all sealed earlier Git datasets.
+
+## 2026-10-09 — M177 isolated read-only Git PACK VIEW HOST PROTOTYPE
+
+After real M176 target pass (8 trees, 272 blobs,
+279 entries, 280 verified, root CCB18BEC...
+tip ADA83FF...), started M177 independent
+user-facing native PACK queries. New
+`src/GITPVIEW.EXEC` supports explicit
+`GITPVIEW INFO G <40HEXOID>` and
+`GITPVIEW TREE G <40HEXOID>`,
+without touching existing GIT/GITVREF or
+rebuilding M173/M174.
+
+CMS REXX wrapper validates strict syntax,
+uppercase hex OID and explicit non-A
+filemode, QUERY DISK 4096-byte blocks,
+existing M173NET STAGE and M174NET INDEX
+in selected filemode, native GITPCAT or
+GITPTRE MODULE A. Before binding inputs
+it issues `PIPE CMS QUERY FILEDEF | STEM`
+and refuses if either STGIN or IDXIN is
+already defined. It binds only
+`FILEDEF STGIN DISK M173NET STAGE G`
+and `FILEDEF IDXIN DISK M174NET INDEX G`;
+after native `GITPCAT INFO oid` or
+`GITPTRE WALK oid` always clears only
+its two own DDs, never FILEDEF * CLEAR.
+Requires exact output OID/root and a
+single M175 or M176 native terminal PASS,
+then prints M177 PACK VIEW INFO/TREE PASS.
+No ERASE, FORMAT, import, index rebuild,
+A writes or directory changes.
+Source lines max 80, host regression
+`tests/test-m177-pack-view.py` and
+CI workflow coverage added. **This is
+a source prototype only until actual
+CMS target checks pass.**
+
+Plan `docs/M177_READONLY_PACK_ACCESS_PLAN.md`
+contains exact Mac/CMS transfer commands:
+Mac `git pull`;
+`./cms-upload.sh GITPVIEW.EXEC`.
+CMS check `QUERY DISK G`, STATE stage/index,
+`STATE GITPVIEW EXEC A`, QUERY FILEDEF,
+then INFO tip
+ADA83FF3B3813961CEF2A9FFC50A453540039E0B
+and TREE root
+CCB18BEC067E7886D70B82EF138EE56A8B899A61,
+finally QUERY FILEDEF to ensure unchanged
+session definitions. The IBM 7.2/7.3
+QUERY FILEDEF command lists all current
+definitions and IBM warns not to issue
+FILEDEF * CLEAR inside an EXEC. Need verify
+target z/VM 6.3 behavior before considering
+M177 done. Fail-closed on disagreement.
+Standalone M175CHK G terminal output
+still not supplied in recent conversation;
+M176 primitive's M175 PACK INFO PASS is
+not enough to claim full M175 checker.
+Protect GIT600 G, M173NET STAGE G,
+M174NET INDEX G, M171NET PACK/META A
+and overlapping PMAINT0141 no-write policy.

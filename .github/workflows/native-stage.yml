@@ -93,6 +93,9 @@ on:
       - 'src/GITPTRE.C'
       - 'src/M176CHK.EXEC'
       - 'tests/test-m176-tree-closure.py'
+      - 'tests/test-m177-pack-view.py'
+      - 'src/GITPVIEW.EXEC'
+      - 'docs/M177_READONLY_PACK_ACCESS_PLAN.md'
       - 'docs/M176.md'
       - 'docs/M172.md'
       - 'docs/M171.md'
@@ -209,6 +212,9 @@ on:
       - 'src/GITPTRE.C'
       - 'src/M176CHK.EXEC'
       - 'tests/test-m176-tree-closure.py'
+      - 'tests/test-m177-pack-view.py'
+      - 'src/GITPVIEW.EXEC'
+      - 'docs/M177_READONLY_PACK_ACCESS_PLAN.md'
       - 'docs/M176.md'
       - 'docs/M172.md'
       - 'docs/M171.md'
@@ -293,6 +299,8 @@ jobs:
         run: python3 tests/test-m175-pack-cat.py
       - name: Check M176 verified live tree closure
         run: python3 tests/test-m176-tree-closure.py
+      - name: Check M177 safe explicit G stage index read-only view
+        run: python3 tests/test-m177-pack-view.py
       - name: Cross-check permanent CMS data disk safety runbook
         run: python3 tests/test-m173-persistent-disk-runbook.py
       - name: Check read-only VMUDQ 6.3 source and fixed record model
