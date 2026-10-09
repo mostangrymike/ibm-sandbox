@@ -1,5 +1,52 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## 2026-10-09 09:58:25 CDT — 0600 attached R/W to MAINT, G not yet formatted
+
+Real CMS MAINT proved before LINK that virtual
+0600 was absent (RC40) and G filemode unused.
+`CP LINK * 0600 0600 W` succeeded RC0 at
+09:57:38. Subsequent `CP QUERY VIRTUAL DASD`
+displayed `DASD 0600 3390 VMCOM1 R/W
+1600 CYL ON DASD 0127 SUBCHANNEL = 0024`.
+CMS `Q DISK` remained unchanged with
+no G, confirming no accessed G CMS
+filesystem yet. CP permanent directory
+had already verified MAINT 0600
+start6000 size1600 on VMCOM1/real0127.
+
+Next one read-only check:
+`CP QUERY MDISK 0600 LOCATION`.
+Do not proceed if StartLoc differs
+from 6000, Size differs from 1600,
+owner differs from MAINT, or
+RDEV/VOLSER differ from 0127/VMCOM1.
+If exact and fullpack PMAINT0141
+is not linked for write, the new
+0600 alone may be intentionally
+formatted with:
+`FORMAT 600 G 1600 (BLKSIZE 4096`
+**THIS ERASES ONLY VERIFIED VIRTUAL 600.**
+At the warning require `G(600)`;
+if it differs, say NO. If exact,
+confirm YES and label `GIT600`
+(six alphanumeric characters).
+Require FORMAT success and 1600
+cylinders reported before
+`QUERY DISK G`: R/W 3390,
+1600 cylinders, blocksize4096,
+at least180000 free blocks.
+Do not touch existing MAINT A/C,
+VMCOM1 fullpack PMAINT0141,
+or old sealed Git data.
+Keep `M173BAK DIRECT C`
+as recovery source. The format
+gate is separate from already
+completed directory activation
+and non-writing LINK. On any
+failure stop without retrying
+FORMAT blindly.
+
+
 ## 2026-10-09 09:50:09 CDT — new MAINT 0600 ACTIVE IN CP DIRECTORY
 
 Actual CMS MAINT `DIRECTXA M173NEW DIRECT C`
