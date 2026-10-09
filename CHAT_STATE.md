@@ -10324,3 +10324,62 @@ Next performance investigation should be isolated and host-CI
 before any new CMS target test; don't claim speedup without
 matched measurements. GitHub canonical; user wants maximum work
 per turn and no redundant full imports/audits.
+
+
+## 2026-10-09 — M179 isolated read-only performance probe HOST CI PASS
+
+M178 positive CMS 460.66s elapsed/455.95s CPU gate was committed
+via docs-only PR #150, merged main
+`002d9409a46f2481f4e4d3c37c7a88603860da52`.
+Correction to diagnostic wording: `M178 FORWARD SCANS 2 RECORDS
+15472` counts 7736 object HEADER visits per stage pass; it is NOT
+physical stage record count. M179 adds that needed instrumentation.
+
+An entirely independent C89 `src/GITPPRF.C` was branched from
+working M178 `GITPFST.C` without changing the original file;
+new `src/GITPPROF.EXEC` similarly reuses safe explicit non-A
+4 KB disk, FILEDEF ownership and verification guard pattern.
+M179 adds `M179 STAGE LINES PASS1 N PASS2 N` with a counter in
+`linein` active only during each STGIN scan, including both
+object headers and hex payload text records; C89 `clock()` prints
+`M179 CPU INDEX`, `TREE_SCAN`, `GRAPH`, `BLOB_SCAN` in
+seconds or UNAVAILABLE if clock unsupported. Timers/counters
+are diagnostics; object SHA/type/mode/cycle/depth/cap checks,
+2 scans, zero seeks and exact closure verification persist.
+The native M179 walker and wrapper use new names only and no
+original code or persistent data is changed.
+
+Host `tests/test-m179-tree-phase.py` C89 `-Wall -Wextra
+-Werror` compares original M178 against M179 on real-format
+fixtures and checks physical line counts, 4 CPU tags, malformed
+OID, corrupted authenticated blob, malformed skipped hex record,
+truncated index fail-closed; native-stage workflow runs this test.
+Full native-stage CI on new code/workflow commit `8c86cd19...`
+PASSED in run `37993905899`. **M179 is NOT yet CMS target-tested**.
+Exact runbook: `docs/M179_TREE_PROFILE.md`.
+
+NEXT Mac from `ibm-sandbox/src`:
+```sh
+git pull
+./cms-upload.sh GITPPRF.C GITPPROF.EXEC
+```
+Then CMS MAINT preflight and target:
+```text
+QUERY DISK G
+STATE M173NET STAGE G
+STATE M174NET INDEX G
+QUERY FILEDEF
+STATE GITPPRF C A
+CMSCLNK GITPPRF PLAIN
+STATE GITPPRF MODULE A
+GITPPROF G CCB18BEC067E7886D70B82EF138EE56A8B899A61
+QUERY FILEDEF
+```
+Only run the wrapper if module build succeeds and preflight is
+clean. Require same closure 8 trees,272 blobs,279 entries,280
+verified, 7736/7736, 0 seeks and M179 terminal PASS. Capture
+`M179 STAGE LINES`, all `M179 CPU` rows, full CMS Ready
+CPU/elapsed, and the unchanged FILEDEF output. No reformat,
+index rebuild, import, old M178 retest, unsafe PMAINT0141
+link or mutation of permanent G inputs. Do not claim a runtime
+optimization from this instrumentation alone.

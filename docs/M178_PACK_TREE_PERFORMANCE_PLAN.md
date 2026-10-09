@@ -23,7 +23,8 @@ as historical design/validation context.
   280 verified objects**, largest 393767 bytes; peak resident
   **6546851 bytes** (approximately 6.24 MiB).
 - Existing index: **7736 total and 7736 unique**. Forward scans **2**,
-  stage records **15472**, seeks **0**, authenticated blobs **272**.
+  object-header visits **15472** (7736 per pass; not physical CMS
+  stage records), seeks **0**, authenticated blobs **272**.
 - Native markers: `M178 TREE CLOSURE PASS` and
   `M178 VERIFIED FAST TREE TARGET GATE PASS
   CCB18BEC067E7886D70B82EF138EE56A8B899A61 G`.

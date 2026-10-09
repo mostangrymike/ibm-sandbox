@@ -1,5 +1,22 @@
 # IBM Sandbox
 
+## M179 isolated stage/CPU profiling (host CI; CMS pending)
+
+After M178's real CMS PASS (8 trees, 272 blobs, 280 verified,
+7736 unique index, two scans, 0 seeks, CPU 455.95s / 460.66s
+elapsed), M179 adds a **separate** C89 read-only diagnostic
+module `GITPPRF.C` and safe `GITPPROF.EXEC`. It reports
+physical stage text-line counts for each full scan and
+four `clock()` CPU phases: index/map, tree scan, graph
+walk and blob scan. Its host parity/corruption tests pass.
+**It is not yet real-CMS target-proven and does not claim
+a speedup.** See `docs/M179_TREE_PROFILE.md` for the exact
+two-file transfer and conditional target test. The known-good
+M173–M178 readers and verified G stage/index are untouched.
+
+---
+
+
 ## M178 — native CMS tree reader TARGET PASS (October 9, 2026)
 
 M178's isolated C89 forward-only, two-pass authenticated tree walker
@@ -9,7 +26,7 @@ The clean native module build was followed by a positive `GITPFAST G`
 tree-closure verification of **8 trees, 272 blobs, 279 entries,
 280 authenticated objects, 0 gitlinks**, against the verified
 **7736/7736** stage index. The instrumented reader reported
-**2 forward scans, 15472 stage records, 0 seeks** and authenticated
+**2 forward scans, 15472 object-header visits, 0 seeks** and authenticated
 272 reached blobs. Largest object: 393767 bytes; peak resident:
 6546851 bytes. CMS CPU **455.95s**, elapsed **460.66s**.
 
