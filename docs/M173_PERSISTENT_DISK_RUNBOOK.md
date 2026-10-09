@@ -1,5 +1,40 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## 2026-10-09 08:37 CDT — full-pack VMCOM1 hazard confirmed
+
+Real CMS MAINT: `CP QUERY PRIVCLASS` returned
+Currently/Directory ABCDEFG (including B).
+Candidate map pages 3–4 show `VMCOM1 3390 PMAINT
+0141 MR 000-10016`, a full-pack definition
+overlapping proposed 0600/6000–7599. Ordinary
+link-mode W does not prevent writes through
+a full-pack overlap; IBM explicitly warns about it.
+`$DIRECT$ 0B01 R 131-230` is outside the
+candidate interval and is a source-map entry,
+not an actual CP QUERY ALLOC DRCT allocation.
+
+Next independent read-only live CP queries:
+`CP QUERY MDISK USERID PMAINT 0141 LOCATION DIRECTORY`;
+`CP QUERY SYSTEM 0127`. They are complementary
+but do not provide a complete active-directory inventory.
+
+The isolated `src/M173VQ.ASSEMBLE` prototype uses
+read-only CP DIAG X'25C' LSTMDISK to query all
+VMCOM1 minidisks. Bounded buffer 65520 bytes,
+60-byte records, 48-byte aligned parameter
+list, and zero flags for z/VM 6.3. The
+SUBCONFIG reporting flag was added in 6.4
+under APAR VM65877 and must not be assumed here.
+**M173VQ is not target-tested**; host source
+checks are not an activation approval. After
+GitHub CI, transfer M173VQ.ASSEMBLE using the
+existing Mac git pull/cms-upload.sh workflow and
+CMS `ASSEMBLE M173VQ` only. No LOAD, GENMOD
+or execution without review of target assembly.
+No live CP directory change, LINK, ACCESS,
+FORMAT or M173 importer is authorized.
+
+
 ## 2026-10-09 08:28:36 CDT — M173 Gate 5d live CP PASS
 
 Actual MAINT commands succeeded except the **expected**
