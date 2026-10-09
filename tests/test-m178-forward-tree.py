@@ -211,4 +211,35 @@ assert "scan(1)" in text and "scan(2)" in text
 assert "M178 TREE CLOSURE PASS" in text
 for unsafe in ("fopen(\"dd:IDXOUT\"", "fopen(\"dd:OBJOUT\"", "ERASE"):
     assert unsafe not in text
+
+wrapper = (root / "src/GITPFAST.EXEC").read_text()
+for required in (
+    "address cms",
+    "parse upper arg datafm oid extra",
+    "M178 FILEMODE INVALID",
+    "M178 OID INVALID",
+    "'STATE M173NET STAGE' datafm",
+    "'STATE M174NET INDEX' datafm",
+    "'STATE GITPFST MODULE A'",
+    "'PIPE CMS QUERY FILEDEF | STEM f.'",
+    "M178 DD ALREADY DEFINED",
+    "'PIPE CMS GITPFST WALK' oid '| STEM o.'",
+    "'FILEDEF IDXIN CLEAR'",
+    "'FILEDEF STGIN CLEAR'",
+    "M178 VERIFIED FAST TREE TARGET GATE PASS",
+):
+    assert required in wrapper, required
+assert max(map(len,wrapper.splitlines())) <= 80
+assert "do i=1 to o.0" in wrapper
+assert "for i=1" not in wrapper
+assert wrapper.index("'PIPE CMS QUERY FILEDEF") < wrapper.index(
+    "'FILEDEF STGIN DISK M173NET"
+)
+for forbidden in (
+    "ERASE", "FORMAT ", "DIRECTXA", "COPYFILE",
+    "GITPIMP IMPORT", "GITPIDX BUILD", "FILEDEF * CLEAR",
+    "FILEDEF OBJOUT", "FILEDEF IDXOUT",
+):
+    assert forbidden not in wrapper, forbidden
+
 print("M178 TWO-PASS FORWARD TREE HOST PARITY PASS")
