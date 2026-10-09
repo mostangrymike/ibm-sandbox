@@ -94,7 +94,7 @@ assert online_status("UNEXPECTED") == "fail"
 # source-map proof is not an active fullpack access restriction.
 assert "not test-restored" in control.lower()
 assert "M173VQ" in control
-assert "no CP directory activation" in state.lower() or (
+assert "no cp directory activation" in state.lower() or (
     "No activation" in state and "STOP" in state
 )
 print("M173 GATE6 ACTIVATION CHANGE-CONTROL HOST SAFETY PASS")
