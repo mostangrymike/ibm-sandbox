@@ -10278,3 +10278,49 @@ Source of truth for this stage:
 `docs/M178_PACK_TREE_PERFORMANCE_PLAN.md`,
 `tests/test-m178-forward-tree.py`, and
 `src/GITPFST.C`, `src/GITPFAST.EXEC`.
+
+
+## 2026-10-09, 16:25 CDT — M178 REAL CMS TARGET PASS (SUPERSEDES PENDING)
+
+**M178 is now REAL z/VM 6.3 CMS target-proven, not just host-CI proven.**
+The user supplied actual MAINT CMS output. Disk `GIT600 600 G R/W`,
+3390 1600 cylinders, 4096-byte blocks, 2 existing files,
+62526 blocks used (22%), 225474 free, 288000 total.
+`STATE M173NET STAGE G`, `STATE M174NET INDEX G`, and
+`STATE GITPFST C A` all RC0. Initial `QUERY FILEDEF` at
+16:15:45 was `No user defined FILEDEF in effect`.
+New `CMSCLNK GITPFST PLAIN` clean (`ASSEMBLER (XF) DONE`,
+`NO STATEMENTS FLAGGED`, `built GITPFST MODULE mode PLAIN`),
+Ready 16:16:03 CPU 1.92s / elapsed 2.01s; module STATE RC0.
+
+`GITPFAST G CCB18BEC067E7886D70B82EF138EE56A8B899A61`
+actual native output:
+```text
+TREE CLOSURE ROOT CCB18BEC067E7886D70B82EF138EE56A8B899A61
+TREE CLOSURE TREES 8 BLOBS 272 GITLINKS 0
+TREE CLOSURE ENTRIES 279 VERIFIED 280
+TREE CLOSURE MAX OBJECT 393767 RESIDENT PEAK 6546851
+TREE CLOSURE INDEX TOTAL 7736 UNIQUE 7736
+M178 FORWARD SCANS 2 RECORDS 15472 SEEKS 0
+M178 AUTHENTICATED BLOBS 272
+M178 TREE CLOSURE PASS
+M178 VERIFIED FAST TREE TARGET GATE PASS CCB18BEC067E7886D70B82EF138EE56A8B899A61 G
+```
+Ready RC0 at 16:24:00, CPU 455.95s / elapsed **460.66s**.
+Subsequent `QUERY FILEDEF` at 16:25:37 again exactly
+`No user defined FILEDEF in effect`; verified clean cleanup.
+Peak resident = 6.24MiB approx. The 15472 records are two
+passes across 7736 objects; no stage seeks reported.
+**This validates functional correctness of M178 on real CMS,
+NOT a proven runtime speedup**: earlier M177 TREE Ready timer
+had overflowed and is not a comparable timed baseline.
+
+Do not run the old M178 preflight/target test again just to prove
+this checkpoint. Preserve proven `M173NET STAGE G`,
+`M174NET INDEX G`, original `M171NET PACK/META A`,
+M176 `GITPTRE`, M177 `GITPVIEW` and M178 `GITPFST`.
+`PMAINT 0141` overlaps G physically: **NEVER write-link it**.
+Next performance investigation should be isolated and host-CI
+before any new CMS target test; don't claim speedup without
+matched measurements. GitHub canonical; user wants maximum work
+per turn and no redundant full imports/audits.
