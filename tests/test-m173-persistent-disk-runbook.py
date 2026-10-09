@@ -899,7 +899,7 @@ for phrase in (
     "compile-only",
 ):
     assert phrase.lower() in plan.lower() + runbook.lower(), phrase
-assert "no active CP directory change" in runbook.lower()
+assert "No live CP directory change" in runbook
 assert "not an activation approval" in runbook.lower()
 assert "M173VQ is NOT target-tested" in (
     root / "CHAT_STATE.md").read_text()
