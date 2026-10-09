@@ -1,5 +1,76 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## CURRENT — 2026-10-09 10:06 CDT: GIT600 CMS G ONLINE AND FORMATTED
+
+CMS MAINT ran `CP QUERY MDISK 0600 LOCATION`:
+MAINT/0600 3390 VMCOM1 real0127 start6000 size1600,
+RC0 at 10:04:55. `CP QUERY SYSTEM 0127` reported
+16 VMCOM1 links including new MAINT0600 R/W,
+and no active PMAINT0141 fullpack link, RC0.
+
+On this exact device, `FORMAT 600 G 1600
+(BLKSIZE 4096` displayed confirmation
+**G(600)**, operator answered **1** and chose
+label **GIT600**. `DMSFOR732I 1600 cylinders
+formatted on G(600)`, RC0 10:05:35.
+`QUERY DISK G` returned:
+
+```text
+GIT600 600 G R/W 1600 3390 4096 0 25-00 287975 288000
+```
+
+This is **TARGET FORMAT AND CMS ACCESS PASS**:
+zero user files, 25 filesystem blocks used,
+287975 free 4KB blocks, 288000 total.
+It exceeds M173's 180000 free-block requirement
+by 107975 blocks. The new G filesystem is ready.
+Never repeat FORMAT or write via PMAINT0141 fullpack;
+its permanent fullpack definition still overlaps G.
+
+### Next phase: verified native 7736-object PACK import
+
+Original M171NET PACK/META **stay on A**.
+The G-only output is `M173NET STAGE G`.
+`M173CHK G` guards >=180000 free blocks,
+R/W and 4096B blocks; verifies the PACK and
+refuses to overwrite an existing stage;
+failure output is kept rather than erased.
+
+Mac, in `ibm-sandbox/src`:
+
+```bash
+git pull
+./cms-upload.sh M173CHK.EXEC M174CHK.EXEC
+./cms-upload.sh M175CHK.EXEC M176CHK.EXEC
+```
+
+CMS MAINT, first inspect:
+
+```text
+GIT LEVEL
+QUERY DISK G
+STATE M171NET PACK A
+STATE M171NET META A
+STATE M173NET STAGE G
+```
+
+Both retained A inputs must exist RC0; new
+G stage must be absent (expected RC28).
+Any unexpected result: STOP. Then:
+
+```text
+M173CHK G
+```
+
+Require full M173 PACK VERIFY, IMPORT and
+STAGE READBACK PASS. Do not rerun or erase
+a partial `M173NET STAGE G` after failure.
+Only on M173 full PASS proceed to
+`CMSCLNK GITPIDX PLAIN` and `M174CHK G`.
+Historical not-yet-formatted entries further
+below are superseded by this live checkpoint.
+
+
 ## 2026-10-09 09:58:25 CDT — 0600 attached R/W to MAINT, G not yet formatted
 
 Real CMS MAINT proved before LINK that virtual

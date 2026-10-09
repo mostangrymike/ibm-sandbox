@@ -9542,3 +9542,54 @@ Never format A, C or the
 fullpack and do not run PACK
 import on A. The format stage
 is not yet target-proven.
+
+## 2026-10-09 10:06:06 CDT — M173 NEW CMS G DISK FORMAT AND CAPACITY TARGET PASS
+
+**Storage provisioning FINISHED.** At 10:04:55
+MAINT `CP QUERY MDISK 0600 LOCATION` verified
+own virtual0600 = 3390 VMCOM1, real0127,
+start6000 size1600, RC0. At 10:04:56
+`CP QUERY SYSTEM 0127` had 16 VMCOM1 links,
+including MAINT0600 R/W and no linked
+PMAINT0141 fullpack. Fullpack remains
+permanently defined covering the G extent,
+so it must never be accessed for writes.
+
+Operator used `FORMAT 600 G 1600 (BLKSIZE
+4096`, approved G(600) prompt via 1, set
+label GIT600; `DMSFOR732I 1600 cylinders
+formatted on G(600)`, RC0 at 10:05:35.
+`QUERY DISK G`, RC0 at 10:06:06:
+`GIT600 600 G R/W 1600 3390 4096 0
+25-00 287975 288000`.
+=> G: new, R/W, 1600 CYL, 4096B blocks,
+0 user files, 25 overhead blocks,
+287975 FREE / 288000 TOTAL (107975 above
+M173 minimum 180000). NO FORMAT AGAIN.
+Original 4282 record USER DIRECT C and
+M173BAK DIRECT C, active candidate
+M173NEW DIRECT C, source A disk,
+M171NET PACK/META A and verified Git
+generations/selectors preserved.
+
+**NEXT: M173 7736-object native Git import on G.**
+Mac in ibm-sandbox/src: `git pull`;
+`./cms-upload.sh M173CHK.EXEC M174CHK.EXEC`;
+`./cms-upload.sh M175CHK.EXEC M176CHK.EXEC`.
+CMS MAINT: `GIT LEVEL`,
+`QUERY DISK G`,
+`STATE M171NET PACK A`,
+`STATE M171NET META A`,
+`STATE M173NET STAGE G` (expect RC28 absent).
+If both input A files exist and output
+G absent, run `M173CHK G`. That EXEC
+fail-closes for G not R/W/4096, free
+<180000, PACK/META absent, output present,
+verification mismatch, and preserves
+partial stage for analysis, never erases.
+G output is `M173NET STAGE G`.
+Upon actual 7736-object M173 PASS,
+next `CMSCLNK GITPIDX PLAIN` and
+`M174CHK G`. No M173 target import
+has yet been run on G. Protect
+all original files.

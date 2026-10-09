@@ -140,4 +140,24 @@ assert "no G" in runbook
 assert "LIVE VIRTUAL LINK PASS" in state
 assert "not yet target-proven" in state.lower()
 
+
+# Target GIT600 1600-cylinder 4K CMS disk is now live.
+for s in (control, plan, runbook, state):
+    for key in ("10:06", "GIT600", "287975", "288000", "1600"):
+        assert key in s, (key, "live disk checkpoint missing")
+assert "G initialization is complete" in control
+assert "Storage provisioning FINISHED" in state
+assert "M173CHK G" in runbook and "M173CHK G" in state
+
+# Operator's real QUERY DISK G row: 0 files, 25 overhead blocks.
+r = "GIT600 600 G R/W 1600 3390 4096 0 25-00 287975 288000"
+w = r.split()
+assert len(w) == 11
+assert w[:7] == ["GIT600","600","G","R/W","1600","3390","4096"]
+assert w[7:] == ["0", "25-00", "287975", "288000"]
+assert int(w[9]) >= 180000
+assert int(w[9]) - 180000 == 107975
+assert int(w[9]) + 25 == int(w[10])
+assert "PMAINT" in state and "fullpack" in state
+
 print("M173 POSTACTIVATION CHANGE-CONTROL HOST SAFETY PASS")
