@@ -1,5 +1,91 @@
 # M173 persistent 3390 data-minidisk provisioning runbook
 
+## CURRENT — 2026-10-09 10:48:28 CDT: M173 LIVE IMPORT + READBACK PASS
+
+**Real z/VM 6.3 CMS MAINT operator output after `M173CHK G`:**
+
+```text
+M173 STAGE READBACK PASS
+M173 RETAINED STAGE M173NET STAGE G
+M173 GENERALIZED OFS PACK IMPORT TARGET GATE PASS
+Ready; T=1381.64/1396.22 10:48:28
+```
+
+**M173 TARGET PASS.** The existing fail-closed
+`src/M173CHK.EXEC` reaches its last marker only
+after cross-checking retained `M171NET META A`
+against the authenticated `M171NET PACK A`,
+import metadata/counters and an independent
+`GITPIMP VERIFY` of stage data. Previously
+confirmed original PACK has 7,736 objects;
+the current chat provided the completion
+tail above, not the full per-counter transcript.
+Do not fabricate individual ordinary/OFS/REF
+counts absent from the supplied tail.
+Real CMS `Ready` T field reports 1381.64/1396.22
+seconds; 1396.22s is approximately 23m16.22s.
+The successful output is **`M173NET STAGE G`**.
+Original PACK/META remain on A and new G filesystem
+is GIT600 R/W 1600 CYL 4KB blocks.
+
+**NEXT TARGET M174 native index gate, no re-import:**
+
+Check G and the retained output before writing:
+```text
+QUERY DISK G
+STATE M173NET STAGE G
+STATE M174NET INDEX G
+STATE GITPIDX MODULE A
+```
+
+G must remain writable 3390 4096-byte,
+with at least 4096 free blocks. M173NET
+STAGE G must exist RC0; M174NET INDEX G
+must be absent (expect not-found RC28).
+If the existing GITPIDX MODULE A is
+available and is the current target-proven
+M174 module, it may be reused. If it is
+missing or needs canonical rebuild and
+`GITPIDX C A` exists, build with the
+proven GCCCMS compiler:
+
+```text
+CMSCLNK GITPIDX PLAIN
+```
+
+The standard Mac source workflow, only
+when executable/source refresh is needed
+(and before target command invocation):
+```bash
+git pull
+./cms-upload.sh M174CHK.EXEC
+```
+
+When checked, run:
+```text
+M174CHK G
+```
+
+The checker uses `M173NET STAGE G` as
+input, creates only `M174NET INDEX G`,
+checks counts against `M171NET META A`,
+verifies index, audits against stage,
+and tests indexed GET of the metadata
+tip commit. Require final `M174
+GENERALIZED STAGE INDEX TARGET GATE PASS`.
+It refuses to overwrite an existing
+index and **preserves failed output**
+for investigation. Do not rerun M173,
+erase its stage, or overwrite PACK A.
+On M174 success, next M175 and M176.
+
+All historical below sections saying G
+not yet provisioned or M173 pending
+are superseded by this target output.
+
+---
+
+
 ## CURRENT — 2026-10-09 10:06 CDT: GIT600 CMS G ONLINE AND FORMATTED
 
 CMS MAINT ran `CP QUERY MDISK 0600 LOCATION`:

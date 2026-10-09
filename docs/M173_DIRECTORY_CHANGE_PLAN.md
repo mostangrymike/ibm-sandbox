@@ -1,3 +1,48 @@
+## CURRENT TARGET STATUS — 2026-10-09 10:48:28 CDT: M173 IMPORT PASS, M174 NEXT
+
+The operator ran the canonical fail-closed
+`M173CHK G` using verified CMS GIT600 G disk.
+Real target tail:
+
+```text
+M173 STAGE READBACK PASS
+M173 RETAINED STAGE M173NET STAGE G
+M173 GENERALIZED OFS PACK IMPORT TARGET GATE PASS
+Ready; T=1381.64/1396.22 10:48:28
+```
+
+**M173 is complete.** This represents the
+generalized OFS PACK import and independent
+stage readback with the M171NET 7736-object
+PACK retained on A. Reported elapsed
+1396.22 seconds (~23m16s). Only final
+lines are supplied in this message;
+do not invent per-object-class counts
+from lines not shown. Do not reformat
+G, re-import M173, or erase
+`M173NET STAGE G`.
+
+**Immediate M174 indexed access phase:** inspect
+`QUERY DISK G`, confirm `M173NET STAGE G`
+exists and `M174NET INDEX G` absent;
+confirm `GITPIDX MODULE A` exists or
+build the canonical C with the proven
+`CMSCLNK GITPIDX PLAIN`, then run
+`M174CHK G`. The checker creates only
+`M174NET INDEX G`, verifies count and
+unique indexes, audits against stage
+and confirms metadata-tip indexed GET.
+Stop on any failure and retain existing
+stage/index; do not blindly rerun.
+Canonical up-to-date operator detail:
+`docs/M173_PERSISTENT_DISK_RUNBOOK.md`.
+PMAINT0141 whole-volume overlap still
+exists as a permanent definition;
+never link fullpack for writes
+against populated G.
+
+---
+
 ## CURRENT — 2026-10-09 10:06:06 CDT: MAINT 0600/G CMS FORMAT PASSED
 
 Target CMS MAINT reconfirmed the current

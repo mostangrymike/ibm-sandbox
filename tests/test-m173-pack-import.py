@@ -214,4 +214,16 @@ with tempfile.TemporaryDirectory() as td:
     assert "IMPORT PACK SHA1 FAIL" in no.stdout
     assert not (td / "dd:OBJOUT").exists()
 
+
+# Reconcile target CMS output with host fixtures (not re-running CMS).
+runbook = (root / "docs/M173_PERSISTENT_DISK_RUNBOOK.md").read_text()
+state = (root / "CHAT_STATE.md").read_text()
+for content in (runbook, state):
+    assert "M173 STAGE READBACK PASS" in content
+    assert "M173 RETAINED STAGE M173NET STAGE G" in content
+    assert "M173 GENERALIZED OFS PACK IMPORT TARGET GATE PASS" in content
+    assert "10:48:28" in content
+    assert "1381.64/1396.22" in content
+    assert "M174CHK G" in content
+
 print("M173 GENERALIZED OFS PACK IMPORT HOST MODEL PASSED")

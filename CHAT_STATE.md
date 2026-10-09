@@ -9593,3 +9593,87 @@ next `CMSCLNK GITPIDX PLAIN` and
 `M174CHK G`. No M173 target import
 has yet been run on G. Protect
 all original files.
+
+## 2026-10-09 10:48:28 CDT — M173 NATIVE 7736-OBJECT PACK IMPORT TARGET PASS
+
+User actually ran `M173CHK G` on z/VM 6.3
+CMS MAINT following completion of the
+dedicated GIT600 MAINT/0600 disk,
+and supplied the following successful
+final CMS output:
+
+```text
+M173 STAGE READBACK PASS
+M173 RETAINED STAGE M173NET STAGE G
+M173 GENERALIZED OFS PACK IMPORT TARGET GATE PASS
+Ready; T=1381.64/1396.22 10:48:28
+```
+
+**M173 target successful (RC0).**
+Native generalized M173 checker protects
+retained original M171NET PACK/META A,
+verifies PACK metadata against GITPCHK,
+performs OFS-capable native GITPIMP
+import into `M173NET STAGE G`,
+then independent `GITPIMP VERIFY`
+readback. That final PASS is only
+reachable after every stage/metadata
+counter comparison. Previously
+target-verified M171NET PACK version2,
+2171129 bytes, 7736 objects,
+SHA1 A705122BC39A3383BC05ABC6C888A1F788B1D067.
+Only completion tail is furnished in
+newest output; do not invent M173
+ordinary/OFS/REF counters or G free
+blocks after import. CMS CPU/elapsed
+1381.64/1396.22 seconds, i.e. elapsed
+23 min 16.22 sec. G is 1600 CYL
+3390 4K label GIT600 R/W, prior to
+import 287975 free blocks. Retained
+stage is on **G, not A**. A/C and
+PACK input remain protected.
+
+**NEXT M174 native index milestone**:
+from current GitHub main code
+`src/M174CHK.EXEC` and
+`src/GITPIDX.C`, compile via
+installed GCCCMS `CMSCLNK`
+PLAIN if needed; source already
+supports generalized G filemode,
+refuses overwrite, keeps failures.
+Mac in `ibm-sandbox/src`:
+`git pull`;
+`./cms-upload.sh M174CHK.EXEC`
+(if not already current from prior
+M173 package transfer; standard
+transfer workflow).
+CMS MAINT read-only:
+`QUERY DISK G`
+`STATE M173NET STAGE G` expected RC0,
+`STATE M174NET INDEX G` expected
+not-found RC28,
+`STATE GITPIDX MODULE A` expected
+RC0 if module already built;
+build `CMSCLNK GITPIDX PLAIN`
+only if needed and `GITPIDX C A`
+present. On valid state:
+`M174CHK G`.
+That creates `M174NET INDEX G`,
+checks build against M171 META
+object count, verifies index,
+audits vs M173 STAGE, and tests
+indexed GET for metadata tip OID.
+Expected `M174 GENERALIZED STAGE
+INDEX TARGET GATE PASS`; on failure
+DO NOT erase or rerun blindly.
+Only after M174 PASS consider
+M175/M176. NEVER rerun FORMAT
+or M173; preserve G stage,
+M171NET input and all old
+verified Git generations.
+PMAINT0141 fullpack remains
+physically overlapping G and
+must not be write-linked.
+
+GitHub canonical; max work per
+turn; M173 stage on new G succeeds.
