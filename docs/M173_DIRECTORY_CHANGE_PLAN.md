@@ -1,3 +1,82 @@
+## CURRENT GATE — 2026-10-09: M173 Gate 5c LIVE PASS; CP independent hold
+
+**Gate 5c now PASSED on real CMS.** On October 9,
+`PIPE < M173NEW MDISKMAP C | DROP 200 | TAKE 100 | CONSOLE`
+displayed the complete candidate-map context across pages 5–6.
+The repeated section header explicitly establishes `VMCOM1 3390`,
+followed in the same section by these exact nonsecret rows:
+
+```text
+VMCOM1 3390     6VMDIR30  02B1 MR        4850       4859        010
+                 6VMHCD20  0300 MR        5756       5935        180
+                                          5936       5999        064     Gap
+                 MAINT     0600 W         6000       7599       1600              MAINT-1   *
+                                          7600      10016       2417     Gap
+-------------------------------------------------------------------
+630RL1 3390     MAINT630  0131 MR         000      10016      10017
+```
+
+The displayed `630RL1` full-pack mapping is on **another
+volser**; it is not evidence of a VMCOM1 overlap. Within
+the candidate VMCOM1 map there is no reported conflicting
+extent: preceding permanent `6VMHCD20 0300` ends 5935;
+gap 5936–5999 is 64 cylinders; new MAINT-1 virtual 0600
+is exclusive `W` from 6000 through 7599 (1600);
+gap 7600–10016 is 2417. All counts and adjacencies match.
+This is **source-derived candidate map proof**, not proof
+that all active CP PERM/PARM/full-pack extents have been
+independently inventoried.
+
+### Next Gate 5d: live CP preactivation revalidation, READ-ONLY
+
+On CMS MAINT run this small independent query/check batch,
+without editing or activating anything:
+
+```text
+CP QUERY DASD DETAILS 0127
+CP QUERY MDISK USERID 6VMHCD20 0300 LOCATION DIRECTORY
+CP QUERY MDISK 0600 DIRECTORY
+CP QUERY ALLOC MAP VMCOM1
+M173DCHK
+```
+
+Expected: physical 0127 VOLID VMCOM1, CYLS 11000;
+6VMHCD20/0300 VMCOM1 real0127 start5756 size180,
+ending5935; MAINT/0600 remains ABSENT `HCPQMD040E`
+(RC40, expected *negative* test); no VMCOM1 CP-owned
+PAGE/SPOOL/TDISK/DRCT extent (`NOT FOUND` for
+`QUERY ALLOC MAP`); M173DCHK full original/backup and
+one-line MAINT-1 candidate verification RC0. Any unexpected
+response, denied privilege, changed device, or ambiguity
+stops the gate; `NOT FOUND` in ALLOC does **not** prove
+absence of PERM/PARM or fullpack overlays. These are
+rechecks of previously target-proven syntax and prior
+results, not a newly authorized allocation or activation.
+
+**After Gate 5d** still require independent confirmation
+that the active CP directory has no full-volume/hidden
+VMCOM1 overlay, explicit controlled activation/rollback
+authorization, working console and tested or accepted EBS
+restore risk. A completed snapshot (operator-attested
+source/region) is not a test restore. IBM DIRMAP ignores
+fullpack MDISKs for overlap detection; an MDISKMAP with
+no overlap flag does not override that limitation. IBM
+QUERY ALLOC omits PERM/PARM allocations from its map.
+Keep `USER DIRECT C`, `M173BAK DIRECT C`,
+`M173NEW DIRECT C`, candidate MDISKMAP, original PACK,
+and sealed generations unchanged.
+
+**HARD STOP**: no non-EDIT DIRECTXA/CP directory activation,
+LINK, ACCESS, FORMAT, `M173CHK` or import. New virtual 0600
+and CMS G do **not** exist in the active configuration.
+
+References:
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-dirmap
+- https://www.ibm.com/docs/en/zvm/7.2.0?topic=commands-query-mdisk
+- https://www.ibm.com/docs/en/zvm/7.2?topic=commands-query-alloc
+
+---
+
 ## CURRENT GATE — 2026-10-09 08:16:20 CDT: Gate 5c boundaries LIVE PASS, VOLSER context pending
 
 **Real CMS MAINT results, read-only candidate DIRMAP report**:
