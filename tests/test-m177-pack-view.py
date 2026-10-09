@@ -69,7 +69,7 @@ trees, blobs, links, entries, verified = 8, 272, 0, 279, 280
 assert verified == trees + blobs
 assert entries == blobs + trees - 1 + links
 assert "M176 LIVE ROOT TREE CLOSURE TARGET GATE PASS" in plan
-assert "not target-proven" in plan.lower()
+assert "TREE target-proven on CMS" in plan
 assert "GITPVIEW INFO G" in plan
 assert "GITPVIEW TREE G" in plan
 
