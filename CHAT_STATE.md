@@ -9143,3 +9143,56 @@ M173NEW DIRECT C, PACK or generations.
 Complete independent active CP directory
 inventory plus fullpack access safeguards
 and explicit rollback remain hard gates.
+
+## 2026-10-09 09:05:28 CDT — M173VQ CMS XF assembler PASS; page guard pending
+
+Actual MAINT:
+`ASSEMBLE M173VQ` ->
+`ASSEMBLER (XF) DONE`
+`NO STATEMENTS FLAGGED IN THIS ASSEMBLY`
+`Ready; T=0.08/0.10 09:05:28`.
+This confirms the hand-coded IBM DIAGNOSE
+opcode `DC X'83',X'24',XL2'025C'` assembles
+correctly on this actual z/VM 6.3 XF.
+**NO CP QUERY EXECUTION HAS OCCURRED.**
+
+Host inspection against official IBM
+DIAG X'25C' documented contract:
+R2 parameter list address and output bytes;
+R4 buffer pointer; R5 buffer capacity and
+return code. Condition code0/R5 zero
+indicate successful request. Source
+bounds to 65520 bytes = 1092 60B rows
+and rejects partial/failed results.
+
+NEW safety requirement: VMUDQ input 48B
+parameter list must be doubleword aligned
+AND remain entirely within one 4096B page.
+`DS 0D` handles alignment, but does
+not guarantee arbitrary runtime placement
+avoids a page crossing. GitHub changes
+`src/M173VQ.ASSEMBLE` to fail closed
+on page offset >4048 before the CP DIAG.
+`tests/test-m173-vmudq-source.py`
+models every 8-aligned page offset;
+this extra guard is host-only until
+CMS compile/retest. No CP directory
+or protected Git file changed.
+
+**NEXT Mac in ibm-sandbox/src:**
+`git pull`
+`./cms-upload.sh M173VQ.ASSEMBLE`
+**NEXT CMS MAINT:**
+`ASSEMBLE M173VQ` ONLY.
+Do not LOAD/GENMOD or execute until
+guard's assembler output examined.
+Even then, the query is READ ONLY,
+not approval for `DIRECTXA`
+activation, `LINK`, `FORMAT`,
+M173 importer, or touching PACK.
+Real CP active PMAINT 0141 fullpack
+on VMCOM1 real 0127 spans 0–10999,
+including proposed 0600 6000–7599;
+no active fullpack link was displayed
+on last CP QUERY SYSTEM 0127, but
+future access remains an integrity risk.
