@@ -884,4 +884,25 @@ assert 5935 < 6000
 assert "RC40 as expected" in state
 assert "only targeted existing" in state
 
+# Oct 9 Gate 5e: class B and VMCOM1 full-pack do NOT clear activation.
+for phrase in (
+    "Currently",
+    "ABCDEFG",
+    "PMAINT",
+    "0141",
+    "full-pack",
+    "6.3",
+    "M173VQ.ASSEMBLE",
+    "CP QUERY MDISK USERID PMAINT 0141 LOCATION DIRECTORY",
+    "CP QUERY SYSTEM 0127",
+    "DIAG X'25C'",
+    "compile-only",
+):
+    assert phrase.lower() in plan.lower() + runbook.lower(), phrase
+assert "no active CP directory change" in runbook.lower()
+assert "not an activation approval" in runbook.lower()
+assert "M173VQ is NOT target-tested" in (
+    root / "CHAT_STATE.md").read_text()
+assert 6000 >= 0 and 7599 <= 10016
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
