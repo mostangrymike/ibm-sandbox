@@ -1,5 +1,39 @@
 # IBM Sandbox
 
+## M178 experimental forward-scan tree reader (host CI)
+
+Building on real z/VM 6.3 M173–M177 positive-path
+success, `src/GITPFST.C` is an independent,
+read-only two-pass native C89 implementation
+of authenticated tree closure using the
+existing retained `M173NET STAGE G` and
+`M174NET INDEX G`. It avoids per-object
+random stage seeks by forward-scanning
+stage records twice, caching tree bodies
+under a 64MiB cap, then authenticating
+reachable blobs. New `GITPFAST.EXEC`
+provides strict filemode/root arguments
+and the proven temporary FILEDEF-hygiene
+pattern. The original GITPTRE and GITPVIEW
+modules are untouched.
+
+Its host regression verifies counts/OIDs
+against the original on real-format
+fixtures, negative SHA corruption, missing
+child, malformed root, duplicate objects,
+empty tree and truncated index.
+**Host tests are not actual CMS proof:
+M178 has not run on the target, and no
+performance improvement is claimed.**
+Next target commands and safety preflight
+are documented at
+`docs/M178_PACK_TREE_PERFORMANCE_PLAN.md`.
+Never regenerate, erase, or reformat
+the existing verified G stage/index.
+
+---
+
+
 ## Current live CMS native-Git checkpoint — October 9, 2026
 
 The native CMS Git client now has a verified **7,736-object**
