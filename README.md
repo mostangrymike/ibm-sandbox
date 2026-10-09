@@ -31,12 +31,16 @@ rather than overrunning A. The retained original
   not been provided** with that output; keep
   the distinction.
 
-**Next:** validate `M175CHK G` if not already run,
-then target-test the **new M177 `GITPVIEW EXEC` prototype**:
-read-only INFO/TREE commands against the explicit G
-stage/index. Source and host-level guards are in GitHub;
-no M177 real CMS target execution has yet occurred.
-See `docs/M177_READONLY_PACK_ACCESS_PLAN.md`.
+**M177 TREE LIVE CMS PASS — October 9, 2026 15:32 CDT.**
+The new `GITPVIEW TREE G CCB18BEC...` read-only command
+verified the same root closure of 8 trees, 272 blobs,
+279 entries and 280 objects using the retained G stage/index,
+and printed `M177 PACK VIEW TREE PASS` on real CMS.
+The CMS time field overflowed and no exact duration is known.
+Remaining checks: the independent `GITPVIEW INFO G <tip>`
+terminal PASS, standalone `M175CHK G` terminal PASS if not
+already run, and identical before/after `QUERY FILEDEF`
+state. See `docs/M177_READONLY_PACK_ACCESS_PLAN.md`.
 Do not reformat G or overwrite `M173NET STAGE G`,
 `M174NET INDEX G`, original PACK A, or earlier
 sealed generations. An overlapping fullpack
