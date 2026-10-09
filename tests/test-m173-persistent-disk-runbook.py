@@ -838,4 +838,50 @@ assert 7599 + 1 == 7600
 assert "does not\nindependently enumerate current active CP" in state
 assert "fullpack" in plan.lower() and "perm/parm" in plan.lower()
 
+
+# Oct 9 real CP Gate 5d passes; Gate 5e must be read-only.
+for marker in (
+    "2026-10-09 08:28:36 CDT: M173 Gate 5d LIVE PASS",
+    "VOLSER = VMCOM1, CYLS = 11000",
+    "6VMHCD20 0300 6VMHCD20 0300 3390  VMCOM1 0127       5756        180",
+    "HCPQMD040E Device 0600 does not exist",
+    "Ready(00040)",
+    "0% NOT FOUND",
+    "M173 DIR ORIGINAL/BACKUP VERIFIED 4282",
+    "M173 DIR SINGLE MDISK INSERT RECORD 213",
+    "M173 DIR DELTA CHECK PASS",
+    "This PASS is NOT approval",
+    "Gate 5e",
+    "CP QUERY PRIVCLASS",
+    "PIPE < M173NEW MDISKMAP C | DROP 100 | TAKE 100 | CONSOLE",
+    "VMUDQ LSTMDISK",
+    "HARD STOP",
+    "No non-EDIT DIRECTXA",
+):
+    assert marker.lower() in plan.lower(), marker
+for marker in (
+    "2026-10-09 08:28:36 CDT",
+    "Gates 5c and 5d pass",
+    "Gate 5e",
+    "CP QUERY PRIVCLASS",
+    "If B is unavailable",
+    "No activation has occurred",
+):
+    assert marker.lower() in runbook.lower(), marker
+for marker in (
+    "2026-10-09 08:28:36 CDT — M173 Gate 5d REAL CMS PASS",
+    "LIVE target Gates 5c+5d PASSED",
+    "NEXT Gate 5e",
+    "Class B",
+    "No FORMAT",
+):
+    assert marker.lower() in state.lower(), marker
+# Physical interval semantics remain inclusive, and the absent
+# virtual device (RC40) is intentional, not a test failure.
+assert 5756 + 180 - 1 == 5935
+assert 6000 + 1600 - 1 == 7599
+assert 5935 < 6000
+assert "RC40 as expected" in state
+assert "only targeted existing" in state
+
 print("M173 PERMANENT CMS DATA DISK EVIDENCE AND SAFETY GATES PASSED")
