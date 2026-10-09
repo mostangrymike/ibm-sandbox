@@ -9722,3 +9722,36 @@ PACK/META A. Do not rerun M173,
 FORMAT G or remove any failed output.
 M174 output target M174NET INDEX G
 is still absent as of 10:57:19.
+
+## 2026-10-09 11:00:01 CDT — M174 GITPIDX native C build target PASS
+
+MAINT `STATE GITPIDX C A` returned Ready RC0
+at 10:59:57 after the Mac uploaded the canonical
+GitHub `src/GITPIDX.C`. `CMSCLNK GITPIDX PLAIN`
+then returned:
+```text
+ASSEMBLER (XF) DONE
+NO STATEMENTS FLAGGED IN THIS ASSEMBLY
+CMSCLNK: built GITPIDX MODULE mode PLAIN
+Ready; T=1.97/2.09 11:00:01
+```
+The missing `GITPIDX C A` problem that blocked
+M174 at 10:57:31 is resolved on actual CMS;
+native C compile, XF assembly, CMS LOAD/GENMOD
+succeeded. The M173 7736-object verified
+`M173NET STAGE G` remains protected;
+preindex `M174NET INDEX G` was absent RC28,
+and GIT600 G had 225602 free blocks at 10:57.
+
+**NEXT CMS MAINT (no transfer needed):**
+`STATE GITPIDX MODULE A`
+`M174CHK G`.
+Expected four crosscheck PASS markers for
+index BUILD, CHECK, stage AUDIT, tip COMMIT GET,
+then `M174 GENERALIZED STAGE INDEX TARGET GATE PASS`.
+M174 has not been target-run yet; do not
+claim target success until actual CMS output.
+Do not rerun M173, FORMAT G, or erase
+`M173NET STAGE G` or partial G index.
+After true M174 PASS, proceed M175/M176 using
+GCCCMS C and canonical GitHub sources.
