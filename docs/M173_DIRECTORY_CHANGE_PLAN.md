@@ -1,3 +1,127 @@
+## CURRENT GATE — 2026-10-09 09:26:50 CDT: Gate 5f CP VMUDQ LIVE PASS
+
+**Real CMS MAINT executed `START` after loading target-assembled
+`M173VQ TEXT`.** CP DIAGNOSE X'25C' LSTMDISK returned a
+complete volume-filtered VMCOM1 inventory of active CP
+directory definitions, with the explicit result:
+
+```text
+DMSLIO740I Execution begins...
+$ALLOC$  0A00 VMCOM1 3390     0000000000 0000000001
+$DIRECT$ 0B01 VMCOM1 3390     0000000131 0000000100
+PMAINT   0141 VMCOM1 3390     0000000000 END
+6VMHCD20 0300 VMCOM1 3390     0000005756 0000000180
+M173VQ VMCOM1 QUERY COMPLETE NOT ACTIVATION APPROVAL
+Ready; T=0.01/0.07 09:26:50
+```
+
+These lines are excerpts, **not the entire returned inventory**.
+The operator supplied all printed rows; every finite ordinary
+VMCOM1 minidisk definition in that output ends at or
+before **5935** (e.g., last `6VMHCD20 0300` at
+5756–5935). The proposed new `MAINT 0600 W` interval
+6000–7599 therefore has **no ordinary active-directory
+MDISK overlap in this VMUDQ result**. The nearest
+ordinary allocation ends 64 cylinders before the
+proposed disk begins, preserving gap 5936–5999.
+No current permanent `0600` definition was in the
+VMUDQ result, as expected.
+
+**Exception is important:** `PMAINT 0141` returns
+size `END`; separate real CP MDISK query already
+proved that it covers VMCOM1 cylinders **0–10999**.
+The full-pack mapping **does overlap** 0600 and must
+not be incorrectly treated as an ordinary disjoint
+allocation or overlooked merely because `PMAINT 0141`
+was absent from the most recent `CP QUERY SYSTEM 0127`
+active-links report. IBM warns that full-pack
+minidisks can bypass normal link conflict checking.
+The `$DIRECT$` parameter/reserved definition shown
+at 131–230 is disjoint, but CP allocation remains
+a separately managed area.
+
+**Gate 5f PASSED** for live active-directory
+enumeration, output completeness (CP return status,
+nonempty multiple-of-60 bytes, within capacity and
+normal completion marker), and ordinary-range
+nonoverlap. This is **not** blanket physical
+integrity certification or directory activation
+authority. The output is a point-in-time
+CP directory snapshot; subsequent changes must
+be handled by revalidation.
+
+### Next Gate 6 — final preactivation change control
+
+A directory update is a privileged, state-changing
+operation and is explicitly **NOT authorized** in
+this gate. The chosen allocation is now sufficiently
+documented for a conditional activation/rollback
+runbook, but four independent controls remain:
+
+1. Existing full-pack `PMAINT 0141` must not be
+   linked for write while 0600 contains data; a
+   future fullpack link could bypass normal W/EW
+   conflict protection. Document the operator
+   access restriction and stop on unexplained
+   VMCOM1/fullpack links before changing anything.
+2. Confirm the EBS snapshot's previously matched
+   source/Region and accessible recovery path.
+   Completion of a snapshot is **not** an isolated
+   restore test; the remaining recovery risk must
+   be accepted explicitly. Preserve the 4282-record
+   `M173BAK DIRECT C` original verified by
+   `DIRECTXA ... (EDIT`, and the working console.
+3. Confirm no new live allocation/change has
+   occurred, and validate the original/candidate
+   one-record source delta immediately beforehand.
+   Only **read-only** CMS MAINT commands at this stage:
+
+```text
+CP QUERY SYSTEM 0127
+CP QUERY ALLOC DRCT ALL
+CP QUERY MDISK 0600 DIRECTORY
+M173DCHK
+```
+
+   `CP QUERY MDISK 0600 DIRECTORY` should return
+   `HCPQMD040E`, RC40, as an **expected negative**.
+   CP DRCT should remain active on M01RES real 0123,
+   outside VMCOM1. Checker must return RC0 and prove
+   the original and backup source stay identical,
+   with exactly one candidate `MAINT-1` 0600
+   insertion. Any different geometry, new fullpack
+   link, new user/directory changes, or uncertain
+   return: stop. No directory source/password
+   content should be pasted to GitHub.
+4. Separately authorize and document the operator
+   sequence for controlled `DIRECTXA` candidate
+   activation (not `(EDIT`), observing the
+   console message/return code, immediate read-only
+   post-update CP queries, MAINT relogon if required,
+   and reverting using saved untouched
+   `M173BAK DIRECT C` from a working console if
+   postchecks fail. Activation must be its own
+   reviewed change gate. It is **not included in
+   the four commands above**. Never rely on
+   the inactive CP directory slot as the sole
+   rollback copy.
+
+**HARD STOP:** No non-EDIT DIRECTXA yet, no
+`LINK`, `ACCESS`, `FORMAT`, `M173CHK` or
+M173 Git import. Even after directory activation,
+perform physical owner/device/volume/start/size
+verification of the **new** 0600 before any
+destructive new-minidisk initialization.
+Original `M171NET PACK/META A`, source and sealed
+Git generations remain untouched.
+
+IBM reference:
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=directory-mdisk-statement
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=machines-using-link-modes-ensure-minidisk-stability
+https://www.ibm.com/docs/en/zvm/7.2.0?topic=utilities-directxa
+
+---
+
 ## CURRENT GATE — 2026-10-09 09:17:04 CDT: final M173VQ CMS assembler PASS
 
 Real CMS MAINT after Mac git pull and source transfer:
