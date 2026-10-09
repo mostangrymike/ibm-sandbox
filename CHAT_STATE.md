@@ -10164,3 +10164,117 @@ original modules and G stage/index and
 diagnose, no reimport or reformat.
 PMAINT0141 physical fullpack overlaps G,
 must never be write-linked.
+
+
+## 2026-10-09 — NEW CHAT HANDOFF: M173–M177 CMS PASS, M178 NEXT TARGET
+
+**Canonical project:** GitHub `mostangrymike/ibm-sandbox`,
+branch `main`. User preferences: GitHub-first branch /
+CI / PR / merge, preserve `CHAT_STATE.md` across
+new chats, maximum work per turn, do not pause unless
+real CMS input is needed, protect existing validated
+data, no unexplained or destructive commands.
+
+**Latest merged code baseline before this handoff:**
+commit `52397e9225ed071f7eac71c395722fe08e2bba42`,
+PR #148 — isolated M178 host-proven two-pass native
+tree walker `src/GITPFST.C` plus safe
+`src/GITPFAST.EXEC`, host regression
+`tests/test-m178-forward-tree.py`, workflow hook,
+M178 design/runbook, all added without changing
+the existing GITPTRE/GITPVIEW modules.
+M178 host CI run `37991031235` PASSED on the
+final pre-merge branch. M178 remains **NOT YET
+EXECUTED ON REAL CMS** and **NO SPEEDUP PROVEN**.
+Do not redo code development just to reach that stage.
+
+**Real system:** Hercules on AWS EC2, z/VM 6.3 CMS,
+MAINT logged on. Persistent `GIT600` filemode G,
+own virtual `0600`, 3390 1600 cylinders, VMCOM1
+real RDEV0127 physical start6000–7599,
+CMS 4096B R/W, created/activated/linked and
+formatted October 9. Original A/C, directory
+backup `M173BAK DIRECT C`, input
+`M171NET PACK/META A` retained, no reformat.
+`PMAINT 0141` has an overlapping full-pack
+directory definition covering VMCOM1 0–10999:
+NEVER link/use this fullpack for writes while
+G stores Git objects.
+
+**Target-verification completed October 9 2026:**
+- M173 `M173CHK G` PASS, independent stage
+  readback, 7736-object `M173NET STAGE G`.
+  Elapsed 1396.22s.
+- M174 `M174CHK G` PASS; `M174NET INDEX G`,
+  7736 unique OIDs, full stage/index audit,
+  tip lookup, elapsed 1459.65s.
+- M175 `M175CHK G` PASS: tip, root, parent
+  verified; elapsed 124.65s.
+- M176 `M176CHK G` PASS: root recursive closure
+  8 trees + 272 blobs = 280 verified objects,
+  279 entries, no gitlinks, 7736 unique index.
+- M177 `GITPVIEW INFO G ...` PASS on real CMS,
+  41.52s elapsed, correct tip commit/parent/root;
+  `GITPVIEW TREE G ...` PASS same closure.
+  `QUERY FILEDEF` before/after INFO both
+  `No user defined FILEDEF in effect`, verifying
+  positive-path cleanup. M177 TREE time was
+  `T=*.**/*.**`, NOT a numeric elapsed time.
+Tip OID:
+`ADA83FF3B3813961CEF2A9FFC50A453540039E0B`.
+Root tree OID:
+`CCB18BEC067E7886D70B82EF138EE56A8B899A61`.
+Tip parent:
+`B81D3CE7BAC08420BF7DB862E93F82FB3968DDC0`.
+Root max object 393767B, peak resident 394058B.
+Do NOT rerun expensive M173/M174/M176/TREE
+just for preflight or overwrite stage/index.
+
+**IMMEDIATE NEXT: target-test M178 experimental
+read-only optimization, no changes to proven path.**
+On Mac, in `ibm-sandbox/src`:
+```sh
+git pull
+./cms-upload.sh GITPFST.C GITPFAST.EXEC
+```
+On CMS MAINT:
+```text
+QUERY DISK G
+STATE M173NET STAGE G
+STATE M174NET INDEX G
+QUERY FILEDEF
+STATE GITPFST C A
+CMSCLNK GITPFST PLAIN
+STATE GITPFST MODULE A
+GITPFAST G CCB18BEC067E7886D70B82EF138EE56A8B899A61
+QUERY FILEDEF
+```
+Proceed through the commands conditionally: check G
+is 4KB R/W, both protected files exist and no user
+STGIN/IDXIN FILEDEF; verify native build RC0 before
+calling GITPFAST. Expected root closure:
+8 TREES, 272 BLOBS, 0 GITLINKS,
+279 ENTRIES, 280 VERIFIED, global
+7736 UNIQUE. Expected new diagnostics:
+`M178 TREE CLOSURE PASS`,
+`M178 FORWARD SCANS 2 RECORDS ... SEEKS 0`,
+`M178 AUTHENTICATED BLOBS 272`, and
+`M178 VERIFIED FAST TREE TARGET GATE PASS
+CCB18BEC067E7886D70B82EF138EE56A8B899A61 G`.
+Compare FILEDEF state before/after and measure
+external wall time if possible; do not infer
+performance from overflowed old Ready counters.
+M178 forwards over G stage twice and caches
+tree objects under a 64MiB cap, with independent
+SHA1 verification. It could fail on a large
+tree corpus even when old GITPTRE works; keep
+old module/EXEC untouched as the fallback.
+If compilation or target test fails, preserve
+M173/M174 data, module sources, and outputs,
+diagnose; do not reformat, reimport, rebuild
+the 7736-object index, or write to fullpack.
+
+Source of truth for this stage:
+`docs/M178_PACK_TREE_PERFORMANCE_PLAN.md`,
+`tests/test-m178-forward-tree.py`, and
+`src/GITPFST.C`, `src/GITPFAST.EXEC`.
