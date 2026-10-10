@@ -1,5 +1,33 @@
 # IBM Sandbox
 
+## M179 native stage profiling PASS; M180 single-pass candidate
+
+On real z/VM 6.3 CMS, the new M179 profiler returned RC0,
+the same 8-tree/272-blob/280-authenticated-object closure,
+7,736 unique objects indexed, and reported **3,864,799
+stage text records per scan**, 7,729,598 for two scans.
+All four C89 `clock()` phases returned `UNAVAILABLE`.
+CPU 454.92s, elapsed **459.44s** (October 9, 2026);
+M178 had elapsed 460.66s. Neither result establishes
+a comparative speedup. M179's final FILEDEF postcheck
+has not been provided. Details: `docs/M179_TREE_PROFILE.md`.
+
+M180 is a **new, isolated, host-tested C89 experiment**
+(`GITPONE.C` and `GITPONCE.EXEC`), not yet proven
+on the CMS target. It authenticates all indexed tree
+and blob objects during a **single** sequential stage
+scan, keeps only authenticated tree bodies resident,
+then validates the requested graph from the verified
+index and blob-authentication markers. It trades more
+SHA1 computations for eliminating one complete stage
+read. The permanent G STAGE and INDEX and all proven
+M176/M177/M178/M179 modules remain unchanged.
+M180 may be faster or slower and is never a replacement
+without measurement. Runbook: `docs/M180_ONEPASS_TREE.md`.
+
+---
+
+
 ## M179 isolated stage/CPU profiling (host CI; CMS pending)
 
 After M178's real CMS PASS (8 trees, 272 blobs, 280 verified,
