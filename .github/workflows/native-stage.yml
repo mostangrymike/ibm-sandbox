@@ -97,6 +97,10 @@ on:
       - 'src/GITPFST.C'
       - 'src/GITPPRF.C'
       - 'src/GITPONE.C'
+      - 'src/GITPHX.C'
+      - 'src/GITPHX.EXEC'
+      - 'tests/test-m181-hex-lookup.py'
+      - 'docs/M181_HEX_LOOKUP.md'
       - 'src/GITPONCE.EXEC'
       - 'tests/test-m180-onepass-tree.py'
       - 'docs/M180_ONEPASS_TREE.md'
@@ -227,6 +231,10 @@ on:
       - 'src/GITPFST.C'
       - 'src/GITPPRF.C'
       - 'src/GITPONE.C'
+      - 'src/GITPHX.C'
+      - 'src/GITPHX.EXEC'
+      - 'tests/test-m181-hex-lookup.py'
+      - 'docs/M181_HEX_LOOKUP.md'
       - 'src/GITPONCE.EXEC'
       - 'tests/test-m180-onepass-tree.py'
       - 'docs/M180_ONEPASS_TREE.md'
@@ -329,6 +337,8 @@ jobs:
         run: python3 tests/test-m179-tree-phase.py
       - name: Check M180 one-pass authenticated tree parity
         run: python3 tests/test-m180-onepass-tree.py
+      - name: Check M181 hex LUT selective tree parity
+        run: python3 tests/test-m181-hex-lookup.py
       - name: Cross-check permanent CMS data disk safety runbook
         run: python3 tests/test-m173-persistent-disk-runbook.py
       - name: Check read-only VMUDQ 6.3 source and fixed record model
