@@ -49,8 +49,8 @@ for forbidden in ("ERASE", "FORMAT ", "DIRECTXA", "GITPIMP IMPORT",
                   "GITPIDX BUILD", "FILEDEF * CLEAR", "FILEDEF OBJOUT",
                   "FILEDEF IDXOUT"):
     assert forbidden not in rexx
-for required in ("'STATE GITPPRF MODULE A'",
-                 "'PIPE CMS GITPPRF WALK' oid '| STEM o.'",
+for required in ("'STATE GITPONE MODULE A'",
+                 "'PIPE CMS GITPONE WALK' oid '| STEM o.'",
                  "'PIPE CMS QUERY FILEDEF | STEM f.'",
                  "'FILEDEF IDXIN CLEAR'", "'FILEDEF STGIN CLEAR'",
                  "M180 VERIFIED FAST TREE TARGET GATE PASS"):
@@ -141,4 +141,4 @@ with tempfile.TemporaryDirectory() as temp:
     assert truncated.returncode == 8
     assert "M180 TREE CLOSURE PASS" not in truncated.stdout
 
-print("M180 NATIVE READONLY PHASE PROFILER HOST PARITY PASS")
+print("M180 ONE PASS TREE HOST PARITY PASS")
