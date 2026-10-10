@@ -1,5 +1,23 @@
 # IBM Sandbox
 
+## M180 actual CMS pass — correctness with slower performance
+
+October 10, 2026: isolated one-scan `GITPONE/GITPONCE`
+compiled and passed on real z/VM 6.3 CMS. Same expected
+8 trees, 272 blobs, 279 entries, 280 authenticated objects,
+7736/7736 indexed OIDs and **zero seeks**, with one scan
+of **3,864,799 text lines**. It SHA-authenticated 2,220
+indexed blobs to support the requested 272 reachable blobs.
+CPU **704.95s**, elapsed **708.52s**, clean before/after
+FILEDEF. Compared with M179 elapsed **459.44s**, M180
+is **249.08s (about 54.2%) slower**. M180 proves the
+one-pass algorithm is functional, not faster. Preserve
+M178/M179 selective two-pass readers and all G stage/index.
+See `docs/M180_ONEPASS_TREE.md`.
+
+---
+
+
 ## M179 native stage profiling PASS; M180 single-pass candidate
 
 On real z/VM 6.3 CMS, the new M179 profiler returned RC0,

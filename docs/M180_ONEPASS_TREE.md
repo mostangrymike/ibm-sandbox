@@ -1,3 +1,50 @@
+## October 10, 2026 — M180 ACTUAL CMS PASS, PERFORMANCE REGRESSION
+
+**Real z/VM 6.3 MAINT terminal positive-path PASS.** `GIT600 600 G R/W`
+3390, 1600 cylinders, 4096-byte blocks, 2 protected files
+(62526 blocks used, 225474 free). Both original `M173NET STAGE G`
+and `M174NET INDEX G` STATE RC0. Before/after `QUERY FILEDEF`
+reported **No user defined FILEDEF in effect**.
+
+`STATE GITPONE C A` RC0; `CMSCLNK GITPONE PLAIN` completed
+`ASSEMBLER (XF) DONE`, no flagged assembly statements,
+`built GITPONE MODULE mode PLAIN` in 2.05s elapsed.
+`STATE GITPONE MODULE A` RC0. Actual command:
+`GITPONCE G CCB18BEC067E7886D70B82EF138EE56A8B899A61`.
+
+```text
+TREE CLOSURE ROOT CCB18BEC067E7886D70B82EF138EE56A8B899A61
+TREE CLOSURE TREES 8 BLOBS 272 GITLINKS 0
+TREE CLOSURE ENTRIES 279 VERIFIED 280
+TREE CLOSURE MAX OBJECT 393767 RESIDENT PEAK 6486786
+TREE CLOSURE INDEX TOTAL 7736 UNIQUE 7736
+M180 FORWARD SCANS 1 RECORDS 7736 SEEKS 0
+M180 STAGE LINES 3864799
+M180 SHA1 BLOBS TOTAL 2220
+M180 AUTHENTICATED BLOBS 272
+M180 TREE CLOSURE PASS
+M180 VERIFIED FAST TREE TARGET GATE PASS CCB18BEC067E7886D70B82EF138EE56A8B899A61 G
+```
+
+Terminal `Ready; T=704.95/708.52 10:13:31` (CPU 704.95s,
+elapsed **708.52s**) and later `QUERY FILEDEF` at 10:16:35
+still `No user defined FILEDEF in effect`. No persistent input
+was modified. Peak resident 6,486,786 bytes.
+
+**The single-scan approach IS FUNCTIONALLY TARGET-PROVEN, but is
+NOT a performance win.** M179 elapsed 459.44s, M178 460.66s;
+M180 is **249.08s / approximately 54.2% slower than M179**.
+One-pass avoids 3,864,799 text-line reads but authenticates
+2,220 indexed blobs rather than only the 272 reachable blobs
+(1,948 additional blobs). This is an observed tradeoff, not
+precise attribution of CPU time to either stage or SHA operation.
+Keep the established M178/M179 two-pass readers as performance
+baselines. Do not rerun completed M180 test or rebuild G data.
+Follow-up experiment must isolate a bounded optimization and
+prove parity/corruption behavior before a single native target run.
+
+---
+
 # M180 — isolated single-pass authenticated tree closure experiment
 
 ## October 10, 2026 — source/host CI only; NOT CMS target-proven
