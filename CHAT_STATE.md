@@ -10482,3 +10482,52 @@ speed must be measured, not assumed. Preserve
 `M171NET PACK/META A`, all prior working modules.
 PMAINT0141 fullpack physically overlaps G: NEVER
 write-link it. No unnecessary old gates rerun.
+
+
+## 2026-10-10 10:16 — M180 REAL CMS TARGET PASS; SLOWER THAN M179
+
+Operator supplied real z/VM 6.3 MAINT transcript: `QUERY DISK G`
+`GIT600 600 G R/W 1600 3390 4096`, 2 files,
+62526 blocks used (22%), 225474 free, 288000 total.
+Both `STATE M173NET STAGE G` and `STATE M174NET INDEX G`
+RC0. Before run `QUERY FILEDEF` (10:01:11) showed
+`No user defined FILEDEF in effect`. C source `STATE GITPONE C A`
+RC0; new `CMSCLNK GITPONE PLAIN` assembled XF with NO
+flagged statements, built MODULE PLAIN, elapsed 2.05s;
+`STATE GITPONE MODULE A` RC0.
+
+`GITPONCE G CCB18BEC067E7886D70B82EF138EE56A8B899A61`
+real console output:
+```text
+TREE CLOSURE ROOT CCB18BEC067E7886D70B82EF138EE56A8B899A61
+TREE CLOSURE TREES 8 BLOBS 272 GITLINKS 0
+TREE CLOSURE ENTRIES 279 VERIFIED 280
+TREE CLOSURE MAX OBJECT 393767 RESIDENT PEAK 6486786
+TREE CLOSURE INDEX TOTAL 7736 UNIQUE 7736
+M180 FORWARD SCANS 1 RECORDS 7736 SEEKS 0
+M180 STAGE LINES 3864799
+M180 SHA1 BLOBS TOTAL 2220
+M180 AUTHENTICATED BLOBS 272
+M180 TREE CLOSURE PASS
+M180 VERIFIED FAST TREE TARGET GATE PASS CCB18BEC067E7886D70B82EF138EE56A8B899A61 G
+```
+Ready RC0 `T=704.95/708.52 10:13:31` (CPU
+704.95s, elapsed 708.52s). After run `QUERY FILEDEF`
+at 10:16:35 also `No user defined FILEDEF in effect`.
+M180 verified actual positive native closure and FILEDEF hygiene.
+No persistent G file mutation.
+
+Important actual performance conclusion: M180 did **one** stage
+scan (3,864,799 text records), but SHA authenticated **2220**
+unique indexed blobs, versus **272** reached and authenticated
+in M179's 2 selective scans (7,729,598 text records).
+Compared to M179 459.44s elapsed and M178 460.66s,
+M180 **708.52s is 249.08s/54.2% slower than M179**.
+This is an empirically slower design on the live pack,
+not a failure of correctness. Avoid pursuing a naive
+SHA-all-indexed-blobs single-pass replacement. Keep all
+M176–M180 code and immutable original G stage/index.
+Any next milestone should retain selective SHA and
+optimize nonselected hex-record validation or equivalent,
+strictly isolated with host CI and one native target run.
+Never reformat/reimport G or write-link overlapping PMAINT0141.
