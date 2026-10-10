@@ -141,4 +141,48 @@ with tempfile.TemporaryDirectory() as temp:
     assert truncated.returncode == 8
     assert "M180 TREE CLOSURE PASS" not in truncated.stdout
 
+    # Duplicate stage object: the index chooses one canonical blob
+    # occurrence; closure must count repeated references only once.
+    (folder / "dd:IDXOUT").unlink()
+    shared = b"identical"
+    emptytree = b""
+    duplicate_root = (
+        edge(40000, b"empty", oid("tree", emptytree))
+        + edge(100644, b"first", oid("blob", shared))
+        + edge(100644, b"second", oid("blob", shared))
+    )
+    dup_oid = oid("tree", duplicate_root)
+    duplicate_objects = [
+        ("blob", 3, shared),
+        ("blob", 3, shared),
+        ("tree", 2, emptytree),
+        ("tree", 2, duplicate_root),
+    ]
+    dup_text, dup_lines = stage(duplicate_objects)
+    (folder / "dd:STGIN").write_text(dup_text)
+    rebuilt = subprocess.run(
+        [str(binaries["idx"]), "BUILD"], cwd=folder,
+        text=True, capture_output=True
+    )
+    assert rebuilt.returncode == 0, rebuilt.stdout + rebuilt.stderr
+    assert "INDEX WRITTEN 4 UNIQUE 3" in rebuilt.stdout
+    shutil.copy(folder / "dd:IDXOUT", folder / "dd:IDXIN")
+    before_index = (folder / "dd:IDXIN").read_text()
+    older = run(binaries["old"], folder, dup_oid)
+    newer = run(binaries["new"], folder, dup_oid)
+    assert older.returncode == 0, older.stdout + older.stderr
+    assert newer.returncode == 0, newer.stdout + newer.stderr
+    for marker in (
+        "TREE CLOSURE TREES 2 BLOBS 1 GITLINKS 0",
+        "TREE CLOSURE ENTRIES 3 VERIFIED 3",
+        "TREE CLOSURE INDEX TOTAL 4 UNIQUE 3",
+    ):
+        assert marker in older.stdout and marker in newer.stdout
+    assert "M180 AUTHENTICATED BLOBS 1" in newer.stdout
+    assert "M180 SHA1 BLOBS TOTAL 1" in newer.stdout
+    assert f"M180 STAGE LINES {dup_lines}" in newer.stdout
+    assert "M180 FORWARD SCANS 1 RECORDS 4 SEEKS 0" in newer.stdout
+    assert (folder / "dd:STGIN").read_text() == dup_text
+    assert (folder / "dd:IDXIN").read_text() == before_index
+
 print("M180 ONE PASS TREE HOST PARITY PASS")
