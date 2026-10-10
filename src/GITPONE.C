@@ -25,6 +25,8 @@ static unsigned long ixtotal,ixunique;
 static unsigned long trees,blobs,gitlinks,entries,verified;
 static unsigned long largest,resident,peak;
 static unsigned long sh[5];
+static unsigned long stage_lines;
+static int stage_active;
 
 static int nib(int c) {
  if(c>='0'&&c<='9') return c-'0';
@@ -290,8 +292,6 @@ static long locate(const unsigned char oid[20]) {
 /* Index object numbers let us inspect stage records in file order. */
 static struct idxent **bynum;
 static unsigned long stage_records,authenticated,sha_blobs;
-static unsigned long stage_lines;
-static int stage_active;
 
 static int mapping(void) {
  unsigned long i,n;
