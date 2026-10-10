@@ -10531,3 +10531,64 @@ Any next milestone should retain selective SHA and
 optimize nonselected hex-record validation or equivalent,
 strictly isolated with host CI and one native target run.
 Never reformat/reimport G or write-link overlapping PMAINT0141.
+
+
+## 2026-10-10 — M181 isolated hex LUT scan optimization HOST CI PASS
+
+After the real October 10 M180 CMS success and documented
+performance regression, source `src/GITPHX.C` is a separate
+M181 C89 copy of successful M179 two-pass `GITPPRF.C`.
+Only skipped-body hexadecimal validation strategy changes:
+`skipbody` uses a 256-entry `validhex` lookup initialized
+for native '0'..'9', 'A'..'F', 'a'..'f'; each stage record's
+length and every hex byte still checked, including all
+nonselected/unreachable contents, with zero random fseek.
+All selected trees SHA-authenticated in pass 1, only
+reachable blobs SHA-authenticated in pass 2. Original
+index and stage validation, graph modes/types/OIDs/caps
+remain unchanged. New `src/GITPHX.EXEC` copies the safe
+FILEDEF ownership, explicit 4 KB non-A data mode, own
+DD clears and M181 wrapper closure/counter gating.
+Native marker `M181 HEX LOOKUP VALIDATOR PASS` before
+`M181 TREE CLOSURE PASS`; old modules NOT changed.
+
+Host `tests/test-m181-hex-lookup.py` compiles strict C89
+and tests M178 parity on fixture with 75k reached object
+and a large skipped/unreachable indexed blob, lowercase
+hex acceptance, corruption of skipped hex, reached SHA
+negative, bad root, truncated index and original stage
+and index unchanged. CI integrated in
+`.github/workflows/native-stage.yml`, run
+`38063280560` PASS. This validates the new
+source on host, **NOT on the real CMS target yet**.
+Documentation `docs/M181_HEX_LOOKUP.md`.
+
+NEXT Mac (in ibm-sandbox/src):
+```sh
+git pull
+./cms-upload.sh GITPHX.C GITPHX.EXEC
+```
+NEXT CMS MAINT:
+```text
+QUERY DISK G
+STATE M173NET STAGE G
+STATE M174NET INDEX G
+QUERY FILEDEF
+STATE GITPHX C A
+CMSCLNK GITPHX PLAIN
+STATE GITPHX MODULE A
+GITPHX G CCB18BEC067E7886D70B82EF138EE56A8B899A61
+QUERY FILEDEF
+```
+Proceed only with protected G files present, 4096B disk
+and successful isolated new module build; demand M181
+TREE CLOSURE PASS, 8 trees, 272 blobs, 279 entries,
+280 verified, 7736/7736, 2 scans, 15472 header
+visits, 0 seeks, 272 auth blobs, 3864799 text lines
+per scan, final `M181 VERIFIED FAST TREE TARGET GATE PASS`
+and matching no FILEDEF before/after. Capture CPU/elapsed
+to compare with the real M179 baseline 454.92/459.44s.
+M179 `clock()` CPU phases unavailable on CMS, so those
+remain optional. M181 may NOT be faster—measure first.
+Avoid any destructive ops, repeat imports/index rebuild,
+or PMAINT 0141 write link overlapping persistent G.
