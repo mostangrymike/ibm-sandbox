@@ -1,4 +1,47 @@
-# M179 — isolated read-only tree closure CPU profiler
+# M179 — real-CMS proven read-only stage/CPU profiler
+
+## October 9, 2026 — ACTUAL z/VM 6.3 CMS PASS
+
+Operator provided a real `GITPPROF G` run ending RC0:
+`M179 TREE CLOSURE PASS` and
+`M179 VERIFIED FAST TREE TARGET GATE PASS`
+for root `CCB18BEC067E7886D70B82EF138EE56A8B899A61`.
+Observed: 8 trees, 272 blobs, 0 gitlinks,
+279 entries, 280 verified, 7736 total/unique index,
+largest object 393767B and resident peak 6546851B.
+Two forward scans visited 15472 headers (7736 per pass),
+zero seeks and 272 authenticated reachable blobs.
+
+**Critical new measurement:** `M179 STAGE LINES PASS1 3864799
+PASS2 3864799`: 3,864,799 CMS text lines read per scan,
+**7,729,598 text records read total**.
+All four `M179 CPU` phase diagnostics (INDEX,
+TREE_SCAN, GRAPH, BLOB_SCAN) were `UNAVAILABLE` on
+the real CMS C library. The successful run reported
+CPU **454.92s**, elapsed **459.44s**, Ready at
+**16:43:45 CDT October 9**.
+
+M178 baseline on the same 7736-object data was
+CPU 455.95s / elapsed 460.66s; this 1.22s
+difference does not prove an optimization.
+**M179 is target-proven for positive-path native
+verification, not phase timing.** The operator
+did not supply a post-run `QUERY FILEDEF`;
+the wrapper is designed to clear its own
+temporary FILEDEFs but the independent postcheck
+remains unconfirmed. The prior prose below
+describing M179 as "not target-proven" is now
+historical. Do not repeat the expensive M179 run
+for this checkpoint.
+
+Next performance experiment: isolated one-pass
+M180 at `docs/M180_ONEPASS_TREE.md`. Leave the
+proven M178/M179 modules and immutable G stage/index
+unchanged. Never reimport/reformat or link
+the overlapping PMAINT0141 fullpack for writes.
+
+---
+
 
 ## Why
 

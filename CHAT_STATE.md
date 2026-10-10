@@ -10383,3 +10383,102 @@ CPU/elapsed, and the unchanged FILEDEF output. No reformat,
 index rebuild, import, old M178 retest, unsafe PMAINT0141
 link or mutation of permanent G inputs. Do not claim a runtime
 optimization from this instrumentation alone.
+
+
+## 2026-10-09 M179 REAL CMS TARGET PASS; M180 HOST CI PASS NEXT
+
+Real MAINT CMS output supplied by operator for
+`GITPPROF G CCB18BEC067E7886D70B82EF138EE56A8B899A61`:
+- Native success marker `M179 TREE CLOSURE PASS` and
+  `M179 VERIFIED FAST TREE TARGET GATE PASS ... G`; RC0.
+- 8 TREES, 272 BLOBS, 0 GITLINKS, 279 ENTRIES,
+  280 VERIFIED; 7736 index total/unique.
+- MAX OBJECT 393767; RESIDENT PEAK 6546851.
+- 2 forward scans, 15472 **object-header visits**,
+  zero seeks, 272 authenticated reachable blobs.
+- `M179 STAGE LINES PASS1 3864799 PASS2 3864799`:
+  exactly **3,864,799 stage text lines per pass**,
+  7,729,598 total. Not just 15472 stage physical lines.
+- All C89 `clock()` phase timings (INDEX, TREE_SCAN,
+  GRAPH, BLOB_SCAN) reported **UNAVAILABLE**.
+- `Ready; T=454.92/459.44 16:43:45`; native elapsed
+  **459.44s** (M178 earlier 460.66s). No speed claim.
+- Post-run `QUERY FILEDEF` was **not included** in the
+  provided transcript, so independently verified cleanup
+  is pending; do NOT imply it was checked.
+No further M179 full run is necessary for positive proof.
+Canonical docs updated at `docs/M179_TREE_PROFILE.md`.
+
+Next, isolated M180 exploratory single-forward-scan
+native tree closure **HOST CI PASS; NOT YET TARGET PROVEN**.
+Developed on branch `m180-single-forward-stage-20261010`,
+original M176 `GITPTRE`, M177 `GITPVIEW`, M178
+`GITPFST/GITPFAST`, M179 `GITPPRF/GITPPROF`,
+and verified G stage/index remain UNCHANGED.
+
+New `src/GITPONE.C` is C89 isolated variant of
+M178 proven reader. Reads `M174NET INDEX G` and
+`M173NET STAGE G` read-only, authenticates **all
+distinct indexed tree and blob objects during one
+forward scan** rather than 2 selective scans.
+Caches trees under 64 MiB, drops blob bodies after
+SHA1 validation, marks indexed blobs authenticated,
+then verifies requested tree graph only using already
+authenticated blobs. Preserves tree names, modes,
+child type/OID, cycles/depth and memory guards;
+unrelated indexed blob SHA corruption now fails closed.
+Unindexed duplicate/commit/tag payloads still
+receive original strict stage record/hex validation,
+not SHA1 verification. No per-object fseek.
+Diagnostics: `M180 FORWARD SCANS 1 RECORDS ... SEEKS 0`,
+`M180 STAGE LINES ...`, `M180 SHA1 BLOBS TOTAL ...`
+(all indexed unique blobs), `M180 AUTHENTICATED BLOBS ...`
+(reachable blobs) and `M180 TREE CLOSURE PASS`.
+Wrapper `src/GITPONCE.EXEC` safe explicit non-A
+4096B disk, read-only input DDs and isolated cleanup
+with root/counter crosschecks. No G write, no
+reimport, no ERASE/FORMAT/CP/directory actions.
+
+Host strict C89 test `tests/test-m180-onepass-tree.py`
+compiles M178+M180 and tests same output closure,
+exact one-scan/text-lines metrics, malformed OID,
+reached and unrelated indexed blob SHA corruption,
+invalid stage hex, truncated index, duplicate objects,
+shared child and empty subtree; input preservation.
+Full GitHub native-stage CI **PASS**
+run `38061425306`. Source and CMS target
+runbook: `docs/M180_ONEPASS_TREE.md`.
+
+NEXT Mac commands (from local ibm-sandbox/src):
+```sh
+git pull
+./cms-upload.sh GITPONE.C GITPONCE.EXEC
+```
+CMS MAINT preflight and new isolated build:
+```text
+QUERY DISK G
+STATE M173NET STAGE G
+STATE M174NET INDEX G
+QUERY FILEDEF
+STATE GITPONE C A
+CMSCLNK GITPONE PLAIN
+STATE GITPONE MODULE A
+```
+Only after successful build and safe inputs:
+```text
+GITPONCE G CCB18BEC067E7886D70B82EF138EE56A8B899A61
+QUERY FILEDEF
+```
+Require 8 trees,272 blobs,0 gitlinks,279 entries,
+280 verified,7736 total/unique,1 forward pass,
+7736 object visits,0 seeks,272 authenticated
+reachable blobs and exact M180 terminal PASS.
+Capture new SHA1 all-blob count, stage text-line
+count, full CPU/elapsed Ready and post-FILEDEF.
+M180 does MORE SHA computation than M178/M179
+but saves a full 3,864,799-record scan; comparative
+speed must be measured, not assumed. Preserve
+`GIT600`, `M173NET STAGE G`, `M174NET INDEX G`,
+`M171NET PACK/META A`, all prior working modules.
+PMAINT0141 fullpack physically overlaps G: NEVER
+write-link it. No unnecessary old gates rerun.
