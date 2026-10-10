@@ -1,5 +1,28 @@
 # IBM Sandbox
 
+## M181 isolated selective-SHA hex validation experiment (host CI)
+
+The real z/VM 6.3 M180 test proved single-pass functionality,
+but it ran **708.52s elapsed**, versus **459.44s** for M179.
+One-pass authentication SHA1-checked 2220 indexed blobs,
+instead of only 272 reachable blobs. M180's 249.08s
+slowdown is documented in `docs/M180_ONEPASS_TREE.md`.
+The old G data and all earlier modules are preserved.
+
+M181 is a **separate C89 module** `GITPHX.C`, exposed via
+`GITPHX.EXEC`, retaining the selective two-scan M179
+integrity checks but accelerating skipped hex-record
+validation using a 256-entry native ASCII/EBCDIC
+character table. All bytes and record lengths are
+still checked, with same SHA-authenticated root closure.
+Strict host C89 parity/corruption tests pass.
+**M181 is not yet CMS target-proven or speed-proven.**
+Use the conditional target runbook in
+`docs/M181_HEX_LOOKUP.md` without rewriting G.
+
+---
+
+
 ## M180 actual CMS pass — correctness with slower performance
 
 October 10, 2026: isolated one-scan `GITPONE/GITPONCE`
